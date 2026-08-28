@@ -1,6 +1,12 @@
+import type { CalendarStudyServiceBinding } from "./contracts/studyRpc";
+
 // Worker 환경 바인딩 타입. 마일스톤 진행에 따라 KV/R2 추가.
 export interface Env {
   DB: D1Database;
+  /** Calendar가 Study 기능을 호출하는 서비스 바인딩. 인증은 별도 HMAC 계약으로 고정한다. */
+  STUDY_SERVICE: CalendarStudyServiceBinding;
+  /** Calendar → Study RPC 요청 서명 전용 secret. */
+  STUDY_RPC_HMAC_SECRET: string;
   // 배포 버전별 출시 직후 request/cron 관측을 위한 Cloudflare 정본 메타데이터.
   CF_VERSION_METADATA: WorkerVersionMetadata;
   // ES256 JWT 키 (wrangler secret) — M1에서 사용

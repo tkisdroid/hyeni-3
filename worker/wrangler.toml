@@ -27,6 +27,11 @@ binding = "DB"
 database_name = "hyeni-calendar"
 database_id = "c08f9b89-3418-443e-9946-e6b2c68cfc4c"
 
+# Study는 Calendar 인증 정본을 직접 읽지 않고 이 서비스 바인딩과 HMAC 계약으로만 호출한다.
+[[services]]
+binding = "STUDY_SERVICE"
+service = "hyeni-study"
+
 # P1-storage: child-photos(Supabase Storage private bucket) → R2.
 # 업로드/조회는 routes/storage.ts(Worker proxy)가 토큰+가족 격리 게이트로 중계 — presigned 미사용.
 # 로컬(`wrangler dev --local`)은 .wrangler/state 에 R2 를 시뮬레이션한다.
@@ -80,6 +85,7 @@ crons = ["* * * * *", "*/2 * * * *", "*/5 * * * *", "*/10 * * * *", "0,5,10,15,2
 #   JWT_PUBLIC_KEY   — ES256 검증 공개키 (SPKI PEM)
 #   PREMIUM_FUNNEL_HASH_SECRET — 퍼널 family 가명키 HMAC 전용 32바이트 이상 secret
 #   LOCATION_AUDIT_CURSOR_SECRET — 위치 확인자료 감사 cursor HMAC 전용 32바이트 이상 secret
+#   STUDY_RPC_HMAC_SECRET — Calendar → Study RPC 요청 서명 전용 secret
 #   TOSS_PAYMENTS_CLIENT_KEY — Toss Payments test/live client key(PWA 결제창 전용)
 #   TOSS_PAYMENTS_SECRET_KEY — Toss Payments test/live secret key(서버 API 전용)
 #   WEB_BILLING_KEY_ENCRYPTION_SECRET — 빌링키 AES-256-GCM 암호화용 32바이트 base64 secret

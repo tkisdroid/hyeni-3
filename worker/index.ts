@@ -114,6 +114,8 @@ import { isReleaseDatabaseReady } from "./lib/healthReadiness";
 import { logCronHeartbeat, logRequestOutcome } from "./lib/launchObservability";
 import { normalizeEdgeCountry } from "./lib/accessRegion";
 
+export { CalendarProfileService } from "./entrypoints/CalendarProfileService";
+
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 // invocation_logs=false를 유지하면서 배포 버전별 전체 요청과 5xx 분모만 집계한다.
