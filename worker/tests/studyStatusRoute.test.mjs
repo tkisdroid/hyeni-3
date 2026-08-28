@@ -10,6 +10,9 @@ const { isInBasisPointRollout } = await import("../lib/studyFeatureState.ts");
 const DEVICE_ID = "study-device-1";
 const FAMILY_ID = "study-family-a";
 const USER_ID = "study-user-a";
+const COPARENT_USER_ID = "study-coparent-a";
+const CHILD_USER_ID = "study-child-user-a";
+const CHILD_MEMBER_ID = "study-child-member-a";
 const ROLLOUT_SECRET = "study-rollout-test-secret-with-sufficient-length";
 
 class Statement {
@@ -54,6 +57,19 @@ class Db {
     return new Statement(this, sql);
   }
 
+  async batch(statements) {
+    this.sqlite.exec("BEGIN");
+    try {
+      const results = [];
+      for (const statement of statements) results.push(await statement.run());
+      this.sqlite.exec("COMMIT");
+      return results;
+    } catch (error) {
+      this.sqlite.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
   close() {
     this.sqlite.close();
   }
@@ -90,7 +106,10 @@ function createFixture({
       role TEXT NOT NULL,
       is_active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT,
-      last_selected_at TEXT
+      last_selected_at TEXT,
+      birthdate TEXT,
+      learning_grade_override INTEGER,
+      learning_grade_row_version INTEGER NOT NULL DEFAULT 1
     );
     CREATE TABLE account_device_sessions(
       user_id TEXT PRIMARY KEY,
@@ -101,14 +120,34 @@ function createFixture({
       revoked_at TEXT
     );
     CREATE TABLE account_deletion_scopes(scope_type TEXT, scope_id TEXT);
+    CREATE TABLE family_unpair_cleanup_jobs(family_id TEXT, child_user_id TEXT);
+    CREATE TABLE account_mutation_leases(
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      family_id TEXT,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
     CREATE TABLE app_global_settings(
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL DEFAULT '',
       updated_by TEXT,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE study_setting_audit(
+      id TEXT PRIMARY KEY,
+      family_id TEXT NOT NULL,
+      member_id TEXT,
+      actor_user_id TEXT NOT NULL,
+      setting TEXT NOT NULL,
+      previous_value TEXT,
+      next_value TEXT,
+      request_id TEXT NOT NULL UNIQUE,
+      request_row_version INTEGER NOT NULL,
+      occurred_at TEXT NOT NULL
+    );
   `);
-  db.sqlite.prepare("INSERT INTO users(id) VALUES (?)").run(USER_ID);
+  db.sqlite.prepare("INSERT INTO users(id) VALUES (?),(?),(?)").run(USER_ID, COPARENT_USER_ID, CHILD_USER_ID);
   if (includeFamily) {
     db.sqlite.prepare(
       `INSERT INTO families(id,parent_id,created_at,service_country,service_country_source,study_market)
@@ -122,9 +161,19 @@ function createFixture({
       market,
     );
     db.sqlite.prepare(
-      `INSERT INTO family_members(id,family_id,user_id,role,is_active,created_at,last_selected_at)
-       VALUES (?,?,?,?,?,?,NULL)`,
-    ).run("study-member-a", FAMILY_ID, USER_ID, role, membershipActive ? 1 : 0, "2026-08-28T00:00:00.000Z");
+      `INSERT INTO family_members(id,family_id,user_id,role,is_active,created_at,last_selected_at,birthdate)
+       VALUES (?,?,?,?,?,?,NULL,?)`,
+    ).run("study-member-a", FAMILY_ID, USER_ID, role, membershipActive ? 1 : 0, "2026-08-28T00:00:00.000Z", null);
+    if (role === "parent") {
+      db.sqlite.prepare(
+        `INSERT INTO family_members(id,family_id,user_id,role,is_active,created_at,last_selected_at,birthdate)
+         VALUES (?,?,?,?,?,?,NULL,?)`,
+      ).run("study-coparent-member-a", FAMILY_ID, COPARENT_USER_ID, "parent", 1, "2026-08-28T00:00:00.000Z", null);
+    }
+    db.sqlite.prepare(
+      `INSERT INTO family_members(id,family_id,user_id,role,is_active,created_at,last_selected_at,birthdate)
+       VALUES (?,?,?,?,?,?,NULL,?)`,
+    ).run(CHILD_MEMBER_ID, FAMILY_ID, CHILD_USER_ID, "child", 1, "2026-08-28T00:00:00.000Z", "2016-08-10");
   }
   if (deviceSession !== "missing") {
     db.sqlite.prepare(
@@ -138,6 +187,12 @@ function createFixture({
       "2099-08-28T00:00:00.000Z",
       deviceSession === "revoked" ? "2026-08-28T00:00:00.000Z" : null,
     );
+    if (role === "parent") {
+      db.sqlite.prepare(
+        `INSERT INTO account_device_sessions(user_id,device_id,claimed_at,last_seen_at,expires_at,revoked_at)
+         VALUES (?,?,?,?,?,NULL)`,
+      ).run(COPARENT_USER_ID, "study-coparent-device", "2026-08-28T00:00:00.000Z", "2026-08-28T00:00:00.000Z", "2099-08-28T00:00:00.000Z");
+    }
   }
   return db;
 }
@@ -184,14 +239,36 @@ async function rolloutFamilyRef(familyId) {
   return Buffer.from(digest).toString("base64url");
 }
 
-async function authorization({ familyId = FAMILY_ID, role = "parent", deviceId = DEVICE_ID } = {}) {
+async function authorization({ familyId = FAMILY_ID, role = "parent", deviceId = DEVICE_ID, userId = USER_ID } = {}) {
   const token = await new SignJWT({ role, family_id: familyId, is_anonymous: false, device_id: deviceId })
     .setProtectedHeader({ alg: "ES256" })
-    .setSubject(USER_ID)
+    .setSubject(userId)
     .setIssuedAt()
     .setExpirationTime("1h")
     .sign(privateKey);
   return `Bearer ${token}`;
+}
+
+async function requestGrade(db, memberId = CHILD_MEMBER_ID, {
+  body = { grade: 5, rowVersion: 1, requestId: "grade-request-1" },
+  token = {},
+} = {}) {
+  const response = await worker.fetch(new Request(`https://local.test/api/study/children/${memberId}/grade`, {
+    method: "PUT",
+    headers: {
+      Authorization: await authorization(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  }), {
+    DB: db,
+    STUDY_SERVICE: studyBinding(),
+    STUDY_RPC_HMAC_SECRET: ROLLOUT_SECRET,
+    JWT_PRIVATE_KEY: jwtPrivateKey,
+    JWT_PUBLIC_KEY: jwtPublicKey,
+    CF_VERSION_METADATA: {},
+  }, {});
+  return { response, body: await response.json() };
 }
 
 async function requestStudyStatus(db, {
@@ -473,3 +550,118 @@ for (const row of [
     assert.equal(isInBasisPointRollout(row.first16Bits, row.basisPoints), row.expected);
   });
 }
+
+test("활성 보호자는 정확히 지정한 활성 아이의 학년 override를 바꾼다", async () => {
+  const db = createFixture();
+  try {
+    const result = await requestGrade(db, CHILD_MEMBER_ID, {
+      body: { grade: 5, rowVersion: 1, requestId: "grade-parent-write" },
+    });
+    assert.equal(result.response.status, 200);
+    assert.deepEqual(result.body, {
+      grade: { grade: 5, source: "parent_override", academicYear: 2026 },
+      rowVersion: 2,
+    });
+    assert.equal(db.sqlite.prepare("SELECT learning_grade_override FROM family_members WHERE id=?").get(CHILD_MEMBER_ID).learning_grade_override, 5);
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE member_id=?").get(CHILD_MEMBER_ID).count, 1);
+  } finally {
+    db.close();
+  }
+});
+
+test("활성 공동 보호자는 바꾸고 아이와 비활성 또는 다른 아이 member id는 거부한다", async () => {
+  const db = createFixture();
+  try {
+    const coparent = await requestGrade(db, CHILD_MEMBER_ID, {
+      body: { grade: 6, rowVersion: 1, requestId: "grade-coparent-write" },
+      token: { userId: COPARENT_USER_ID, deviceId: "study-coparent-device" },
+    });
+    assert.equal(coparent.response.status, 200);
+
+    const childDb = createFixture({ role: "child" });
+    try {
+      const child = await requestGrade(childDb, CHILD_MEMBER_ID, {
+        body: { grade: 5, rowVersion: 1, requestId: "grade-child-denied" },
+        token: { role: "child" },
+      });
+      assert.equal(child.response.status, 403);
+      assert.deepEqual(child.body, { error: "grade_forbidden" });
+    } finally {
+      childDb.close();
+    }
+
+    db.sqlite.prepare("UPDATE family_members SET is_active=0 WHERE id=?").run(CHILD_MEMBER_ID);
+    const inactive = await requestGrade(db, CHILD_MEMBER_ID, {
+      body: { grade: 4, rowVersion: 2, requestId: "grade-inactive-child" },
+    });
+    assert.equal(inactive.response.status, 403);
+    assert.deepEqual(inactive.body, { error: "grade_forbidden" });
+
+    const foreign = await requestGrade(db, "missing-child-member", {
+      body: { grade: 4, rowVersion: 2, requestId: "grade-foreign-child" },
+    });
+    assert.equal(foreign.response.status, 403);
+    assert.deepEqual(foreign.body, { error: "grade_forbidden" });
+  } finally {
+    db.close();
+  }
+});
+
+test("오래된 학년 row version은 최신 계산 학년과 함께 grade_changed를 반환한다", async () => {
+  const db = createFixture();
+  try {
+    db.sqlite.prepare(
+      "UPDATE family_members SET learning_grade_override=3, learning_grade_row_version=2 WHERE id=?",
+    ).run(CHILD_MEMBER_ID);
+    const result = await requestGrade(db, CHILD_MEMBER_ID, {
+      body: { grade: 5, rowVersion: 1, requestId: "grade-stale" },
+    });
+    assert.equal(result.response.status, 409);
+    assert.deepEqual(result.body, {
+      error: "grade_changed",
+      grade: { grade: 3, source: "parent_override", academicYear: 2026 },
+      rowVersion: 2,
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("학년 변경은 audit과 함께 원자 저장되고 같은 request id만 재생한다", async () => {
+  const db = createFixture();
+  try {
+    const input = { grade: 5, rowVersion: 1, requestId: "grade-idempotent" };
+    const first = await requestGrade(db, CHILD_MEMBER_ID, { body: input });
+    const retry = await requestGrade(db, CHILD_MEMBER_ID, { body: input });
+    const mismatch = await requestGrade(db, CHILD_MEMBER_ID, {
+      body: { ...input, grade: 6 },
+    });
+    assert.equal(first.response.status, 200);
+    assert.deepEqual(retry.body, first.body);
+    assert.equal(mismatch.response.status, 409);
+    assert.deepEqual(mismatch.body, { error: "grade_request_id_conflict" });
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id=?").get(input.requestId).count, 1);
+    assert.equal(db.sqlite.prepare("SELECT learning_grade_row_version FROM family_members WHERE id=?").get(CHILD_MEMBER_ID).learning_grade_row_version, 2);
+  } finally {
+    db.close();
+  }
+});
+
+test("stale 경쟁으로 조건부 update가 0건이면 audit-only 행을 남기지 않는다", async () => {
+  const db = createFixture();
+  try {
+    const originalBatch = db.batch.bind(db);
+    db.batch = async (statements) => {
+      db.sqlite.prepare("UPDATE family_members SET learning_grade_row_version=2 WHERE id=?").run(CHILD_MEMBER_ID);
+      return originalBatch(statements);
+    };
+    const result = await requestGrade(db, CHILD_MEMBER_ID, {
+      body: { grade: 5, rowVersion: 1, requestId: "grade-stale-race" },
+    });
+    assert.equal(result.response.status, 409);
+    assert.equal(result.body.error, "grade_changed");
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id='grade-stale-race'").get().count, 0);
+  } finally {
+    db.close();
+  }
+});

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { resolveCanonicalFamilyMembership } from "../db/authz";
+import { changeLearningGrade, LearningGradeUnavailableError } from "../lib/learningGrade";
 import { requireAuth } from "../middleware/auth";
 import { isStudyFeatureEnabled } from "../lib/studyFeatureState";
 import type { Env, Vars } from "../types";
@@ -63,6 +64,51 @@ study.get("/status", requireAuth, async (c) => {
   } catch {
     console.error("[study-status] Study readiness unavailable");
     return c.json({ state: "unavailable" }, 503);
+  }
+});
+
+// 부모가 현재 활성 아이 member id 하나를 명시해 학년 override를 바꾼다.
+// 자동 학년은 저장하지 않고 이 요청 시점의 서울 학사연도로만 다시 계산한다.
+study.put("/children/:memberId/grade", requireAuth, async (c) => {
+  let body: { grade?: unknown; rowVersion?: unknown; requestId?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+  const memberId = c.req.param("memberId").trim();
+  const requestId = typeof body.requestId === "string" ? body.requestId.trim() : "";
+  if (!memberId || !requestId || requestId.length > 160) {
+    return c.json({ error: "invalid_request_id" }, 400);
+  }
+
+  try {
+    const now = new Date();
+    const result = await changeLearningGrade(c.env.DB, {
+      actorId: c.get("user").sub,
+      familyId: (await c.env.DB.prepare(
+        `SELECT family_id FROM family_members
+          WHERE id=? AND role='child' AND is_active=1
+          LIMIT 1`,
+      ).bind(memberId).first<{ family_id: string }>())?.family_id ?? "",
+      memberId,
+      grade: body.grade,
+      rowVersion: body.rowVersion,
+      requestId,
+      occurredAt: now.toISOString(),
+      now,
+    });
+    if (result.status !== 200) {
+      const { status, ...errorBody } = result;
+      return c.json(errorBody, status);
+    }
+    return c.json({ grade: result.grade, rowVersion: result.rowVersion });
+  } catch (error) {
+    if (error instanceof LearningGradeUnavailableError) {
+      return c.json({ error: error.code }, 422);
+    }
+    console.error("[study-grade] write failed");
+    return c.json({ error: "study_grade_storage_unavailable" }, 503);
   }
 });
 
