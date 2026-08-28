@@ -82,7 +82,9 @@ export function isExpectedOfflineLoadingFailure(failure, origin) {
   ].includes(failure.url)) return true;
   try {
     const url = new URL(failure.url);
-    return url.origin === origin && /^\/fonts\/jua\/[^/]+\.woff2$/.test(url.pathname);
+    if (url.origin !== origin) return false;
+    return /^\/fonts\/jua\/[^/]+\.woff2$/.test(url.pathname)
+      || /^\/manifests\/manifest\.(?:ko|en|ja|zh-CN|zh-TW|vi|th|id|ms|fil)\.webmanifest$/.test(url.pathname);
   } catch {
     return false;
   }

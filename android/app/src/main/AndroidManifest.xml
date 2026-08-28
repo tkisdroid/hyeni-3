@@ -119,7 +119,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- OAuth 인증코드는 소유 도메인과 서명 인증서가 결합된 verified App Link로만 받는다. -->
+            <!-- OAuth 기본 복귀는 소유 도메인과 서명 인증서가 결합된 verified App Link다. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -128,6 +128,19 @@
                     android:scheme="https"
                     android:host="hyeni-calendar.pages.dev"
                     android:path="/oauth/callback" />
+            </intent-filter>
+
+            <!-- 새 설치 직후 App Link 검증이 아직 끝나지 않았거나 사용자가 링크 열기를 해제한
+                 경우에도 Worker의 package 지정 intent가 정확히 이 앱으로만 복귀한다.
+                 인증 교환은 기존 1회용 state와 앱 내부 transaction secret을 계속 검증한다. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="com.hyeni.calendar.oauth"
+                    android:host="oauth"
+                    android:path="/callback" />
             </intent-filter>
 
             <!-- 친구 초대: 카카오톡·메일 링크가 설치된 앱을 연다. /oauth 와 경로를 분리한다. -->

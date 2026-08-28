@@ -27,3 +27,15 @@ export function normalizePairCodeInput(rawValue: string): string {
   if (shortMatch) return `KID-${shortMatch[0].toUpperCase()}`;
   return "";
 }
+
+export type PairingQrDetectionDecision =
+  | { accepted: true; code: string }
+  | { accepted: false; code: null };
+
+/** 다른 QR을 아이 연결 코드로 오인해 스캔창을 닫지 않도록 제출 여부를 먼저 확정한다. */
+export function decidePairingQrDetection(rawValue: string): PairingQrDetectionDecision {
+  const code = normalizePairCodeInput(rawValue);
+  return code
+    ? { accepted: true, code }
+    : { accepted: false, code: null };
+}

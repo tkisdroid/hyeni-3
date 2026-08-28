@@ -83,7 +83,7 @@ test("PWA 런타임 QA는 Service Worker 우회 없이 install·offline route·c
   assert.match(source, /onlineDocumentRequests\.length === 0/);
 });
 
-test("PWA 런타임 QA는 의도적으로 precache에서 뺀 Jua 폰트의 오프라인 실패만 예외로 분류한다", () => {
+test("PWA 런타임 QA는 의도적으로 precache에서 뺀 동적 자원의 오프라인 실패만 예외로 분류한다", () => {
   const origin = "http://127.0.0.1:43123";
   const offlineError = "net::ERR_INTERNET_DISCONNECTED";
   assert.equal(isExpectedOfflineLoadingFailure({
@@ -99,7 +99,22 @@ test("PWA 런타임 QA는 의도적으로 precache에서 뺀 Jua 폰트의 오�
   assert.equal(isExpectedOfflineLoadingFailure({
     phase: "offline",
     error: offlineError,
+    url: `${origin}/manifests/manifest.ko.webmanifest`,
+  }, origin), true);
+  assert.equal(isExpectedOfflineLoadingFailure({
+    phase: "offline",
+    error: offlineError,
+    url: `${origin}/manifests/manifest.zh-CN.webmanifest`,
+  }, origin), true);
+  assert.equal(isExpectedOfflineLoadingFailure({
+    phase: "offline",
+    error: offlineError,
     url: `${origin}/assets/index.js`,
+  }, origin), false);
+  assert.equal(isExpectedOfflineLoadingFailure({
+    phase: "offline",
+    error: offlineError,
+    url: `${origin}/manifests/not-a-locale.webmanifest`,
   }, origin), false);
   assert.equal(isExpectedOfflineLoadingFailure({
     phase: "online",
@@ -110,6 +125,11 @@ test("PWA 런타임 QA는 의도적으로 precache에서 뺀 Jua 폰트의 오�
     phase: "offline",
     error: offlineError,
     url: "https://example.com/fonts/jua/co3KmW9ljjATdOrY.woff2",
+  }, origin), false);
+  assert.equal(isExpectedOfflineLoadingFailure({
+    phase: "offline",
+    error: offlineError,
+    url: "https://example.com/manifests/manifest.ko.webmanifest",
   }, origin), false);
 });
 

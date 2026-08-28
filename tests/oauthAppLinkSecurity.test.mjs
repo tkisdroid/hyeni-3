@@ -7,8 +7,9 @@ const assetLinks = JSON.parse(
   readFileSync(new URL("../public/.well-known/assetlinks.json", import.meta.url), "utf8"),
 );
 
-test("OAuth 인증코드 복귀는 verified HTTPS App Link만 받는다", () => {
+test("OAuth 인증코드 복귀는 verified HTTPS App Link와 패키지 전용 fallback scheme만 받는다", () => {
   assert.match(manifest, /<intent-filter android:autoVerify="true">[\s\S]*android:scheme="https"[\s\S]*android:host="hyeni-calendar\.pages\.dev"[\s\S]*android:path="\/oauth\/callback"/);
+  assert.match(manifest, /<intent-filter>[\s\S]*android:scheme="com\.hyeni\.calendar\.oauth"[\s\S]*android:host="oauth"[\s\S]*android:path="\/callback"[\s\S]*<\/intent-filter>/);
   assert.doesNotMatch(manifest, /android:scheme="hyenicalendar"[\s\S]*android:host="auth-callback"/);
 });
 

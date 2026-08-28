@@ -12,10 +12,12 @@ const catalog = (locale) => JSON.parse(read(`locales/${locale}/shared.json`));
 const qr = read("src/components/QrScanner.tsx");
 const admin = read("src/screens/admin/AdminAiPrompt.tsx");
 
-test("QR payload와 카메라 감지 결과는 raw 값으로 콜백에 전달한다", () => {
+test("QR payload는 표시하지 않고 유효한 페어링 코드만 정규화해 콜백에 전달한다", () => {
   assert.match(qr, /const rawValue = codes\.find/);
-  assert.match(qr, /await onDetected\(rawValue\)/);
-  assert.match(qr, /onDetected: \(rawValue: string\)/);
+  assert.match(qr, /const decision = decidePairingQrDetection\(rawValue\)/);
+  assert.match(qr, /if \(!decision\.accepted\)[\s\S]{0,180}return false/);
+  assert.match(qr, /await onDetected\(decision\.code\)/);
+  assert.match(qr, /onDetected: \(pairCode: string\)/);
   assert.doesNotMatch(qr, /formatMessage\([^)]*,\s*\{[^}]*(?:rawValue|codes|onDetected)/s);
   assert.doesNotMatch(qr, /console\.(?:log|info|warn|error)\([^)]*(?:rawValue|codes)/s);
 });

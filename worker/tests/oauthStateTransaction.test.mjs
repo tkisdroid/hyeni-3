@@ -27,6 +27,10 @@ const {
   parseOAuthPrepareBody,
   resolveOAuthRedirectTarget,
 } = await import("../lib/oauthState.ts");
+const {
+  createAndroidOAuthIntentUrl,
+  oauthCallbackResponse,
+} = await import("../lib/oauthCallbackPage.ts");
 
 class Statement {
   constructor(sqlite, sql, bindings = []) {
@@ -184,6 +188,22 @@ test("콜백 URL은 승인된 target에 인코딩된 값만 붙인다", () => {
   assert.equal(url.startsWith("https://hyeni-calendar.pages.dev?"), true);
   assert.equal(url.includes("</script>"), false);
   assert.equal(new URL(url).searchParams.get("code"), "a</script>&b");
+});
+
+test("Android 네이티브 OAuth 완료 페이지는 정확한 앱 패키지 intent로 첫 복귀를 보장한다", async () => {
+  const callbackUrl = "https://hyeni-calendar.pages.dev/oauth/callback?provider=kakao&code=CODE123&state=STATE123";
+  const intentUrl = createAndroidOAuthIntentUrl(callbackUrl);
+  assert.equal(
+    intentUrl,
+    "intent://oauth/callback?provider=kakao&code=CODE123&state=STATE123#Intent;scheme=com.hyeni.calendar.oauth;package=com.hyeni.calendar;end",
+  );
+  assert.equal(createAndroidOAuthIntentUrl("https://hyeni-calendar.pages.dev.evil/oauth/callback?code=C"), null);
+  assert.equal(createAndroidOAuthIntentUrl("https://hyeni-calendar.pages.dev/invite?code=C"), null);
+
+  const html = await oauthCallbackResponse("카카오", callbackUrl).text();
+  assert.match(html, /intent:\/\/oauth\/callback\?provider=kakao&amp;code=CODE123&amp;state=STATE123#Intent;scheme=com\.hyeni\.calendar\.oauth;package=com\.hyeni\.calendar;end/);
+  assert.match(html, /location\.replace\("intent:\/\/oauth\/callback/);
+  assert.match(html, />앱 열기<\/a>/);
 });
 
 test("비정상적으로 큰 state·code·transaction secret은 해시·DB 접근 전에 거부한다", async () => {

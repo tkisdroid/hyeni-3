@@ -15,6 +15,7 @@ import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import type { MessageId } from "@/i18n/generated/messageIds";
 import { ensureQrCameraPermission, openCameraPermissionSettings } from "@/lib/native/cameraPermission";
 import type { CameraPermissionRecovery } from "@/transform/cameraPermissionState";
+import { decidePairingQrDetection } from "@/transform/pairCode";
 import "./QrScanner.css";
 
 // BarcodeDetector 는 TS lib 에 없어 최소 형태만 선언(Shape Detection API).
@@ -49,8 +50,8 @@ export function QrScanner({
   onDetected,
   onClose,
 }: {
-  /** QR rawValue 전달. 처리 후 스캐너는 정지 상태(닫기는 호출자가). */
-  onDetected: (rawValue: string) => void | Promise<void>;
+  /** 검증·정규화된 페어링 코드 전달. 처리 후 스캐너는 정지 상태(닫기는 호출자가). */
+  onDetected: (pairCode: string) => void | Promise<void>;
   onClose: () => void;
 }) {
   const intl = useIntl();
@@ -124,23 +125,31 @@ export function QrScanner({
       return found?.data ?? null;
     };
 
+    const submitDetectedValue = async (rawValue: string): Promise<boolean> => {
+      const decision = decidePairingQrDetection(rawValue);
+      if (!decision.accepted) {
+        setErrorId("onboarding.pairing.invalidQr");
+        return false;
+      }
+      handledRef.current = true;
+      setErrorId(null);
+      await onDetected(decision.code);
+      return true;
+    };
+
     const scanFrame = async () => {
       if (!active || handledRef.current || !videoRef.current) return;
       try {
         if (detectorRef.current) {
           const codes = await detectorRef.current.detect(videoRef.current);
           const rawValue = codes.find((c) => typeof c.rawValue === "string")?.rawValue;
-          if (rawValue) {
-            handledRef.current = true;
-            await onDetected(rawValue);
+          if (rawValue && await submitDetectedValue(rawValue)) {
             stopScanner();
             return;
           }
         } else if (jsqrRef.current) {
           const rawValue = decodeFrameWithJsqr();
-          if (rawValue) {
-            handledRef.current = true;
-            await onDetected(rawValue);
+          if (rawValue && await submitDetectedValue(rawValue)) {
             stopScanner();
             return;
           }
