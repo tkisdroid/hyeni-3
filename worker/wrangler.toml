@@ -31,6 +31,7 @@ database_id = "c08f9b89-3418-443e-9946-e6b2c68cfc4c"
 [[services]]
 binding = "STUDY_SERVICE"
 service = "hyeni-study"
+entrypoint = "CalendarStudyService"
 
 # P1-storage: child-photos(Supabase Storage private bucket) → R2.
 # 업로드/조회는 routes/storage.ts(Worker proxy)가 토큰+가족 격리 게이트로 중계 — presigned 미사용.

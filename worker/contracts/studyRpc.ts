@@ -42,34 +42,47 @@ export type CalendarStudyAuthorizationV2 = Readonly<{
   signature: string;
 }>;
 
+/** family ID와 생년은 binding에 싣지 않고, 활성 자녀의 요청 시점 grade만 전달한다. */
+export type StudyChildGradeContext = Readonly<{
+  memberId: string;
+  grade: ResolvedLearningGrade | null;
+}>;
+
 export type ParentOverviewInput = Readonly<{
-  familyId: string;
+  children: readonly StudyChildGradeContext[];
+  requestId: string;
 }>;
 
 export type ChildReportInput = Readonly<{
-  familyId: string;
   memberId: string;
+  grade: ResolvedLearningGrade | null;
+  range: "7d" | "30d" | "term";
+  requestId: string;
 }>;
 
-export type LearnerStateInput = ChildReportInput;
+export type LearnerStateInput = Readonly<{
+  memberId: string;
+  requestId: string;
+}>;
 
 export type StartCalendarMissionInput = Readonly<{
-  familyId: string;
   memberId: string;
-  missionId: string;
+  mode: "daily" | "review" | "focus";
+  requestId: string;
 }>;
 
 export type CalendarMissionInput = Readonly<{
-  familyId: string;
   memberId: string;
   missionId: string;
+  requestId: string;
 }>;
 
 export type SubmitCalendarAnswerInput = Readonly<{
-  familyId: string;
   memberId: string;
   missionId: string;
+  problemId: string;
   answer: string;
+  requestId: string;
 }>;
 
 export type ChildrenOverviewDto = Readonly<{
