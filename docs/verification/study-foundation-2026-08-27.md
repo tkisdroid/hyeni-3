@@ -57,6 +57,12 @@
 - fresh: `npx wrangler types worker/worker-configuration.d.ts --config worker/wrangler.toml --check`, focused 3/3, `npm run typecheck:worker`, `npm run test:worker` 1,425/1,425 (`fail 0`), `git diff --check`를 실행했다. 위 Fix round 1 절의 2/2·1,424/1,424는 Fix round 2의 과거 fresh 기록이다.
 - generated d.ts, production D1, secret, deploy 구성, Play, 실기기, 계정·기기 세션은 변경하지 않았다.
 
+## Fix round 4 — TypeScript AST generated allowlist
+
+- 설치된 TypeScript compiler API로 source file AST를 파싱한다. 정확히 하나인 `__BaseEnv_Env` `InterfaceDeclaration`만 허용하고, 그 `PropertySignature`의 identifier/string-literal 이름 중 `STUDY_*`만 수집한다. interface 부재·중복·computed property는 fail-closed다.
+- 회귀 fixture는 block/line comment와 single/double/template string 안의 가짜 `__BaseEnv_Env` marker를 무시한다. multiline comment·escape·nested type도 binding으로 오인하지 않으며, 같은 줄 실제 `STUDY_SERVICE`와 `STUDY_DB`는 둘 다 추출한다.
+- fresh: `npx wrangler types worker/worker-configuration.d.ts --config worker/wrangler.toml --check`, focused 5/5, `npm run typecheck:worker`, `npm run test:worker` 1,427/1,427 (`fail 0`)를 실행했다. generated d.ts, production D1, secret, deploy 구성, Play, 실기기, 계정·기기 세션은 변경하지 않았다.
+
 ## 결론
 
 로컬 foundation acceptance gate는 위 기준 커밋에서 위의 2계층 타입 acceptance로 통과했다. generated d.ts 자체가 narrow RPC 또는 HMAC secret type을 제공한다는 뜻은 아니다. 이는 배포·production migration·실기기·Play 출시 가능 판정이 아니라, Calendar 쪽 타입·단위/Worker 회귀·production build·초기 route bundle의 로컬 증거다.

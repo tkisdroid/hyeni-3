@@ -1,99 +1,25 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import ts from "typescript";
 
 const generated = readFileSync(new URL("../worker-configuration.d.ts", import.meta.url), "utf8");
 const wrangler = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
 
 function generatedStudyBindingNames(source) {
-  const interfaceMarker = "interface __BaseEnv_Env {";
-  const bodyStart = source.indexOf(interfaceMarker);
-  if (bodyStart < 0) throw new Error("generated __BaseEnv_Env을 찾을 수 없습니다.");
+  const sourceFile = ts.createSourceFile("worker-configuration.d.ts", source, ts.ScriptTarget.Latest, false, ts.ScriptKind.TS);
+  const interfaces = sourceFile.statements.filter(
+    (statement) => ts.isInterfaceDeclaration(statement) && statement.name.text === "__BaseEnv_Env",
+  );
+  if (interfaces.length !== 1) throw new Error("generated __BaseEnv_Env은 정확히 하나여야 합니다.");
 
-  const bindings = [];
-  let blockDepth = 0;
-  let parenthesesDepth = 0;
-  let bracketsDepth = 0;
-  let atLineStart = true;
-  let state = "code";
-  let stringQuote = null;
-  let closed = false;
-
-  for (let index = bodyStart + interfaceMarker.length; index < source.length; index += 1) {
-    const character = source[index];
-    const nextCharacter = source[index + 1];
-
-    if (state === "line-comment") {
-      if (character === "\n") {
-        state = "code";
-        atLineStart = true;
-      }
-      continue;
+  return interfaces[0].members.flatMap((member) => {
+    if (!ts.isPropertySignature(member)) return [];
+    if (!member.name || (!ts.isIdentifier(member.name) && !ts.isStringLiteral(member.name))) {
+      throw new Error("generated __BaseEnv_Env에 지원하지 않는 property 이름이 있습니다.");
     }
-
-    if (state === "block-comment") {
-      if (character === "*" && nextCharacter === "/") {
-        state = "code";
-        index += 1;
-      } else if (character === "\n") {
-        atLineStart = true;
-      }
-      continue;
-    }
-
-    if (state === "string") {
-      if (character === "\\") {
-        index += 1;
-      } else if (character === stringQuote) {
-        state = "code";
-        stringQuote = null;
-      }
-      continue;
-    }
-
-    if (character === "/" && nextCharacter === "/") {
-      state = "line-comment";
-      index += 1;
-      continue;
-    }
-    if (character === "/" && nextCharacter === "*") {
-      state = "block-comment";
-      index += 1;
-      continue;
-    }
-    if (character === '"' || character === "'" || character === "`") {
-      state = "string";
-      stringQuote = character;
-      atLineStart = false;
-      continue;
-    }
-    if (character === "\n") {
-      atLineStart = true;
-      continue;
-    }
-    if (atLineStart && (character === " " || character === "\t" || character === "\r")) continue;
-
-    if (atLineStart && blockDepth === 0 && parenthesesDepth === 0 && bracketsDepth === 0) {
-      const property = source.slice(index).match(/^(?:readonly[ \t\r]+)?(STUDY_[A-Z0-9_]+)[ \t\r]*\??[ \t\r]*:/);
-      if (property) bindings.push(property[1]);
-    }
-    atLineStart = false;
-
-    if (character === "{") blockDepth += 1;
-    else if (character === "}") {
-      if (blockDepth === 0) {
-        closed = true;
-        break;
-      }
-      blockDepth -= 1;
-    } else if (character === "(") parenthesesDepth += 1;
-    else if (character === ")") parenthesesDepth -= 1;
-    else if (character === "[") bracketsDepth += 1;
-    else if (character === "]") bracketsDepth -= 1;
-  }
-
-  if (!closed) throw new Error("generated __BaseEnv_Env의 끝을 찾을 수 없습니다.");
-  return bindings;
+    return member.name.text.startsWith("STUDY_") ? [member.name.text] : [];
+  });
 }
 
 test("Calendar Wrangler 생성 타입은 named Study service만 generic Service로 기록한다", () => {
@@ -119,13 +45,54 @@ test("generated Env allowlist parser는 주석과 속성 타입 안의 STUDY 텍
 \tSTUDY_BLOCK_COMMENT: D1Database;
 \t*/
 \t// STUDY_LINE_COMMENT: D1Database;
-\tEXAMPLE: \`STUDY_STRING_TEXT: D1Database; /* comment-like text */
-\tSTUDY_STRING_CONTINUATION: D1Database;\`;
-\t/*
-\tSTUDY_TYPE_COMMENT: D1Database;
-\t*/
+\tEXAMPLE: {
+\t\tnested: { STUDY_NESTED: D1Database };
+\t\tsingle: 'STUDY_SINGLE_TEXT: D1Database;';
+\t\tdouble: "STUDY_DOUBLE_TEXT: D1Database;";
+\t\tescaped: "STUDY_ESCAPED_TEXT: D1Database; \\" escaped";
+\t\ttemplate: \`STUDY_STRING_TEXT: D1Database; /* comment-like text */
+\t\tSTUDY_STRING_CONTINUATION: D1Database;\`;
+\t\t/*
+\t\tSTUDY_TYPE_COMMENT: D1Database;
+\t\t*/
+\t};
 \tSTUDY_SERVICE:`,
   );
 
   assert.deepEqual(generatedStudyBindingNames(commentAndTypeProbe), ["STUDY_SERVICE"]);
+});
+
+test("generated Env allowlist parser는 가짜 interface marker와 같은 줄 property를 구분한다", () => {
+  const decoyProbe = [
+    "/* interface __BaseEnv_Env { STUDY_BLOCK: D1Database; } */",
+    "// interface __BaseEnv_Env { STUDY_LINE: D1Database; }",
+    "const single = 'interface __BaseEnv_Env { STUDY_SINGLE: D1Database; }';",
+    'const double = "interface __BaseEnv_Env { STUDY_DOUBLE: D1Database; }";',
+    "const template = `interface __BaseEnv_Env { STUDY_TEMPLATE: D1Database; }`;",
+    generated,
+  ].join("\n");
+  const sameLineProbe = generated.replace(
+    /^\tSTUDY_SERVICE:.*$/m,
+    "\tSTUDY_SERVICE: Service; STUDY_DB: D1Database;",
+  );
+  const stringNameProbe = generated.replace(
+    /^\tSTUDY_SERVICE:.*$/m,
+    '\t"STUDY_SERVICE": Service;',
+  );
+
+  assert.deepEqual(generatedStudyBindingNames(decoyProbe), ["STUDY_SERVICE"]);
+  assert.deepEqual(generatedStudyBindingNames(sameLineProbe), ["STUDY_SERVICE", "STUDY_DB"]);
+  assert.deepEqual(generatedStudyBindingNames(stringNameProbe), ["STUDY_SERVICE"]);
+});
+
+test("generated Env allowlist parser는 interface 부재·중복·computed property를 fail-closed한다", () => {
+  const duplicateInterfaceProbe = `${generated}\ninterface __BaseEnv_Env {\n\tSTUDY_DB: D1Database;\n}`;
+  const computedNameProbe = generated.replace(
+    /^\tSTUDY_SERVICE:.*$/m,
+    '\t["STUDY_COMPUTED"]: D1Database;\n\tSTUDY_SERVICE: Service;',
+  );
+
+  assert.throws(() => generatedStudyBindingNames("interface DifferentEnv {}"));
+  assert.throws(() => generatedStudyBindingNames(duplicateInterfaceProbe));
+  assert.throws(() => generatedStudyBindingNames(computedNameProbe));
 });
