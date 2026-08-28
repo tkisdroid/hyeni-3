@@ -1,5 +1,3 @@
-import { assertFamilyParent } from "../db/authz";
-
 export type LearningGrade = 3 | 4 | 5 | 6;
 
 export interface ResolvedLearningGrade {
@@ -132,6 +130,20 @@ function gradeForRow(row: ActiveChildGradeRow, now: Date): ResolvedLearningGrade
   return resolveLearningGrade({ birthdate: row.birthdate, overrideGrade: row.learning_grade_override }, now);
 }
 
+async function hasActiveParentMembership(
+  db: D1Database,
+  actorId: string,
+  familyId: string,
+): Promise<boolean> {
+  const row = await db.prepare(
+    `SELECT 1 AS ok
+       FROM family_members
+      WHERE family_id=? AND user_id=? AND role='parent' AND is_active=1
+      LIMIT 1`,
+  ).bind(familyId, actorId).first<{ ok: number }>();
+  return !!row;
+}
+
 interface GradeAuditRow {
   family_id: string;
   member_id: string | null;
@@ -176,7 +188,7 @@ export async function changeLearningGrade(
 ): Promise<ChangeLearningGradeResult> {
   if (!validOverrideInput(input.grade)) return { status: 400, error: "invalid_learning_grade" };
   if (!validRowVersion(input.rowVersion)) return { status: 400, error: "invalid_learning_grade_row_version" };
-  if (!(await assertFamilyParent(db, input.actorId, input.familyId))) return { status: 403, error: "grade_forbidden" };
+  if (!(await hasActiveParentMembership(db, input.actorId, input.familyId))) return { status: 403, error: "grade_forbidden" };
 
   const grade = input.grade;
   const existing = await replayOrConflict(db, input, grade);
@@ -189,6 +201,10 @@ export async function changeLearningGrade(
     return { status: 409, error: "grade_changed", grade: gradeForRow(current, input.now), rowVersion: currentVersion };
   }
 
+  // reset(null)도 commit 전 새 자동 학년을 계산한다. 생년월일 보정이 필요하면
+  // 어떤 override·version·audit도 먼저 남기지 않고 호출자에게 돌려준다.
+  const prospectiveGrade = resolveLearningGrade({ birthdate: current.birthdate, overrideGrade: grade }, input.now);
+
   const nextVersion = currentVersion + 1;
   const update = db.prepare(
     `UPDATE family_members
@@ -196,20 +212,13 @@ export async function changeLearningGrade(
       WHERE id=? AND family_id=? AND role='child' AND is_active=1
         AND learning_grade_row_version=?
         AND EXISTS (
-          SELECT 1 FROM families f
-           WHERE f.id=?
-             AND (
-               f.parent_id=?
-               OR EXISTS (
-                 SELECT 1 FROM family_members guardian
-                  WHERE guardian.family_id=f.id
-                    AND guardian.user_id=?
-                    AND guardian.role='parent'
-                    AND guardian.is_active=1
-               )
-             )
+          SELECT 1 FROM family_members guardian
+           WHERE guardian.family_id=?
+             AND guardian.user_id=?
+             AND guardian.role='parent'
+             AND guardian.is_active=1
         )`,
-  ).bind(grade, nextVersion, input.memberId, input.familyId, currentVersion, input.familyId, input.actorId, input.actorId);
+  ).bind(grade, nextVersion, input.memberId, input.familyId, currentVersion, input.familyId, input.actorId);
   const audit = db.prepare(
     `INSERT INTO study_setting_audit
        (id, family_id, member_id, actor_user_id, setting, previous_value, next_value, request_id, request_row_version, occurred_at)
@@ -232,7 +241,7 @@ export async function changeLearningGrade(
     if (Number(updated?.meta?.changes ?? 0) === 1 && Number(audited?.meta?.changes ?? 0) === 1) {
       return {
         status: 200,
-        grade: resolveLearningGrade({ birthdate: current.birthdate, overrideGrade: grade }, input.now),
+        grade: prospectiveGrade,
         rowVersion: nextVersion,
       };
     }

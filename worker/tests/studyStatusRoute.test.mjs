@@ -51,6 +51,8 @@ class Db {
     this.sqlite = new DatabaseSync(":memory:");
     this.failDeviceSessionRead = false;
     this.failSettingsRead = false;
+    this.batchBarrier = null;
+    this.batchTail = Promise.resolve();
   }
 
   prepare(sql) {
@@ -58,6 +60,13 @@ class Db {
   }
 
   async batch(statements) {
+    if (this.batchBarrier) await this.batchBarrier();
+    const run = this.batchTail.then(() => this.runBatch(statements));
+    this.batchTail = run.catch(() => undefined);
+    return run;
+  }
+
+  async runBatch(statements) {
     this.sqlite.exec("BEGIN");
     try {
       const results = [];
@@ -661,6 +670,80 @@ test("stale 경쟁으로 조건부 update가 0건이면 audit-only 행을 남기
     assert.equal(result.response.status, 409);
     assert.equal(result.body.error, "grade_changed");
     assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id='grade-stale-race'").get().count, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test("자동 계산으로 reset할 때 생년월일이 없으면 기존 override와 audit을 바꾸지 않는다", async () => {
+  const db = createFixture();
+  try {
+    db.sqlite.prepare(
+      "UPDATE family_members SET birthdate=NULL, learning_grade_override=5 WHERE id=?",
+    ).run(CHILD_MEMBER_ID);
+    const result = await requestGrade(db, CHILD_MEMBER_ID, {
+      body: { grade: null, rowVersion: 1, requestId: "grade-reset-invalid-birthdate" },
+    });
+    assert.equal(result.response.status, 422);
+    assert.deepEqual(result.body, { error: "learning_grade_unavailable" });
+    const unchanged = db.sqlite.prepare(
+      "SELECT learning_grade_override, learning_grade_row_version FROM family_members WHERE id=?",
+    ).get(CHILD_MEMBER_ID);
+    assert.equal(unchanged.learning_grade_override, 5);
+    assert.equal(unchanged.learning_grade_row_version, 1);
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id=?").get("grade-reset-invalid-birthdate").count, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test("비활성 주 보호자는 parent_id가 남아도 학년을 바꾸지 못한다", async () => {
+  const db = createFixture();
+  try {
+    db.sqlite.prepare("UPDATE families SET parent_id=? WHERE id=?").run(USER_ID, FAMILY_ID);
+    db.sqlite.prepare("UPDATE family_members SET is_active=0 WHERE id='study-member-a'").run();
+    const result = await requestGrade(db, CHILD_MEMBER_ID, {
+      body: { grade: 5, rowVersion: 1, requestId: "grade-inactive-primary" },
+    });
+    assert.equal(result.response.status, 403);
+    assert.deepEqual(result.body, { error: "grade_forbidden" });
+    const unchanged = db.sqlite.prepare(
+      "SELECT learning_grade_override, learning_grade_row_version FROM family_members WHERE id=?",
+    ).get(CHILD_MEMBER_ID);
+    assert.equal(unchanged.learning_grade_override, null);
+    assert.equal(unchanged.learning_grade_row_version, 1);
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id=?").get("grade-inactive-primary").count, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test("같은 request id 경쟁의 후행 요청은 canonical 결과를 재생한다", async () => {
+  const db = createFixture();
+  try {
+    let arrivals = 0;
+    let releaseBatches;
+    const bothAtBatch = new Promise((resolve) => { releaseBatches = resolve; });
+    db.batchBarrier = async () => {
+      arrivals += 1;
+      if (arrivals === 2) releaseBatches();
+      await bothAtBatch;
+    };
+    const input = { grade: 5, rowVersion: 1, requestId: "grade-concurrent-replay" };
+    const [first, second] = await Promise.all([
+      requestGrade(db, CHILD_MEMBER_ID, { body: input }),
+      requestGrade(db, CHILD_MEMBER_ID, { body: input }),
+    ]);
+    const expected = {
+      grade: { grade: 5, source: "parent_override", academicYear: 2026 },
+      rowVersion: 2,
+    };
+    assert.equal(first.response.status, 200);
+    assert.equal(second.response.status, 200);
+    assert.deepEqual(first.body, expected);
+    assert.deepEqual(second.body, expected);
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id=?").get(input.requestId).count, 1);
+    assert.equal(db.sqlite.prepare("SELECT learning_grade_row_version FROM family_members WHERE id=?").get(CHILD_MEMBER_ID).learning_grade_row_version, 2);
   } finally {
     db.close();
   }
