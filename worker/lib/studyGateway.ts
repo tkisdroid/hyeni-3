@@ -12,6 +12,7 @@ import type {
   CalendarStudyServiceBinding,
   ResolvedLearningGrade as StudyResolvedLearningGrade,
 } from "../contracts/studyRpc";
+import { STUDY_API_VERSION } from "../contracts/studyRpc";
 import type { AuthUser, Env } from "../types";
 
 const MAX_ID_LENGTH = 128;
@@ -246,6 +247,18 @@ export async function resolveStudyChildren(
 
 type StudyBindingCall<T> = (binding: CalendarStudyServiceBinding, auth: CalendarStudyAuthorizationV2) => Promise<T>;
 
+async function withinBindingTimeout<T>(call: () => Promise<T>): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const timedOut = new Promise<never>((_, reject) => {
+      timeout = setTimeout(() => reject(new Error("study_binding_timeout")), BINDING_TIMEOUT_MS);
+    });
+    return await Promise.race([call(), timedOut]);
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
+  }
+}
+
 /** 서명은 모든 Calendar-side gate가 끝난 직후, 실제 binding 호출 직전에만 발급한다. */
 export async function callStudyBinding<T>(
   env: Pick<Env, "STUDY_SERVICE" | "STUDY_RPC_HMAC_SECRET">,
@@ -256,7 +269,16 @@ export async function callStudyBinding<T>(
   requestId: string,
   call: StudyBindingCall<T>,
 ): Promise<T> {
-  const fingerprint = await fingerprintStudyRequest({ input, memberId: context.child?.memberId ?? null, grade: context.child?.grade ?? null });
+  const binding = env.STUDY_SERVICE;
+  if (!binding) throw new Error("study_binding_unavailable");
+  const readiness = await withinBindingTimeout(() => binding.readiness());
+  if (!readiness || readiness.apiVersion !== STUDY_API_VERSION || readiness.status !== "ready") {
+    throw new Error("study_binding_version_unavailable");
+  }
+
+  // Study가 재계산할 수 있는 값만 fingerprint에 넣는다. 내부 birthdate literal은 RPC 경계를 넘지 않는다.
+  const rpcGrade = studyRpcGrade(context.child?.grade ?? null);
+  const fingerprint = await fingerprintStudyRequest({ input, memberId: context.child?.memberId ?? null, grade: rpcGrade });
   const auth = await signStudyAuthorization({
     actorId: context.actorId,
     familyId: context.familyId,
@@ -267,18 +289,7 @@ export async function callStudyBinding<T>(
     requestId,
     fingerprint,
   }, env.STUDY_RPC_HMAC_SECRET);
-  const binding = env.STUDY_SERVICE;
-  if (!binding) throw new Error("study_binding_unavailable");
-
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  try {
-    const timedOut = new Promise<never>((_, reject) => {
-      timeout = setTimeout(() => reject(new Error("study_binding_timeout")), BINDING_TIMEOUT_MS);
-    });
-    return await Promise.race([call(binding, auth), timedOut]);
-  } finally {
-    if (timeout !== undefined) clearTimeout(timeout);
-  }
+  return withinBindingTimeout(() => call(binding, auth));
 }
 
 /** Binding 예외는 Study 영역의 고정 503으로만 바꾼다. */

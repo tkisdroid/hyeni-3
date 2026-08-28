@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { SignJWT, exportJWK, generateKeyPair } from "jose";
@@ -165,14 +166,94 @@ function recordingBinding({ reject = false } = {}) {
   };
   return {
     calls,
+    readinessCalls: 0,
     getChildrenOverview: record("getChildrenOverview"),
     getChildReport: record("getChildReport"),
     getLearnerState: record("getLearnerState"),
     startCalendarMission: record("startCalendarMission"),
     getCalendarMission: record("getCalendarMission"),
     submitCalendarAnswer: record("submitCalendarAnswer"),
-    async readiness() { return { apiVersion: "2026-08-27", status: "ready" }; },
+    async readiness() {
+      this.readinessCalls += 1;
+      return { apiVersion: "2026-08-27", status: "ready" };
+    },
   };
+}
+
+function statefulBinding() {
+  const calls = [];
+  const receipts = new Map();
+  let activeMission = null;
+  let startSideEffects = 0;
+  let submitSideEffects = 0;
+  return {
+    calls,
+    readinessCalls: 0,
+    get startSideEffects() { return startSideEffects; },
+    get submitSideEffects() { return submitSideEffects; },
+    async readiness() {
+      this.readinessCalls += 1;
+      return { apiVersion: "2026-08-27", status: "ready" };
+    },
+    async getChildrenOverview(input, auth) {
+      calls.push({ method: "getChildrenOverview", input, auth });
+      return { apiVersion: "2026-08-27", children: [] };
+    },
+    async getChildReport(input, auth) {
+      calls.push({ method: "getChildReport", input, auth });
+      return { apiVersion: "2026-08-27", memberId: input.memberId, status: "available" };
+    },
+    async getLearnerState(input, auth) {
+      calls.push({ method: "getLearnerState", input, auth });
+      return { apiVersion: "2026-08-27", memberId: input.memberId, status: "available", grade: { grade: 4, source: "study" } };
+    },
+    async startCalendarMission(input, auth) {
+      calls.push({ method: "startCalendarMission", input, auth });
+      if (!activeMission) {
+        await Promise.resolve();
+        const candidate = { apiVersion: "2026-08-27", missionId: "mission-active-a", status: "started" };
+        const winner = activeMission ??= candidate;
+        if (winner === candidate) startSideEffects += 1;
+      }
+      return activeMission;
+    },
+    async getCalendarMission(input, auth) {
+      calls.push({ method: "getCalendarMission", input, auth });
+      return activeMission ?? { apiVersion: "2026-08-27", missionId: input.missionId, status: "ready" };
+    },
+    async submitCalendarAnswer(input, auth) {
+      calls.push({ method: "submitCalendarAnswer", input, auth });
+      const existing = receipts.get(auth.requestId);
+      if (existing) return existing;
+      await Promise.resolve();
+      const winner = receipts.get(auth.requestId);
+      if (winner) return winner;
+      const receipt = { apiVersion: "2026-08-27", missionId: input.missionId, result: "accepted", receiptId: `receipt-${auth.requestId}` };
+      receipts.set(auth.requestId, receipt);
+      submitSideEffects += 1;
+      return receipt;
+    },
+  };
+}
+
+function canonicalJson(value) {
+  if (value === null || typeof value === "boolean" || typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "number") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  const record = value;
+  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`).join(",")}}`;
+}
+
+function visibleFingerprint(call) {
+  return createHash("sha256")
+    .update(canonicalJson({ input: call.input, memberId: call.auth.memberId, grade: call.auth.grade }), "utf8")
+    .digest("base64url");
+}
+
+function sessionSnapshot(db) {
+  return db.sqlite.prepare(
+    "SELECT user_id,device_id,claimed_at,last_seen_at,expires_at,revoked_at FROM account_device_sessions ORDER BY user_id",
+  ).all();
 }
 
 async function authorization({ userId = PARENT_ID, role = "parent", deviceId = "parent-device" } = {}) {
@@ -185,8 +266,8 @@ async function authorization({ userId = PARENT_ID, role = "parent", deviceId = "
   return `Bearer ${token}`;
 }
 
-async function request(db, binding, path, { method = "GET", body, actor, headers = {} } = {}) {
-  const requestHeaders = new Headers({ Authorization: await authorization(actor), ...headers });
+async function request(db, binding, path, { method = "GET", body, actor, headers = {}, authorizationHeader } = {}) {
+  const requestHeaders = new Headers({ Authorization: authorizationHeader ?? await authorization(actor), ...headers });
   if (body !== undefined) requestHeaders.set("Content-Type", "application/json");
   const response = await worker.fetch(new Request(`https://local.test/api/study${path}`, {
     method,
@@ -218,6 +299,115 @@ test("아이 시작 요청은 토큰의 정확한 자녀와 계산 학년만 RPC
     assert.deepEqual(binding.calls[0].auth.grade, { grade: 4, source: "hyeni_birth_year", academicYear: 2026 });
     assert.equal(binding.calls[0].auth.role, "learner");
     assert.equal(binding.calls[0].auth.operation, "learner.start");
+  } finally {
+    db.close();
+  }
+});
+
+test("Study가 실제 받은 공개 input과 auth만으로 fingerprint를 독립 재계산할 수 있다", async () => {
+  const db = createFixture();
+  const binding = recordingBinding();
+  try {
+    const result = await request(db, binding, "/learner/missions", {
+      method: "POST",
+      body: { mode: "daily" },
+      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+    });
+    assert.equal(result.response.status, 201);
+    assert.equal(binding.calls.length, 1);
+    assert.deepEqual(binding.calls[0].auth.grade, { grade: 4, source: "hyeni_birth_year", academicYear: 2026 });
+    assert.equal(binding.calls[0].auth.fingerprint, visibleFingerprint(binding.calls[0]));
+  } finally {
+    db.close();
+  }
+});
+
+for (const row of [
+  { name: "binding 미설정", binding: null, readinessCalls: 0 },
+  { name: "readiness throw", binding: Object.assign(recordingBinding(), { async readiness() { this.readinessCalls += 1; throw new Error("private readiness failure"); } }), readinessCalls: 1 },
+  { name: "readiness malformed", binding: Object.assign(recordingBinding(), { async readiness() { this.readinessCalls += 1; return { apiVersion: "2026-08-27" }; } }), readinessCalls: 1 },
+  { name: "readiness wrong version", binding: Object.assign(recordingBinding(), { async readiness() { this.readinessCalls += 1; return { apiVersion: "wrong", status: "ready" }; } }), readinessCalls: 1 },
+]) {
+  test(`${row.name}이면 business RPC 전에 sanitized 503으로 닫는다`, async () => {
+    const db = createFixture();
+    try {
+      const result = await request(db, row.binding, "/learner/missions", {
+        method: "POST",
+        body: { mode: "daily" },
+        actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+      });
+      assert.equal(result.response.status, 503);
+      assert.deepEqual(result.body, { error: "study_unavailable" });
+      assert.equal(row.binding?.readinessCalls ?? 0, row.readinessCalls);
+      assert.equal(row.binding?.calls.length ?? 0, 0);
+      assert.doesNotMatch(JSON.stringify(result.body), /private|readiness|token|session/i);
+    } finally {
+      db.close();
+    }
+  });
+}
+
+for (const row of [
+  { path: "/children", options: {} },
+  { path: `/children/${CHILD_MEMBER_ID}/overview`, options: {} },
+  { path: `/children/${CHILD_MEMBER_ID}/report?range=7d`, options: {} },
+  { path: "/learner/me", options: { actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" } } },
+  { path: "/learner/missions", options: { method: "POST", body: {}, actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" } } },
+  { path: "/learner/missions/mission-a", options: { actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" } } },
+  { path: "/learner/missions/mission-a/submissions", options: { method: "POST", body: { problemId: "problem-a", answer: "42" }, actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" } } },
+]) {
+  test(`${row.path}는 readiness version 불일치에서 business RPC를 호출하지 않는다`, async () => {
+    const db = createFixture();
+    const binding = recordingBinding();
+    binding.readiness = async function readiness() {
+      this.readinessCalls += 1;
+      return { apiVersion: "wrong", status: "ready" };
+    };
+    try {
+      const result = await request(db, binding, row.path, row.options);
+      assert.equal(result.response.status, 503);
+      assert.deepEqual(result.body, { error: "study_unavailable" });
+      assert.equal(binding.readinessCalls, 1);
+      assert.equal(binding.calls.length, 0);
+    } finally {
+      db.close();
+    }
+  });
+}
+
+test("동시 start와 동일 submit key는 downstream state에서 하나의 mission과 receipt로 수렴한다", async () => {
+  const db = createFixture();
+  const binding = statefulBinding();
+  try {
+    const startOptions = {
+      method: "POST",
+      body: { mode: "daily" },
+      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+    };
+    const [firstStart, secondStart] = await Promise.all([
+      request(db, binding, "/learner/missions", startOptions),
+      request(db, binding, "/learner/missions", startOptions),
+    ]);
+    assert.equal(firstStart.response.status, 201);
+    assert.equal(secondStart.response.status, 201);
+    assert.equal(firstStart.body.missionId, "mission-active-a");
+    assert.equal(secondStart.body.missionId, firstStart.body.missionId);
+    assert.equal(binding.startSideEffects, 1);
+
+    const submitOptions = {
+      method: "POST",
+      body: { problemId: "problem-a", answer: "42" },
+      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+      headers: { "Idempotency-Key": "submission_retry_key_0001" },
+    };
+    const [firstSubmit, secondSubmit] = await Promise.all([
+      request(db, binding, "/learner/missions/mission-active-a/submissions", submitOptions),
+      request(db, binding, "/learner/missions/mission-active-a/submissions", submitOptions),
+    ]);
+    assert.equal(firstSubmit.response.status, 201);
+    assert.equal(secondSubmit.response.status, 201);
+    assert.equal(firstSubmit.body.receiptId, secondSubmit.body.receiptId);
+    assert.equal(binding.submitSideEffects, 1);
   } finally {
     db.close();
   }
@@ -380,19 +570,86 @@ test("동일 Idempotency-Key 제출은 같은 requestId를 보존하고 좁은 b
   }
 });
 
+test("Study schema 경계는 bytes·ID·Idempotency-Key와 서버 생성 request ID를 정확히 고정한다", async () => {
+  const db = createFixture();
+  const binding = recordingBinding();
+  try {
+    const actor = { userId: CHILD_ID, role: "child", deviceId: "child-device" };
+    const mission128 = "m".repeat(128);
+    const allowedMission = await request(db, binding, `/learner/missions/${mission128}`, { actor });
+    assert.equal(allowedMission.response.status, 200);
+    assert.equal(binding.calls.at(-1).input.missionId, mission128);
+
+    const rejectedMission = await request(db, binding, `/learner/missions/${"m".repeat(129)}`, { actor });
+    assert.equal(rejectedMission.response.status, 400);
+
+    const exactAnswer = await request(db, binding, `/learner/missions/${mission128}/submissions`, {
+      method: "POST",
+      actor,
+      body: { problemId: "p".repeat(128), answer: "a".repeat(2000) },
+      headers: { "Idempotency-Key": "k".repeat(16) },
+    });
+    assert.equal(exactAnswer.response.status, 201);
+    assert.equal(binding.calls.at(-1).auth.requestId, "k".repeat(16));
+
+    const answer2001 = await request(db, binding, `/learner/missions/${mission128}/submissions`, {
+      method: "POST",
+      actor,
+      body: { problemId: "problem-a", answer: "a".repeat(2001) },
+      headers: { "Idempotency-Key": "k".repeat(16) },
+    });
+    assert.equal(answer2001.response.status, 400);
+
+    const maxKey = "k".repeat(128);
+    const maxKeyAccepted = await request(db, binding, "/learner/missions", {
+      method: "POST",
+      actor,
+      body: {},
+      headers: { "Idempotency-Key": maxKey },
+    });
+    assert.equal(maxKeyAccepted.response.status, 201);
+    assert.equal(binding.calls.at(-1).auth.requestId, maxKey);
+
+    for (const key of ["k".repeat(15), "k".repeat(129), `${"k".repeat(15)}.`]) {
+      const rejected = await request(db, binding, "/learner/missions", {
+        method: "POST",
+        actor,
+        body: {},
+        headers: { "Idempotency-Key": key },
+      });
+      assert.equal(rejected.response.status, 400);
+    }
+
+    const noHeader = await request(db, binding, "/learner/missions", { method: "POST", actor, body: {} });
+    assert.equal(noHeader.response.status, 201);
+    assert.match(binding.calls.at(-1).auth.requestId, /^[0-9a-f]{8}-[0-9a-f]{4}-[4-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu);
+
+    const startUnknown = await request(db, binding, "/learner/missions", { method: "POST", actor, body: { mode: "daily", extra: true } });
+    assert.equal(startUnknown.response.status, 400);
+  } finally {
+    db.close();
+  }
+});
+
 test("Study binding 거부는 세션 오류를 노출하거나 Calendar 상태를 바꾸지 않는다", async () => {
   const db = createFixture();
   const binding = recordingBinding({ reject: true });
   try {
+    const accessToken = await authorization({ userId: CHILD_ID, role: "child", deviceId: "child-device" });
+    const before = sessionSnapshot(db);
     const result = await request(db, binding, "/learner/missions", {
       method: "POST",
       body: { mode: "daily" },
-      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+      authorizationHeader: accessToken,
     });
     assert.equal(result.response.status, 503);
     assert.deepEqual(result.body, { error: "study_unavailable" });
     assert.doesNotMatch(JSON.stringify(result.body), /study_binding_private_failure|token|session/i);
-    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM account_device_sessions WHERE revoked_at IS NOT NULL").get().count, 0);
+    assert.deepEqual(sessionSnapshot(db), before);
+
+    const calendarRead = await request(db, recordingBinding(), "/status", { authorizationHeader: accessToken });
+    assert.equal(calendarRead.response.status, 200);
+    assert.deepEqual(calendarRead.body, { state: "enabled" });
   } finally {
     db.close();
   }
@@ -403,14 +660,20 @@ test("Study binding timeout도 Calendar 세션을 건드리지 않고 sanitized 
   const binding = recordingBinding();
   binding.startCalendarMission = async () => new Promise(() => undefined);
   try {
+    const accessToken = await authorization({ userId: CHILD_ID, role: "child", deviceId: "child-device" });
+    const before = sessionSnapshot(db);
     const result = await request(db, binding, "/learner/missions", {
       method: "POST",
       body: { mode: "daily" },
-      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+      authorizationHeader: accessToken,
     });
     assert.equal(result.response.status, 503);
     assert.deepEqual(result.body, { error: "study_unavailable" });
-    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM account_device_sessions WHERE revoked_at IS NOT NULL").get().count, 0);
+    assert.deepEqual(sessionSnapshot(db), before);
+
+    const calendarRead = await request(db, recordingBinding(), "/status", { authorizationHeader: accessToken });
+    assert.equal(calendarRead.response.status, 200);
+    assert.deepEqual(calendarRead.body, { state: "enabled" });
   } finally {
     db.close();
   }

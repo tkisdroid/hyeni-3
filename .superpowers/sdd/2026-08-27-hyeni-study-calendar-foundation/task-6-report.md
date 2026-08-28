@@ -49,3 +49,29 @@
 
 - 실제 Study backend가 동일한 locked V2 input contract와 fixture를 소비하는 cross-worker preview 검증은 backend 계획의 후속 gate다. 이 Task는 fake binding과 Calendar-side type contract까지만 검증했다.
 - production D1 migration, HMAC secret 설정, service binding preview/prod 배포, 실제 기기 세션 검증은 수행하지 않았다.
+
+## Fix round 1 — 리뷰 Important 3건, Minor 2건 해결
+
+### RED/GREEN
+
+- RED: 공개 RPC input/auth만으로 독립 계산한 fingerprint가 Calendar authorization 값과 달랐고, readiness throw·malformed·wrong apiVersion은 business RPC를 먼저 호출해 `201`을 반환했다.
+- GREEN: fingerprint는 내부 `birthdate`가 아닌 RPC-visible `hyeni_birth_year` grade로 계산하도록 고쳤다. 모든 business RPC 전 `readiness()`를 같은 5초 bound로 확인하고 `apiVersion="2026-08-27"`, `status="ready"`가 아니면 business call 없이 sanitized `503`으로 닫는다.
+
+### 보완 내용
+
+- recording fake가 실제 도착한 `input`, `auth.memberId`, `auth.grade`만으로 SHA-256 fingerprint를 독립 계산해 auth 값과 일치함을 검증한다.
+- binding missing/throw/malformed/wrong-version과 7개 business route 각각에서 readiness call과 business call을 분리해 검증했다. 실패 시 business call은 항상 0이다.
+- stateful fake로 동시 start가 단일 active mission view로 수렴하고, 동일 idempotency key submit이 하나의 receipt와 side effect 1회를 공유함을 검증했다.
+- rejection/timeout 전후 `account_device_sessions`의 모든 행/컬럼 snapshot과 row count를 비교하고, 같은 access token의 `/api/study/status` read가 계속 `enabled`임을 확인했다.
+- answer 2,000/2,001 bytes, ID 128/129, key 16/128/15/129/금지문자, header 없는 UUID request ID, start/submit unknown property를 고정했다.
+
+### 재검증
+
+- `node --test worker/tests/studyGateway.test.mjs`: 23/23 pass, fail 0.
+- `npm run typecheck:worker`: exit 0.
+- `npm run test:worker`: 1,420/1,420 pass, fail 0.
+- `git diff --check`: pass.
+
+### 남은 범위
+
+- 실제 Study Worker의 independent verifier와 stateful D1/DO receipt를 붙이는 cross-worker preview 검증은 backend/acceptance 후속 gate다. 이번 fix는 Calendar gateway와 contract fake의 회귀 경계를 강화했으며 production D1·secret·배포·실기기는 변경하지 않았다.
