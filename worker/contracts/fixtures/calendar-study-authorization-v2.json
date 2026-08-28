@@ -1,0 +1,47 @@
+{
+  "fixtureVersion": "calendar-study-authorization-v2/2026-08-27",
+  "testSecret": "calendar-study-v2-fixture-secret",
+  "normalizedRequest": {
+    "missionId": "mission-fixture",
+    "mode": "daily"
+  },
+  "signInput": {
+    "actorId": "calendar-actor-fixture",
+    "familyId": "family-fixture",
+    "memberId": "child-fixture",
+    "role": "learner",
+    "operation": "learner.state",
+    "grade": {
+      "grade": 4,
+      "source": "birthdate",
+      "academicYear": 2026
+    },
+    "requestId": "study-request-fixture-0001",
+    "now": "2026-08-29T00:00:00.000Z",
+    "ttlSeconds": 300,
+    "nonce": "study-nonce-fixture-0001"
+  },
+  "actorRef": "JzYDm9JzPNFuWo5uyA9ngzlqiGWnGmvLXR04UJmUIvE",
+  "requestFingerprint": "YOH0coQ8N2GouGuBJS9TBPZoI8TzZnx2gsU9gKUxKK0",
+  "authorization": {
+    "apiVersion": "2026-08-27",
+    "role": "learner",
+    "operation": "learner.state",
+    "actorRef": "JzYDm9JzPNFuWo5uyA9ngzlqiGWnGmvLXR04UJmUIvE",
+    "familyId": "family-fixture",
+    "memberId": "child-fixture",
+    "studyMarket": "KR",
+    "grade": {
+      "grade": 4,
+      "source": "hyeni_birth_year",
+      "academicYear": 2026
+    },
+    "requestId": "study-request-fixture-0001",
+    "fingerprint": "YOH0coQ8N2GouGuBJS9TBPZoI8TzZnx2gsU9gKUxKK0",
+    "issuedAt": "2026-08-29T00:00:00.000Z",
+    "expiresAt": "2026-08-29T00:05:00.000Z",
+    "nonce": "study-nonce-fixture-0001",
+    "signature": "Tt6ydW1GiQ2GathwJXYNabYIg_itAunbPRDKK_tvJW8"
+  },
+  "canonicalPayload": "2026-08-27\nlearner\nlearner.state\nJzYDm9JzPNFuWo5uyA9ngzlqiGWnGmvLXR04UJmUIvE\nfamily-fixture\nchild-fixture\nKR\n4\nhyeni_birth_year\n2026\nstudy-request-fixture-0001\nYOH0coQ8N2GouGuBJS9TBPZoI8TzZnx2gsU9gKUxKK0\n2026-08-29T00:00:00.000Z\n2026-08-29T00:05:00.000Z\nstudy-nonce-fixture-0001"
+}

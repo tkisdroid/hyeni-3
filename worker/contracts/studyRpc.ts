@@ -5,6 +5,14 @@ export const CALENDAR_STUDY_ROLES = ["guardian", "primary", "learner", "system_c
 
 export type CalendarStudyRole = (typeof CALENDAR_STUDY_ROLES)[number];
 
+export type StudyGrade = 3 | 4 | 5 | 6;
+export type GradeSource = "hyeni_birth_year" | "parent_override";
+export type ResolvedLearningGrade = Readonly<{
+  grade: StudyGrade;
+  source: GradeSource;
+  academicYear: number;
+}>;
+
 /** Study가 Calendar로부터 받는 국가 힌트다. 위치나 IP는 이 계약에 포함하지 않는다. */
 export type CalendarCountryDto = Readonly<{
   country: string;
@@ -16,13 +24,21 @@ export type CalendarGradeDto = Readonly<{
   source: "study" | "manual_required";
 }>;
 
-/** Calendar가 HMAC으로 서명해 Study RPC에 붙이는 최소 인증 문맥이다. */
+/** Calendar가 HMAC으로 서명해 Study RPC에 붙이는 locked V2 인증 문맥이다. */
 export type CalendarStudyAuthorizationV2 = Readonly<{
   apiVersion: typeof STUDY_API_VERSION;
   role: CalendarStudyRole;
+  operation: string;
+  actorRef: string;
   familyId: string;
+  memberId: string | null;
+  studyMarket: "KR";
+  grade: ResolvedLearningGrade | null;
   issuedAt: string;
   requestId: string;
+  fingerprint: string;
+  expiresAt: string;
+  nonce: string;
   signature: string;
 }>;
 

@@ -1,10 +1,16 @@
-import { STUDY_API_VERSION } from "../contracts/studyRpc";
+import {
+  STUDY_API_VERSION,
+  type CalendarStudyAuthorizationV2,
+  type CalendarStudyRole,
+  type ResolvedLearningGrade as StudyResolvedLearningGrade,
+} from "../contracts/studyRpc";
+import type { ResolvedLearningGrade as CalendarResolvedLearningGrade } from "./learningGrade";
 
 const encoder = new TextEncoder();
 const MAX_TTL_MS = 300_000;
 const MAX_FUTURE_SKEW_MS = 30_000;
 
-export type StudyAuthorizationRole = "guardian" | "primary" | "learner" | "system_cleanup";
+export type StudyAuthorizationRole = CalendarStudyRole;
 
 export type StudyAuthorizationOperation =
   | "guardian.children"
@@ -18,37 +24,15 @@ export type StudyAuthorizationOperation =
   | "learner.submit"
   | "system.cleanup";
 
-export interface StudyAuthorizationGrade {
-  grade: 3 | 4 | 5 | 6;
-  source: "birthdate" | "parent_override";
-  academicYear: number;
-}
-
-export interface SignedStudyAuthorization {
-  apiVersion: typeof STUDY_API_VERSION;
-  role: StudyAuthorizationRole;
-  operation: StudyAuthorizationOperation;
-  actorRef: string;
-  familyId: string;
-  memberId?: string;
-  studyMarket: "KR";
-  grade?: StudyAuthorizationGrade;
-  requestId: string;
-  fingerprint: string;
-  issuedAt: string;
-  expiresAt: string;
-  nonce: string;
-  signature: string;
-}
-
 export interface SignStudyAuthorizationInput {
   actorId: string;
   familyId: string;
-  memberId?: string;
+  memberId?: string | null;
   role: StudyAuthorizationRole;
   operation: StudyAuthorizationOperation;
   studyMarket?: "KR";
-  grade?: StudyAuthorizationGrade;
+  /** 내부 birthdate source는 RPC 경계에서 hyeni_birth_year로 변환한다. */
+  grade?: CalendarResolvedLearningGrade | null;
   requestId: string;
   fingerprint: string;
   now?: Date;
@@ -130,12 +114,12 @@ function isNonEmptyLine(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && !/[\r\n]/u.test(value);
 }
 
-function validGrade(value: unknown): value is StudyAuthorizationGrade {
+function validGrade(value: unknown): value is StudyResolvedLearningGrade {
   if (!value || typeof value !== "object") return false;
-  const grade = value as Partial<StudyAuthorizationGrade>;
+  const grade = value as Partial<StudyResolvedLearningGrade>;
   const academicYear = grade.academicYear;
   return (grade.grade === 3 || grade.grade === 4 || grade.grade === 5 || grade.grade === 6)
-    && (grade.source === "birthdate" || grade.source === "parent_override")
+    && (grade.source === "hyeni_birth_year" || grade.source === "parent_override")
     && Number.isInteger(academicYear)
     && academicYear !== undefined
     && academicYear >= 2022
@@ -154,23 +138,27 @@ function validNow(value: Date | undefined): Date {
   return now;
 }
 
-function policyFor(operation: StudyAuthorizationOperation): StudyAuthorizationPolicy {
-  const policy = POLICIES[operation];
+function policyFor(operation: string): StudyAuthorizationPolicy {
+  if (!Object.hasOwn(POLICIES, operation)) throw new StudyRpcAuthorizationError("authorization_invalid");
+  const policy = POLICIES[operation as StudyAuthorizationOperation];
   if (!policy) throw new StudyRpcAuthorizationError("authorization_invalid");
   return policy;
 }
 
-function assertScope(value: Pick<SignedStudyAuthorization, "role" | "operation" | "memberId" | "grade">): void {
+function assertScope(value: Pick<CalendarStudyAuthorizationV2, "role" | "operation" | "memberId" | "grade">): void {
   const policy = policyFor(value.operation);
   if (value.role !== policy.role) throw new StudyRpcAuthorizationError("authorization_role_forbidden");
-  if (policy.memberRequired !== !!value.memberId || policy.gradeRequired !== !!value.grade) {
+  if ((policy.memberRequired && !value.memberId) || (!policy.memberRequired && value.memberId !== null)) {
+    throw new StudyRpcAuthorizationError("authorization_invalid");
+  }
+  if ((policy.gradeRequired && !value.grade) || (!policy.gradeRequired && value.grade !== null)) {
     throw new StudyRpcAuthorizationError("authorization_invalid");
   }
   if (value.grade && !validGrade(value.grade)) throw new StudyRpcAuthorizationError("authorization_invalid");
 }
 
 /** Study backend verifier와 공유하는 CalendarStudyAuthorizationV2 서명 원문이다. */
-export function canonicalStudyAuthorizationPayload(value: Omit<SignedStudyAuthorization, "signature">): string {
+export function canonicalStudyAuthorizationPayload(value: Omit<CalendarStudyAuthorizationV2, "signature">): string {
   return [
     value.apiVersion,
     value.role,
@@ -241,7 +229,16 @@ export async function actorRefForStudy(actorId: string, secret: string): Promise
   return bytesToBase64Url(await hmacSha256(secret, `study-actor-ref:v1:${actorId}`));
 }
 
-export async function signStudyAuthorization(input: SignStudyAuthorizationInput, secret: string): Promise<SignedStudyAuthorization> {
+function toStudyRpcGrade(grade: CalendarResolvedLearningGrade | null | undefined): StudyResolvedLearningGrade | null {
+  if (!grade) return null;
+  return {
+    grade: grade.grade,
+    source: grade.source === "birthdate" ? "hyeni_birth_year" : "parent_override",
+    academicYear: grade.academicYear,
+  };
+}
+
+export async function signStudyAuthorization(input: SignStudyAuthorizationInput, secret: string): Promise<CalendarStudyAuthorizationV2> {
   const now = validNow(input.now);
   const ttlSeconds = input.ttlSeconds ?? 300;
   if (!Number.isInteger(ttlSeconds) || ttlSeconds <= 0 || ttlSeconds > 300) {
@@ -250,21 +247,23 @@ export async function signStudyAuthorization(input: SignStudyAuthorizationInput,
   if (!isNonEmptyLine(input.familyId) || !isNonEmptyLine(input.requestId) || !isNonEmptyLine(input.fingerprint)) {
     throw new StudyRpcAuthorizationError("authorization_invalid");
   }
-  if (input.memberId !== undefined && !isNonEmptyLine(input.memberId)) throw new StudyRpcAuthorizationError("authorization_invalid");
+  if (input.memberId !== undefined && input.memberId !== null && !isNonEmptyLine(input.memberId)) {
+    throw new StudyRpcAuthorizationError("authorization_invalid");
+  }
   const nonce = input.nonce ?? crypto.randomUUID();
   if (!isNonEmptyLine(nonce) || input.studyMarket !== undefined && input.studyMarket !== "KR") {
     throw new StudyRpcAuthorizationError("authorization_invalid");
   }
 
-  const authorization: Omit<SignedStudyAuthorization, "signature"> = {
+  const authorization: Omit<CalendarStudyAuthorizationV2, "signature"> = {
     apiVersion: STUDY_API_VERSION,
     role: input.role,
     operation: input.operation,
     actorRef: await actorRefForStudy(input.actorId, secret),
     familyId: input.familyId,
-    ...(input.memberId === undefined ? {} : { memberId: input.memberId }),
+    memberId: input.memberId ?? null,
     studyMarket: "KR",
-    ...(input.grade === undefined ? {} : { grade: input.grade }),
+    grade: toStudyRpcGrade(input.grade),
     requestId: input.requestId,
     fingerprint: input.fingerprint,
     issuedAt: now.toISOString(),
@@ -277,7 +276,7 @@ export async function signStudyAuthorization(input: SignStudyAuthorizationInput,
 
 /** Study의 독립 verifier와 같은 envelope 검증을 Calendar test에서 재현한다. */
 export async function verifyStudyAuthorization(
-  authorization: SignedStudyAuthorization,
+  authorization: CalendarStudyAuthorizationV2,
   input: VerifyStudyAuthorizationInput,
 ): Promise<void> {
   const now = validNow(input.now);
@@ -287,7 +286,7 @@ export async function verifyStudyAuthorization(
     || authorization.studyMarket !== "KR"
     || !isNonEmptyLine(authorization.actorRef)
     || !isNonEmptyLine(authorization.familyId)
-    || (authorization.memberId !== undefined && !isNonEmptyLine(authorization.memberId))
+    || (authorization.memberId !== null && !isNonEmptyLine(authorization.memberId))
     || !isNonEmptyLine(authorization.requestId)
     || !isNonEmptyLine(authorization.fingerprint)
     || !isNonEmptyLine(authorization.nonce)
