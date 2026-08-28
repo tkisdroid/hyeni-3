@@ -247,11 +247,15 @@ export async function resolveStudyChildren(
 
 type StudyBindingCall<T> = (binding: CalendarStudyServiceBinding, auth: CalendarStudyAuthorizationV2) => Promise<T>;
 
-async function withinBindingTimeout<T>(call: () => Promise<T>): Promise<T> {
+/** readiness·서명·business RPC가 공유하는 전체 binding 대기 예산이다. */
+async function withinBindingDeadline<T>(deadlineAt: number, call: () => Promise<T>): Promise<T> {
+  const remainingMs = deadlineAt - Date.now();
+  if (remainingMs <= 0) throw new Error("study_binding_timeout");
+
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
     const timedOut = new Promise<never>((_, reject) => {
-      timeout = setTimeout(() => reject(new Error("study_binding_timeout")), BINDING_TIMEOUT_MS);
+      timeout = setTimeout(() => reject(new Error("study_binding_timeout")), remainingMs);
     });
     return await Promise.race([call(), timedOut]);
   } finally {
@@ -271,7 +275,8 @@ export async function callStudyBinding<T>(
 ): Promise<T> {
   const binding = env.STUDY_SERVICE;
   if (!binding) throw new Error("study_binding_unavailable");
-  const readiness = await withinBindingTimeout(() => binding.readiness());
+  const deadlineAt = Date.now() + BINDING_TIMEOUT_MS;
+  const readiness = await withinBindingDeadline(deadlineAt, () => binding.readiness());
   if (!readiness || readiness.apiVersion !== STUDY_API_VERSION || readiness.status !== "ready") {
     throw new Error("study_binding_version_unavailable");
   }
@@ -289,7 +294,7 @@ export async function callStudyBinding<T>(
     requestId,
     fingerprint,
   }, env.STUDY_RPC_HMAC_SECRET);
-  return withinBindingTimeout(() => call(binding, auth));
+  return withinBindingDeadline(deadlineAt, () => call(binding, auth));
 }
 
 /** Binding 예외는 Study 영역의 고정 503으로만 바꾼다. */

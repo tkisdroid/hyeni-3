@@ -678,3 +678,60 @@ test("Study binding timeout도 Calendar 세션을 건드리지 않고 sanitized 
     db.close();
   }
 });
+
+test("readiness pending은 5초 안에 business RPC 없이 sanitized 503으로 닫는다", { timeout: 6_500 }, async () => {
+  const db = createFixture();
+  const binding = recordingBinding();
+  binding.readiness = async function readiness() {
+    this.readinessCalls += 1;
+    return new Promise(() => undefined);
+  };
+  try {
+    const startedAt = Date.now();
+    const result = await request(db, binding, "/learner/missions", {
+      method: "POST",
+      body: { mode: "daily" },
+      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+    });
+    const elapsedMs = Date.now() - startedAt;
+    assert.equal(result.response.status, 503);
+    assert.deepEqual(result.body, { error: "study_unavailable" });
+    assert.equal(binding.readinessCalls, 1);
+    assert.equal(binding.calls.length, 0);
+    assert.ok(elapsedMs < 5_800, `readiness timeout ${elapsedMs}ms exceeded the 5-second request budget`);
+    assert.doesNotMatch(JSON.stringify(result.body), /secret|private|raw|token|session/i);
+  } finally {
+    db.close();
+  }
+});
+
+test("readiness 뒤 business timeout도 단일 5초 deadline 안에서 닫는다", { timeout: 8_000 }, async () => {
+  const db = createFixture();
+  const binding = recordingBinding();
+  binding.readiness = async function readiness() {
+    this.readinessCalls += 1;
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    return { apiVersion: "2026-08-27", status: "ready" };
+  };
+  binding.startCalendarMission = async (input, auth) => {
+    binding.calls.push({ method: "startCalendarMission", input, auth });
+    return new Promise(() => undefined);
+  };
+  try {
+    const startedAt = Date.now();
+    const result = await request(db, binding, "/learner/missions", {
+      method: "POST",
+      body: { mode: "daily" },
+      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+    });
+    const elapsedMs = Date.now() - startedAt;
+    assert.equal(result.response.status, 503);
+    assert.deepEqual(result.body, { error: "study_unavailable" });
+    assert.equal(binding.readinessCalls, 1);
+    assert.equal(binding.calls.length, 1);
+    assert.ok(elapsedMs < 5_800, `combined binding timeout ${elapsedMs}ms exceeded the 5-second request budget`);
+    assert.doesNotMatch(JSON.stringify(result.body), /secret|private|raw|token|session/i);
+  } finally {
+    db.close();
+  }
+});

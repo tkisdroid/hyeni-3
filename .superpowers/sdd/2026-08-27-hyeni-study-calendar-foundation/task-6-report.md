@@ -75,3 +75,23 @@
 ### 남은 범위
 
 - 실제 Study Worker의 independent verifier와 stateful D1/DO receipt를 붙이는 cross-worker preview 검증은 backend/acceptance 후속 gate다. 이번 fix는 Calendar gateway와 contract fake의 회귀 경계를 강화했으며 production D1·secret·배포·실기기는 변경하지 않았다.
+
+## Fix round 2 — binding 단일 deadline
+
+### RED/GREEN
+
+- RED: readiness가 2초 지연된 뒤 business RPC가 pending이면 readiness 5초와 business 5초가 직렬로 더해져 약 7.02초 후에 실패했다.
+- GREEN: gateway가 binding 진입 시 단일 5초 deadline을 만들고 readiness·서명·business RPC가 남은 시간만 공유하도록 변경했다. 같은 fixture는 약 5.02초에 sanitized `503`으로 닫힌다.
+
+### 보완 및 검증
+
+- readiness 자체가 pending일 때 5초 안에 `{ error: "study_unavailable" }`로 끝나며 business method call은 0임을 고정했다.
+- 정상 readiness 뒤 business pending도 단일 deadline을 넘지 않고, 공개 응답에 secret·private·raw 오류·token·session 문자열이 없음을 검증했다.
+- `node --test worker/tests/studyGateway.test.mjs`: 25/25 pass, fail 0.
+- `npm run typecheck:worker`: exit 0.
+- `npm run test:worker`: 1,422/1,422 pass, fail 0.
+- `git diff --check`: pass.
+
+### 범위
+
+- production D1·secret·배포·실기기는 변경하지 않았다.
