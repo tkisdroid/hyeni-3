@@ -43,7 +43,10 @@ test("Worker CI는 타입·전체 테스트·의존성 감사를 차단 게이�
   const workflow = readFileSync(new URL("../../.github/workflows/worker-quality.yml", import.meta.url), "utf8");
 
   assert.equal(pkg.scripts["typecheck:worker"], "tsc -p worker --noEmit");
-  assert.equal(pkg.scripts["test:worker"], "node --test worker/tests/*.test.mjs");
+  assert.equal(
+    pkg.scripts["test:worker"],
+    "node --import ./worker/tests/helpers/tsModuleResolve.mjs --test worker/tests/*.test.mjs",
+  );
   assert.match(workflow, /npm run typecheck:worker/);
   assert.match(workflow, /npm run test:worker/);
   assert.doesNotMatch(workflow, /npx tsc --noEmit/);

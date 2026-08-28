@@ -16,7 +16,7 @@
     "i18n:manifests": "node scripts/i18n/generate-pwa-manifests.mjs",
     "i18n:scan": "node scripts/i18n/scan-user-facing-literals.mjs",
     "i18n:verify": "node scripts/i18n/validate-catalogs.mjs --check-generated && node scripts/i18n/generate-pwa-manifests.mjs --check && node scripts/i18n/generate-android-locales.mjs --check && node scripts/i18n/scan-user-facing-literals.mjs && node scripts/i18n/scan-client-error-surfaces.mjs",
-    "test:worker": "node --test worker/tests/*.test.mjs",
+    "test:worker": "node --import ./worker/tests/helpers/tsModuleResolve.mjs --test worker/tests/*.test.mjs",
     "typecheck:worker": "tsc -p worker --noEmit",
     "deploy:worker": "cd worker && wrangler deploy",
     "verify": "npm run build && npm test",

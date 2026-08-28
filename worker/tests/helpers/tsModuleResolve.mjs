@@ -20,6 +20,15 @@ const CANDIDATE_SUFFIXES = [".ts", ".js", "/index.ts", "/index.js"];
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
+    // cloudflare:workers는 배포 runtime의 가상 모듈이라 Node 기본 loader가 평가할 수 없다.
+    // 이 resolver를 import한 테스트 프로세스에서만 최소 entrypoint 대역으로 바꾼다.
+    if (specifier === "cloudflare:workers") {
+      return {
+        url: new URL("./cloudflareWorkersStub.mjs", import.meta.url).href,
+        format: "module",
+        shortCircuit: true,
+      };
+    }
     if (
       (specifier.startsWith("./") || specifier.startsWith("../"))
       && !HAS_EXTENSION.test(specifier)
