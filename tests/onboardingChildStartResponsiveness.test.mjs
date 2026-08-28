@@ -39,3 +39,16 @@ test("아이 세션 준비 중에는 연결 화면에서 뒤로가기로 진행 
   const pairingStep = onboarding.slice(start, end);
   assert.match(pairingStep, /<BackButton onBack=\{onBack\} disabled=\{busy\} \/>/);
 });
+
+test("새 익명 아이 세션은 손상된 역할로 오인하지 않고 연결 화면에 유지한다", () => {
+  const start = onboarding.indexOf("const routeAfterChildSession = () => {");
+  const end = onboarding.indexOf("\n\n  const startChildMode", start);
+  assert.ok(start >= 0 && end > start, "아이 세션 라우팅 함수를 찾지 못했습니다");
+
+  const routing = onboarding.slice(start, end);
+  assert.match(
+    routing,
+    /state\.isAnonymous[\s\S]*setRole\("child"\)[\s\S]*setPairMode\("child"\)[\s\S]*setStep\("pairing"\)[\s\S]*return true/,
+    "익명 로그인 성공 직후에는 아이 연결 화면을 닫으면 안 됩니다",
+  );
+});

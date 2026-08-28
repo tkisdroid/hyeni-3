@@ -644,6 +644,14 @@ export function Onboarding() {
   const routeAfterChildSession = () => {
     const state = deriveAuthState();
     if (state.status !== "authenticated") return false;
+    // anonymousLogin 직후 서버 역할은 아직 anonymous라 AuthState.role이 null이다.
+    // 이 정상적인 아이 연결 준비 세션을 손상된 계정 역할과 구분해 페어링 화면에 유지한다.
+    if (state.isAnonymous && state.role === null && state.familyId === null) {
+      setRole("child");
+      setPairMode("child");
+      setStep("pairing");
+      return true;
+    }
     if (state.role === "child") {
       setRole("child");
       setPairMode("child");
