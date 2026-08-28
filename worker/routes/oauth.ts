@@ -58,6 +58,7 @@ import {
   acknowledgeRecoveredOAuthSession,
   recoverOAuthSession,
 } from "../lib/oauthRecovery";
+import { normalizeServiceCountry, recordRegistrationCountry } from "../lib/studyMarket";
 
 type OAuthEnv = Env;
 
@@ -633,6 +634,9 @@ oauth.post("/oauth/:provider", async (c) => {
   }
   const deviceId = normalizeDeviceId(body.device_install_id);
   if (!deviceId) return c.json({ error: "device_identity_required" }, 400);
+  const registrationCountry = normalizeServiceCountry(
+    (c.req.raw as Request & { cf?: { country?: unknown } }).cf?.country,
+  );
   const recoveryId = typeof body.recoveryId === "string" ? body.recoveryId : "";
   const onboardingInterests = parseOnboardingInterests(body.onboardingInterests);
   if (!onboardingInterests.ok) return c.json({ error: "invalid_onboarding_interests" }, 400);
@@ -741,7 +745,8 @@ oauth.post("/oauth/:provider", async (c) => {
       const signupMeta = attachOnboardingPreferences(meta, onboardingInterests, createdAt);
       try {
         await db.batch([
-          db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, created_at) VALUES (?,?,0,?,?)").bind(userId, email, JSON.stringify(signupMeta), createdAt),
+          db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, created_at) VALUES (?,?,0,?,?)")
+            .bind(userId, email, JSON.stringify(signupMeta), createdAt),
           identityRow.bind(crypto.randomUUID(), userId, provider, providerId, identityData, createdAt),
         ]);
       } catch (e) {
@@ -750,6 +755,9 @@ oauth.post("/oauth/:provider", async (c) => {
       }
     }
   }
+
+  // OAuth 재로그인도 첫 edge 국가만 채운다. 이후 IP 변화는 이 값을 바꾸지 않는다.
+  await recordRegistrationCountry(db, userId, registrationCountry);
 
   // 4. Worker 세션 발급. 응답 user 에 브리지 게이트(getOAuthUserNeedsBridge)가 읽는
   //    app_metadata.provider / phone / user_metadata 를 함께 싣는다.

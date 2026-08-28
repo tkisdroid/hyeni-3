@@ -68,6 +68,10 @@ const notificationQuietHoursMigrationUrl = new URL(
   "../db/notification-quiet-hours.sql",
   import.meta.url,
 );
+const studyMarketMigrationUrl = new URL(
+  "../db/study-market.sql",
+  import.meta.url,
+);
 
 function bootstrap() {
   const db = new DatabaseSync(":memory:");
@@ -107,6 +111,39 @@ test("정본 D1 스키마는 빈 DB에서 한 번에 실행된다", () => {
   const db = bootstrap();
   assert.ok(db.prepare("SELECT 1 FROM family_members LIMIT 1").get() === undefined);
   db.close();
+});
+
+test("Study market 정본과 additive migration은 국가·학년·감사 열을 함께 제공한다", async () => {
+  const migration = await readFile(studyMarketMigrationUrl, "utf8");
+  const migrated = new DatabaseSync(":memory:");
+  migrated.exec(`
+    CREATE TABLE users(id TEXT PRIMARY KEY);
+    CREATE TABLE families(id TEXT PRIMARY KEY);
+    CREATE TABLE family_members(id TEXT PRIMARY KEY);
+  `);
+  migrated.exec(migration);
+  for (const [table, expected] of [
+    ["users", ["registration_country"]],
+    ["families", ["service_country", "service_country_source", "service_country_confirmed_at", "study_market", "service_country_row_version"]],
+    ["family_members", ["learning_grade_override", "learning_grade_row_version"]],
+  ]) {
+    const actual = columns(migrated, table);
+    for (const name of expected) assert.ok(actual.has(name), `${table}.${name}`);
+  }
+  assert.ok(columns(migrated, "study_setting_audit").has("request_id"));
+  migrated.close();
+
+  const canonical = bootstrap();
+  for (const [table, expected] of [
+    ["users", ["registration_country"]],
+    ["families", ["service_country", "study_market", "service_country_row_version"]],
+    ["family_members", ["learning_grade_override", "learning_grade_row_version"]],
+  ]) {
+    const actual = columns(canonical, table);
+    for (const name of expected) assert.ok(actual.has(name), `${table}.${name}`);
+  }
+  assert.ok(columns(canonical, "study_setting_audit").has("request_id"));
+  canonical.close();
 });
 
 test("인증 진입 UNIQUE migration은 재실행 가능하고 전화·정규화 ID·OTP 경합을 막는다", () => {

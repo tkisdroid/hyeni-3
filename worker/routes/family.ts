@@ -38,6 +38,11 @@ import { readParentHomeHeroControls } from "../lib/parentHomeHeroControls.ts";
 import { accountDeletionMutationState } from "../lib/accountDeletionClaims";
 import { recordFamilyLifecycleEvent } from "../lib/familyLifecycleFunnel";
 import {
+  confirmServiceCountry,
+  normalizeServiceCountry,
+  storeInitialServiceCountry,
+} from "../lib/studyMarket";
+import {
   ReferralAttributionError,
   buildReferralAttributionStatements,
   normalizeReferralCode,
@@ -472,6 +477,11 @@ family.post("/setup", requireAuth, async (c) => {
   const children = Array.isArray(body.children) ? (body.children as Record<string, unknown>[]) : [];
   const parentPhone = typeof body.parentPhone === "string" ? body.parentPhone.trim() : "";
   const parentGender = typeof body.parentGender === "string" ? body.parentGender : "";
+  const confirmedServiceCountry = normalizeServiceCountry(body.serviceCountry);
+  const serviceCountryMatchedEdge = body.serviceCountryMatchedEdge === true;
+  const edgeSuggestedServiceCountry = normalizeServiceCountry(
+    (c.req.raw as Request & { cf?: { country?: unknown } }).cf?.country,
+  );
   const referralLikeKeys = Object.keys(body).filter((key) => key.toLowerCase().includes("referral"));
   if (referralLikeKeys.some((key) => key !== "referralCode")) {
     return c.json({ error: "referral_code_invalid" }, 400);
@@ -764,6 +774,20 @@ family.post("/setup", requireAuth, async (c) => {
     return c.json({ error: "family_setup_retryable" }, 503);
   }
 
+  // 가족 서비스 국가는 보호자가 명시한 값만 Study market을 열고, 없으면 edge 제안으로만 남긴다.
+  // 이 정보는 국적이나 GPS/Android 위치 권한에서 읽지 않는다.
+  if (confirmedServiceCountry) {
+    await storeInitialServiceCountry(
+      c.env.DB,
+      familyId,
+      confirmedServiceCountry,
+      true,
+      !serviceCountryMatchedEdge,
+    );
+  } else if (edgeSuggestedServiceCountry) {
+    await storeInitialServiceCountry(c.env.DB, familyId, edgeSuggestedServiceCountry, false);
+  }
+
   await notifyPg(c.env, familyId, "family_members", "INSERT", { family_id: familyId }, null);
   await commitFamilySelection(c.env.DB, userId, familyId);
   await recordFamilyLifecycleEvent(c.env, {
@@ -771,6 +795,41 @@ family.post("/setup", requireAuth, async (c) => {
     event: "family_created",
   });
   return c.json({ id: familyId, pair_code: pairCode });
+});
+
+// PUT /service-country — 가족 Study market의 보호자 확정/변경. edge 제안 원문은 반환하지 않는다.
+family.put("/service-country", requireAuth, async (c) => {
+  const user = c.get("user");
+  let body: { familyId?: unknown; country?: unknown; rowVersion?: unknown; requestId?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+  const canonical = await resolveCanonicalFamilyMembership(c.env.DB, user.sub, user.family_id ?? null);
+  const familyId = typeof body.familyId === "string" && body.familyId
+    ? body.familyId
+    : canonical?.familyId ?? "";
+  const requestId = typeof body.requestId === "string" ? body.requestId.trim() : "";
+  if (!requestId) return c.json({ error: "invalid_request_id" }, 400);
+  if (!(await assertPrimaryParent(c.env.DB, user.sub, familyId))) {
+    return c.json({ error: "primary_parent_required" }, 403);
+  }
+  const result = await confirmServiceCountry(c.env.DB, {
+    actorId: user.sub,
+    familyId,
+    country: body.country,
+    rowVersion: body.rowVersion,
+    requestId,
+    occurredAt: pgNow(),
+  });
+  if (result.status !== 200) return c.json(result, result.status);
+  return c.json({
+    serviceCountry: result.serviceCountry,
+    studyMarket: result.studyMarket,
+    source: result.source,
+    rowVersion: result.rowVersion,
+  });
 });
 
 // ── POST /join — joinFamily (child, pair code) + 익명 user 전환 + 세션 재발급 ──

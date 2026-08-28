@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   encrypted_password TEXT,          -- GoTrue bcrypt 해시 그대로
   is_anonymous INTEGER NOT NULL DEFAULT 0,
   raw_user_meta_data TEXT,          -- login_id/name/gender/birthdate JSON
+  registration_country TEXT CHECK (registration_country IS NULL OR length(registration_country) = 2),
   created_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);

@@ -24,6 +24,7 @@ import {
   releaseAnonymousSignupProtectionClaims,
 } from "../lib/anonymousSignupProtection";
 import { attachOnboardingPreferences, parseOnboardingInterests } from "../lib/onboardingPreferences";
+import { normalizeServiceCountry, recordRegistrationCountry } from "../lib/studyMarket";
 
 const auth = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -581,6 +582,9 @@ auth.post("/signup/verify", async (c) => {
   }
 
   const signupDeviceId = normalizeDeviceId(body?.device_install_id);
+  const registrationCountry = normalizeServiceCountry(
+    (c.req.raw as Request & { cf?: { country?: unknown } }).cf?.country,
+  );
   const phone = parsePhone(body?.phone);
   if (!phone) return c.json({ error: "invalid_phone" }, 400);
   const token = String(body?.token ?? "").replace(/\D/g, "");
@@ -681,6 +685,9 @@ auth.post("/signup/verify", async (c) => {
     if (!(await isLoginIdAvailable(db, loginId))) return c.json({ error: "login_id_taken" }, 409);
     return c.json({ error: "signup_failed" }, 500);
   }
+
+  // 등록 국가는 서버 edge의 첫 알려진 2글자 값만 보존하며, 기기 위치 권한과 무관하다.
+  await recordRegistrationCountry(db, userId, registrationCountry);
 
   // 가입 직후엔 가족이 없다(페어링/가족 생성은 후속). login-password 와 동일한 세션 형태.
   const user: AuthUser = { sub: userId, role: "parent", family_id: null, is_anonymous: false };

@@ -10,6 +10,7 @@ CREATE TABLE "users" (
   "encrypted_password" TEXT,
   "is_anonymous" INTEGER DEFAULT 0 NOT NULL,
   "raw_user_meta_data" TEXT,
+  "registration_country" TEXT CHECK ("registration_country" IS NULL OR length("registration_country") = 2),
   "created_at" TEXT,
   PRIMARY KEY ("id")
 );
@@ -437,6 +438,11 @@ CREATE TABLE "families" (
   "theme" TEXT DEFAULT 'warm-pink' NOT NULL,
   "registered_place_alerts_enabled" INTEGER DEFAULT 1 NOT NULL,
   "unregistered_stay_alert_enabled" INTEGER DEFAULT 1 NOT NULL,
+  "service_country" TEXT CHECK ("service_country" IS NULL OR length("service_country") = 2),
+  "service_country_source" TEXT CHECK ("service_country_source" IS NULL OR "service_country_source" IN ('edge_suggested','guardian_confirmed','guardian_changed')),
+  "service_country_confirmed_at" TEXT,
+  "study_market" TEXT CHECK ("study_market" IS NULL OR "study_market" = 'KR'),
+  "service_country_row_version" INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY ("id")
 );
 
@@ -458,6 +464,8 @@ CREATE TABLE "family_members" (
   "gender" TEXT,
   "is_active" INTEGER DEFAULT 1 NOT NULL,
   "last_selected_at" TEXT,
+  "learning_grade_override" INTEGER CHECK ("learning_grade_override" IS NULL OR "learning_grade_override" BETWEEN 3 AND 6),
+  "learning_grade_row_version" INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY ("id")
 );
 
@@ -466,6 +474,18 @@ CREATE INDEX IF NOT EXISTS "idx_family_members_user_current"
 
 CREATE INDEX IF NOT EXISTS "idx_family_members_family_role_active"
   ON "family_members" ("family_id", "role", "is_active");
+
+CREATE TABLE IF NOT EXISTS "study_setting_audit" (
+  "id" TEXT PRIMARY KEY,
+  "family_id" TEXT NOT NULL,
+  "member_id" TEXT,
+  "actor_user_id" TEXT NOT NULL,
+  "setting" TEXT NOT NULL CHECK ("setting" IN ('service_country','learning_grade_override')),
+  "previous_value" TEXT,
+  "next_value" TEXT,
+  "request_id" TEXT NOT NULL UNIQUE,
+  "occurred_at" TEXT NOT NULL
+);
 
 CREATE TABLE "family_subscription" (
   "family_id" TEXT NOT NULL,

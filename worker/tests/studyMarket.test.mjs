@@ -1,0 +1,240 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { registerHooks } from "node:module";
+import { dirname, extname, resolve } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import test, { after } from "node:test";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const workerDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const typeScriptResolutionHook = registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier.startsWith(".") && !extname(specifier)) {
+      const base = new URL(specifier, context.parentURL);
+      for (const extension of [".ts", ".js"]) {
+        const candidate = new URL(`${base.href}${extension}`);
+        if (existsSync(fileURLToPath(candidate))) return { url: candidate.href, shortCircuit: true };
+      }
+    }
+    return nextResolve(specifier, context);
+  },
+});
+
+after(() => typeScriptResolutionHook.deregister());
+
+const market = await import(pathToFileURL(resolve(workerDir, "lib/studyMarket.ts")).href);
+
+class D1StatementAdapter {
+  constructor(sqlite, sql, bindings = []) {
+    this.sqlite = sqlite;
+    this.sql = sql;
+    this.bindings = bindings;
+  }
+
+  bind(...bindings) {
+    return new D1StatementAdapter(this.sqlite, this.sql, bindings);
+  }
+
+  async first() {
+    return this.sqlite.prepare(this.sql).get(...this.bindings) ?? null;
+  }
+
+  async run() {
+    const result = this.sqlite.prepare(this.sql).run(...this.bindings);
+    return { meta: { changes: Number(result.changes) } };
+  }
+}
+
+class D1DatabaseAdapter {
+  constructor(sqlite) {
+    this.sqlite = sqlite;
+  }
+
+  prepare(sql) {
+    return new D1StatementAdapter(this.sqlite, sql);
+  }
+
+  async batch(statements) {
+    this.sqlite.exec("BEGIN");
+    try {
+      const results = [];
+      for (const statement of statements) results.push(await statement.run());
+      this.sqlite.exec("COMMIT");
+      return results;
+    } catch (error) {
+      this.sqlite.exec("ROLLBACK");
+      throw error;
+    }
+  }
+}
+
+function createFixture() {
+  const sqlite = new DatabaseSync(":memory:");
+  sqlite.exec(`
+    CREATE TABLE users(id TEXT PRIMARY KEY, registration_country TEXT);
+    CREATE TABLE families(
+      id TEXT PRIMARY KEY,
+      parent_id TEXT NOT NULL,
+      service_country TEXT,
+      service_country_source TEXT,
+      service_country_confirmed_at TEXT,
+      study_market TEXT,
+      service_country_row_version INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE TABLE family_members(
+      id TEXT PRIMARY KEY,
+      family_id TEXT NOT NULL,
+      user_id TEXT,
+      role TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      learning_grade_override INTEGER,
+      learning_grade_row_version INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE TABLE study_setting_audit(
+      id TEXT PRIMARY KEY,
+      family_id TEXT NOT NULL,
+      member_id TEXT,
+      actor_user_id TEXT NOT NULL,
+      setting TEXT NOT NULL,
+      previous_value TEXT,
+      next_value TEXT,
+      request_id TEXT NOT NULL UNIQUE,
+      occurred_at TEXT NOT NULL
+    );
+    INSERT INTO users(id) VALUES ('parent'), ('coparent'), ('child');
+    INSERT INTO families(id,parent_id,service_country,service_country_source,study_market,service_country_row_version)
+      VALUES ('family-a','parent',NULL,NULL,NULL,1), ('family-b','coparent',NULL,NULL,NULL,1);
+    INSERT INTO family_members(id,family_id,user_id,role,is_active) VALUES
+      ('parent-member','family-a','parent','parent',1),
+      ('coparent-member','family-a','coparent','parent',1),
+      ('child-member','family-a','child','child',1);
+  `);
+  return { sqlite, db: new D1DatabaseAdapter(sqlite) };
+}
+
+test("첫 기기 등록 국가는 이후 edge 국가로 덮어쓰지 않는다", async () => {
+  const { sqlite, db } = createFixture();
+  await market.recordRegistrationCountry(db, "parent", "KR");
+  await market.recordRegistrationCountry(db, "parent", "JP");
+  assert.equal(sqlite.prepare("SELECT registration_country FROM users WHERE id='parent'").get().registration_country, "KR");
+  sqlite.close();
+});
+
+test("선행 migration이 없는 구형 DB도 인증 성공을 500으로 바꾸지 않는다", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  sqlite.exec("CREATE TABLE users(id TEXT PRIMARY KEY)");
+  await market.recordRegistrationCountry(new D1DatabaseAdapter(sqlite), "parent", "KR");
+  assert.equal(sqlite.prepare("SELECT id FROM users WHERE id='parent'").get(), undefined);
+  sqlite.close();
+});
+
+test("서비스 국가 정규화는 두 글자 코드만 허용한다", () => {
+  assert.equal(market.normalizeServiceCountry(" kr "), "KR");
+  assert.equal(market.normalizeServiceCountry("KOR"), null);
+  assert.equal(market.normalizeServiceCountry(null), null);
+});
+
+test("edge 제안 KR은 보호자 확정 전 Study market을 열지 않는다", async () => {
+  const { sqlite, db } = createFixture();
+  const result = await market.storeInitialServiceCountry(db, "family-a", "kr", false);
+  assert.deepEqual(result, { serviceCountry: "KR", source: "edge_suggested", studyMarket: null });
+  const stored = sqlite.prepare("SELECT service_country, service_country_source, study_market FROM families WHERE id='family-a'").get();
+  assert.equal(stored.service_country, "KR");
+  assert.equal(stored.service_country_source, "edge_suggested");
+  assert.equal(stored.study_market, null);
+  sqlite.close();
+});
+
+test("대표 보호자가 KR을 확정하면 가족의 Study market이 KR이 된다", async () => {
+  const { sqlite, db } = createFixture();
+  const result = await market.confirmServiceCountry(db, {
+    actorId: "parent", familyId: "family-a", country: "KR", rowVersion: 1,
+    requestId: "request-kr", occurredAt: "2026-08-28T00:00:00.000Z",
+  });
+  assert.deepEqual(result, {
+    status: 200, serviceCountry: "KR", studyMarket: "KR", source: "guardian_confirmed", rowVersion: 2,
+  });
+  sqlite.close();
+});
+
+test("비대표 보호자와 다른 가족은 서비스 국가를 바꾸지 못한다", async () => {
+  const { sqlite, db } = createFixture();
+  const notPrimary = await market.confirmServiceCountry(db, {
+    actorId: "coparent", familyId: "family-a", country: "KR", rowVersion: 1,
+    requestId: "request-coparent", occurredAt: "2026-08-28T00:00:00.000Z",
+  });
+  const foreign = await market.confirmServiceCountry(db, {
+    actorId: "parent", familyId: "family-b", country: "KR", rowVersion: 1,
+    requestId: "request-foreign", occurredAt: "2026-08-28T00:00:00.000Z",
+  });
+  assert.deepEqual(notPrimary, { status: 403, error: "primary_parent_required" });
+  assert.deepEqual(foreign, { status: 403, error: "primary_parent_required" });
+  sqlite.close();
+});
+
+test("오래된 버전과 KOR 값은 거부하고 JP 확정은 market을 비운다", async () => {
+  const { sqlite, db } = createFixture();
+  const invalid = await market.confirmServiceCountry(db, {
+    actorId: "parent", familyId: "family-a", country: "KOR", rowVersion: 1,
+    requestId: "request-invalid", occurredAt: "2026-08-28T00:00:00.000Z",
+  });
+  const jp = await market.confirmServiceCountry(db, {
+    actorId: "parent", familyId: "family-a", country: "JP", rowVersion: 1,
+    requestId: "request-jp", occurredAt: "2026-08-28T00:00:00.000Z",
+  });
+  const stale = await market.confirmServiceCountry(db, {
+    actorId: "parent", familyId: "family-a", country: "KR", rowVersion: 1,
+    requestId: "request-stale", occurredAt: "2026-08-28T00:00:01.000Z",
+  });
+  assert.deepEqual(invalid, { status: 400, error: "invalid_service_country" });
+  assert.deepEqual(jp, {
+    status: 200, serviceCountry: "JP", studyMarket: null, source: "guardian_confirmed", rowVersion: 2,
+  });
+  assert.deepEqual(stale, { status: 409, error: "service_country_version_conflict", rowVersion: 2 });
+  sqlite.close();
+});
+
+test("같은 request id 재시도는 감사 행과 version을 중복시키지 않는다", async () => {
+  const { sqlite, db } = createFixture();
+  const input = {
+    actorId: "parent", familyId: "family-a", country: "KR", rowVersion: 1,
+    requestId: "request-idempotent", occurredAt: "2026-08-28T00:00:00.000Z",
+  };
+  const first = await market.confirmServiceCountry(db, input);
+  const retry = await market.confirmServiceCountry(db, input);
+  assert.deepEqual(retry, first);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id='request-idempotent'").get().count, 1);
+  assert.equal(sqlite.prepare("SELECT service_country_row_version AS version FROM families WHERE id='family-a'").get().version, 2);
+  sqlite.close();
+});
+
+test("자녀는 가족 시장을 상속하며 user 국가를 복제하지 않는다", async () => {
+  const { sqlite, db } = createFixture();
+  await market.confirmServiceCountry(db, {
+    actorId: "parent", familyId: "family-a", country: "KR", rowVersion: 1,
+    requestId: "request-child", occurredAt: "2026-08-28T00:00:00.000Z",
+  });
+  assert.equal(await market.studyMarketForMember(db, "child-member"), "KR");
+  assert.equal(sqlite.prepare("SELECT registration_country FROM users WHERE id='child'").get().registration_country, null);
+  sqlite.close();
+});
+
+test("세 스키마는 맡은 Study market 열과 제약을 제공한다", async () => {
+  const [canonical, authSchema, migration] = await Promise.all([
+    readFile(new URL("../../cloudflare/schema_d1.sql", import.meta.url), "utf8"),
+    readFile(new URL("../db/auth-schema.sql", import.meta.url), "utf8"),
+    readFile(new URL("../db/study-market.sql", import.meta.url), "utf8"),
+  ]);
+  for (const source of [canonical, migration]) {
+    assert.match(source, /"?registration_country"? TEXT/);
+    assert.match(source, /"?service_country"? TEXT/);
+    assert.match(source, /"?study_market"? TEXT/);
+    assert.match(source, /"?service_country_row_version"? INTEGER NOT NULL DEFAULT 1/);
+    assert.match(source, /"?learning_grade_override"? INTEGER/);
+    assert.match(source, /"?learning_grade_row_version"? INTEGER NOT NULL DEFAULT 1/);
+    assert.match(source, /study_setting_audit/);
+  }
+  assert.match(authSchema, /"?registration_country"? TEXT/);
+  assert.match(authSchema, /length\(registration_country\) = 2/);
+});
