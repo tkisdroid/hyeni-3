@@ -90,7 +90,8 @@ async function createFamilyRef(secret: string, familyId: string): Promise<{ ref:
   }
 }
 
-function isInBasisPointRollout(first16Bits: number, basisPoints: number): boolean {
+/** 16-bit HMAC prefix를 0..10,000 basis point rollout에 편향 없이 포함시킨다. */
+export function isInBasisPointRollout(first16Bits: number, basisPoints: number): boolean {
   if (basisPoints === 10_000) return true;
   if (basisPoints === 0) return false;
   return Math.floor((first16Bits * 10_000) / 65_536) < basisPoints;

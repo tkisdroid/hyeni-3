@@ -5,6 +5,7 @@ import { SignJWT, exportJWK, generateKeyPair } from "jose";
 import "./helpers/tsModuleResolve.mjs";
 
 const worker = (await import("../index.ts")).default;
+const { isInBasisPointRollout } = await import("../lib/studyFeatureState.ts");
 
 const DEVICE_ID = "study-device-1";
 const FAMILY_ID = "study-family-a";
@@ -23,6 +24,9 @@ class Statement {
   }
 
   async first() {
+    if (this.db.failDeviceSessionRead && this.sql.includes("FROM account_device_sessions")) {
+      throw new Error("simulated_device_session_read_failure");
+    }
     if (this.db.failSettingsRead && this.sql.includes("FROM app_global_settings")) {
       throw new Error("simulated_study_settings_read_failure");
     }
@@ -42,6 +46,7 @@ class Statement {
 class Db {
   constructor() {
     this.sqlite = new DatabaseSync(":memory:");
+    this.failDeviceSessionRead = false;
     this.failSettingsRead = false;
   }
 
@@ -159,6 +164,10 @@ function studyBinding(status = "ready") {
   };
 }
 
+function assertNoStore(response) {
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+}
+
 async function rolloutFamilyRef(familyId) {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -233,6 +242,7 @@ test("유효하지 않은 access token은 Study 상태를 열지 않는다", asy
     const result = await requestStudyStatus(db, { authorizationHeader: "Bearer invalid-token" });
     assert.equal(result.response.status, 401);
     assert.deepEqual(result.body, { error: "invalid_token" });
+    assertNoStore(result.response);
     assert.equal(result.binding.readinessCalls, 0);
   } finally {
     db.close();
@@ -247,6 +257,7 @@ for (const deviceSession of ["revoked", "missing"]) {
       const result = await requestStudyStatus(db);
       assert.equal(result.response.status, 401);
       assert.equal(result.body.error, "device_session_inactive");
+      assertNoStore(result.response);
       assert.equal(result.binding.readinessCalls, 0);
     } finally {
       db.close();
@@ -283,6 +294,21 @@ test("잘못된 flag와 rollout 설정은 fail-closed로 닫는다", async () =>
     const result = await requestStudyStatus(db);
     assert.equal(result.response.status, 200);
     assert.deepEqual(result.body, { state: "feature_disabled" });
+    assert.equal(result.binding.readinessCalls, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test("기기 세션 조회 불가도 Study route 범위에서 no-store로 닫는다", async () => {
+  const db = createFixture();
+  try {
+    saveSettings(db);
+    db.failDeviceSessionRead = true;
+    const result = await requestStudyStatus(db);
+    assert.equal(result.response.status, 503);
+    assert.deepEqual(result.body, { error: "auth_unavailable" });
+    assertNoStore(result.response);
     assert.equal(result.binding.readinessCalls, 0);
   } finally {
     db.close();
@@ -404,8 +430,45 @@ test("Study binding 장애는 모든 사전 게이트 뒤에만 unavailable을 �
     const result = await requestStudyStatus(db, { binding: studyBinding("not_ready") });
     assert.equal(result.response.status, 503);
     assert.deepEqual(result.body, { state: "unavailable" });
+    assertNoStore(result.response);
     assert.equal(result.binding.readinessCalls, 1);
   } finally {
     db.close();
   }
 });
+
+for (const row of [
+  { name: "binding 미설정", binding: null },
+  { name: "binding throw", binding: { async readiness() { throw new Error("study_binding_secret_error"); } } },
+  { name: "잘못된 apiVersion", binding: { async readiness() { return { apiVersion: "wrong", status: "ready" }; } } },
+  { name: "잘못된 응답 shape", binding: { async readiness() { return { status: "ready" }; } } },
+]) {
+  test(`${row.name}은 raw 오류 없이 unavailable로 닫는다`, async () => {
+    const db = createFixture();
+    try {
+      saveSettings(db);
+      const result = await requestStudyStatus(db, { binding: row.binding });
+      assert.equal(result.response.status, 503);
+      assert.deepEqual(result.body, { state: "unavailable" });
+      assertNoStore(result.response);
+      assert.doesNotMatch(JSON.stringify(result.body), /study_binding_secret_error/);
+    } finally {
+      db.close();
+    }
+  });
+}
+
+for (const row of [
+  { first16Bits: 0, basisPoints: 0, expected: false },
+  { first16Bits: 0, basisPoints: 1, expected: true },
+  { first16Bits: 6, basisPoints: 1, expected: true },
+  { first16Bits: 7, basisPoints: 1, expected: false },
+  { first16Bits: 65_528, basisPoints: 9_999, expected: true },
+  { first16Bits: 65_529, basisPoints: 9_999, expected: true },
+  { first16Bits: 65_535, basisPoints: 9_999, expected: false },
+  { first16Bits: 65_535, basisPoints: 10_000, expected: true },
+]) {
+  test(`rollout 16-bit ${row.first16Bits}와 ${row.basisPoints}bp의 포함 경계는 고정된다`, () => {
+    assert.equal(isInBasisPointRollout(row.first16Bits, row.basisPoints), row.expected);
+  });
+}

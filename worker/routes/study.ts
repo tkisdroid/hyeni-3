@@ -6,8 +6,13 @@ import type { Env, Vars } from "../types";
 
 export const study = new Hono<{ Bindings: Env; Variables: Vars }>();
 
-study.get("/status", requireAuth, async (c) => {
+// requireAuth의 조기 401/503도 포함해 Study 상태 응답 전체를 저장하지 않는다.
+study.use("*", async (c, next) => {
   c.header("Cache-Control", "no-store");
+  await next();
+});
+
+study.get("/status", requireAuth, async (c) => {
   const user = c.get("user");
   let membership: Awaited<ReturnType<typeof resolveCanonicalFamilyMembership>>;
   try {
