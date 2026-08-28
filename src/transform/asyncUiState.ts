@@ -1,5 +1,35 @@
 export type SignupPendingAction = "request-code" | "verify";
 
+// Worker callback 페이지의 package-bound intent 재시도 창(15초)이 모두 끝난 뒤에만
+// callback 없는 foreground를 사용자의 브라우저 중단으로 확정한다.
+export const OAUTH_CALLBACK_DELIVERY_GRACE_MS = 16_000;
+
+export class OperationTimeoutError extends Error {
+  constructor(code: string) {
+    super(code);
+    this.name = "OperationTimeoutError";
+  }
+}
+
+/** resolve되지 않는 native bridge/fetch도 UI gate를 영구 점유하지 않게 한다. */
+export async function withOperationDeadline<T>(
+  operation: Promise<T>,
+  input: { timeoutMs: number; errorCode: string; onTimeout?: () => void },
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      input.onTimeout?.();
+      reject(new OperationTimeoutError(input.errorCode));
+    }, input.timeoutMs);
+  });
+  try {
+    return await Promise.race([operation, timeout]);
+  } finally {
+    if (timer !== null) clearTimeout(timer);
+  }
+}
+
 export type AsyncActionToken<Action extends string> = Readonly<{
   generation: number;
   action: Action;
@@ -69,8 +99,9 @@ export async function runOwnedAsyncAction<Action extends string, Result>(input: 
 export function shouldReleaseOAuthBusyOnResume(input: {
   documentVisible: boolean;
   oauthExternalPending: boolean;
+  oauthContextPending: boolean;
 }): boolean {
-  return input.documentVisible && input.oauthExternalPending;
+  return input.documentVisible && input.oauthExternalPending && input.oauthContextPending;
 }
 
 export function isLoginNavigationLocked(input: {

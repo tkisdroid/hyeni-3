@@ -36,6 +36,10 @@ const oauthStateMigration = await readFile(
   new URL("../db/oauth-state-transactions.sql", import.meta.url),
   "utf8",
 );
+const oauthExchangeRecoveryMigration = await readFile(
+  new URL("../db/oauth-exchange-recovery.sql", import.meta.url),
+  "utf8",
+);
 const remoteListenConsentMigration = await readFile(
   new URL("../db/remote-listen-consent.sql", import.meta.url),
   "utf8",
@@ -610,6 +614,34 @@ test("OAuth state migration은 재실행 가능하고 정본 schema와 일치한
     [...columns(schemaDb, "oauth_state_transactions")].sort(),
   );
   assert.ok(indexes(db).has("idx_oauth_state_expiry"));
+  assert.ok(indexes(db).has("idx_oauth_recovery_id"));
+  schemaDb.close();
+  db.close();
+});
+
+test("OAuth exchange recovery migration은 기존 transaction 테이블을 additive 확장한다", () => {
+  const db = new DatabaseSync(":memory:");
+  db.exec(`CREATE TABLE oauth_state_transactions (
+    state_hash TEXT PRIMARY KEY,
+    transaction_secret_hash TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    client_kind TEXT NOT NULL,
+    redirect_target TEXT NOT NULL,
+    flow_mode TEXT NOT NULL,
+    user_id TEXT,
+    authorization_code_hash TEXT,
+    callback_received_at TEXT,
+    consumed_at TEXT,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+  )`);
+  db.exec(oauthExchangeRecoveryMigration);
+  const schemaDb = bootstrap();
+  assert.deepEqual(
+    [...columns(db, "oauth_state_transactions")].sort(),
+    [...columns(schemaDb, "oauth_state_transactions")].sort(),
+  );
+  assert.ok(indexes(db).has("idx_oauth_recovery_id"));
   schemaDb.close();
   db.close();
 });

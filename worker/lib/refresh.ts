@@ -6,7 +6,7 @@ import {
 
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30일
 
-function newOpaqueToken(): string {
+export function newOpaqueToken(): string {
   return (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, "");
 }
 

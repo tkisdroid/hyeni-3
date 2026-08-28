@@ -172,7 +172,16 @@ test("access verifier는 필수 claim과 token purpose를 엄격히 분리한다
     family_id: "family-1",
     is_anonymous: false,
   });
-  assert.equal((await verifyAccessToken(env, valid)).sub, "user-1");
+  const validClaims = await verifyAccessToken(env, valid);
+  assert.equal(validClaims.sub, "user-1");
+  assert.match(validClaims.jti, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  const next = await signAccessToken(env, {
+    sub: "user-1",
+    role: "parent",
+    family_id: "family-1",
+    is_anonymous: false,
+  });
+  assert.notEqual((await verifyAccessToken(env, next)).jti, validClaims.jti);
 
   const now = Math.floor(Date.now() / 1000);
   const { privateKey } = await generateKeyPair("ES256", { extractable: true });

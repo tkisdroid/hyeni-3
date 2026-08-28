@@ -12,6 +12,10 @@ export interface AccessClaims extends JWTPayload {
   family_id: string | null;
   is_anonymous: boolean;
   device_id?: string;
+  /** 신규 발급 토큰에만 존재한다. 배포 전 토큰과의 호환을 위해 검증 시 선택 claim이다. */
+  jti?: string;
+  /** OAuth 응답 복구 access를 canonical refresh generation에 묶는 SHA-256 값. */
+  oauth_recovery_refresh_hash?: string;
 }
 
 export interface RealtimeTicketClaims extends JWTPayload {
@@ -34,15 +38,28 @@ export async function signAccessToken(
   env: Env,
   user: AuthUser,
   expiresIn = "1h",
+  accessJti = crypto.randomUUID(),
+  recoveryRefreshTokenHash?: string,
 ): Promise<string> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(accessJti)) {
+    throw new Error("invalid_access_token_jti");
+  }
+  if (
+    recoveryRefreshTokenHash !== undefined
+    && !/^[A-Za-z0-9_-]{43}$/.test(recoveryRefreshTokenHash)
+  ) throw new Error("invalid_oauth_recovery_refresh_hash");
   const token = await new SignJWT({
     role: user.role,
     family_id: user.family_id,
     is_anonymous: user.is_anonymous,
     ...(user.device_id ? { device_id: user.device_id } : {}),
+    ...(recoveryRefreshTokenHash
+      ? { oauth_recovery_refresh_hash: recoveryRefreshTokenHash }
+      : {}),
   })
     .setProtectedHeader({ alg: ALG })
     .setSubject(user.sub)
+    .setJti(accessJti)
     .setIssuedAt()
     .setExpirationTime(expiresIn)
     .sign(await privateKey(env));
@@ -73,6 +90,16 @@ export async function verifyAccessToken(
     const deviceIdValid = payload.device_id === undefined
       || (typeof payload.device_id === "string"
         && /^[A-Za-z0-9-]{1,64}$/.test(payload.device_id));
+    // 기존 배포에서 발급된 access token에는 jti가 없다. 그 토큰은 만료까지 허용하되,
+    // 새 토큰의 jti가 존재한다면 UUID v4 형식만 받아 continuation 경계로 안전하게 쓴다.
+    const jtiValid = payload.jti === undefined
+      || (typeof payload.jti === "string"
+        && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.jti));
+    const recoveryHashValid = payload.oauth_recovery_refresh_hash === undefined
+      || (typeof payload.oauth_recovery_refresh_hash === "string"
+        && /^[A-Za-z0-9_-]{43}$/.test(payload.oauth_recovery_refresh_hash)
+        && typeof payload.device_id === "string"
+        && typeof payload.jti === "string");
     if (
       payload.purpose !== undefined
       || subject.length === 0
@@ -81,6 +108,8 @@ export async function verifyAccessToken(
       || !["parent", "child", "teacher", "anonymous"].includes(String(payload.role))
       || !familyIdValid
       || !deviceIdValid
+      || !jtiValid
+      || !recoveryHashValid
       || typeof payload.is_anonymous !== "boolean"
       || !Number.isSafeInteger(payload.iat)
       || !Number.isSafeInteger(payload.exp)

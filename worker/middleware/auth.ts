@@ -97,6 +97,7 @@ export const requireAuth = createMiddleware<{
     device_id: claims.device_id ?? null,
   });
   c.set("accessTokenExp", Number(claims.exp));
+  c.set("accessTokenJti", typeof claims.jti === "string" ? claims.jti : null);
 
   const isAccountDeleteRetry = c.req.method === "POST" && c.req.path === "/api/account/delete";
   if (isAccountDeleteRetry) {

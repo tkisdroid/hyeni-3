@@ -22,6 +22,134 @@ test("기존 소셜 회원 안내는 서버가 existing 또는 linked를 확정�
   assert.doesNotMatch(onboarding, /result\.account_status !== "created"/);
 });
 
+test("네이티브 OAuth 성공은 설문을 교환에 포함하고 온보딩의 가족·초대 후속 처리로 넘긴다", () => {
+  const deepLink = readFileSync(new URL("../src/lib/native/oauthDeepLink.ts", import.meta.url), "utf8");
+  const finishStart = deepLink.indexOf("async function finishLoginWithRecovery");
+  const finishBranch = deepLink.slice(finishStart, deepLink.indexOf("async function recoverOrRetryUnclaimed", finishStart));
+  assert.match(finishBranch, /callbackDraft\?\.signupMethod\?\.provider === cb\.provider/);
+  assert.match(finishBranch, /finishOAuthLogin\(\{ \.\.\.cb, recoveryId: pending\.id \}, \{[\s\S]{0,160}sessionAdoption: "deferred"[\s\S]{0,260}onboardingInterests:/);
+  const finalizeStart = deepLink.indexOf("function finalizeLogin");
+  const finalizeBranch = deepLink.slice(finalizeStart, deepLink.indexOf("async function attemptPendingRecovery", finalizeStart));
+  const stageAt = finalizeBranch.indexOf("stageNativeOAuthLoginCompletion");
+  const adoptAt = finalizeBranch.indexOf("adoptAuthResult(result, { loginGenerationId })");
+  const bindAt = finalizeBranch.indexOf("bindNativeOAuthLoginCompletion");
+  const publishAt = finalizeBranch.indexOf("publishNativeOAuthLoginCompletion");
+  assert.ok(stageAt >= 0 && stageAt < adoptAt && adoptAt < bindAt && bindAt < publishAt,
+    "교환/복구 결과는 stage → adopt → bind → publish 순서를 지켜야 합니다");
+  assert.match(finalizeBranch, /expectedAccessTokenJti: accessTokenJti\(result\.session\.access_token\)/);
+  assert.match(finalizeBranch, /expectedLoginGenerationId: loginGenerationId/);
+  assert.match(finalizeBranch, /void acknowledgeCompletion\(pending\)/);
+  assert.doesNotMatch(finalizeBranch, /routeToHomeAfterLogin|completeOnboardingAuthDraft/);
+
+  assert.match(onboarding, /subscribeNativeOAuthLoginCompletion/);
+  assert.match(onboarding, /readNativeOAuthLoginCompletionForSession/);
+  assert.match(onboarding, /authTransitionActive: authTransitionActive \|\| nativeOAuthRecoveryPending/);
+  assert.match(onboarding, /const \[busy, setBusy\] = useState\(\(\) => nativeOAuthRecoveryPending\)/);
+  assert.match(onboarding, /await routeAfterParentLogin\(transitionToken, completion\.pairInvite\)/);
+  assert.match(onboarding, /if \(completed\) \{[\s\S]{0,120}clearNativeOAuthLoginCompletion\(completion\.id\)/);
+  assert.match(onboarding, /clearNativeOAuthLoginCompletion\(completion\.id\)/);
+});
+
+test("세션에 묶인 네이티브 OAuth 후속 처리는 루트에서 온보딩으로 회수되고 게스트 가드가 한 번 허용한다", () => {
+  const app = readFileSync(new URL("../src/app/App.tsx", import.meta.url), "utf8");
+  const requireGuest = readFileSync(new URL("../src/auth/RequireGuest.tsx", import.meta.url), "utf8");
+
+  assert.match(app, /readNativeOAuthLoginCompletionForSession/);
+  assert.match(app, /getApiAccessTokenJti\(\)/);
+  assert.match(app, /getApiLoginGenerationId\(\)/);
+  assert.match(app, /nativeOAuthCompletion[\s\S]{0,500}<Navigate to="\/onboarding" replace/);
+  assert.match(requireGuest, /readNativeOAuthLoginCompletionForSession/);
+  assert.match(requireGuest, /getApiLoginGenerationId\(\)/);
+  assert.match(requireGuest, /!nativeOAuthCompletion[\s\S]{0,220}auth\.status === "authenticated"/);
+});
+
+test("네이티브 OAuth 가족 조회의 일시 실패는 한 번 재시도하고 StrictMode cleanup에도 gate를 끝낸다", () => {
+  const consumer = onboarding.slice(
+    onboarding.indexOf("const continueNativeOAuth = () =>"),
+    onboarding.indexOf("const startSignupOAuth = async"),
+  );
+  assert.match(onboarding, /const nativeOAuthCompletionRetryRef = useRef/);
+  assert.match(consumer, /publishNativeOAuthLoginCompletion\(completion\.id\)/);
+  assert.match(consumer, /nativeOAuthCompletionRetryRef\.current/);
+  assert.match(
+    consumer,
+    /if \(isOnboardingAuthTransitionActive\(transitionToken\)\) \{[\s\S]{0,180}endOnboardingAuthTransition\(transitionToken\)/,
+  );
+});
+
+test("네이티브 로그인 callback 실패·취소는 공통 결과 이벤트로 온보딩 gate를 해제한다", () => {
+  const deepLink = readFileSync(new URL("../src/lib/native/oauthDeepLink.ts", import.meta.url), "utf8");
+  assert.match(deepLink, /export const OAUTH_DEEP_LINK_ACTIVITY_EVENT/);
+  assert.match(deepLink, /export const OAUTH_DEEP_LINK_RESULT_EVENT/);
+  const handler = deepLink.slice(
+    deepLink.indexOf("async function handleUrl"),
+    deepLink.indexOf("// 리스너는 앱 전체", deepLink.indexOf("async function handleUrl")),
+  );
+  assert.match(handler, /peekMatchingOAuthFlowMode/);
+  assert.match(handler, /dispatchActivity\(cb\.provider, mode\)/);
+  assert.match(deepLink, /function dispatchActivity[\s\S]{0,300}dispatchEvent\(new CustomEvent\(OAUTH_DEEP_LINK_ACTIVITY_EVENT/);
+  const notifier = deepLink.slice(
+    deepLink.indexOf("function notifyResult"),
+    deepLink.indexOf("function hasListenerRefs"),
+  );
+  assert.match(notifier, /dispatchEvent\(new CustomEvent\(OAUTH_DEEP_LINK_RESULT_EVENT/);
+
+  assert.match(onboarding, /OAUTH_DEEP_LINK_RESULT_EVENT/);
+  assert.match(onboarding, /OAUTH_DEEP_LINK_ACTIVITY_EVENT/);
+  assert.match(onboarding, /OAUTH_CALLBACK_DELIVERY_GRACE_MS/);
+  const recoveryStart = onboarding.indexOf("const onNativeOAuthResult");
+  const recovery = onboarding.slice(
+    recoveryStart,
+    onboarding.indexOf("// QR 딥링크", recoveryStart),
+  );
+  assert.match(recovery, /detail\.mode !== "login" \|\| detail\.ok/);
+  assert.match(recovery, /clearOAuthExternalBusy\(\)/);
+  assert.match(recovery, /cancelOnboardingAuthTransitions\(\)/);
+  assert.match(recovery, /setBusy\(false\)/);
+});
+
+test("네이티브 OAuth는 consumed 기록보다 recovery ID를 먼저 남기고 20초 안에 복구를 끝낸다", () => {
+  const deepLink = readFileSync(new URL("../src/lib/native/oauthDeepLink.ts", import.meta.url), "utf8");
+  const handlerStart = deepLink.indexOf("async function handleUrl");
+  const handler = deepLink.slice(handlerStart, deepLink.indexOf("// 리스너는 앱 전체", handlerStart));
+  const stageAt = handler.indexOf("stageNativeOAuthPendingExchange(cb.provider)");
+  const runAt = handler.indexOf("once.run(key");
+  assert.ok(stageAt >= 0 && stageAt < runAt, "process kill 창을 닫으려면 pending이 consumed보다 먼저 저장돼야 합니다");
+  assert.match(handler, /mode === "login" && !once\.consumed\(key\)/,
+    "consumed stale launch가 새 recovery grant를 만들면 안 됩니다");
+
+  const recoveryStart = deepLink.indexOf("async function attemptPendingRecovery");
+  const recovery = deepLink.slice(recoveryStart, deepLink.indexOf("async function finishLoginWithRecovery", recoveryStart));
+  assert.match(recovery, /while \(Date\.now\(\) < deadlineMs\)/);
+  assert.match(deepLink, /const deadlineMs = Date\.now\(\) \+ 20_000/);
+  assert.match(deepLink, /getBoundedOAuthDeviceDescriptor\(Math\.min\(4_000, deadlineMs - Date\.now\(\)\)\)/);
+  assert.match(recovery, /recoverOAuthLogin\(pending, \{ timeoutMs: remainingMs, device \}\)/);
+  assert.match(deepLink, /withOperationDeadline\([\s\S]{0,100}CapApp\.getLaunchUrl\(\)[\s\S]{0,120}timeoutMs: 2_000/);
+  assert.match(deepLink, /const recovered = await resumePendingExchange\(launchUrl, notifyResult\)/,
+    "launch URL 조회 실패와 무관하게 local pending을 복구해야 합니다");
+});
+
+test("네이티브 OAuth 교환·복구의 늦은 성공은 새 인증 intent 세션을 덮지 않는다", () => {
+  const deepLink = readFileSync(new URL("../src/lib/native/oauthDeepLink.ts", import.meta.url), "utf8");
+  const exchangeStart = deepLink.indexOf("async function exchange");
+  const exchange = deepLink.slice(exchangeStart, deepLink.indexOf("async function cancel", exchangeStart));
+  const directFinalize = exchange.indexOf("finalizeLogin(result, cb.provider, pending)");
+  const directOwnerCheck = exchange.lastIndexOf(
+    "readNativeOAuthPendingExchange()?.id !== pending.id",
+    directFinalize,
+  );
+  assert.ok(directOwnerCheck >= 0 && directOwnerCheck < directFinalize,
+    "code exchange 응답 채택 직전 pending intent 소유권을 다시 확인해야 합니다");
+
+  const recoveredFinalize = exchange.indexOf("finalizeLogin(recovered, cb.provider, pending)");
+  const recoveredOwnerCheck = exchange.lastIndexOf(
+    "readNativeOAuthPendingExchange()?.id !== pending.id",
+    recoveredFinalize,
+  );
+  assert.ok(recoveredOwnerCheck > directFinalize && recoveredOwnerCheck < recoveredFinalize,
+    "reconciliation 응답도 채택 직전 pending intent 소유권을 다시 확인해야 합니다");
+});
+
 test("공동 보호자와 아이 초대 CTA는 서로 다른 역할 링크를 만든다", () => {
   assert.match(childInvite, /buildPairLink\(pairCode, inviteRole\)/);
   assert.match(familyConnection, /navigate\("\/child-invite\?role=parent"\)/);

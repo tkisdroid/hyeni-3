@@ -43,7 +43,7 @@ test("주간 리포트는 ready에서만 집계하고 오류 카드에서 네 �
 });
 
 test("가족 조회가 null로 성공한 경우에만 신규 가족 연결 단계로 이동한다", () => {
-  const start = onboarding.indexOf("const routeAfterParentLogin = async (");
+  const start = onboarding.indexOf("const routeAfterParentLogin = useCallback(async (");
   const end = onboarding.indexOf("const routeAfterChildSession", start);
   const route = onboarding.slice(start, end);
 
@@ -55,7 +55,7 @@ test("가족 조회가 null로 성공한 경우에만 신규 가족 연결 단�
 });
 
 test("가족 조회 실패는 연결 단계로 보내지 않고 기존 로그인 오류 처리로 전달한다", () => {
-  const start = onboarding.indexOf("const routeAfterParentLogin = async (");
+  const start = onboarding.indexOf("const routeAfterParentLogin = useCallback(async (");
   const end = onboarding.indexOf("const routeAfterChildSession", start);
   const route = onboarding.slice(start, end);
   const connectIndex = route.indexOf('setStep("connect")');
@@ -102,6 +102,16 @@ test("ID 로그인과 OAuth callback은 gate 시작 뒤 deferred 응답만 요�
   assert.match(login, /signInWithLoginId\([\s\S]*sessionAdoption: "deferred"/);
 });
 
+test("OAuth 브라우저 취소 뒤 ID 로그인은 네트워크 전에 이전 transaction을 포기한다", () => {
+  const loginStart = onboarding.indexOf("const loginIdPw = async (");
+  const loginEnd = onboarding.indexOf("return (", loginStart);
+  const login = onboarding.slice(loginStart, loginEnd);
+  const abandon = login.indexOf("abandonPendingOAuth()");
+  const signIn = login.indexOf("signInWithLoginId(");
+
+  assert.ok(abandon >= 0 && abandon < signIn, "ID/자동완성 로그인 요청 전에 stale OAuth context를 지워야 합니다");
+});
+
 test("로그인 화면은 새 기기가 활성 설치가 되고 다른 기기는 자동 종료됨을 미리 안내한다", () => {
   assert.match(onboarding, /onboarding\.login\.deviceTransferNote/);
   assert.equal(
@@ -111,7 +121,7 @@ test("로그인 화면은 새 기기가 활성 설치가 되고 다른 기기는
 });
 
 test("인증 endpoint 기본값은 immediate이고 온보딩은 explicit adopt만 사용한다", () => {
-  assert.match(authEndpoint, /export function adoptAuthResult\(data: AuthResult\): boolean/);
+  assert.match(authEndpoint, /export function adoptAuthResult\(data: AuthResult, context\?: AuthResultAdoptionContext\): boolean/);
   assert.match(authEndpoint, /returnAuthResultWithAdoption\(data, options, adoptAuthResult\)/);
   assert.match(onboarding, /commitOnboardingAuthResult\(transitionToken, result, adoptAuthResult\)/);
 });
@@ -123,18 +133,18 @@ test("가족 조회 보정은 요청 시작 session instance와 user 소유권�
 });
 
 test("가족 판정 성공과 null은 active token 완료가 확인된 뒤에만 UI를 바꾼다", () => {
-  const start = onboarding.indexOf("const routeAfterParentLogin = async (");
+  const start = onboarding.indexOf("const routeAfterParentLogin = useCallback(async (");
   const end = onboarding.indexOf("const routeAfterChildSession", start);
   const route = onboarding.slice(start, end);
   const catchBlock = route.match(/catch\s*\{([\s\S]*?)\n\s*\}/)?.[1] ?? "";
   const completeCalls = route.match(/completeOnboardingAuthTransitionsThrough\(transitionToken\)/g) ?? [];
 
-  assert.match(route, /routeAfterParentLogin = async \([\s\S]{0,100}transitionToken: OnboardingAuthTransitionToken/);
+  assert.match(route, /routeAfterParentLogin = useCallback\(async \([\s\S]{0,100}transitionToken: OnboardingAuthTransitionToken/);
   assert.equal(completeCalls.length, 2, "역할 홈과 부모 가족 판정은 각 분기에서 현재 token을 완료해야 합니다");
-  assert.match(route, /if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;[\s\S]*syncFromSession\(\)/);
-  assert.match(route, /const completed = completeOnboardingAuthTransitionsThrough\(transitionToken\);\s*if \(!completed\) return;/);
-  assert.match(route, /if \(!completed\) return;[\s\S]*setBusy\(false\)[\s\S]*if \(action === "parent-connect"\)[\s\S]*setStep\("connect"\)/);
-  assert.match(route, /if \(!completed\) return;[\s\S]*navigate\(homePathForRole\(current\.role\)\)/);
+  assert.match(route, /if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return false;[\s\S]*syncFromSession\(\)/);
+  assert.match(route, /const completed = completeOnboardingAuthTransitionsThrough\(transitionToken\);\s*if \(!completed\) return false;/);
+  assert.match(route, /if \(!completed\) return false;[\s\S]*setBusy\(false\)[\s\S]*if \(action === "parent-connect"\)[\s\S]*setStep\("connect"\)/);
+  assert.match(route, /if \(!completed\) return false;[\s\S]*navigate\(homePathForRole\(current\.role\)\)/);
   assert.doesNotMatch(catchBlock, /OnboardingAuthTransition/);
 });
 

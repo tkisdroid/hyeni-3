@@ -14,6 +14,7 @@ type ActionController<Action extends string> = {
 };
 
 type AsyncUiStateModule = {
+  OAUTH_CALLBACK_DELIVERY_GRACE_MS: number;
   createAsyncActionController: <Action extends string>() => ActionController<Action>;
   runOwnedAsyncAction: <Action extends string, Result>(input: {
     controller: ActionController<Action>;
@@ -26,6 +27,7 @@ type AsyncUiStateModule = {
   shouldReleaseOAuthBusyOnResume: (input: {
     documentVisible: boolean;
     oauthExternalPending: boolean;
+    oauthContextPending: boolean;
   }) => boolean;
 };
 
@@ -34,6 +36,7 @@ async function loadModule(): Promise<AsyncUiStateModule> {
   assert.equal(typeof module.createAsyncActionController, "function");
   assert.equal(typeof module.runOwnedAsyncAction, "function");
   assert.equal(typeof module.shouldReleaseOAuthBusyOnResume, "function");
+  assert.ok(module.OAUTH_CALLBACK_DELIVERY_GRACE_MS > 15_000);
   return module as unknown as AsyncUiStateModule;
 }
 
@@ -181,16 +184,75 @@ test("visibility와 pageshow 복귀는 OAuth 외부 브라우저 busy만 해제�
   const { shouldReleaseOAuthBusyOnResume } = await loadModule();
 
   assert.equal(
-    shouldReleaseOAuthBusyOnResume({ documentVisible: true, oauthExternalPending: true }),
+    shouldReleaseOAuthBusyOnResume({
+      documentVisible: true,
+      oauthExternalPending: true,
+      oauthContextPending: true,
+    }),
     true,
   );
   assert.equal(
-    shouldReleaseOAuthBusyOnResume({ documentVisible: true, oauthExternalPending: false }),
+    shouldReleaseOAuthBusyOnResume({
+      documentVisible: true,
+      oauthExternalPending: false,
+      oauthContextPending: true,
+    }),
     false,
     "가입·ID API busy는 유지해야 합니다",
   );
   assert.equal(
-    shouldReleaseOAuthBusyOnResume({ documentVisible: false, oauthExternalPending: true }),
+    shouldReleaseOAuthBusyOnResume({
+      documentVisible: false,
+      oauthExternalPending: true,
+      oauthContextPending: true,
+    }),
     false,
   );
+  assert.equal(
+    shouldReleaseOAuthBusyOnResume({
+      documentVisible: true,
+      oauthExternalPending: true,
+      oauthContextPending: false,
+    }),
+    false,
+    "딥링크가 context를 소비해 교환 중이면 다른 연결·로그인 동작을 열면 안 됩니다",
+  );
+});
+
+test("operation deadline은 끝나지 않는 작업을 중단하고 cleanup을 정확히 한 번 실행한다", async () => {
+  const { withOperationDeadline } = await loadModule();
+  assert.equal(typeof withOperationDeadline, "function");
+  let timeoutCount = 0;
+  const never = new Promise<never>(() => {});
+
+  await assert.rejects(
+    withOperationDeadline(never, {
+      timeoutMs: 5,
+      errorCode: "oauth_exchange_timeout",
+      onTimeout: () => { timeoutCount += 1; },
+    }),
+    (error: unknown) => (
+      error instanceof Error
+      && error.name === "OperationTimeoutError"
+      && error.message === "oauth_exchange_timeout"
+    ),
+  );
+  assert.equal(timeoutCount, 1);
+});
+
+test("operation deadline은 먼저 완료된 정상 결과를 바꾸지 않고 timeout side effect를 취소한다", async () => {
+  const { withOperationDeadline } = await loadModule();
+  assert.equal(typeof withOperationDeadline, "function");
+  let timeoutCount = 0;
+
+  assert.equal(
+    await withOperationDeadline(Promise.resolve("ok"), {
+      timeoutMs: 20,
+      errorCode: "should_not_fire",
+      onTimeout: () => { timeoutCount += 1; },
+    }),
+    "ok",
+  );
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(timeoutCount, 0);
 });

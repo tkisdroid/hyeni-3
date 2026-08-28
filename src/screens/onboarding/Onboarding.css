@@ -1284,6 +1284,11 @@
   text-wrap: balance;
 }
 
+.ob-survey-head .ob-signup-title {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
 .ob-step-head :is(.ob-sub, .ob-teacher-sub, .ob-pair-sub) {
   margin-top: 4px;
   color: var(--fg-muted);

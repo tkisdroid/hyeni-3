@@ -1,6 +1,7 @@
 import type { Env } from "../types";
 import { checkAccountDeviceSession } from "./accountDeviceSession";
 import { verifyAccessToken, type AccessClaims } from "./jwt";
+import { isOAuthRecoveryAccessGenerationActive } from "./oauthRecovery";
 
 export class DeviceSessionInactiveError extends Error {
   readonly code = "device_session_inactive";
@@ -32,5 +33,18 @@ export async function verifyActiveAccessToken(
     throw new ActiveAccessUnavailableError("active access verification unavailable");
   }
   if (deviceState === "inactive") throw new DeviceSessionInactiveError("device session inactive");
+  if (claims.oauth_recovery_refresh_hash) {
+    try {
+      const active = !!claims.device_id && await isOAuthRecoveryAccessGenerationActive(db, {
+        userId: claims.sub,
+        deviceId: claims.device_id,
+        refreshTokenHash: claims.oauth_recovery_refresh_hash,
+      });
+      if (!active) throw new DeviceSessionInactiveError("recovery session generation inactive");
+    } catch (error) {
+      if (error instanceof DeviceSessionInactiveError) throw error;
+      throw new ActiveAccessUnavailableError("recovery access verification unavailable");
+    }
+  }
   return claims;
 }

@@ -15,6 +15,7 @@ import { getPlatform, isNativePlatform } from "@/lib/native/plugins";
 import { openExternal } from "@/lib/native/browser";
 import {
   getAuthDeviceDescriptor,
+  type AuthDeviceDescriptor,
 } from "@/lib/native/deviceIdentity";
 import {
   createIdempotentAuthResultAdopter,
@@ -30,6 +31,12 @@ import {
   type ParentSignupInput,
 } from "@/transform/phone";
 import type { OnboardingInterest } from "@/transform/onboardingPreferences";
+import {
+  clearNativeOAuthLoginCompletion,
+  clearNativeOAuthPendingExchange,
+  type NativeOAuthPendingExchange,
+} from "@/transform/nativeOAuthLoginCompletion";
+import { withOperationDeadline } from "@/transform/asyncUiState";
 
 export interface AuthSession {
   access_token: string;
@@ -43,11 +50,19 @@ export interface AuthResult {
   account_status?: "created" | "existing" | "linked";
 }
 
-const adoptAuthResultOnce = createIdempotentAuthResultAdopter<AuthResult>({
-  applySession: (data) => {
+export interface AuthResultAdoptionContext {
+  /** 네이티브 OAuth가 continuation을 먼저 stage하기 위해 선발급한 로그인 세대. */
+  loginGenerationId?: string;
+}
+
+const adoptAuthResultOnce = createIdempotentAuthResultAdopter<AuthResult, AuthResultAdoptionContext>({
+  applySession: (data, context) => {
     applyApiSession({
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token ?? null,
+    }, {
+      renewLoginGeneration: true,
+      loginGenerationId: context?.loginGenerationId,
     });
   },
   applyUser: (data) => {
@@ -57,8 +72,8 @@ const adoptAuthResultOnce = createIdempotentAuthResultAdopter<AuthResult>({
 });
 
 /** 로그인 응답을 토큰→사용자 순서로 한 번만 채택하고 기존 토큰 구독자에게 알린다. */
-export function adoptAuthResult(data: AuthResult): boolean {
-  return adoptAuthResultOnce(data);
+export function adoptAuthResult(data: AuthResult, context?: AuthResultAdoptionContext): boolean {
+  return adoptAuthResultOnce(data, context);
 }
 
 /** 부모 ID+비밀번호 로그인. 단회용이라 allowRetry=false. */
@@ -329,15 +344,59 @@ function writeOAuthContext(context: OAuthFlowContext): void {
   }
 }
 
-function takeOAuthContext(): OAuthFlowContext | null {
+function takeMatchingOAuthContext(expected: {
+  provider: OAuthProvider;
+  mode?: OAuthFlowMode;
+  state: string;
+}): OAuthFlowContext | null {
   const context = readOAuthContext();
+  if (
+    !context
+    || (expected.mode !== undefined && context.mode !== expected.mode)
+    || context.provider !== expected.provider
+    || !expected.state
+    || context.state !== expected.state
+  ) return null;
   clearOAuthContext();
   return context;
+}
+
+function readMatchingOAuthContext(expected: {
+  provider: OAuthProvider;
+  mode?: OAuthFlowMode;
+  state: string;
+}): OAuthFlowContext | null {
+  const context = readOAuthContext();
+  if (
+    !context
+    || (expected.mode !== undefined && context.mode !== expected.mode)
+    || context.provider !== expected.provider
+    || !expected.state
+    || context.state !== expected.state
+  ) return null;
+  return context;
+}
+
+function clearOAuthContextIfCurrent(expected: OAuthFlowContext): void {
+  const current = readOAuthContext();
+  if (current && JSON.stringify(current) === JSON.stringify(expected)) clearOAuthContext();
 }
 
 /** 복귀한 콜백이 로그인인지 계정 연결인지 — 폐기하지 않고 들여다본다. */
 export function peekOAuthFlowMode(): OAuthFlowMode {
   return readOAuthContext()?.mode ?? "login";
+}
+
+/** 현재 transaction과 provider·state가 모두 같은 콜백의 mode만 반환한다. */
+export function peekMatchingOAuthFlowMode(input: {
+  provider: OAuthProvider;
+  state: string;
+}): OAuthFlowMode | null {
+  const context = readOAuthContext();
+  if (!context || context.provider !== input.provider || !input.state || context.state !== input.state) {
+    return null;
+  }
+  return context.mode;
 }
 
 /**
@@ -348,6 +407,16 @@ export function peekOAuthFlowMode(): OAuthFlowMode {
  */
 export function hasLocalOAuthContext(): boolean {
   return readOAuthContext() !== null;
+}
+
+/**
+ * 사용자가 외부 브라우저 인증을 끝내지 않고 명시적으로 다른 인증/역할 동선으로 이탈했다.
+ * 늦게 도착한 과거 콜백이 새 역할이나 세션을 덮지 못하도록 로컬 transaction을 폐기한다.
+ */
+export function abandonPendingOAuth(): void {
+  clearOAuthContext();
+  clearNativeOAuthLoginCompletion();
+  clearNativeOAuthPendingExchange();
 }
 
 function readOAuthProviderHint(): string | null {
@@ -414,6 +483,9 @@ export async function startWorkerOAuth(
   mode: OAuthFlowMode = "login",
   options?: OAuthStartOptions,
 ): Promise<void> {
+  // 사용자가 취소 후 다른 provider/연결을 고른 순간부터 과거 callback은 더 이상
+  // 현재 인증 의도가 아니다. 새 start 네트워크보다 먼저 폐기해 그 사이의 복귀도 막는다.
+  abandonPendingOAuth();
   const native = isNativePlatform();
   const oauthClient = native && getPlatform() === "ios" ? "ios" : native ? "native" : "web";
   const startPath = mode === "link"
@@ -458,6 +530,7 @@ export async function finishOAuthLogin(input: {
   provider: OAuthProvider;
   code: string;
   state?: string;
+  recoveryId?: string;
 }, options?: AuthResultAdoptionOptions & {
   onboardingInterests?: OnboardingInterest[];
 }): Promise<AuthResult> {
@@ -466,35 +539,118 @@ export async function finishOAuthLogin(input: {
   }
   if (!input.code) throw new ApiError("invalid_oauth_transaction", 400);
 
-  const context = takeOAuthContext();
-  if (!context
-    || context.mode !== "login"
-    || context.provider !== input.provider
-    || !input.state
-    || context.state !== input.state) {
+  const context = readMatchingOAuthContext({
+    provider: input.provider,
+    mode: "login",
+    state: input.state ?? "",
+  });
+  if (!context) {
     throw new ApiError("invalid_oauth_transaction", 400);
   }
 
-  const device = await getAuthDeviceDescriptor().catch(() => null);
+  const device = await withOperationDeadline(
+    getAuthDeviceDescriptor().catch(() => null),
+    { timeoutMs: 4_000, errorCode: "oauth_device_descriptor_timeout" },
+  );
+  if (!device) throw new ApiError("device_identity_required", 400);
 
-  const data = await apiRequest<AuthResult>(
-    oauthExchangePath(input.provider),
+  const controller = new AbortController();
+  const data = await withOperationDeadline(
+    apiRequest<AuthResult>(
+      oauthExchangePath(input.provider),
+      {
+        method: "POST",
+        signal: controller.signal,
+        body: JSON.stringify({
+          code: input.code,
+          state: context.state,
+          transactionSecret: context.transactionSecret,
+          onboardingInterests: options?.onboardingInterests,
+          ...(input.recoveryId ? { recoveryId: input.recoveryId } : {}),
+          ...device,
+        }),
+      },
+      false,
+    ),
     {
-      method: "POST",
-      body: JSON.stringify({
-        code: input.code,
-        state: context.state,
-        transactionSecret: context.transactionSecret,
-        onboardingInterests: options?.onboardingInterests,
-        ...(device ?? {}),
-      }),
+      timeoutMs: 20_000,
+      errorCode: "oauth_exchange_timeout",
+      onTimeout: () => controller.abort(),
     },
-    false,
   );
   if (!data?.session?.access_token) {
     throw new ApiError("oauth_response_invalid", 502);
   }
+  // 응답 검증까지 끝난 handler만 자신이 읽은 transaction을 폐기한다.
+  clearOAuthContextIfCurrent(context);
   return returnAuthResultWithAdoption(data, options, adoptAuthResult);
+}
+
+export type OAuthRecoveryResponse = { status: "pending" } | AuthResult;
+
+export async function getBoundedOAuthDeviceDescriptor(
+  timeoutMs = 4_000,
+): Promise<AuthDeviceDescriptor> {
+  const device = await withOperationDeadline(
+    getAuthDeviceDescriptor().catch(() => null),
+    { timeoutMs: Math.max(1, Math.min(timeoutMs, 4_000)), errorCode: "oauth_device_descriptor_timeout" },
+  );
+  if (!device) throw new ApiError("device_identity_required", 400);
+  return device;
+}
+
+/** raw recovery bearer는 이 요청 body 밖에서 저장·출력하지 않는다. */
+export async function recoverOAuthLogin(
+  pending: NativeOAuthPendingExchange,
+  options: { timeoutMs?: number; device?: AuthDeviceDescriptor } = {},
+): Promise<OAuthRecoveryResponse> {
+  const device = options.device ?? await getBoundedOAuthDeviceDescriptor(options.timeoutMs);
+  const controller = new AbortController();
+  const timeoutMs = Math.max(1, Math.min(options.timeoutMs ?? 8_000, 8_000));
+  return withOperationDeadline(
+    apiRequest<OAuthRecoveryResponse>(
+      `/api/auth/oauth/${pending.provider}/recovery`,
+      {
+        method: "POST",
+        signal: controller.signal,
+        body: JSON.stringify({ recoveryId: pending.id, ...device }),
+      },
+      false,
+    ),
+    {
+      timeoutMs,
+      errorCode: "oauth_recovery_timeout",
+      onTimeout: () => controller.abort(),
+    },
+  );
+}
+
+export async function acknowledgeOAuthLoginRecovery(
+  pending: NativeOAuthPendingExchange,
+): Promise<void> {
+  const controller = new AbortController();
+  await withOperationDeadline(
+    apiRequest(
+      `/api/auth/oauth/${pending.provider}/recovery/ack`,
+      {
+        method: "POST",
+        signal: controller.signal,
+        body: JSON.stringify({ recoveryId: pending.id }),
+      },
+      false,
+    ),
+    {
+      timeoutMs: 8_000,
+      errorCode: "oauth_recovery_ack_timeout",
+      onTimeout: () => controller.abort(),
+    },
+  );
+}
+
+/** pending ID 소유권을 확인한 딥링크 handler가 성공 복구 뒤 호출한다. */
+export function clearRecoveredOAuthLoginContext(provider: OAuthProvider): void {
+  const context = readOAuthContext();
+  if (context?.mode === "login" && context.provider === provider) clearOAuthContext();
 }
 
 export interface OAuthLink {
@@ -550,23 +706,37 @@ export async function linkOAuthAccount(input: {
   }
   if (!input.code) throw new Error("로그인 인증 코드가 없어요. 다시 시도해 주세요!");
 
-  const context = takeOAuthContext();
-  if (!context
-    || context.mode !== "link"
-    || context.provider !== input.provider
-    || !input.state
-    || context.state !== input.state) {
+  const context = takeMatchingOAuthContext({
+    provider: input.provider,
+    mode: "link",
+    state: input.state ?? "",
+  });
+  if (!context) {
     throw new ApiError("invalid_oauth_transaction", 400);
   }
 
-  return apiRequest(`/api/auth/oauth/${input.provider}/link`, {
-    method: "POST",
-    body: JSON.stringify({
-      code: input.code,
-      state: context.state,
-      transactionSecret: context.transactionSecret,
-    }),
-  });
+  const controller = new AbortController();
+  try {
+    return await withOperationDeadline(
+      apiRequest(`/api/auth/oauth/${input.provider}/link`, {
+        method: "POST",
+        signal: controller.signal,
+        body: JSON.stringify({
+          code: input.code,
+          state: context.state,
+          transactionSecret: context.transactionSecret,
+        }),
+      }, false),
+      {
+        timeoutMs: 20_000,
+        errorCode: "oauth_link_timeout",
+        onTimeout: () => controller.abort(),
+      },
+    );
+  } finally {
+    // link는 서버가 transaction을 소비했을 수 있으므로 bounded 성공/실패 뒤 현재 context를 닫는다.
+    clearOAuthContextIfCurrent(context);
+  }
 }
 
 /** 서버가 검증·소비한 OAuth 취소 결과를 로컬 context와 대조하고 한 번만 폐기한다. */
@@ -574,13 +744,11 @@ export function finishOAuthCancellation(input: {
   provider: OAuthProvider;
   state: string;
 }): OAuthFlowMode {
-  const context = takeOAuthContext();
-  if (
-    !context
-    || context.provider !== input.provider
-    || !input.state
-    || context.state !== input.state
-  ) {
+  const context = takeMatchingOAuthContext({
+    provider: input.provider,
+    state: input.state,
+  });
+  if (!context) {
     throw new ApiError("invalid_oauth_transaction", 400);
   }
   return context.mode;

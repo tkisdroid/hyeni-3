@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useNavigate } from "react-router";
@@ -34,6 +34,7 @@ import {
   requestPhoneSignupCode,
   verifyPhoneSignupCode,
   startWorkerOAuth,
+  abandonPendingOAuth,
   finishOAuthCancellation,
   finishOAuthLogin,
   readOAuthCancellation,
@@ -57,6 +58,16 @@ import { normalizePairCodeInput } from "@/transform/pairCode";
 import { isPairingMembershipConfirmed } from "@/transform/pairingConfirmation";
 import { consumeSessionEndReason } from "@/auth/sessionEndReason";
 import { isNativePlatform } from "@/lib/native/plugins";
+import {
+  getApiAccessTokenJti,
+  getApiLoginGenerationId,
+  getApiSessionInstanceId,
+} from "@/lib/api/session";
+import {
+  OAUTH_DEEP_LINK_ACTIVITY_EVENT,
+  OAUTH_DEEP_LINK_RESULT_EVENT,
+  type OAuthDeepLinkResult,
+} from "@/lib/native/oauthDeepLink";
 
 // QrScanner(+jsQR 폴백 디코더)는 스캔 버튼을 누른 시점에만 내려받는다.
 const QrScanner = lazy(() =>
@@ -100,6 +111,7 @@ import {
   createAsyncActionController,
   isAsyncActionTokenFor,
   isLoginNavigationLocked,
+  OAUTH_CALLBACK_DELIVERY_GRACE_MS,
   runOwnedAsyncAction,
   shouldReleaseOAuthBusyOnResume,
   type AsyncActionToken,
@@ -122,6 +134,13 @@ import {
   readOnboardingDraft,
   type PendingPairInvite,
 } from "@/transform/onboardingDraft";
+import {
+  bindNativeOAuthLoginCompletion,
+  clearNativeOAuthLoginCompletion,
+  publishNativeOAuthLoginCompletion,
+  readNativeOAuthLoginCompletionForSession,
+  subscribeNativeOAuthLoginCompletion,
+} from "@/transform/nativeOAuthLoginCompletion";
 import type { OnboardingInterest } from "@/transform/onboardingPreferences";
 
 type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
@@ -169,6 +188,14 @@ export function Onboarding() {
   );
   const [initialDraft] = useState(() => readOnboardingDraft());
   const [initialAuthState] = useState(() => deriveAuthState());
+  const [nativeOAuthRecoveryPending] = useState(() => Boolean(
+    readNativeOAuthLoginCompletionForSession(
+      initialAuthState.userId,
+      getApiSessionInstanceId(),
+      getApiAccessTokenJti(),
+      getApiLoginGenerationId(),
+    ),
+  ));
   const [sessionEndedOnAnotherDevice] = useState(
     () => consumeSessionEndReason() === "device_session_inactive",
   );
@@ -187,7 +214,7 @@ export function Onboarding() {
   const [pairMode, setPairMode] = useState<"child" | "parent">(() =>
     initialDraft?.pairInvite?.role === "parent" ? "parent" : "child",
   );
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(() => nativeOAuthRecoveryPending);
   const [childStarting, setChildStarting] = useState(false);
   const [childJoinHint, setChildJoinHint] = useState<JoinFamilyOptions | null>(null);
   const [signupFlowStarted, setSignupFlowStarted] = useState(() => Boolean(initialDraft?.signupMethod));
@@ -204,8 +231,10 @@ export function Onboarding() {
   const [referralPrefill, setReferralPrefill] = useState<string | null>(() => readReferralParam());
   const [referralDraft, setReferralDraft] = useState(() => readReferralParam() ?? "");
   const oauthLoginPromiseRef = useRef<ReturnType<typeof finishOAuthLogin> | null>(null);
+  const nativeOAuthCompletionInFlightRef = useRef<string | null>(null);
+  const nativeOAuthCompletionRetryRef = useRef<{ id: string; attempts: number } | null>(null);
   const oauthExternalBusyRef = useRef(false);
-  const [oauthExternalBusy, setOAuthExternalBusy] = useState(false);
+  const oauthResumeReleaseTimerRef = useRef<number | null>(null);
 
   const preservePendingInviteOnly = () => {
     if (pendingPairInvite) {
@@ -247,15 +276,13 @@ export function Onboarding() {
     return () => window.removeEventListener(REFERRAL_CODE_EVENT, onStored);
   }, []);
 
-  const markOAuthExternalBusy = () => {
+  const markOAuthExternalBusy = useCallback(() => {
     oauthExternalBusyRef.current = true;
-    setOAuthExternalBusy(true);
-  };
+  }, []);
 
-  const clearOAuthExternalBusy = () => {
+  const clearOAuthExternalBusy = useCallback(() => {
     oauthExternalBusyRef.current = false;
-    setOAuthExternalBusy(false);
-  };
+  }, []);
 
   const beginPermissionTransition = () => {
     permissionTransitionRef.current?.cancel();
@@ -383,13 +410,13 @@ export function Onboarding() {
       familyId: authFamilyId,
       hasOAuthCallback: !!readOAuthCallback(),
       hasPairParam: !!readPairParam(),
-      authTransitionActive: authTransitionActive,
+      authTransitionActive: authTransitionActive || nativeOAuthRecoveryPending,
     });
     if (redirect) {
       if (authFamilyId && readReferralParam()) clearReferralParam();
       navigate(redirect, { replace: true });
     }
-  }, [authRole, authFamilyId, authTransitionActive, navigate]);
+  }, [authRole, authFamilyId, authTransitionActive, nativeOAuthRecoveryPending, navigate]);
 
   // OAuth/외부 브라우저에서 복귀 시 busy 잠금 자동 해제 — stuck 방지.
   // 네이티브: 카카오/구글은 시스템 브라우저를 열고 앱을 백그라운드로 보낸다. 로그인을
@@ -399,22 +426,70 @@ export function Onboarding() {
   // 웹: bfcache 뒤로가기(pageshow persisted)도 동일 처리. 초기 로드의 pageshow 는 리스너
   // 등록 전에 이미 발화하므로 OAuth 콜백 처리와 충돌하지 않는다.
   useEffect(() => {
+    const clearResumeReleaseTimer = () => {
+      if (oauthResumeReleaseTimerRef.current === null) return;
+      window.clearTimeout(oauthResumeReleaseTimerRef.current);
+      oauthResumeReleaseTimerRef.current = null;
+    };
     const unstickOAuth = () => {
-      if (!shouldReleaseOAuthBusyOnResume({
-        documentVisible: document.visibilityState === "visible",
-        oauthExternalPending: oauthExternalBusyRef.current,
-      })) return;
-      clearOAuthExternalBusy();
-      cancelOnboardingAuthTransitions();
-      setBusy(false);
+      if (document.visibilityState !== "visible" || !oauthExternalBusyRef.current) return;
+      clearResumeReleaseTimer();
+      // app foreground가 appUrlOpen보다 먼저 올 수 있다. Worker의 전체 전달 재시도 창 뒤에도
+      // transaction context가 남아 있을 때만 브라우저 뒤로가기로 판정한다. 정상 callback은
+      // 네트워크 전에 context를 소비하므로 교환 중 gate를 절대 열지 않는다.
+      oauthResumeReleaseTimerRef.current = window.setTimeout(() => {
+        oauthResumeReleaseTimerRef.current = null;
+        if (!shouldReleaseOAuthBusyOnResume({
+          documentVisible: document.visibilityState === "visible",
+          oauthExternalPending: oauthExternalBusyRef.current,
+          oauthContextPending: hasLocalOAuthContext(),
+        })) return;
+        abandonPendingOAuth();
+        clearOAuthExternalBusy();
+        cancelOnboardingAuthTransitions();
+        setBusy(false);
+      }, OAUTH_CALLBACK_DELIVERY_GRACE_MS);
+    };
+    const keepLockedForCallback = (event: Event) => {
+      const detail = (event as CustomEvent<{ mode?: string }>).detail;
+      if (detail?.mode === "login") clearResumeReleaseTimer();
     };
     document.addEventListener("visibilitychange", unstickOAuth);
     window.addEventListener("pageshow", unstickOAuth);
+    window.addEventListener(OAUTH_DEEP_LINK_ACTIVITY_EVENT, keepLockedForCallback);
     return () => {
+      clearResumeReleaseTimer();
       document.removeEventListener("visibilitychange", unstickOAuth);
       window.removeEventListener("pageshow", unstickOAuth);
+      window.removeEventListener(OAUTH_DEEP_LINK_ACTIVITY_EVENT, keepLockedForCallback);
     };
-  }, [oauthExternalBusy]);
+  }, [clearOAuthExternalBusy]);
+
+  // 정상 callback은 context를 소비한 뒤 네트워크를 수행하므로 resume 타이머가 gate를
+  // 풀지 않는다. 그 요청이 실패·취소된 경우에는 공통 결과 이벤트가 정확히 잠금을 끝낸다.
+  useEffect(() => {
+    const onNativeOAuthResult = (event: Event) => {
+      const detail = (event as CustomEvent<OAuthDeepLinkResult>).detail;
+      if (!detail || detail.mode !== "login" || detail.ok) return;
+      if (oauthResumeReleaseTimerRef.current !== null) {
+        window.clearTimeout(oauthResumeReleaseTimerRef.current);
+        oauthResumeReleaseTimerRef.current = null;
+      }
+      clearOAuthExternalBusy();
+      cancelOnboardingAuthTransitions();
+      setBusy(false);
+      if (detail.errorCode === "oauth_cancelled") {
+        setAuthEntryError(null);
+        show(intl.formatMessage({ id: "onboarding.toast.socialCancelled" }));
+        return;
+      }
+      const message = intl.formatMessage({ id: "core.error.api.unknown.formal" });
+      setAuthEntryError(message);
+      show(message, "⚠️");
+    };
+    window.addEventListener(OAUTH_DEEP_LINK_RESULT_EVENT, onNativeOAuthResult);
+    return () => window.removeEventListener(OAUTH_DEEP_LINK_RESULT_EVENT, onNativeOAuthResult);
+  }, [clearOAuthExternalBusy, intl, show]);
 
   // QR 딥링크는 as 역할을 먼저 판정한다. 공동 보호자는 인증을 거치고,
   // 아이 링크만 익명 아이 세션으로 진입한다. OAuth 콜백이 동시에 있으면 그쪽이 우선이다.
@@ -545,11 +620,11 @@ export function Onboarding() {
     });
 
   // 부모 로그인/가입 후: 가족 있으면 홈, 없으면 가족연결 단계.
-  const routeAfterParentLogin = async (
+  const routeAfterParentLogin = useCallback(async (
     transitionToken: OnboardingAuthTransitionToken,
     inviteOverride: PendingPairInvite | null = pendingPairInvite,
-  ) => {
-    if (!isOnboardingAuthTransitionActive(transitionToken)) return;
+  ): Promise<boolean> => {
+    if (!isOnboardingAuthTransitionActive(transitionToken)) return false;
     syncFromSession();
     try {
       const current = deriveAuthState();
@@ -561,7 +636,7 @@ export function Onboarding() {
           pendingParentInvite: inviteOverride?.role === "parent",
         });
         const completed = completeOnboardingAuthTransitionsThrough(transitionToken);
-        if (!completed) return;
+        if (!completed) return false;
         if (inviteOverride?.role === "parent") {
           show(intl.formatMessage({
             id: current.role === "child"
@@ -576,19 +651,19 @@ export function Onboarding() {
           setRole("child");
           setPairMode("child");
           setStep("pairing");
-          return;
+          return true;
         }
         if (action === "teacher-setup") {
           setRole("teacher");
           setStep("teacherSetup");
-          return;
+          return true;
         }
         navigate(homePathForRole(current.role));
-        return;
+        return true;
       }
       const fam = await getMyFamily();
       const completed = completeOnboardingAuthTransitionsThrough(transitionToken);
-      if (!completed) return;
+      if (!completed) return false;
       setBusy(false);
       const action = resolvePostAuthAction({
         authRole: current.role,
@@ -603,20 +678,102 @@ export function Onboarding() {
         setPairMode("parent");
         persistOnboardingDraft({ pairInvite: parentInvite, signupMethod: null, surveyChoices: [] });
         setStep("pairing");
-        return;
+        return true;
       }
       clearOnboardingDraft();
       setPendingPairInvite(null);
       if (action === "parent-connect") {
         setStep("connect");
-        return;
+        return true;
       }
       clearReferralParam();
       navigate(homePathForRole(current.role));
+      return true;
     } catch {
       throw new Error("family_lookup_failed");
     }
-  };
+  }, [intl, navigate, pendingPairInvite, show, syncFromSession]);
+
+  // 네이티브 App Link는 전역 리스너가 인가코드를 한 번만 교환한다. 그 결과를 여기서
+  // 이어받아 웹 callback과 동일한 가족 생성/공동 보호자 초대 분기로 보낸다. 완료 표식은
+  // process 재시작에도 남으므로 mount 직후에도 확인하고, 실제 후속 처리가 끝난 뒤에만 지운다.
+  useEffect(() => {
+    let disposed = false;
+    const continueNativeOAuth = () => {
+      if (disposed) return;
+      const current = deriveAuthState();
+      const sessionInstanceId = getApiSessionInstanceId();
+      let completion = readNativeOAuthLoginCompletionForSession(
+        current.userId,
+        sessionInstanceId,
+        getApiAccessTokenJti(),
+        getApiLoginGenerationId(),
+      );
+      if (!completion || current.status !== "authenticated" || !sessionInstanceId) return;
+      if (completion.phase === "staged") {
+        completion = bindNativeOAuthLoginCompletion(completion.id, sessionInstanceId);
+      }
+      if (!completion || nativeOAuthCompletionInFlightRef.current === completion.id) return;
+
+      nativeOAuthCompletionInFlightRef.current = completion.id;
+      if (nativeOAuthCompletionRetryRef.current?.id !== completion.id) {
+        nativeOAuthCompletionRetryRef.current = { id: completion.id, attempts: 0 };
+      }
+      const callbackDraft = readOnboardingDraft() ?? initialDraft;
+      clearOAuthExternalBusy();
+      cancelOnboardingAuthTransitions();
+      const transitionToken = beginOnboardingAuthTransition();
+      setBusy(true);
+      void (async () => {
+        let retryAfterFailure = false;
+        try {
+          syncFromSession();
+          const shouldShowExistingAccount =
+            callbackDraft?.signupMethod?.kind === "oauth"
+            && callbackDraft.signupMethod.provider === completion.provider
+            && (completion.accountStatus === "existing" || completion.accountStatus === "linked");
+          const completed = await routeAfterParentLogin(transitionToken, completion.pairInvite);
+          if (completed) {
+            clearNativeOAuthLoginCompletion(completion.id);
+            nativeOAuthCompletionRetryRef.current = null;
+            if (shouldShowExistingAccount) {
+              show(intl.formatMessage({ id: "onboarding.toast.existingSocialAccount" }), "ℹ️");
+            }
+          }
+        } catch (error) {
+          const retryState = nativeOAuthCompletionRetryRef.current;
+          if (retryState?.id === completion.id && retryState.attempts < 1) {
+            retryState.attempts += 1;
+            retryAfterFailure = true;
+          } else if (!disposed && isOnboardingAuthTransitionActive(transitionToken)) {
+            const message = localizeApiError(error, intl, "formal");
+            setAuthEntryError(message);
+            show(message, "⚠️");
+          }
+        } finally {
+          if (nativeOAuthCompletionInFlightRef.current === completion.id) {
+            nativeOAuthCompletionInFlightRef.current = null;
+          }
+          if (isOnboardingAuthTransitionActive(transitionToken)) {
+            if (!disposed && !retryAfterFailure) setBusy(false);
+            endOnboardingAuthTransition(transitionToken);
+          }
+          if (retryAfterFailure) {
+            window.setTimeout(() => {
+              publishNativeOAuthLoginCompletion(completion.id);
+            }, 500);
+          }
+        }
+      })();
+    };
+
+    const unsubscribe = subscribeNativeOAuthLoginCompletion(continueNativeOAuth);
+    continueNativeOAuth();
+    return () => {
+      disposed = true;
+      unsubscribe();
+    };
+  }, [clearOAuthExternalBusy, initialDraft, intl, routeAfterParentLogin, show, syncFromSession]);
 
   const startSignupOAuth = async (provider: OAuthProvider) => {
     if (busy) return;
@@ -725,6 +882,7 @@ export function Onboarding() {
           sessionEndedOnAnotherDevice={sessionEndedOnAnotherDevice}
           onParent={() => {
             if (authCommitBoundaryActive) return;
+            abandonPendingOAuth();
             cancelOnboardingAuthTransitions();
             const legacyInvite = pendingPairInvite && !pendingPairInvite.roleExplicit
               ? { ...pendingPairInvite, role: "parent" as const, roleExplicit: true }
@@ -748,6 +906,7 @@ export function Onboarding() {
           }}
           onChild={() => {
             if (authCommitBoundaryActive) return;
+            abandonPendingOAuth();
             cancelOnboardingAuthTransitions();
             const legacyInvite = pendingPairInvite && !pendingPairInvite.roleExplicit
               ? { ...pendingPairInvite, role: "child" as const, roleExplicit: true }
@@ -765,6 +924,7 @@ export function Onboarding() {
           }}
           onTeacher={() => {
             if (authCommitBoundaryActive) return;
+            abandonPendingOAuth();
             cancelOnboardingAuthTransitions();
             clearOnboardingDraft();
             setPendingPairInvite(null);
@@ -784,6 +944,7 @@ export function Onboarding() {
           parentInvite={pendingPairInvite?.role === "parent"}
           sessionEndedOnAnotherDevice={sessionEndedOnAnotherDevice}
           onIntentChange={(nextIntent) => {
+            abandonPendingOAuth();
             setAuthIntent(nextIntent);
             setAuthEntryError(null);
           }}
@@ -796,6 +957,7 @@ export function Onboarding() {
           onOAuthExternalEnd={clearOAuthExternalBusy}
           onBack={() => {
             if (authCommitBoundaryActive) return;
+            abandonPendingOAuth();
             cancelOnboardingAuthTransitions();
             if (pendingPairInvite) {
               clearOnboardingDraft();
@@ -812,6 +974,7 @@ export function Onboarding() {
           }}
           onSignup={(method) => {
             if (authCommitBoundaryActive) return;
+            abandonPendingOAuth();
             cancelOnboardingAuthTransitions();
             setSignupMethod(method);
             setAuthIntent("signup");
@@ -1416,6 +1579,8 @@ function LoginStep({
 
   const loginIdPw = async (credentials: LoginFormInput = { loginId, password }) => {
     if (busy || !loginActionGateRef.current.tryBegin()) return;
+    abandonPendingOAuth();
+    cancelOnboardingAuthTransitions();
     onAuthError(null);
     const validationErrors = validateLoginForm(credentials);
     setErrors(validationErrors);

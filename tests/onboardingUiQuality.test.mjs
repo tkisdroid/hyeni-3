@@ -92,6 +92,14 @@ test("가입 전 단계는 같은 헤더·밝은 표면을 쓰고 QR 실행 영�
   assert.doesNotMatch(onboarding, /ob-pair-code-input[^>]*style=\{/s);
 });
 
+test("좁은 화면의 온보딩 설문 제목은 한국어 어절을 보존하고 긴 번역만 안전하게 접는다", () => {
+  const css = source("src/screens/onboarding/Onboarding.css");
+  const title = cssBlock(css, ".ob-survey-head .ob-signup-title");
+
+  assert.match(title, /word-break:\s*keep-all\s*;/);
+  assert.match(title, /overflow-wrap:\s*anywhere\s*;/);
+});
+
 test("역할 카드의 의미 색상은 인라인 값이 아니라 공용 디자인 토큰으로 관리한다", () => {
   const onboarding = source("src/screens/onboarding/Onboarding.tsx");
   const css = source("src/screens/onboarding/Onboarding.css");

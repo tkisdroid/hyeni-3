@@ -1,5 +1,7 @@
 /**
  * 게스트 전용 가드 — 이미 가족에 연결된 세션은 온보딩 화면을 볼 수 없다.
+ * 단, 방금 네이티브 OAuth로 채택된 같은 user·session의 영속 continuation은
+ * 가족/초대 후속 분기를 정확히 한 번 끝내기 위해 예외적으로 통과시킨다.
  *
  * 온보딩은 세션을 새로 만드는 화면이라(anonymousLogin·로그인·가입), 인증된 사용자가
  * 여기 도달하면 딥링크·오작동 한 번으로 기존 세션이 파괴된다(2026-07-10 실사고:
@@ -16,18 +18,35 @@ import { Navigate } from "react-router";
 import { useAuth } from "./AuthContext";
 import { homePathForRole } from "./guards";
 import {
+  getApiAccessTokenJti,
+  getApiLoginGenerationId,
+  getApiSessionInstanceId,
+} from "@/lib/api/session";
+import { readNativeOAuthLoginCompletionForSession } from "@/transform/nativeOAuthLoginCompletion";
+import {
   getOnboardingAuthTransitionSnapshot,
   subscribeOnboardingAuthTransition,
 } from "./onboardingAuthTransition";
 
 export function RequireGuest({ children }: { children: ReactNode }) {
   const auth = useAuth();
+  const nativeOAuthCompletion = readNativeOAuthLoginCompletionForSession(
+    auth.userId,
+    getApiSessionInstanceId(),
+    getApiAccessTokenJti(),
+    getApiLoginGenerationId(),
+  );
   const authTransitionActive = useSyncExternalStore(
     subscribeOnboardingAuthTransition,
     getOnboardingAuthTransitionSnapshot,
     getOnboardingAuthTransitionSnapshot,
   );
-  if (!authTransitionActive && auth.status === "authenticated" && auth.familyId) {
+  if (
+    !nativeOAuthCompletion
+    && !authTransitionActive
+    && auth.status === "authenticated"
+    && auth.familyId
+  ) {
     return <Navigate to={homePathForRole(auth.role)} replace />;
   }
   return <>{children}</>;

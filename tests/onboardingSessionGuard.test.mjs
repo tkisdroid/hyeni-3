@@ -11,9 +11,10 @@ test("온보딩 라우트는 RequireGuest 로 감싸 인증 세션의 마운트�
   assert.match(app, /path: "onboarding"[\s\S]{0,200}<RequireGuest>[\s\S]{0,80}<Onboarding \/>/);
 });
 
-test("RequireGuest 는 가족에 연결된 세션을 역할 홈으로 되돌린다", () => {
+test("RequireGuest 는 네이티브 후속 처리 중인 정확한 세션만 예외로 두고 가족 세션을 역할 홈으로 되돌린다", () => {
   const guard = read("src/auth/RequireGuest.tsx");
-  assert.match(guard, /auth\.status === "authenticated" && auth\.familyId/);
+  assert.match(guard, /readNativeOAuthLoginCompletionForSession\([\s\S]{0,220}getApiSessionInstanceId\(\)[\s\S]{0,140}getApiAccessTokenJti\(\)[\s\S]{0,120}getApiLoginGenerationId\(\)/);
+  assert.match(guard, /!nativeOAuthCompletion[\s\S]{0,160}auth\.status === "authenticated"[\s\S]{0,80}&& auth\.familyId/);
   assert.match(guard, /Navigate to=\{homePathForRole\(auth\.role\)\} replace/);
 });
 

@@ -5,7 +5,7 @@
  *   1. startWorkerOAuth 가 시스템 브라우저로 Worker /start 를 연다.
  *   2. provider 로그인 완료 → Worker가 플랫폼별로 고정된 callback에 code/state를 반환한다.
  *   3. Android는 검증된 HTTPS App Link, iOS는 등록된 전용 URL scheme으로 앱을 열어 URL을 전달한다.
- *   4. 여기서 파싱 → finishOAuthLogin(code 교환 + 세션 적용) → AuthProvider 가 토큰변경으로 상태 재동기화.
+ *   4. 여기서 파싱 → finishOAuthLogin(code 교환 + 세션 적용) → 온보딩이 가족 생성/초대 후속 단계를 재개한다.
  *
  * ★ 인가코드는 1회용이다(2026-07-10 실기기 실측).
  *   콜드 스타트에선 같은 딥링크가 실행 인텐트와 appUrlOpen 두 경로로 들어와 code 가 2~3회 교환됐다.
@@ -23,11 +23,28 @@ import type { URLOpenListenerEvent } from "@capacitor/app";
 import { isNativePlatform } from "./plugins";
 import { closeExternal } from "./browser";
 import {
+  adoptAuthResult,
+  acknowledgeOAuthLoginRecovery,
+  clearRecoveredOAuthLoginContext,
   finishOAuthCancellation,
   finishOAuthLogin,
+  getBoundedOAuthDeviceDescriptor,
   linkOAuthAccount,
-  peekOAuthFlowMode,
+  peekMatchingOAuthFlowMode,
+  recoverOAuthLogin,
+  type AuthResult,
 } from "@/lib/api/endpoints/auth";
+import { isApiError } from "@/lib/api/errors";
+import { withOperationDeadline } from "@/transform/asyncUiState";
+import type { AuthDeviceDescriptor } from "@/lib/native/deviceIdentity";
+import {
+  accessTokenJti,
+  createApiLoginGenerationId,
+  getApiAccessToken,
+  getApiLoginGenerationId,
+  getApiSessionInstanceId,
+  userFromAccessToken,
+} from "@/lib/api/session";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import {
   parseOAuthCancellationUrl,
@@ -41,8 +58,16 @@ import {
   oauthStateKey,
   type OAuthCodeOnce,
 } from "@/transform/oauthCodeOnce";
-import { deriveAuthState } from "@/auth/AuthContext";
-import { homePathForRole } from "@/auth/guards";
+import { readOnboardingDraft } from "@/transform/onboardingDraft";
+import {
+  bindNativeOAuthLoginCompletion,
+  clearNativeOAuthPendingExchange,
+  publishNativeOAuthLoginCompletion,
+  readNativeOAuthPendingExchange,
+  stageNativeOAuthPendingExchange,
+  stageNativeOAuthLoginCompletion,
+  type NativeOAuthPendingExchange,
+} from "@/transform/nativeOAuthLoginCompletion";
 
 type DeepLinkCallback = OAuthDeepLinkCallback;
 
@@ -61,6 +86,10 @@ export interface OAuthDeepLinkResult {
 
 /** 연결 결과를 화면(설정 등)이 받을 수 있게 알린다. 딥링크 복귀 시점엔 어떤 화면인지 모른다. */
 export const OAUTH_LINK_EVENT = "hyeni:oauth-link";
+/** 현재 transaction과 정확히 일치하는 App Link를 수신해 처리에 들어간 순간. */
+export const OAUTH_DEEP_LINK_ACTIVITY_EVENT = "hyeni:oauth-deep-link-activity";
+/** 로그인/연결 callback의 최종 결과. 외부 브라우저 resume gate가 API 중간에 풀리지 않게 한다. */
+export const OAUTH_DEEP_LINK_RESULT_EVENT = "hyeni:oauth-deep-link-result";
 
 export type OAuthResultHandler = (result: OAuthDeepLinkResult) => void;
 
@@ -82,20 +111,144 @@ function getCodeOnce(): OAuthCodeOnce {
   return codeOnce;
 }
 
-/**
- * 로그인 성공 후 파생 role 홈으로 이동(HashRouter). finishOAuthLogin 의 notifyTokens 로
- * AuthProvider 상태는 이미 갱신되지만, 딥링크 복귀 시엔 온보딩 화면에 머무를 수 있어
- * 여기서 홈 라우팅만 보조한다. OAuth 는 부모 전용이라 role 미확정이면 부모 홈으로 수렴한다.
- */
-function routeToHomeAfterLogin(): void {
-  if (typeof window === "undefined") return;
-  const { role } = deriveAuthState();
-  window.location.hash = homePathForRole(role);
+function dispatchActivity(provider: OAuthProvider, mode: "login" | "link"): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(OAUTH_DEEP_LINK_ACTIVITY_EVENT, {
+      detail: { provider, mode },
+    }));
+  }
 }
 
-// 인가코드 1건 교환(실제 네트워크). 실패는 여기서 흡수해 호출자에게 false 로 알린다.
-async function exchange(cb: DeepLinkCallback, onResult?: OAuthResultHandler): Promise<boolean> {
-  const mode = peekOAuthFlowMode();
+async function acknowledgeCompletion(pending: NativeOAuthPendingExchange): Promise<void> {
+  try {
+    await acknowledgeOAuthLoginRecovery(pending);
+    clearNativeOAuthPendingExchange(pending.id);
+  } catch {
+    // 이미 채택한 세션은 유지한다. TTL 안 다음 init에서 같은 generation으로 ACK를 재시도한다.
+  }
+}
+
+function finalizeLogin(
+  result: AuthResult,
+  provider: OAuthProvider,
+  pending: NativeOAuthPendingExchange,
+): void {
+  const callbackDraft = readOnboardingDraft();
+  const expectedUserId = result.user?.id
+    ?? result.session.user?.id
+    ?? userFromAccessToken(result.session.access_token)?.id
+    ?? "";
+  const adoptedLoginGenerationId = getApiAccessToken() === result.session.access_token
+    ? getApiLoginGenerationId()
+    : null;
+  const loginGenerationId = adoptedLoginGenerationId ?? createApiLoginGenerationId();
+  const completion = stageNativeOAuthLoginCompletion({
+    provider,
+    accountStatus: result.account_status ?? null,
+    expectedUserId,
+    expectedAccessTokenJti: accessTokenJti(result.session.access_token) ?? "",
+    expectedLoginGenerationId: loginGenerationId,
+    pairInvite: callbackDraft?.pairInvite ?? null,
+  });
+  if (!adoptedLoginGenerationId) {
+    adoptAuthResult(result, { loginGenerationId });
+  }
+  const sessionInstanceId = getApiSessionInstanceId();
+  if (
+    !sessionInstanceId
+    || getApiLoginGenerationId() !== loginGenerationId
+    || !bindNativeOAuthLoginCompletion(completion.id, sessionInstanceId)
+  ) {
+    throw new Error("native_oauth_completion_bind_failed");
+  }
+  // 전역 리스너가 홈으로 단정하지 않는다. 신규 부모의 가족 생성과 공동 보호자
+  // 초대는 Onboarding의 공통 post-auth resolver가 이어서 처리한다.
+  if (typeof window !== "undefined") window.location.hash = "#/onboarding";
+  publishNativeOAuthLoginCompletion(completion.id);
+  void acknowledgeCompletion(pending);
+}
+
+async function attemptPendingRecovery(
+  pending: NativeOAuthPendingExchange,
+  device: AuthDeviceDescriptor,
+  deadlineMs: number,
+): Promise<AuthResult | "pending" | "unavailable"> {
+  let unavailable = false;
+  let delayMs = 0;
+  while (Date.now() < deadlineMs) {
+    if (delayMs > 0) {
+      const remainingBeforeDelay = deadlineMs - Date.now();
+      if (remainingBeforeDelay <= 0) break;
+      await new Promise((resolve) => setTimeout(resolve, Math.min(delayMs, remainingBeforeDelay)));
+    }
+    const remainingMs = deadlineMs - Date.now();
+    if (remainingMs <= 0) break;
+    try {
+      const recovered = await recoverOAuthLogin(pending, { timeoutMs: remainingMs, device });
+      if ("status" in recovered) {
+        delayMs = delayMs === 0 ? 250 : Math.min(delayMs * 2, 4_000);
+        continue;
+      }
+      return recovered;
+    } catch (error) {
+      if (isApiError(error) && error.status === 404) {
+        unavailable = true;
+        break;
+      }
+      // timeout/네트워크 오류는 bounded 다음 시도에서만 재확인한다.
+    }
+    delayMs = delayMs === 0 ? 250 : Math.min(delayMs * 2, 4_000);
+  }
+  return unavailable ? "unavailable" : "pending";
+}
+
+async function finishLoginWithRecovery(
+  cb: DeepLinkCallback,
+  pending: NativeOAuthPendingExchange,
+): Promise<AuthResult> {
+  const callbackDraft = readOnboardingDraft();
+  return finishOAuthLogin({ ...cb, recoveryId: pending.id }, {
+    sessionAdoption: "deferred",
+    onboardingInterests: callbackDraft?.signupMethod?.kind === "oauth"
+      && callbackDraft?.signupMethod?.provider === cb.provider
+      ? callbackDraft.surveyChoices
+      : undefined,
+  });
+}
+
+async function recoverOrRetryUnclaimed(
+  pending: NativeOAuthPendingExchange,
+  cb?: DeepLinkCallback,
+): Promise<AuthResult | null> {
+  const deadlineMs = Date.now() + 20_000;
+  let device: AuthDeviceDescriptor;
+  try {
+    device = await getBoundedOAuthDeviceDescriptor(Math.min(4_000, deadlineMs - Date.now()));
+  } catch {
+    return null;
+  }
+  const recovered = await attemptPendingRecovery(pending, device, deadlineMs);
+  if (recovered !== "pending" && recovered !== "unavailable") return recovered;
+  if (recovered !== "unavailable" || !cb || peekMatchingOAuthFlowMode(cb) !== "login") return null;
+  // recovery 404 + 정확히 일치하는 launch callback/context는 요청이 Worker에 도달하기 전
+  // process가 끝난 경우다. raw code를 저장하지 않고 launch URL에서만 다시 읽으며,
+  // 서버 transaction claim이 provider 교환을 여전히 정확히 한 번으로 제한한다.
+  try {
+    return await finishLoginWithRecovery(cb, pending);
+  } catch {
+    const raced = await attemptPendingRecovery(pending, device, deadlineMs);
+    return raced !== "pending" && raced !== "unavailable" ? raced : null;
+  }
+}
+
+// 인가코드 1건 교환(실제 네트워크). 실패는 bounded reconciliation 뒤 호출자에게 false 로 알린다.
+async function exchange(
+  cb: DeepLinkCallback,
+  onResult?: OAuthResultHandler,
+  pending: NativeOAuthPendingExchange | null = null,
+): Promise<boolean> {
+  const mode = peekMatchingOAuthFlowMode(cb);
+  if (!mode) return false;
   try {
     if (mode === "link") {
       // 이미 로그인한 계정에 소셜을 붙이는 흐름 — 세션을 바꾸지 않고 화면도 유지한다.
@@ -108,11 +261,28 @@ async function exchange(cb: DeepLinkCallback, onResult?: OAuthResultHandler): Pr
       }
       return true;
     }
-    await finishOAuthLogin(cb);
-    routeToHomeAfterLogin();
+    if (!pending) throw new Error("native_oauth_recovery_missing");
+    const result = await finishLoginWithRecovery(cb, pending);
+    if (readNativeOAuthPendingExchange()?.id !== pending.id) return false;
+    finalizeLogin(result, cb.provider, pending);
     onResult?.({ ok: true, provider: cb.provider, mode });
     return true;
   } catch (error) {
+    if (pending) {
+      if (readNativeOAuthPendingExchange()?.id !== pending.id) return false;
+      const recovered = await recoverOrRetryUnclaimed(pending, cb);
+      if (recovered) {
+        try {
+          if (readNativeOAuthPendingExchange()?.id !== pending.id) return false;
+          clearRecoveredOAuthLoginContext(cb.provider);
+          finalizeLogin(recovered, cb.provider, pending);
+          onResult?.({ ok: true, provider: cb.provider, mode });
+          return true;
+        } catch (recoveryError) {
+          console.error("네이티브 OAuth 복구 결과 적용 실패:", recoveryError);
+        }
+      }
+    }
     console.error("네이티브 OAuth 콜백 처리 실패:", error);
     onResult?.({ ok: false, provider: cb.provider, mode, errorCode: "oauth_exchange_failed" });
     if (mode === "link" && typeof window !== "undefined") {
@@ -129,7 +299,9 @@ async function cancel(
   cb: OAuthCancellationCallback,
   onResult?: OAuthResultHandler,
 ): Promise<boolean> {
-  let mode = peekOAuthFlowMode();
+  const matchedMode = peekMatchingOAuthFlowMode(cb);
+  if (!matchedMode) return false;
+  let mode = matchedMode;
   try {
     mode = finishOAuthCancellation(cb);
     onResult?.({ ok: false, provider: cb.provider, mode, errorCode: "oauth_cancelled" });
@@ -157,14 +329,40 @@ async function cancel(
 async function handleUrl(url: string, onResult?: OAuthResultHandler): Promise<boolean> {
   const cancellation = parseOAuthCancellationUrl(url);
   if (cancellation) {
+    const mode = peekMatchingOAuthFlowMode(cancellation);
+    if (!mode) return false;
     return getCodeOnce().run(
       oauthStateKey(cancellation.provider, cancellation.state),
-      () => cancel(cancellation, onResult),
+      () => {
+        dispatchActivity(cancellation.provider, mode);
+        return cancel(cancellation, onResult);
+      },
     );
   }
   const cb = parseOAuthDeepLink(url);
   if (!cb) return false;
-  return getCodeOnce().run(oauthStateKey(cb.provider, cb.state), () => exchange(cb, onResult));
+  const mode = peekMatchingOAuthFlowMode(cb);
+  if (!mode) return false;
+  const once = getCodeOnce();
+  const key = oauthStateKey(cb.provider, cb.state);
+  // once.run은 exec 전에 consumed를 영속화한다. 그 사이 process가 끝나도 복구 ID가
+  // 먼저 남아 있어야 하므로, 신규 login callback만 stage한 뒤 run에 전달한다.
+  let pending: NativeOAuthPendingExchange | null = null;
+  if (mode === "login" && !once.consumed(key)) {
+    try {
+      pending = stageNativeOAuthPendingExchange(cb.provider);
+    } catch (error) {
+      dispatchActivity(cb.provider, mode);
+      console.error("OAuth 복구 표식 저장 실패:", error);
+      onResult?.({ ok: false, provider: cb.provider, mode, errorCode: "oauth_exchange_failed" });
+      void closeExternal();
+      return false;
+    }
+  }
+  return once.run(key, () => {
+    dispatchActivity(cb.provider, mode);
+    return exchange(cb, onResult, pending);
+  });
 }
 
 // 리스너는 앱 전체에서 하나만 유지한다(중복 등록 = 인가코드 중복 교환).
@@ -172,14 +370,66 @@ let listenerRefs = 0;
 let sharedHandle: PluginListenerHandle | null = null;
 let pendingInit: Promise<void> | null = null;
 let resultHandler: OAuthResultHandler | undefined;
+let pendingRecoveryInFlight: Promise<boolean> | null = null;
 
 function notifyResult(result: OAuthDeepLinkResult): void {
   resultHandler?.(result);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(OAUTH_DEEP_LINK_RESULT_EVENT, { detail: result }));
+  }
 }
 
 // 함수로 읽는다 — 비동기 클로저 안에서 TS 가 카운터를 상수로 좁히지 않도록.
 function hasListenerRefs(): boolean {
   return listenerRefs > 0;
+}
+
+function resumePendingExchange(
+  launchUrl: string | null,
+  onResult?: OAuthResultHandler,
+): Promise<boolean> {
+  if (pendingRecoveryInFlight) return pendingRecoveryInFlight;
+  const pending = readNativeOAuthPendingExchange();
+  if (!pending) return Promise.resolve(false);
+  const launchCallback = launchUrl ? parseOAuthDeepLink(launchUrl) : null;
+  const matchingLaunch = launchCallback?.provider === pending.provider ? launchCallback : undefined;
+  dispatchActivity(pending.provider, "login");
+  pendingRecoveryInFlight = (async () => {
+    try {
+      const recovered = await recoverOrRetryUnclaimed(pending, matchingLaunch);
+      // 사용자가 복구 중 새 인증 intent를 시작했다면 과거 결과로 세션을 덮지 않는다.
+      if (readNativeOAuthPendingExchange()?.id !== pending.id) return false;
+      if (!recovered) {
+        onResult?.({
+          ok: false,
+          provider: pending.provider,
+          mode: "login",
+          errorCode: "oauth_exchange_failed",
+        });
+        return true;
+      }
+      clearRecoveredOAuthLoginContext(pending.provider);
+      finalizeLogin(recovered, pending.provider, pending);
+      onResult?.({ ok: true, provider: pending.provider, mode: "login" });
+      return true;
+    } catch (error) {
+      console.error("네이티브 OAuth process 복구 실패:", error);
+      if (readNativeOAuthPendingExchange()?.id === pending.id) {
+        onResult?.({
+          ok: false,
+          provider: pending.provider,
+          mode: "login",
+          errorCode: "oauth_exchange_failed",
+        });
+      }
+      return true;
+    } finally {
+      void closeExternal();
+    }
+  })().finally(() => {
+    pendingRecoveryInFlight = null;
+  });
+  return pendingRecoveryInFlight;
 }
 
 async function removeSharedHandle(): Promise<void> {
@@ -217,12 +467,17 @@ export function initOAuthDeepLink(onResult?: OAuthResultHandler): () => void {
 
       // 콜드스타트 보강: 앱이 딥링크로 실행됐다면 그 URL 도 확인한다.
       // 이 값은 이후에도 같은 URL 을 계속 돌려주므로(휘발되지 않음) 1회 소비 가드가 필수다.
+      let launchUrl: string | null = null;
       try {
-        const launch = await CapApp.getLaunchUrl();
-        if (launch?.url) await handleUrl(launch.url, notifyResult);
+        launchUrl = (await withOperationDeadline(
+          CapApp.getLaunchUrl(),
+          { timeoutMs: 2_000, errorCode: "oauth_launch_url_timeout" },
+        ))?.url ?? null;
       } catch {
-        /* 실행 인텐트 조회 미지원/실패 무시 */
+        // 실행 인텐트를 못 읽어도 local pending reconciliation은 반드시 수행한다.
       }
+      const recovered = await resumePendingExchange(launchUrl, notifyResult);
+      if (!recovered && launchUrl) await handleUrl(launchUrl, notifyResult);
     })().catch((error) => {
       console.error("OAuth 딥링크 리스너 등록 실패:", error);
     });

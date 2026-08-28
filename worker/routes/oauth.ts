@@ -27,7 +27,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import type { Env, Vars, AuthUser } from "../types";
 import { isRefreshTokenIssuanceBlocked, normalizeDeviceId } from "../lib/refresh";
-import { issueAccountSession } from "../lib/authSession";
+import { issueAccountSession, issueRecoverableAccountSession } from "../lib/authSession";
 import {
   isDeviceIdentityRequiredError,
 } from "../lib/accountDeviceSession";
@@ -54,6 +54,10 @@ import {
 import { attachOnboardingPreferences, parseOnboardingInterests } from "../lib/onboardingPreferences";
 import { invalidOAuthCallbackResponse, oauthCallbackResponse } from "../lib/oauthCallbackPage";
 import { writeOperationalLog } from "../lib/safeOperationalLog";
+import {
+  acknowledgeRecoveredOAuthSession,
+  recoverOAuthSession,
+} from "../lib/oauthRecovery";
 
 type OAuthEnv = Env;
 
@@ -264,6 +268,77 @@ oauth.post("/oauth/:provider/start", (c) => prepareOAuth(c, "login", null));
 oauth.post("/oauth/:provider/link/start", requireAuth, (c) => (
   prepareOAuth(c, "link", c.get("user").sub)
 ));
+
+// 32-byte recovery bearer는 raw로 저장하지 않는다. device ID 결합은 PoP가 아니며,
+// 실제 권한은 recoveryId 엔트로피 + 아직 활성인 canonical refresh 세대로 제한한다.
+oauth.post("/oauth/:provider/recovery", async (c) => {
+  c.header("Cache-Control", "no-store");
+  const provider = c.req.param("provider");
+  if (!PROVIDERS[provider] && provider !== "naver") {
+    return c.json({ error: "unsupported_provider" }, 404);
+  }
+  let body: {
+    recoveryId?: unknown;
+    device_install_id?: unknown;
+    device_label?: unknown;
+    device_platform?: unknown;
+  };
+  try { body = await c.req.json(); } catch { return c.json({ error: "invalid_json" }, 400); }
+  const recoveryId = typeof body.recoveryId === "string" ? body.recoveryId : "";
+  try {
+    const recovered = await recoverOAuthSession(c.env, {
+      provider,
+      recoveryId,
+      deviceId: body.device_install_id,
+      deviceLabel: body.device_label,
+      devicePlatform: body.device_platform,
+    });
+    if (!recovered) return c.json({ error: "oauth_recovery_unavailable" }, 404);
+    if (recovered.status === "pending") return c.json({ status: "pending" }, 202);
+    return c.json({
+      account_status: recovered.accountStatus,
+      provider,
+      user_id: recovered.user.id,
+      user: recovered.user,
+      session: {
+        access_token: recovered.accessToken,
+        refresh_token: recovered.refreshToken,
+        token_type: "bearer",
+      },
+    });
+  } catch (error) {
+    if (isDeviceIdentityRequiredError(error)) {
+      return c.json({ error: "device_identity_required" }, 400);
+    }
+    throw error;
+  }
+});
+
+oauth.post("/oauth/:provider/recovery/ack", requireAuth, async (c) => {
+  c.header("Cache-Control", "no-store");
+  const provider = c.req.param("provider");
+  if (!PROVIDERS[provider] && provider !== "naver") {
+    return c.json({ error: "unsupported_provider" }, 404);
+  }
+  let body: { recoveryId?: unknown };
+  try { body = await c.req.json(); } catch { return c.json({ error: "invalid_json" }, 400); }
+  const recoveryId = typeof body.recoveryId === "string" ? body.recoveryId : "";
+  const user = c.get("user");
+  const accessJti = c.get("accessTokenJti");
+  if (!user.device_id || !accessJti) {
+    return c.json({ error: "oauth_recovery_unavailable" }, 404);
+  }
+  const acknowledged = await acknowledgeRecoveredOAuthSession(c.env, {
+    provider,
+    recoveryId,
+    userId: user.sub,
+    deviceId: user.device_id,
+    accessJti,
+  });
+  return acknowledged
+    ? c.body(null, 204)
+    : c.json({ error: "oauth_recovery_unavailable" }, 404);
+});
 
 // provider 콜백은 DB에 저장된 고정 target만 사용하고 code를 해당 transaction에 결합한다.
 oauth.get("/oauth/:provider/callback", async (c) => {
@@ -543,6 +618,7 @@ oauth.post("/oauth/:provider", async (c) => {
     device_label?: unknown;
     device_platform?: unknown;
     onboardingInterests?: unknown;
+    recoveryId?: unknown;
   };
   try {
     body = await c.req.json();
@@ -557,6 +633,7 @@ oauth.post("/oauth/:provider", async (c) => {
   }
   const deviceId = normalizeDeviceId(body.device_install_id);
   if (!deviceId) return c.json({ error: "device_identity_required" }, 400);
+  const recoveryId = typeof body.recoveryId === "string" ? body.recoveryId : "";
   const onboardingInterests = parseOnboardingInterests(body.onboardingInterests);
   if (!onboardingInterests.ok) return c.json({ error: "invalid_onboarding_interests" }, 400);
   const claimed = await consumeOAuthTransaction(db, {
@@ -565,6 +642,7 @@ oauth.post("/oauth/:provider", async (c) => {
     state,
     transactionSecret,
     flowMode: "login",
+    ...(recoveryId ? { recovery: { id: recoveryId, deviceId } } : {}),
   });
   if (!claimed) return c.json({ error: "invalid_oauth_transaction" }, 400);
   const profile = await exchangeProfile(c, provider, cfg, code);
@@ -686,11 +764,18 @@ oauth.post("/oauth/:provider", async (c) => {
   let accessToken: string;
   let refreshToken: string;
   try {
-    const issued = await issueAccountSession(c.env, user, {
-      deviceId,
-      deviceLabel: body.device_label,
-      devicePlatform: body.device_platform,
-    });
+    const issued = recoveryId
+      ? await issueRecoverableAccountSession(c.env, user, {
+          deviceId,
+          deviceLabel: body.device_label,
+          devicePlatform: body.device_platform,
+          recovery: { provider, recoveryId, accountStatus },
+        })
+      : await issueAccountSession(c.env, user, {
+          deviceId,
+          deviceLabel: body.device_label,
+          devicePlatform: body.device_platform,
+        });
     accessToken = issued.accessToken;
     refreshToken = issued.refreshToken;
   } catch (error) {

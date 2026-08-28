@@ -10,25 +10,31 @@
  *
  * 네이티브 전용: 웹은 OAuth 복귀가 온보딩 화면 경유라 연결 흐름을 받을 곳이 없다 → 안내만 한다.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2 } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { qk } from "@/queries/keys";
 import {
   fetchOAuthLinks,
+  abandonPendingOAuth,
+  hasLocalOAuthContext,
   LINKABLE_PROVIDERS,
   startWorkerOAuth,
   unlinkOAuthAccount,
   type OAuthLink,
 } from "@/lib/api/endpoints/auth";
-import { OAUTH_LINK_EVENT } from "@/lib/native/oauthDeepLink";
+import { OAUTH_DEEP_LINK_ACTIVITY_EVENT, OAUTH_LINK_EVENT } from "@/lib/native/oauthDeepLink";
 import { isNativePlatform } from "@/lib/native/plugins";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import "./SocialLinks.css";
 import { useIntl, type IntlShape } from "react-intl";
 import type { MessageId } from "@/i18n/generated/messageIds";
 import { localizeApiError } from "@/i18n/apiError";
+import {
+  OAUTH_CALLBACK_DELIVERY_GRACE_MS,
+  shouldReleaseOAuthBusyOnResume,
+} from "@/transform/asyncUiState";
 
 /** 제공자 이름은 locale catalog 가 정본이다(다른 언어에서 카카오·네이버가 한국어로 남지 않게). */
 const PROVIDER_LABEL_ID: Record<string, string> = {
@@ -58,6 +64,9 @@ export function SocialLinks() {
   const qc = useQueryClient();
   const { show } = useToast();
   const native = isNativePlatform();
+  const oauthExternalPendingRef = useRef(false);
+  const oauthResumeReleaseTimerRef = useRef<number | null>(null);
+  const actionPendingRef = useRef(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
 
@@ -71,6 +80,12 @@ export function SocialLinks() {
   useEffect(() => {
     const onLinked = (event: Event) => {
       const detail = (event as CustomEvent<LinkEventDetail>).detail ?? {};
+      if (oauthResumeReleaseTimerRef.current !== null) {
+        window.clearTimeout(oauthResumeReleaseTimerRef.current);
+        oauthResumeReleaseTimerRef.current = null;
+      }
+      oauthExternalPendingRef.current = false;
+      actionPendingRef.current = false;
       setBusy(null);
       if (detail.cancelled) {
         show(intl.formatMessage({ id: "onboarding.toast.socialCancelled" }));
@@ -92,27 +107,78 @@ export function SocialLinks() {
     return () => window.removeEventListener(OAUTH_LINK_EVENT, onLinked);
   }, [intl, qc, show]);
 
+  useEffect(() => {
+    const clearResumeReleaseTimer = () => {
+      if (oauthResumeReleaseTimerRef.current === null) return;
+      window.clearTimeout(oauthResumeReleaseTimerRef.current);
+      oauthResumeReleaseTimerRef.current = null;
+    };
+    const releaseOAuthBusy = () => {
+      if (document.visibilityState !== "visible" || !oauthExternalPendingRef.current) return;
+      clearResumeReleaseTimer();
+      // appUrlOpen보다 foreground가 먼저 와도 진행 중 callback의 action gate를 열지 않는다.
+      // Worker의 전체 재시도 창 뒤에도 context가 남아 있을 때만 브라우저 중단으로 확정한다.
+      oauthResumeReleaseTimerRef.current = window.setTimeout(() => {
+        oauthResumeReleaseTimerRef.current = null;
+        if (!shouldReleaseOAuthBusyOnResume({
+          documentVisible: document.visibilityState === "visible",
+          oauthExternalPending: oauthExternalPendingRef.current,
+          oauthContextPending: hasLocalOAuthContext(),
+        })) return;
+        abandonPendingOAuth();
+        oauthExternalPendingRef.current = false;
+        actionPendingRef.current = false;
+        setBusy(null);
+      }, OAUTH_CALLBACK_DELIVERY_GRACE_MS);
+    };
+    const keepLockedForCallback = (event: Event) => {
+      const detail = (event as CustomEvent<{ mode?: string }>).detail;
+      if (detail?.mode !== "link") return;
+      clearResumeReleaseTimer();
+    };
+    document.addEventListener("visibilitychange", releaseOAuthBusy);
+    window.addEventListener("pageshow", releaseOAuthBusy);
+    window.addEventListener(OAUTH_DEEP_LINK_ACTIVITY_EVENT, keepLockedForCallback);
+    return () => {
+      clearResumeReleaseTimer();
+      document.removeEventListener("visibilitychange", releaseOAuthBusy);
+      window.removeEventListener("pageshow", releaseOAuthBusy);
+      window.removeEventListener(OAUTH_DEEP_LINK_ACTIVITY_EVENT, keepLockedForCallback);
+    };
+  }, []);
+
   const links = data?.links ?? [];
   // 남는 로그인 수단이 하나도 없으면 해제 금지(서버도 409 로 막지만 버튼부터 잠근다).
   const canUnlink = (data?.hasPasswordLogin ?? false) || links.length > 1;
 
   const startLink = async (provider: OAuthProvider) => {
+    if (actionPendingRef.current) return;
+    actionPendingRef.current = true;
+    abandonPendingOAuth();
     setBusy(provider);
     setConfirming(null);
     try {
-      await startWorkerOAuth(provider, "link");
+      await startWorkerOAuth(provider, "link", {
+        onExternalOpen: () => {
+          oauthExternalPendingRef.current = true;
+        },
+      });
     } catch (error) {
+      oauthExternalPendingRef.current = false;
+      actionPendingRef.current = false;
       setBusy(null);
       show(localizeApiError(error, intl, "formal"));
     }
   };
 
   const unlink = async (link: OAuthLink) => {
+    if (actionPendingRef.current) return;
     const key = linkKey(link);
     if (confirming !== key) {
       setConfirming(key);
       return;
     }
+    actionPendingRef.current = true;
     setConfirming(null);
     setBusy(key);
     try {
@@ -125,6 +191,7 @@ export function SocialLinks() {
     } catch (error) {
       show(localizeApiError(error, intl, "formal"));
     } finally {
+      actionPendingRef.current = false;
       setBusy(null);
     }
   };
@@ -171,7 +238,7 @@ export function SocialLinks() {
                 <button
                   type="button"
                   className={`sl-unlink hy-press${isConfirming ? " sl-unlink--confirm" : ""}`}
-                  disabled={!canUnlink || busy === key} aria-busy={busy === key}
+                  disabled={!canUnlink || busy !== null} aria-busy={busy === key}
                   onClick={() => void unlink(link)}
                 >
                   {busy === key ? intl.formatMessage({ id: "parent.socialLinks.copy008" }) : isConfirming ? intl.formatMessage({ id: "parent.socialLinks.copy009" }) : intl.formatMessage({ id: "parent.socialLinks.copy010" })}
@@ -189,7 +256,7 @@ export function SocialLinks() {
               <button
                 type="button"
                 className="pa-row pa-row-btn hy-press"
-                disabled={!native || isLoading || busy === provider} aria-busy={isLoading || busy === provider}
+                disabled={!native || isLoading || busy !== null} aria-busy={isLoading || busy === provider}
                 onClick={() => startLink(provider)}
               >
                 <span className="pa-row__k">

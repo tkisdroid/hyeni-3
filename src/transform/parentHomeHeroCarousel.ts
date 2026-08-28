@@ -34,14 +34,29 @@ export interface ParentHomeHeroSlide {
 export const MAX_PARENT_HOME_HERO_SLIDES = 6;
 
 /**
- * 기본 슬라이드 3개. `ad` 는 의도적으로 없다(위 주석의 Play 선언 이유).
- * 순서가 곧 표시 순서이며 첫 장은 반드시 `today` 여야 한다.
+ * 구현이 끝난 프로모션까지 보존하는 전체 카탈로그. `ad` 는 의도적으로 없다
+ * (위 주석의 Play 선언 이유). 순서가 곧 표시 순서이며 첫 장은 반드시 `today` 여야 한다.
  */
-export const DEFAULT_PARENT_HOME_HERO_SLIDES: readonly ParentHomeHeroSlide[] = Object.freeze([
+export const PARENT_HOME_HERO_SLIDE_CATALOG: readonly ParentHomeHeroSlide[] = Object.freeze([
   { id: "today", kind: "today", route: "/parent/calendar" },
   { id: "hyeni_study", kind: "promo", externalUrl: "https://hyenistudy.com" },
   { id: "hyeni_world", kind: "promo", externalUrl: "https://www.youtube.com/@hyeniworld" },
 ]);
+
+/**
+ * 현재 배포에서 실제로 켜는 히어로 ID.
+ * 혜니스터디 앱 공개 뒤 `hyeni_study`를 추가하면 보존된 캐러셀 UI가 다시 활성화된다.
+ */
+export const CURRENT_RELEASE_PARENT_HOME_HERO_SLIDE_IDS: readonly string[] = Object.freeze([
+  "today",
+]);
+
+const currentReleaseHeroSlideIds = new Set(CURRENT_RELEASE_PARENT_HOME_HERO_SLIDE_IDS);
+
+/** 운영 설정이 과거 값이어도 현재 릴리스가 승인한 슬라이드만 기본 노출한다. */
+export const DEFAULT_PARENT_HOME_HERO_SLIDES: readonly ParentHomeHeroSlide[] = Object.freeze(
+  PARENT_HOME_HERO_SLIDE_CATALOG.filter((slide) => currentReleaseHeroSlideIds.has(slide.id)),
+);
 
 /** 운영자가 정하는 값. 한 행 JSON 으로 저장해 구독/비구독 개수가 어긋난 중간 상태를 만들지 않는다. */
 export interface ParentHomeHeroControls {

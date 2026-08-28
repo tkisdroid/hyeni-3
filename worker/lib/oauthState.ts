@@ -11,9 +11,13 @@ const WEB_REDIRECT_ORIGINS = new Set([
   "https://hyeni-calendar.pages.dev",
 ]);
 const TRANSACTION_TTL_MS = 10 * 60 * 1000;
+const RECOVERY_TTL_MS = 5 * 60 * 1000;
 const MAX_STATE_LENGTH = 256;
 const MAX_TRANSACTION_SECRET_LENGTH = 256;
 const MAX_AUTHORIZATION_CODE_LENGTH = 8_192;
+const RECOVERY_ID_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const HASH_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 function isBoundedValue(value: string, maxLength: number): boolean {
   return value.length > 0 && value.length <= maxLength;
@@ -31,6 +35,18 @@ export interface OAuthCallbackTransaction {
   redirectTarget: string;
   flowMode: OAuthFlowMode;
 }
+
+export type OAuthRecoveryAccountStatus = "created" | "existing" | "linked";
+
+export type OAuthRecoveryState =
+  | { status: "pending" }
+  | {
+      status: "ready";
+      userId: string;
+      accountStatus: OAuthRecoveryAccountStatus;
+      accessJti: string;
+      refreshTokenHash: string;
+    };
 
 function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = "";
@@ -100,6 +116,9 @@ export async function createOAuthTransaction(
   const createdAt = pgTs(now);
   const expiresDate = new Date(now.getTime() + TRANSACTION_TTL_MS);
   const expiresAt = pgTs(expiresDate);
+  // 운영 CHECK의 native는 특정 OS가 아니라 package/scheme-bound 앱 capability다.
+  // iOS 복귀 target은 redirect_target에 이미 보존되므로 기존 운영 테이블을 재작성하지 않는다.
+  const storedClientKind = input.clientKind === "ios" ? "native" : input.clientKind;
   await db.prepare(
     `INSERT INTO oauth_state_transactions
       (state_hash, transaction_secret_hash, provider, client_kind, redirect_target, flow_mode, user_id,
@@ -109,7 +128,7 @@ export async function createOAuthTransaction(
     stateHash,
     transactionSecretHash,
     input.provider,
-    input.clientKind,
+    storedClientKind,
     redirectTarget,
     input.flowMode,
     input.userId ?? null,
@@ -199,6 +218,7 @@ export async function consumeOAuthTransaction(
     transactionSecret: string;
     flowMode: OAuthFlowMode;
     userId?: string | null;
+    recovery?: { id: string; deviceId: string };
   },
   now = new Date(),
 ): Promise<boolean> {
@@ -208,21 +228,38 @@ export async function consumeOAuthTransaction(
     || !isBoundedValue(input.transactionSecret, MAX_TRANSACTION_SECRET_LENGTH)
   ) return false;
   if (input.flowMode === "link" && !input.userId) return false;
+  if (input.recovery && (
+    input.flowMode !== "login"
+    || !RECOVERY_ID_PATTERN.test(input.recovery.id)
+    || !/^[A-Za-z0-9-]{1,64}$/.test(input.recovery.deviceId)
+  )) return false;
   const stateHash = await hashOAuthSecret(input.state);
   const codeHash = await hashOAuthSecret(input.code);
   const transactionSecretHash = await hashOAuthSecret(input.transactionSecret);
   const nowTs = pgTs(now);
+  const recoveryIdHash = input.recovery ? await hashOAuthSecret(input.recovery.id) : null;
+  const recoveryBindingHash = input.recovery
+    ? await hashOAuthSecret(`${input.recovery.id}\0${input.recovery.deviceId}`)
+    : null;
+  const recoveryExpiresAt = input.recovery
+    ? pgTs(new Date(now.getTime() + RECOVERY_TTL_MS))
+    : null;
   const userClause = input.flowMode === "link" ? "AND user_id=?" : "AND user_id IS NULL";
+  const clientClause = input.recovery ? "AND client_kind IN ('native','ios')" : "";
   const statement = db.prepare(
-    `UPDATE oauth_state_transactions SET consumed_at=?
+    `UPDATE oauth_state_transactions
+        SET consumed_at=?, recovery_id_hash=?, recovery_binding_hash=?, recovery_expires_at=?
       WHERE state_hash=? AND provider=? AND flow_mode=?
         AND authorization_code_hash=? AND transaction_secret_hash=?
         AND callback_received_at IS NOT NULL
-        AND consumed_at IS NULL AND expires_at>? ${userClause}`,
+        AND consumed_at IS NULL AND expires_at>? ${userClause} ${clientClause}`,
   );
   const result = input.flowMode === "link"
     ? await statement.bind(
         nowTs,
+        recoveryIdHash,
+        recoveryBindingHash,
+        recoveryExpiresAt,
         stateHash,
         input.provider,
         input.flowMode,
@@ -231,8 +268,11 @@ export async function consumeOAuthTransaction(
         nowTs,
         input.userId,
       ).run()
-    : await statement.bind(
+      : await statement.bind(
         nowTs,
+        recoveryIdHash,
+        recoveryBindingHash,
+        recoveryExpiresAt,
         stateHash,
         input.provider,
         input.flowMode,
@@ -240,6 +280,90 @@ export async function consumeOAuthTransaction(
         transactionSecretHash,
         nowTs,
       ).run();
+  return Number(result.meta?.changes ?? 0) === 1;
+}
+
+async function recoveryLookupHashes(recoveryId: string, deviceId: string): Promise<{
+  idHash: string;
+  bindingHash: string;
+} | null> {
+  if (!RECOVERY_ID_PATTERN.test(recoveryId) || !/^[A-Za-z0-9-]{1,64}$/.test(deviceId)) return null;
+  return {
+    idHash: await hashOAuthSecret(recoveryId),
+    bindingHash: await hashOAuthSecret(`${recoveryId}\0${deviceId}`),
+  };
+}
+
+/** ACK 전에는 같은 recovery+device가 같은 canonical session generation을 반복 회수할 수 있다. */
+export async function readOAuthRecovery(
+  db: D1Database,
+  input: { provider: string; recoveryId: string; deviceId: string },
+  now = new Date(),
+): Promise<OAuthRecoveryState | null> {
+  const hashes = await recoveryLookupHashes(input.recoveryId, input.deviceId);
+  if (!hashes) return null;
+  const row = await db.prepare(
+    `SELECT recovery_user_id,recovery_account_status,recovery_access_jti,
+            recovery_refresh_token_hash,recovery_ready_at
+       FROM oauth_state_transactions
+      WHERE provider=? AND flow_mode='login'
+        AND recovery_id_hash=? AND recovery_binding_hash=?
+        AND consumed_at IS NOT NULL AND recovery_acknowledged_at IS NULL
+        AND recovery_expires_at>?`,
+  ).bind(input.provider, hashes.idHash, hashes.bindingHash, pgTs(now)).first<{
+    recovery_user_id: string | null;
+    recovery_account_status: string | null;
+    recovery_access_jti: string | null;
+    recovery_refresh_token_hash: string | null;
+    recovery_ready_at: string | null;
+  }>();
+  if (!row) return null;
+  if (!row.recovery_ready_at) return { status: "pending" };
+  if (
+    !row.recovery_user_id
+    || !["created", "existing", "linked"].includes(String(row.recovery_account_status))
+    || !UUID_V4_PATTERN.test(String(row.recovery_access_jti ?? ""))
+    || !HASH_PATTERN.test(String(row.recovery_refresh_token_hash ?? ""))
+  ) return null;
+  return {
+    status: "ready",
+    userId: row.recovery_user_id,
+    accountStatus: row.recovery_account_status as OAuthRecoveryAccountStatus,
+    accessJti: row.recovery_access_jti as string,
+    refreshTokenHash: row.recovery_refresh_token_hash as string,
+  };
+}
+
+export async function acknowledgeOAuthRecovery(
+  db: D1Database,
+  input: {
+    provider: string;
+    recoveryId: string;
+    deviceId: string;
+    userId: string;
+    accessJti: string;
+  },
+  now = new Date(),
+): Promise<boolean> {
+  const hashes = await recoveryLookupHashes(input.recoveryId, input.deviceId);
+  if (!hashes || !UUID_V4_PATTERN.test(input.accessJti)) return false;
+  const nowTs = pgTs(now);
+  const result = await db.prepare(
+    `UPDATE oauth_state_transactions SET recovery_acknowledged_at=?
+      WHERE provider=? AND flow_mode='login'
+        AND recovery_id_hash=? AND recovery_binding_hash=?
+        AND recovery_user_id=? AND recovery_access_jti=?
+        AND recovery_ready_at IS NOT NULL AND recovery_acknowledged_at IS NULL
+        AND recovery_expires_at>?`,
+  ).bind(
+    nowTs,
+    input.provider,
+    hashes.idHash,
+    hashes.bindingHash,
+    input.userId,
+    input.accessJti,
+    nowTs,
+  ).run();
   return Number(result.meta?.changes ?? 0) === 1;
 }
 

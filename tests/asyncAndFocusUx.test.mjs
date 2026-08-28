@@ -180,11 +180,13 @@ test("visibility·pageshow는 외부 OAuth가 실제 열린 경우에만 busy를
   const resumeEffect = onboarding.slice(start, end);
 
   assert.match(onboarding, /const oauthExternalBusyRef = useRef\(false\)/);
-  assert.match(onboarding, /const \[oauthExternalBusy, setOAuthExternalBusy\] = useState\(false\)/);
-  assert.match(onboarding, /const markOAuthExternalBusy = \(\) =>/);
-  assert.match(onboarding, /const clearOAuthExternalBusy = \(\) =>/);
+  assert.match(onboarding, /const markOAuthExternalBusy = useCallback\(\(\) =>/);
+  assert.match(onboarding, /const clearOAuthExternalBusy = useCallback\(\(\) =>/);
   assert.match(resumeEffect, /shouldReleaseOAuthBusyOnResume\(/);
   assert.match(resumeEffect, /oauthExternalBusyRef\.current/);
+  assert.match(resumeEffect, /window\.setTimeout/);
+  assert.match(resumeEffect, /hasLocalOAuthContext\(\)/);
+  assert.match(resumeEffect, /abandonPendingOAuth\(\)/);
   assert.doesNotMatch(resumeEffect, /if \(document\.visibilityState === "visible"\) setBusy\(false\)/);
 
   const socialStart = onboarding.indexOf("const social = async");

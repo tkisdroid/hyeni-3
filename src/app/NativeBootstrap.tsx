@@ -144,7 +144,8 @@ export function NativeBootstrap() {
     void syncWebPushSessionContext(context);
   }, [status, userId, familyId, role]);
 
-  // OAuth verified App Link 리스너 — 1회 등록. 성공 시 role 홈 이동은 내장.
+  // OAuth verified App Link 리스너 — 1회 등록. 로그인 성공 후 가족·초대 분기는
+  // 영속 continuation을 받은 Onboarding이 웹 callback과 같은 경로로 확정한다.
   useEffect(() => {
     if (!isNativePlatform()) return;
     return initOAuthDeepLink((r) => {

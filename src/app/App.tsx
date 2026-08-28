@@ -8,8 +8,15 @@ import { AccentProvider } from "./accent";
 import { ToastProvider } from "./toast";
 import { QueryProvider } from "@/queries/QueryProvider";
 import { AuthProvider } from "@/auth/AuthProvider";
+import { useAuth } from "@/auth/AuthContext";
 import { RequireAnyRole, RequireAuthenticated, RequireRole } from "@/auth/RequireRole";
 import { RequireGuest } from "@/auth/RequireGuest";
+import {
+  getApiAccessTokenJti,
+  getApiLoginGenerationId,
+  getApiSessionInstanceId,
+} from "@/lib/api/session";
+import { readNativeOAuthLoginCompletionForSession } from "@/transform/nativeOAuthLoginCompletion";
 import { useFamilyRealtime } from "@/queries/useFamilyRealtime";
 import { NativeBootstrap } from "./NativeBootstrap";
 import { ActiveChildProvider } from "./activeChild";
@@ -167,7 +174,14 @@ const PWA_DRAFT_PROTECTED_ROUTES = new Set([
 
 function AppRouteServices() {
   const location = useLocation();
+  const auth = useAuth();
   const activeMutationCount = useIsMutating();
+  const nativeOAuthCompletion = readNativeOAuthLoginCompletionForSession(
+    auth.userId,
+    getApiSessionInstanceId(),
+    getApiAccessTokenJti(),
+    getApiLoginGenerationId(),
+  );
   usePwaUpdateCriticalSection(
     activeMutationCount > 0 || PWA_DRAFT_PROTECTED_ROUTES.has(location.pathname),
   );
@@ -175,7 +189,9 @@ function AppRouteServices() {
   return (
     <>
       <AppVersionGate />
-      <Outlet />
+      {nativeOAuthCompletion && location.pathname !== "/onboarding"
+        ? <Navigate to="/onboarding" replace />
+        : <Outlet />}
     </>
   );
 }

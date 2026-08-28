@@ -4,6 +4,7 @@ import { registerHooks } from "node:module";
 import { extname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test, { after } from "node:test";
+import { runInNewContext } from "node:vm";
 
 const typeScriptResolutionHook = registerHooks({
   resolve(specifier, context, nextResolve) {
@@ -20,11 +21,13 @@ after(() => typeScriptResolutionHook.deregister());
 
 const {
   appendOAuthCallbackQuery,
+  acknowledgeOAuthRecovery,
   cancelOAuthTransaction,
   consumeOAuthTransaction,
   createOAuthTransaction,
   markOAuthCallback,
   parseOAuthPrepareBody,
+  readOAuthRecovery,
   resolveOAuthRedirectTarget,
 } = await import("../lib/oauthState.ts");
 const {
@@ -53,13 +56,22 @@ function createDb() {
       state_hash TEXT PRIMARY KEY,
       transaction_secret_hash TEXT NOT NULL,
       provider TEXT NOT NULL,
-      client_kind TEXT NOT NULL,
+      client_kind TEXT NOT NULL CHECK (client_kind IN ('native', 'web')),
       redirect_target TEXT NOT NULL,
       flow_mode TEXT NOT NULL,
       user_id TEXT,
       authorization_code_hash TEXT,
       callback_received_at TEXT,
       consumed_at TEXT,
+      recovery_id_hash TEXT,
+      recovery_binding_hash TEXT,
+      recovery_user_id TEXT,
+      recovery_account_status TEXT,
+      recovery_access_jti TEXT,
+      recovery_refresh_token_hash TEXT,
+      recovery_ready_at TEXT,
+      recovery_expires_at TEXT,
+      recovery_acknowledged_at TEXT,
       created_at TEXT NOT NULL,
       expires_at TEXT NOT NULL
     );
@@ -111,8 +123,25 @@ test("OAuth 복귀 대상은 고정 앱 딥링크와 승인된 정확한 웹 ori
   });
 });
 
+test("iOS OAuth start는 기존 운영 client_kind CHECK와 호환하면서 iOS redirect를 보존한다", async () => {
+  const { db, sqlite } = createDb();
+  const transaction = await createOAuthTransaction(db, {
+    provider: "google",
+    clientKind: "ios",
+    flowMode: "login",
+  }, NOW);
+  assert.equal(transaction.redirectTarget, "com.hyeni.calendar.oauth://oauth/callback");
+  const stored = sqlite.prepare(
+    "SELECT client_kind,redirect_target FROM oauth_state_transactions",
+  ).get();
+  assert.deepEqual({ ...stored }, {
+    client_kind: "native",
+    redirect_target: "com.hyeni.calendar.oauth://oauth/callback",
+  });
+});
+
 test("콜백 code와 state를 서버 트랜잭션에 결합하고 정확히 한 번만 소비한다", async () => {
-  const { db } = createDb();
+  const { db, sqlite } = createDb();
   const tx = await createOAuthTransaction(db, {
     provider: "google",
     clientKind: "web",
@@ -206,6 +235,42 @@ test("Android 네이티브 OAuth 완료 페이지는 정확한 앱 패키지 int
   assert.match(html, />앱 열기<\/a>/);
 });
 
+test("Google 본인 확인 화면이 콜백 로드와 겹쳐도 브라우저 focus 복귀 시 앱을 다시 연다", async () => {
+  const callbackUrl = "https://hyeni-calendar.pages.dev/oauth/callback?provider=google&code=CODE123&state=STATE123";
+  const html = await oauthCallbackResponse("구글", callbackUrl).text();
+
+  assert.doesNotMatch(html, /document\.hasFocus\(\)/);
+  assert.match(html, /addEventListener\("focus",\s*launch/);
+  assert.match(html, /addEventListener\("pageshow",\s*launch/);
+  assert.match(html, /addEventListener\("visibilitychange",\s*launch/);
+  assert.match(html, /setTimeout\(launch,\s*250\)/);
+  assert.match(html, /setTimeout\(launch,\s*1000\)/);
+
+  const script = html.match(/<script>([\s\S]+)<\/script>/)?.[1];
+  assert.ok(script);
+  const launched = [];
+  const listeners = new Map();
+  const timers = new Map();
+  runInNewContext(script, {
+    Date: { now: () => 1_000 },
+    document: {
+      visibilityState: "visible",
+      addEventListener: (event, handler) => listeners.set(`document:${event}`, handler),
+    },
+    location: { replace: (target) => launched.push(target) },
+    addEventListener: (event, handler) => listeners.set(event, handler),
+    setTimeout: (handler, delay) => {
+      timers.set(delay, handler);
+      return 0;
+    },
+  });
+  assert.equal(launched.length, 1);
+  assert.equal(launched[0], createAndroidOAuthIntentUrl(callbackUrl));
+
+  timers.get(250)();
+  assert.equal(launched.length, 2, "Chrome 주소창이 focus를 가진 경우에도 지연 재시도해야 합니다");
+});
+
 test("비정상적으로 큰 state·code·transaction secret은 해시·DB 접근 전에 거부한다", async () => {
   const { db } = createDb();
   const huge = "x".repeat(9_000);
@@ -226,4 +291,151 @@ test("비정상적으로 큰 state·code·transaction secret은 해시·DB 접�
     transactionSecret: huge,
     flowMode: "login",
   }, NOW), false);
+});
+
+test("네이티브 OAuth recovery는 hash+device binding만 저장하고 ACK 전까지 at-least-once로 읽힌다", async () => {
+  assert.equal(typeof readOAuthRecovery, "function");
+  assert.equal(typeof acknowledgeOAuthRecovery, "function");
+
+  const { db, sqlite } = createDb();
+  const tx = await createOAuthTransaction(db, {
+    provider: "google",
+    clientKind: "native",
+    flowMode: "login",
+  }, NOW);
+  await markOAuthCallback(db, "google", tx.state, "recovery-code", NOW);
+  const recoveryId = "R".repeat(43);
+  const deviceId = "native-install-recovery";
+
+  assert.equal(await consumeOAuthTransaction(db, {
+    provider: "google",
+    state: tx.state,
+    code: "recovery-code",
+    transactionSecret: tx.transactionSecret,
+    flowMode: "login",
+    recovery: { id: recoveryId, deviceId },
+  }, NOW), true);
+
+  const stored = sqlite.prepare(`SELECT recovery_id_hash,recovery_binding_hash,recovery_user_id,
+    recovery_account_status,recovery_access_jti,recovery_refresh_token_hash,
+    recovery_ready_at,recovery_expires_at,recovery_acknowledged_at
+    FROM oauth_state_transactions`).get();
+  assert.equal(typeof stored.recovery_id_hash, "string");
+  assert.equal(typeof stored.recovery_binding_hash, "string");
+  assert.notEqual(stored.recovery_id_hash, recoveryId);
+  assert.notEqual(stored.recovery_binding_hash, deviceId);
+  assert.equal(JSON.stringify(stored).includes(recoveryId), false);
+  assert.equal(JSON.stringify(stored).includes(deviceId), false);
+
+  assert.deepEqual(await readOAuthRecovery(db, {
+    provider: "google", recoveryId, deviceId,
+  }, NOW), { status: "pending" });
+  sqlite.prepare(`UPDATE oauth_state_transactions
+    SET recovery_user_id='parent-1', recovery_account_status='existing',
+        recovery_access_jti='16b217ba-200f-45e2-b728-d08e95acff1a',
+        recovery_refresh_token_hash=?, recovery_ready_at='2026-07-14 00:00:00+00'`)
+    .run("r".repeat(43));
+
+  const expectedReady = {
+    status: "ready",
+    userId: "parent-1",
+    accountStatus: "existing",
+    accessJti: "16b217ba-200f-45e2-b728-d08e95acff1a",
+    refreshTokenHash: "r".repeat(43),
+  };
+  assert.deepEqual(await readOAuthRecovery(db, {
+    provider: "google", recoveryId, deviceId,
+  }, NOW), expectedReady);
+  assert.deepEqual(await readOAuthRecovery(db, {
+    provider: "google", recoveryId, deviceId,
+  }, new Date(NOW.getTime() + 1_000)), expectedReady, "ACK 전 응답 유실은 같은 device에서 재발급할 수 있어야 합니다");
+  assert.equal(await readOAuthRecovery(db, {
+    provider: "google", recoveryId, deviceId: "other-device",
+  }, NOW), null);
+  assert.equal(await acknowledgeOAuthRecovery(db, {
+    provider: "google", recoveryId, deviceId, userId: "other-user",
+    accessJti: "16b217ba-200f-45e2-b728-d08e95acff1a",
+  }, NOW), false);
+  assert.equal(await acknowledgeOAuthRecovery(db, {
+    provider: "google", recoveryId, deviceId, userId: "parent-1",
+    accessJti: "8c6ad2a7-2013-44fc-9bed-823d08e783d4",
+  }, NOW), false, "같은 user/device라도 다른 access generation은 ACK할 수 없습니다");
+  assert.equal(await acknowledgeOAuthRecovery(db, {
+    provider: "google", recoveryId, deviceId, userId: "parent-1",
+    accessJti: "16b217ba-200f-45e2-b728-d08e95acff1a",
+  }, NOW), true);
+  assert.equal(await readOAuthRecovery(db, {
+    provider: "google", recoveryId, deviceId,
+  }, NOW), null, "인증된 completion ACK 뒤에는 replay를 닫아야 합니다");
+});
+
+test("OAuth recovery ready 결과는 짧은 TTL 뒤 재발급되지 않는다", async () => {
+  assert.equal(typeof readOAuthRecovery, "function");
+  const { db, sqlite } = createDb();
+  const tx = await createOAuthTransaction(db, {
+    provider: "google", clientKind: "native", flowMode: "login",
+  }, NOW);
+  await markOAuthCallback(db, "google", tx.state, "ttl-code", NOW);
+  const recoveryId = "T".repeat(43);
+  const deviceId = "ttl-native-install";
+  assert.equal(await consumeOAuthTransaction(db, {
+    provider: "google", state: tx.state, code: "ttl-code", transactionSecret: tx.transactionSecret,
+    flowMode: "login", recovery: { id: recoveryId, deviceId },
+  }, NOW), true);
+  sqlite.prepare(`UPDATE oauth_state_transactions
+    SET recovery_user_id='parent-ttl', recovery_account_status='created',
+        recovery_access_jti='0b655668-a05d-41fd-84bf-50da93072ec3',
+        recovery_refresh_token_hash=?, recovery_ready_at='2026-07-14 00:00:00+00'`)
+    .run("t".repeat(43));
+  assert.equal(await readOAuthRecovery(db, {
+    provider: "google", recoveryId, deviceId,
+  }, new Date(NOW.getTime() + 5 * 60 * 1000 + 1)), null);
+});
+
+test("OAuth recovery는 web/link·실패한 transaction claim·TTL 밖에서 열리지 않는다", async () => {
+  assert.equal(typeof readOAuthRecovery, "function");
+  const recoveryId = "B".repeat(43);
+  const deviceId = "native-install-bounded";
+
+  const web = createDb();
+  const webTx = await createOAuthTransaction(web.db, {
+    provider: "google", clientKind: "web", webOrigin: "https://hyeni-calendar.pages.dev", flowMode: "login",
+  }, NOW);
+  await markOAuthCallback(web.db, "google", webTx.state, "web-code", NOW);
+  assert.equal(await consumeOAuthTransaction(web.db, {
+    provider: "google", state: webTx.state, code: "web-code", transactionSecret: webTx.transactionSecret,
+    flowMode: "login", recovery: { id: recoveryId, deviceId },
+  }, NOW), false, "웹 transaction은 native recovery로 승격하면 안 됩니다");
+
+  const native = createDb();
+  const nativeTx = await createOAuthTransaction(native.db, {
+    provider: "kakao", clientKind: "native", flowMode: "login",
+  }, NOW);
+  await markOAuthCallback(native.db, "kakao", nativeTx.state, "native-code", NOW);
+  assert.equal(await consumeOAuthTransaction(native.db, {
+    provider: "kakao", state: nativeTx.state, code: "wrong-code", transactionSecret: nativeTx.transactionSecret,
+    flowMode: "login", recovery: { id: recoveryId, deviceId },
+  }, NOW), false);
+  assert.equal(await readOAuthRecovery(native.db, {
+    provider: "kakao", recoveryId, deviceId,
+  }, NOW), null, "transaction claim 실패가 recovery handle을 만들면 안 됩니다");
+
+  const weak = createDb();
+  const weakTx = await createOAuthTransaction(weak.db, {
+    provider: "google", clientKind: "native", flowMode: "login",
+  }, NOW);
+  await markOAuthCallback(weak.db, "google", weakTx.state, "weak-recovery-code", NOW);
+  assert.equal(await consumeOAuthTransaction(weak.db, {
+    provider: "google",
+    state: weakTx.state,
+    code: "weak-recovery-code",
+    transactionSecret: weakTx.transactionSecret,
+    flowMode: "login",
+    recovery: { id: "16b217ba-200f-45e2-b728-d08e95acff1a", deviceId },
+  }, NOW), false, "UUID 1개 엔트로피의 recovery bearer를 허용하면 안 됩니다");
+  assert.equal(
+    weak.sqlite.prepare("SELECT consumed_at FROM oauth_state_transactions").get().consumed_at,
+    null,
+    "약한 recovery ID 거부가 정상 transaction을 소비해서도 안 됩니다",
+  );
 });

@@ -60,7 +60,21 @@ export function oauthCallbackResponse(label: string, targetUrl: string): Respons
   <div style="font-size:18px;font-weight:700;margin-bottom:12px;">로그인 마무리 중...</div>
   <div style="font-size:13px;opacity:0.85;">앱이 자동으로 열리지 않으면 <a href="${escapedTarget}" style="color:white;text-decoration:underline;">${linkLabel}</a></div>
 </div>
-<script>location.replace(${JSON.stringify(launchTarget)});</script>
+<script>(() => {
+  const retryUntil = Date.now() + 15000;
+  const launch = () => {
+    // Google passkey/FIDO 뒤에는 Chrome 주소창이 focus를 가져 문서 focus가 false여도
+    // 콜백 문서는 화면에 보인다. visibility만 확인해 package-bound intent를 제한적으로 재시도한다.
+    if (Date.now() > retryUntil || document.visibilityState !== "visible") return;
+    location.replace(${JSON.stringify(launchTarget)});
+  };
+  addEventListener("focus", launch);
+  addEventListener("pageshow", launch);
+  document.addEventListener("visibilitychange", launch);
+  launch();
+  setTimeout(launch, 250);
+  setTimeout(launch, 1000);
+})();</script>
 </body></html>`;
   return new Response(html, { status: 200, headers: SECURITY_HEADERS });
 }

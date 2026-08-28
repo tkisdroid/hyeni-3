@@ -42,6 +42,7 @@ function requiredSchemaColumns(
 const REQUIRED_SCHEMA_OBJECTS: readonly RequiredSchemaObject[] = [
   { type: "table", name: "users" },
   { type: "table", name: "refresh_tokens" },
+  { type: "table", name: "oauth_state_transactions" },
   { type: "table", name: "account_device_sessions" },
   { type: "table", name: "families" },
   { type: "table", name: "family_members" },
@@ -90,6 +91,7 @@ const REQUIRED_SCHEMA_OBJECTS: readonly RequiredSchemaObject[] = [
   { type: "index", name: "idx_fcm_tokens_token_active_unique" },
   { type: "index", name: "idx_push_sent_event_notif" },
   { type: "index", name: "idx_account_device_sessions_expiry" },
+  { type: "index", name: "idx_oauth_recovery_id" },
   { type: "index", name: "idx_push_subscriptions_endpoint_active_unique" },
   { type: "index", name: "idx_premium_funnel_received" },
   { type: "index", name: "idx_premium_funnel_event_received" },
@@ -148,6 +150,17 @@ const REQUIRED_SCHEMA_OBJECTS: readonly RequiredSchemaObject[] = [
 ] as const;
 
 const REQUIRED_SCHEMA_COLUMNS: readonly RequiredSchemaColumn[] = [
+  ...requiredSchemaColumns("oauth_state_transactions", [
+    "recovery_id_hash",
+    "recovery_binding_hash",
+    "recovery_user_id",
+    "recovery_account_status",
+    "recovery_access_jti",
+    "recovery_refresh_token_hash",
+    "recovery_ready_at",
+    "recovery_expires_at",
+    "recovery_acknowledged_at",
+  ]),
   { table: "events", name: "series_id" },
   { table: "family_members", name: "is_active" },
   { table: "child_locations", name: "accuracy_m" },

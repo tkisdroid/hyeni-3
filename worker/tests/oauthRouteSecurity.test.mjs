@@ -65,7 +65,12 @@ function createDb() {
       state_hash TEXT PRIMARY KEY, transaction_secret_hash TEXT NOT NULL,
       provider TEXT NOT NULL, client_kind TEXT NOT NULL, redirect_target TEXT NOT NULL,
       flow_mode TEXT NOT NULL, user_id TEXT, authorization_code_hash TEXT,
-      callback_received_at TEXT, consumed_at TEXT, created_at TEXT NOT NULL, expires_at TEXT NOT NULL
+      callback_received_at TEXT, consumed_at TEXT,
+      recovery_id_hash TEXT, recovery_binding_hash TEXT, recovery_user_id TEXT,
+      recovery_account_status TEXT, recovery_access_jti TEXT, recovery_refresh_token_hash TEXT,
+      recovery_ready_at TEXT, recovery_expires_at TEXT,
+      recovery_acknowledged_at TEXT,
+      created_at TEXT NOT NULL, expires_at TEXT NOT NULL
     );
     CREATE TABLE users (
       id TEXT PRIMARY KEY, phone TEXT, email TEXT, encrypted_password TEXT,
@@ -101,6 +106,13 @@ function createDb() {
     CREATE TABLE account_deletion_scopes (
       job_id TEXT NOT NULL, scope_type TEXT NOT NULL, scope_id TEXT NOT NULL,
       created_at TEXT NOT NULL, PRIMARY KEY(scope_type, scope_id)
+    );
+    CREATE TABLE account_mutation_leases (
+      id TEXT PRIMARY KEY, user_id TEXT NOT NULL, family_id TEXT,
+      expires_at TEXT NOT NULL, created_at TEXT NOT NULL
+    );
+    CREATE TABLE family_unpair_cleanup_jobs (
+      id TEXT PRIMARY KEY, family_id TEXT NOT NULL, child_user_id TEXT NOT NULL
     );
   `);
   sqlite.prepare("INSERT INTO users VALUES (?,?,?,?,?,?,?)")
@@ -254,6 +266,248 @@ test("동일 transaction 병렬 교환은 정확히 하나만 provider fetch·�
     const json = await success.json();
     assert.equal(typeof json.session?.access_token, "string");
     assert.equal(json.account_status, "existing");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("네이티브 OAuth 응답 유실은 동일 recovery ID+device에서 ACK 전까지 재발급되고 ACK 뒤 닫힌다", async () => {
+  const db = createDb();
+  const prepared = await start(db, "google", { client: "native" });
+  const callback = await appRequest(
+    db,
+    `/api/auth/oauth/google/callback?code=recovery-route-code&state=${encodeURIComponent(prepared.body.state)}`,
+  );
+  assert.equal(callback.status, 200);
+
+  const recoveryId = "Q".repeat(43);
+  const deviceId = "device-oauth-recovery";
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (request) => {
+    const url = String(request);
+    if (url.includes("oauth2.googleapis.com/token")) {
+      return Response.json({ access_token: "recovery-provider-token" });
+    }
+    if (url.includes("openidconnect.googleapis.com/v1/userinfo")) {
+      return Response.json({
+        sub: "google-parent", email: "parent@example.com", email_verified: true, name: "부모",
+      });
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+
+  try {
+    const exchanged = await appRequest(db, "/api/auth/oauth/google", {
+      method: "POST",
+      body: JSON.stringify({
+        code: "recovery-route-code",
+        state: prepared.body.state,
+        transactionSecret: prepared.body.transactionSecret,
+        recoveryId,
+        device_install_id: deviceId,
+        device_platform: "android",
+      }),
+    });
+    assert.equal(exchanged.status, 200);
+    const initial = await exchanged.json(); // 응답을 채택하지 못하고 process가 종료된 상황.
+
+    const recover = (presentedDeviceId = deviceId) => appRequest(
+      db,
+      "/api/auth/oauth/google/recovery",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          recoveryId,
+          device_install_id: presentedDeviceId,
+          device_platform: "android",
+        }),
+      },
+    );
+    const firstRecovery = await recover();
+    assert.equal(firstRecovery.status, 200);
+    const first = await firstRecovery.json();
+    assert.equal(first.account_status, "existing");
+    assert.equal(first.user?.id, "parent-1");
+    assert.equal(first.session.refresh_token, initial.session.refresh_token,
+      "복구는 최초 발급된 canonical refresh를 반환해야 합니다");
+
+    const secondRecovery = await recover();
+    assert.equal(secondRecovery.status, 200, "ACK 전 재응답 유실은 bounded 재발급 가능해야 합니다");
+    const second = await secondRecovery.json();
+    assert.equal(second.user?.id, "parent-1");
+    assert.equal(second.session.refresh_token, first.session.refresh_token,
+      "같은 recovery grant는 canonical refresh를 재사용해 서로 revoke하면 안 됩니다");
+    const accessJti = (token) => JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8")).jti;
+    assert.equal(accessJti(second.session.access_token), accessJti(first.session.access_token));
+    assert.equal((await recover("other-device")).status, 404);
+
+    db.sqlite.prepare(`INSERT INTO refresh_tokens
+      (token,user_id,family_id,device_id,issued_at,expires_at,revoked)
+      VALUES ('ambiguous-live-refresh','parent-1','family-1',?,datetime('now'),datetime('now','+1 day'),0)`)
+      .run(deviceId);
+    assert.equal((await recover()).status, 404,
+      "같은 user/device에 live refresh 후보가 여러 개면 임의 선택하지 않아야 합니다");
+    db.sqlite.prepare("DELETE FROM refresh_tokens WHERE token='ambiguous-live-refresh'").run();
+
+    const ack = await appRequest(db, "/api/auth/oauth/google/recovery/ack", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${second.session.access_token}` },
+      body: JSON.stringify({ recoveryId }),
+    });
+    assert.equal(ack.status, 204);
+    assert.equal((await recover()).status, 404, "completion ACK 뒤 recovery replay를 닫아야 합니다");
+
+    const stored = db.sqlite.prepare(`SELECT recovery_id_hash,recovery_binding_hash
+      FROM oauth_state_transactions WHERE provider='google'`).get();
+    assert.notEqual(stored.recovery_id_hash, recoveryId);
+    assert.equal(JSON.stringify(stored).includes(deviceId), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ACK 전 recovery grant는 이후 명시적 다른 설치 로그인 세션을 되빼앗지 못한다", async () => {
+  const db = createDb();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (request) => {
+    const url = String(request);
+    if (url.includes("oauth2.googleapis.com/token")) {
+      return Response.json({ access_token: "provider-token-for-takeover" });
+    }
+    if (url.includes("openidconnect.googleapis.com/v1/userinfo")) {
+      return Response.json({
+        sub: "google-parent", email: "parent@example.com", email_verified: true, name: "부모",
+      });
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+  try {
+    const first = await start(db, "google", { client: "native" });
+    await appRequest(
+      db,
+      `/api/auth/oauth/google/callback?code=stale-grant-code&state=${encodeURIComponent(first.body.state)}`,
+    );
+    const recoveryId = "S".repeat(43);
+    const oldDeviceId = "oauth-old-install";
+    const issued = await appRequest(db, "/api/auth/oauth/google", {
+      method: "POST",
+      body: JSON.stringify({
+        code: "stale-grant-code",
+        state: first.body.state,
+        transactionSecret: first.body.transactionSecret,
+        recoveryId,
+        device_install_id: oldDeviceId,
+        device_platform: "android",
+      }),
+    });
+    assert.equal(issued.status, 200);
+
+    const second = await start(db, "google", { client: "native" });
+    await appRequest(
+      db,
+      `/api/auth/oauth/google/callback?code=explicit-takeover-code&state=${encodeURIComponent(second.body.state)}`,
+    );
+    const newDeviceId = "oauth-new-install";
+    const takeover = await appRequest(db, "/api/auth/oauth/google", {
+      method: "POST",
+      body: JSON.stringify({
+        code: "explicit-takeover-code",
+        state: second.body.state,
+        transactionSecret: second.body.transactionSecret,
+        device_install_id: newDeviceId,
+        device_platform: "android",
+      }),
+    });
+    assert.equal(takeover.status, 200);
+
+    const stale = await appRequest(db, "/api/auth/oauth/google/recovery", {
+      method: "POST",
+      body: JSON.stringify({
+        recoveryId,
+        device_install_id: oldDeviceId,
+        device_platform: "android",
+      }),
+    });
+    assert.equal(stale.status, 404);
+    const active = db.sqlite.prepare(
+      "SELECT device_id FROM account_device_sessions WHERE user_id='parent-1'",
+    ).get();
+    assert.equal(active.device_id, newDeviceId);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("recovery access는 같은 설치의 후속 명시 로그인 뒤 모든 인증 route에서 즉시 무효다", async () => {
+  const db = createDb();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (request) => {
+    const url = String(request);
+    if (url.includes("oauth2.googleapis.com/token")) {
+      return Response.json({ access_token: "same-device-provider-token" });
+    }
+    if (url.includes("openidconnect.googleapis.com/v1/userinfo")) {
+      return Response.json({
+        sub: "google-parent", email: "parent@example.com", email_verified: true, name: "부모",
+      });
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+  try {
+    const deviceId = "same-device-recovery-race";
+    const first = await start(db, "google", { client: "native" });
+    await appRequest(
+      db,
+      `/api/auth/oauth/google/callback?code=same-device-old-code&state=${encodeURIComponent(first.body.state)}`,
+    );
+    const recoveryId = "U".repeat(43);
+    const issued = await appRequest(db, "/api/auth/oauth/google", {
+      method: "POST",
+      body: JSON.stringify({
+        code: "same-device-old-code",
+        state: first.body.state,
+        transactionSecret: first.body.transactionSecret,
+        recoveryId,
+        device_install_id: deviceId,
+        device_platform: "android",
+      }),
+    });
+    assert.equal(issued.status, 200);
+    const oldSession = (await issued.json()).session;
+    const oldClaims = JSON.parse(
+      Buffer.from(oldSession.access_token.split(".")[1], "base64url").toString("utf8"),
+    );
+    assert.match(oldClaims.oauth_recovery_refresh_hash, /^[A-Za-z0-9_-]{43}$/,
+      "recovery access는 canonical refresh generation fence를 포함해야 합니다");
+
+    const second = await start(db, "google", { client: "native" });
+    await appRequest(
+      db,
+      `/api/auth/oauth/google/callback?code=same-device-new-code&state=${encodeURIComponent(second.body.state)}`,
+    );
+    const takeover = await appRequest(db, "/api/auth/oauth/google", {
+      method: "POST",
+      body: JSON.stringify({
+        code: "same-device-new-code",
+        state: second.body.state,
+        transactionSecret: second.body.transactionSecret,
+        device_install_id: deviceId,
+        device_platform: "android",
+      }),
+    });
+    assert.equal(takeover.status, 200);
+    const currentSession = (await takeover.json()).session;
+
+    const staleAccess = await appRequest(db, "/api/auth/oauth/links", {
+      headers: { Authorization: `Bearer ${oldSession.access_token}` },
+    });
+    assert.equal(staleAccess.status, 401,
+      "같은 device_id만 맞는 과거 recovery access가 1시간 살아 있으면 안 됩니다");
+    assert.deepEqual(await staleAccess.json(), { error: "device_session_inactive" });
+    const currentAccess = await appRequest(db, "/api/auth/oauth/links", {
+      headers: { Authorization: `Bearer ${currentSession.access_token}` },
+    });
+    assert.equal(currentAccess.status, 200);
   } finally {
     globalThis.fetch = originalFetch;
   }

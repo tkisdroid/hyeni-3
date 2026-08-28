@@ -16,7 +16,7 @@
 import { Hono } from "hono";
 import type { Env, Vars, AuthUser } from "../types";
 import { isRefreshTokenIssuanceBlocked, normalizeDeviceId } from "../lib/refresh";
-import { issueAccountSession } from "../lib/authSession";
+import { issueAccountSession, issueRecoverableAccountSession } from "../lib/authSession";
 import {
   isDeviceIdentityRequiredError,
 } from "../lib/accountDeviceSession";
@@ -110,6 +110,7 @@ naver.post("/naver", async (c) => {
     device_label?: unknown;
     device_platform?: unknown;
     onboardingInterests?: unknown;
+    recoveryId?: unknown;
   };
   try {
     body = await c.req.json();
@@ -124,6 +125,7 @@ naver.post("/naver", async (c) => {
   }
   const deviceId = normalizeDeviceId(body.device_install_id);
   if (!deviceId) return c.json({ error: "device_identity_required" }, 400);
+  const recoveryId = typeof body.recoveryId === "string" ? body.recoveryId : "";
   const onboardingInterests = parseOnboardingInterests(body.onboardingInterests);
   if (!onboardingInterests.ok) return c.json({ error: "invalid_onboarding_interests" }, 400);
 
@@ -133,6 +135,7 @@ naver.post("/naver", async (c) => {
     state,
     transactionSecret,
     flowMode: "login",
+    ...(recoveryId ? { recovery: { id: recoveryId, deviceId } } : {}),
   });
   if (!claimed) return c.json({ error: "invalid_oauth_transaction" }, 400);
 
@@ -282,11 +285,18 @@ naver.post("/naver", async (c) => {
   let accessToken: string;
   let refreshToken: string;
   try {
-    const issued = await issueAccountSession(c.env, user, {
-      deviceId,
-      deviceLabel: body.device_label,
-      devicePlatform: body.device_platform,
-    });
+    const issued = recoveryId
+      ? await issueRecoverableAccountSession(c.env, user, {
+          deviceId,
+          deviceLabel: body.device_label,
+          devicePlatform: body.device_platform,
+          recovery: { provider: "naver", recoveryId, accountStatus },
+        })
+      : await issueAccountSession(c.env, user, {
+          deviceId,
+          deviceLabel: body.device_label,
+          devicePlatform: body.device_platform,
+        });
     accessToken = issued.accessToken;
     refreshToken = issued.refreshToken;
   } catch (error) {

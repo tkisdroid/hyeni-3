@@ -106,4 +106,6 @@ export type Vars = {
   user: AuthUser;
   familyIds: string[];
   accessTokenExp: number;
+  /** recovery ACK가 현재 로그인 세대와 정확히 같은지 확인한다. 레거시 토큰은 null. */
+  accessTokenJti: string | null;
 };

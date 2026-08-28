@@ -1,12 +1,23 @@
 # Google Play Console 정책 수정 패키지 — 혜니캘린더 v1.4.4
 
-기준일: 2026-08-27
+기준일: 2026-08-28
 
 패키지: `com.hyeni.calendar`
 
 버전: `versionName 1.4.4` / `versionCode 16`
 
-현재 판정: **코드 수정·검증 및 서명 AAB 생성·검증 완료, Play 교체 전**
+현재 판정: **이전 후보 폐기, 최종 커밋에서 새 서명 AAB 생성 필요**
+
+## 후보 교체 사유
+
+- 2026-08-27에 만든 `eda3907d96e0046804c2d39eb4c2c310f4b1dfeb` 후보는 Android 15
+  microphone FGS 수정만 담고 있다. 이후 반영된 카카오·Google 복귀, 소셜 회원가입·계정 연결·취소 후 재시도,
+  아이 QR·수동 코드 연결, 온보딩 제목 줄바꿈, 부모 홈 단일 히어로 변경을 포함하지 않으므로 업로드하지 않는다.
+- 해당 폐기된 이전 후보의 파일 SHA-256은
+  `45e66db8d6a60cae1a9a4c33105f285c85886d92b4aea588425d0010a5343a91`이다. 이 값은 역사 식별용이며
+  현재 승인 후보가 아니다.
+- 최종 앱·Worker 회귀와 실기기 검증을 마친 커밋을 별도 clean worktree에서 다시 빌드하고, 새 source SHA·AAB
+  SHA-256·검증 증거를 이 문서에 기록한 뒤에만 Play에 올린다.
 
 ## Play 확인 필요 문제
 
@@ -30,23 +41,26 @@ Play Console은 Android 15 이상에서 `BOOT_COMPLETED` 수신 뒤 제한된 fo
   1회 소비한 뒤 호출하는 경로다. 60초 상한·아이 화면/지속 알림·감사 기록·대상/세션 검증은 유지한다.
 - `BootReceiver`의 위치 공유 복구와 `LocationService`의 `location` FGS 선언은 유지한다. 이번 문제를 피하려고
   부팅 뒤 위치 안전 기능까지 제거하지 않는다.
+- 네이티브 OAuth는 브라우저 콜백을 앱에 다시 전달하고, 응답 유실·프로세스 종료·네트워크 지연 뒤에도 같은
+  로그인 세대만 안전하게 복구한다. 새 명시적 로그인과 다른 기기 인계가 과거 복구 결과를 덮지 못하게 막는다.
+- 아이 시작은 카카오톡 없이 QR 또는 연결 코드로 진행하며 QR 카메라가 즉시 닫히지 않도록 한다.
+- 온보딩 설문 제목은 좁은 화면·10개 locale에서 단어 단위로 안전하게 줄바꿈하고, 부모 홈 히어로는 현 버전에서
+  혜니캘린더 1개만 표시한다.
 
 ## 검증 증거
 
 - TDD RED에서 `LocationService.stopAmbientListenFromPending`의 `new Intent(...AmbientListenService)`와
   `startService` 호출을 재현했고 수정 뒤 GREEN으로 전환했다.
-- 원격청취·Play manifest 집중 회귀 `42/42`, 앱 전체 `2,002/2,002`, 앱 typecheck와 production build가 통과했다.
-- Android unit `185/185`, `lintDebug`, `assembleDebug`가 통과했다.
-- debug APK: 15,847,334 bytes, SHA-256
-  `7E5D8BE645632C29C74AD9C1989E668CD42925FECE344CCBAA5FF04772C1304E`.
+- 원격청취·Play manifest 집중 회귀와 과거 Android 검증 결과는 유지하되, 최신 인증 수정 뒤 전체 앱·Worker·Android
+  회귀 수와 새 APK/AAB 해시는 최종 빌드에서 다시 기록한다.
 - 정적 검색에서 `AmbientListenService` Intent 생성은 사용자에게 보이는 `RemoteListenActivity` 시작과 실행 중 알림의
   중지 `PendingIntent` 두 곳만 남고, 부팅으로 복구되는 `LocationService`에는 남지 않았다.
-- 사용자가 UTF-8 PowerShell 7 창에서 서명 비밀번호를 직접 입력했고 자격 값은 읽거나 저장·출력하지 않았다. clean
-  source commit `eda3907d96e0046804c2d39eb4c2c310f4b1dfeb`에서 만든 업로드 파일은
+- 폐기된 이전 후보는 사용자가 UTF-8 PowerShell 7 창에서 서명 비밀번호를 직접 입력해 만든 clean source commit
+  `eda3907d96e0046804c2d39eb4c2c310f4b1dfeb` 기반 파일
   `artifacts/release-evidence/play-upload-v1.4.4-vc16-eda3907/hyeni-calendar-v1.4.4-vc16-eda3907.aab`,
   13,060,516 bytes, SHA-256
-  `45e66db8d6a60cae1a9a4c33105f285c85886d92b4aea588425d0010a5343a91`이다.
-- schema v4 증거 `artifacts/release-evidence/android-release-aab-evidence-20260827-135437-eda3907.json`에서
+  `45e66db8d6a60cae1a9a4c33105f285c85886d92b4aea588425d0010a5343a91`이다. 이번 Play 업로드에는 사용하지 않는다.
+- 폐기된 이전 후보의 schema v4 증거 `artifacts/release-evidence/android-release-aab-evidence-20260827-135437-eda3907.json`에서
   manifest 1.4.4/code 16·non-debuggable·source commit, 승인 업로드 인증서, dist/내장 web assets,
   bundle/universal APK와 모든 ELF의 16KiB 조건이 모두 GREEN이다.
 
@@ -61,28 +75,32 @@ edge-to-edge 강제 전환에 맞춰 인셋과 실기기 화면을 확인하라�
   WebView에 적용한다. 앱의 sticky/fixed header와 하단 dock·CTA도 `safe-area-inset-top/bottom`을 사용한다.
 - 따라서 Android 15+에서 기능을 켜기 위해 `EdgeToEdge.enable()`을 추가할 필요는 없다. 이를 무조건 호출하면 구형
   Android까지 edge-to-edge로 바뀌므로 해당 버전들의 인셋 동작을 함께 검증하지 않은 채 추가하지 않는다.
-- 남은 권장 검증은 Android 15/16 실기기에서 세로·가로, display cutout, 키보드, 제스처·3버튼 내비게이션을 각각
-  확인하는 것이다. 현재 연결 기기가 없어 이번 검증을 완료로 표시하지 않는다.
+- Android 16 실기기 A17은 아이, S25는 부모 역할로 지정한다. 최신 debug 재설치 뒤 세로·가로, display cutout,
+  키보드, 제스처·3버튼 내비게이션 중 이번 범위에서 직접 확인한 항목만 완료로 기록한다.
 
 ## 출시 경계
 
-- v1.4.3/code 15는 2026-08-27 03:10 KST에 이미 production 심사 제출되어 `IN_REVIEW`다. 같은 versionCode를
-  재사용할 수 없어 정책 수정본은 v1.4.4/code 16으로 올린다.
-- 서명 AAB는 최종 clean source commit에서 사용자가 서명 비밀번호를 직접 입력해 새로 만들었으며 기존 code 15 AAB를
-  재사용하지 않았다.
-- AAB 생성·manifest/source/certificate/16KiB 검증은 끝났지만 Play production 교체·fresh readback 전에는 제출 완료로
-  표시하지 않는다.
-- Worker·D1·Pages·운영 계정·역할·페어링·세션·refresh token은 변경하지 않는다.
+- 2026-08-28 fresh Android Publisher readback에서 v1.4.3/code 15는 production `PUBLISHED`, 전체 bundle 최대
+  versionCode는 15다. code 16은 아직 사용되지 않았으므로 정책·인증 수정본은 v1.4.4/code 16으로 올린다.
+- 최신 후보는 `worker/db/oauth-exchange-recovery.sql`을 운영 D1에 먼저 적용하고 컬럼·인덱스를 readback한 뒤 Worker를
+  배포해야 한다. 새 앱을 올리기 전에 D1 → Worker → `/api/health` 순서로 확인한다.
+- 서명 AAB는 최종 clean source commit에서 사용자가 서명 비밀번호를 직접 입력해 새로 만든다. 폐기된 code 16 AAB와
+  기존 code 15 AAB를 재사용하지 않는다.
+- Play 업로드 직전 모든 트랙을 fresh readback해 최대 versionCode가 15인지 확인한다. code 16 사용 흔적이 있으면
+  v1.4.5/code 17로 올리고 다시 빌드한다.
+- 운영 계정의 refresh token은 출력·복사·외부 회전하지 않으며, A17 아이·S25 부모 역할과 가족 연결을 보존한다.
 
 ## 완료 조건
 
 - [x] 부팅 연계 microphone service start 호출 제거
 - [x] 세션 일치·중복 중지 Java 단위 회귀와 소스 계약 회귀 추가
-- [x] 앱 전체 테스트·typecheck·production build 통과
-- [x] Android unit·lint·debug APK 통과
-- [ ] 허용 실기기 사용자 0 보존 설치와 버전 확인
-- [x] clean source commit에서 승인 upload certificate 서명 AAB 생성·검증
-- [ ] Play production code 16 교체 제출·fresh lifecycle readback
+- [ ] 최신 앱·Worker 전체 테스트·typecheck·production build 통과
+- [ ] Android unit·lint·debug APK 통과
+- [ ] 운영 D1 OAuth recovery migration readback·Worker 배포·health 확인
+- [ ] A17 아이·S25 부모 사용자 0 보존 설치와 버전·역할 확인
+- [ ] clean source commit에서 승인 upload certificate 서명 AAB 생성·검증
+- [ ] 모든 Play 트랙 최대 versionCode 15 fresh 확인
+- [ ] Play production code 16 업로드·검증 후 draft readback(심사 전송은 별도 지시 전 보류)
 
 ## 출시 노트
 
