@@ -41,12 +41,21 @@
 
 ## Fix round 1 — generated/manual 2계층 재검증
 
+이 절의 수치는 Fix round 2에서 같은 2계층 gate를 다시 fresh 실행해 갱신한 기록이다. Fix round 1 당시의 1/1 focused·1,423/1,423 Worker suite 증거는 Task 7 보고서의 과거 라운드 기록으로 보존한다.
+
 - `npx wrangler types worker/worker-configuration.d.ts --config worker/wrangler.toml --check`: 통과. 생성 타입은 최신이다.
 - `node --test worker/tests/studyGeneratedBindings.test.mjs`: 2/2 통과. Calendar config의 named service/entrypoint와 generated `Service` 표기, `__BaseEnv_Env`의 정확한 `STUDY_*` allowlist(`STUDY_SERVICE`만), extra Study binding·Study secret binding 부재를 확인했다.
 - `npm run typecheck`, `npm run typecheck:worker`: 모두 통과. 후자는 `studyGeneratedBindings.typecheck.ts`와 기존 RPC compile-time contract를 포함한다.
-- `npm test`: 2,036/2,036 통과, `fail 0`. `npm run test:worker`: 1,423/1,423 통과, `fail 0`.
+- `npm test`: 2,036/2,036 통과, `fail 0`. `npm run test:worker`: 1,424/1,424 통과, `fail 0`.
 - `npm run build`, `npm run verify:route-bundle`: 통과. 초기 자체 JS 365,952/500,000 bytes, 초기 CSS 44,996/48,000 bytes, precache 472개 URL·중복 없음이다.
 - 회귀 assertion은 generic `Service`로의 일시 mutation에서 실패하고 원복 후 통과했다. generated d.ts는 수동 patch하지 않았고 production/secret/deploy 구성도 변경하지 않았다.
+
+## Fix round 3 — generated allowlist parser 주석 안전성
+
+- `worker/tests/studyGeneratedBindings.test.mjs`의 국소 scanner는 `__BaseEnv_Env` 본문만 읽고 line/block comment와 string/template literal을 건너뛴 뒤, 중첩 `{}`, `()`, `[]` 밖의 실제 `STUDY_*` property declaration만 수집한다.
+- in-memory fixture는 여러 줄 block comment의 `STUDY_BLOCK_COMMENT`, line comment, 속성 타입의 comment-like template literal과 block comment를 모두 무시한다. 정상 `STUDY_SERVICE`는 유지하고 실제 `STUDY_DB` 주입은 allowlist equality에서 거부한다.
+- fresh: `npx wrangler types worker/worker-configuration.d.ts --config worker/wrangler.toml --check`, focused 3/3, `npm run typecheck:worker`, `npm run test:worker` 1,425/1,425 (`fail 0`), `git diff --check`를 실행했다. 위 Fix round 1 절의 2/2·1,424/1,424는 Fix round 2의 과거 fresh 기록이다.
+- generated d.ts, production D1, secret, deploy 구성, Play, 실기기, 계정·기기 세션은 변경하지 않았다.
 
 ## 결론
 
