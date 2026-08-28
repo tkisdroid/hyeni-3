@@ -13,6 +13,8 @@ const USER_ID = "study-user-a";
 const COPARENT_USER_ID = "study-coparent-a";
 const CHILD_USER_ID = "study-child-user-a";
 const CHILD_MEMBER_ID = "study-child-member-a";
+const SECOND_FAMILY_ID = "study-family-b";
+const SECOND_CHILD_MEMBER_ID = "study-child-member-b";
 const ROLLOUT_SECRET = "study-rollout-test-secret-with-sufficient-length";
 
 class Statement {
@@ -218,6 +220,42 @@ function saveSettings(db, values = {}) {
   }
 }
 
+function ensureStudySettings(db) {
+  const count = Number(db.sqlite.prepare("SELECT COUNT(*) AS count FROM app_global_settings").get().count);
+  if (count === 0) saveSettings(db);
+}
+
+function addSecondFamily(db, { selected = false } = {}) {
+  db.sqlite.prepare(
+    `INSERT INTO families(id,parent_id,created_at,service_country,service_country_source,study_market)
+     VALUES (?,?,?,?,?,?)`,
+  ).run(SECOND_FAMILY_ID, "different-owner-b", "2026-08-29T00:00:00.000Z", "KR", "guardian_confirmed", "KR");
+  db.sqlite.prepare(
+    `INSERT INTO family_members(id,family_id,user_id,role,is_active,created_at,last_selected_at,birthdate)
+     VALUES (?,?,?,?,?,?,?,NULL)`,
+  ).run(
+    "study-member-b",
+    SECOND_FAMILY_ID,
+    USER_ID,
+    "parent",
+    1,
+    "2026-08-29T00:00:00.000Z",
+    selected ? "2026-08-29T01:00:00.000Z" : null,
+  );
+  db.sqlite.prepare(
+    `INSERT INTO family_members(id,family_id,user_id,role,is_active,created_at,last_selected_at,birthdate)
+     VALUES (?,?,?,?,?,?,NULL,?)`,
+  ).run(
+    SECOND_CHILD_MEMBER_ID,
+    SECOND_FAMILY_ID,
+    "study-child-user-b",
+    "child",
+    1,
+    "2026-08-29T00:00:00.000Z",
+    "2016-08-10",
+  );
+}
+
 function studyBinding(status = "ready") {
   return {
     readinessCalls: 0,
@@ -230,6 +268,24 @@ function studyBinding(status = "ready") {
 
 function assertNoStore(response) {
   assert.equal(response.headers.get("Cache-Control"), "no-store");
+}
+
+function studyStatusDatabaseSnapshot(db) {
+  return {
+    users: db.sqlite.prepare("SELECT id FROM users ORDER BY id").all(),
+    families: db.sqlite.prepare(
+      "SELECT id,parent_id,service_country,service_country_source,study_market FROM families ORDER BY id",
+    ).all(),
+    members: db.sqlite.prepare(
+      `SELECT id,family_id,user_id,role,is_active,last_selected_at,birthdate,
+              learning_grade_override,learning_grade_row_version
+         FROM family_members ORDER BY id`,
+    ).all(),
+    sessions: db.sqlite.prepare(
+      "SELECT user_id,device_id,claimed_at,last_seen_at,expires_at,revoked_at FROM account_device_sessions ORDER BY user_id",
+    ).all(),
+    settings: db.sqlite.prepare("SELECT key,value,updated_by,updated_at FROM app_global_settings ORDER BY key").all(),
+  };
 }
 
 async function rolloutFamilyRef(familyId) {
@@ -261,7 +317,9 @@ async function authorization({ familyId = FAMILY_ID, role = "parent", deviceId =
 async function requestGrade(db, memberId = CHILD_MEMBER_ID, {
   body = { grade: 5, rowVersion: 1, requestId: "grade-request-1" },
   token = {},
+  binding,
 } = {}) {
+  ensureStudySettings(db);
   const response = await worker.fetch(new Request(`https://local.test/api/study/children/${memberId}/grade`, {
     method: "PUT",
     headers: {
@@ -271,7 +329,7 @@ async function requestGrade(db, memberId = CHILD_MEMBER_ID, {
     body: JSON.stringify(body),
   }), {
     DB: db,
-    STUDY_SERVICE: studyBinding(),
+    STUDY_SERVICE: binding,
     STUDY_RPC_HMAC_SECRET: ROLLOUT_SECRET,
     JWT_PRIVATE_KEY: jwtPrivateKey,
     JWT_PUBLIC_KEY: jwtPublicKey,
@@ -524,25 +582,66 @@ test("Study binding 장애는 모든 사전 게이트 뒤에만 unavailable을 �
 });
 
 for (const row of [
-  { name: "binding 미설정", binding: null },
-  { name: "binding throw", binding: { async readiness() { throw new Error("study_binding_secret_error"); } } },
-  { name: "잘못된 apiVersion", binding: { async readiness() { return { apiVersion: "wrong", status: "ready" }; } } },
-  { name: "잘못된 응답 shape", binding: { async readiness() { return { status: "ready" }; } } },
+  { name: "binding 미설정", readiness: null },
+  { name: "binding throw", readiness: async () => { throw new Error("study_binding_secret_error"); } },
+  { name: "잘못된 apiVersion", readiness: async () => ({ apiVersion: "wrong", status: "ready" }) },
+  { name: "잘못된 응답 shape", readiness: async () => ({ status: "ready" }) },
 ]) {
   test(`${row.name}은 raw 오류 없이 unavailable로 닫는다`, async () => {
     const db = createFixture();
     try {
       saveSettings(db);
-      const result = await requestStudyStatus(db, { binding: row.binding });
+      let businessCalls = 0;
+      const binding = row.readiness === null ? null : {
+        readiness: row.readiness,
+        async getChildrenOverview() { businessCalls += 1; throw new Error("status_business_call_forbidden"); },
+      };
+      const before = studyStatusDatabaseSnapshot(db);
+      const result = await requestStudyStatus(db, { binding });
       assert.equal(result.response.status, 503);
       assert.deepEqual(result.body, { state: "unavailable" });
       assertNoStore(result.response);
       assert.doesNotMatch(JSON.stringify(result.body), /study_binding_secret_error/);
+      assert.equal(businessCalls, 0);
+      assert.deepEqual(studyStatusDatabaseSnapshot(db), before);
     } finally {
       db.close();
     }
   });
 }
+
+test("status readiness pending도 5초 deadline 뒤 session·D1·business 호출 없이 unavailable로 닫는다", { timeout: 6_500 }, async () => {
+  const db = createFixture();
+  let readinessCalls = 0;
+  let businessCalls = 0;
+  try {
+    saveSettings(db);
+    const before = studyStatusDatabaseSnapshot(db);
+    const startedAt = Date.now();
+    const result = await requestStudyStatus(db, {
+      binding: {
+        async readiness() {
+          readinessCalls += 1;
+          return new Promise(() => {});
+        },
+        async getChildrenOverview() {
+          businessCalls += 1;
+          throw new Error("status_business_call_forbidden");
+        },
+      },
+    });
+    const elapsedMs = Date.now() - startedAt;
+    assert.equal(result.response.status, 503);
+    assert.deepEqual(result.body, { state: "unavailable" });
+    assertNoStore(result.response);
+    assert.equal(readinessCalls, 1);
+    assert.equal(businessCalls, 0);
+    assert.ok(elapsedMs < 5_800, `status deadline exceeded: ${elapsedMs}ms`);
+    assert.deepEqual(studyStatusDatabaseSnapshot(db), before);
+  } finally {
+    db.close();
+  }
+});
 
 for (const row of [
   { first16Bits: 0, basisPoints: 0, expected: false },
@@ -562,7 +661,16 @@ for (const row of [
 
 test("활성 보호자는 정확히 지정한 활성 아이의 학년 override를 바꾼다", async () => {
   const db = createFixture();
+  let observedCanonicalFamilyLease = false;
   try {
+    const originalBatch = db.batch.bind(db);
+    db.batch = async (statements) => {
+      observedCanonicalFamilyLease ||= Number(db.sqlite.prepare(
+        `SELECT COUNT(*) AS count FROM account_mutation_leases
+          WHERE user_id=? AND family_id=? AND expires_at>?`,
+      ).get(USER_ID, FAMILY_ID, new Date().toISOString()).count) > 0;
+      return originalBatch(statements);
+    };
     const result = await requestGrade(db, CHILD_MEMBER_ID, {
       body: { grade: 5, rowVersion: 1, requestId: "grade-parent-write" },
     });
@@ -573,6 +681,7 @@ test("활성 보호자는 정확히 지정한 활성 아이의 학년 override�
     });
     assert.equal(db.sqlite.prepare("SELECT learning_grade_override FROM family_members WHERE id=?").get(CHILD_MEMBER_ID).learning_grade_override, 5);
     assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE member_id=?").get(CHILD_MEMBER_ID).count, 1);
+    assert.equal(observedCanonicalFamilyLease, true);
   } finally {
     db.close();
   }
@@ -611,6 +720,95 @@ test("활성 공동 보호자는 바꾸고 아이와 비활성 또는 다른 아
     });
     assert.equal(foreign.response.status, 403);
     assert.deepEqual(foreign.body, { error: "grade_forbidden" });
+  } finally {
+    db.close();
+  }
+});
+
+test("학년 PUT은 현재 canonical parent family의 KR·management rollout 안에서만 변경한다", async () => {
+  const nonKrDb = createFixture({ country: "JP", market: null });
+  try {
+    const result = await requestGrade(nonKrDb, CHILD_MEMBER_ID, {
+      body: { grade: 5, rowVersion: 1, requestId: "grade-non-kr-denied" },
+    });
+    assert.equal(result.response.status, 403);
+    assert.deepEqual(result.body, { error: "grade_forbidden" });
+    assert.equal(nonKrDb.sqlite.prepare("SELECT learning_grade_override FROM family_members WHERE id=?").get(CHILD_MEMBER_ID).learning_grade_override, null);
+    assert.equal(nonKrDb.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit").get().count, 0);
+  } finally {
+    nonKrDb.close();
+  }
+
+  const disabledDb = createFixture();
+  try {
+    saveSettings(disabledDb, { study_management_enabled: "false" });
+    const result = await requestGrade(disabledDb, CHILD_MEMBER_ID, {
+      body: { grade: 5, rowVersion: 1, requestId: "grade-management-disabled" },
+    });
+    assert.equal(result.response.status, 403);
+    assert.deepEqual(result.body, { error: "grade_forbidden" });
+    assert.equal(disabledDb.sqlite.prepare("SELECT learning_grade_override FROM family_members WHERE id=?").get(CHILD_MEMBER_ID).learning_grade_override, null);
+    assert.equal(disabledDb.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit").get().count, 0);
+  } finally {
+    disabledDb.close();
+  }
+
+  const nonCanonicalDb = createFixture();
+  try {
+    nonCanonicalDb.sqlite.prepare("UPDATE family_members SET last_selected_at=? WHERE id='study-member-a'")
+      .run("2026-08-29T02:00:00.000Z");
+    addSecondFamily(nonCanonicalDb);
+    const result = await requestGrade(nonCanonicalDb, SECOND_CHILD_MEMBER_ID, {
+      body: { grade: 5, rowVersion: 1, requestId: "grade-noncanonical-family" },
+    });
+    assert.equal(result.response.status, 403);
+    assert.deepEqual(result.body, { error: "grade_forbidden" });
+    assert.equal(nonCanonicalDb.sqlite.prepare("SELECT learning_grade_override FROM family_members WHERE id=?").get(SECOND_CHILD_MEMBER_ID).learning_grade_override, null);
+    assert.equal(nonCanonicalDb.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit").get().count, 0);
+  } finally {
+    nonCanonicalDb.close();
+  }
+});
+
+test("canonical 대상 가족 deletion scope가 먼저면 잘못된 token-family lease로 학년을 쓰지 않는다", async () => {
+  const db = createFixture();
+  try {
+    addSecondFamily(db, { selected: true });
+    db.sqlite.prepare("INSERT INTO account_deletion_scopes(scope_type,scope_id) VALUES ('family',?)")
+      .run(SECOND_FAMILY_ID);
+    const result = await requestGrade(db, SECOND_CHILD_MEMBER_ID, {
+      body: { grade: 5, rowVersion: 1, requestId: "grade-deleting-canonical-family" },
+      token: { familyId: FAMILY_ID },
+    });
+    assert.equal(result.response.status, 409);
+    assert.deepEqual(result.body, { error: "account_deletion_in_progress" });
+    assert.equal(db.sqlite.prepare("SELECT learning_grade_override FROM family_members WHERE id=?").get(SECOND_CHILD_MEMBER_ID).learning_grade_override, null);
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit").get().count, 0);
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS count FROM account_mutation_leases").get().count, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test("자동 학년이 unavailable이어도 parent override로 복구하며 Study binding을 호출하지 않는다", async () => {
+  const db = createFixture();
+  let bindingCalls = 0;
+  try {
+    db.sqlite.prepare(
+      "UPDATE family_members SET birthdate=NULL, learning_grade_override=NULL WHERE id=?",
+    ).run(CHILD_MEMBER_ID);
+    const result = await requestGrade(db, CHILD_MEMBER_ID, {
+      body: { grade: 4, rowVersion: 1, requestId: "grade-manual-recovery" },
+      binding: {
+        async readiness() { bindingCalls += 1; throw new Error("grade_route_must_not_call_binding"); },
+      },
+    });
+    assert.equal(result.response.status, 200);
+    assert.deepEqual(result.body, {
+      grade: { grade: 4, source: "parent_override", academicYear: 2026 },
+      rowVersion: 2,
+    });
+    assert.equal(bindingCalls, 0);
   } finally {
     db.close();
   }

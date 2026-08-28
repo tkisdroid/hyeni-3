@@ -18,7 +18,7 @@ export type CalendarCountryDto = Readonly<{
   country: string;
 }>;
 
-/** 학년 판정은 Study가 소유하며 Calendar는 추정 생년월일을 넘기지 않는다. */
+/** 학년 판정은 Calendar가 소유하며 Study는 전달받은 결과 snapshot만 사용한다. */
 export type CalendarGradeDto = Readonly<{
   grade: 3 | 4 | 5 | 6 | null;
   source: "study" | "manual_required";

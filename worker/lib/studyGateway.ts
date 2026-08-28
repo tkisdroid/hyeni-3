@@ -47,6 +47,12 @@ export type StudyGatewayContext = Readonly<{
   child: GatewayChild | null;
 }>;
 
+export type StudyManagementMutationContext = Readonly<{
+  familyId: string;
+  actorId: string;
+  memberId: string;
+}>;
+
 export class StudyGatewayRequestError extends Error {
   readonly status: 400 | 403 | 422;
   readonly code: "invalid_request" | "study_not_available" | "learning_grade_unavailable";
@@ -172,24 +178,20 @@ async function assertActiveParent(db: D1Database, familyId: string, actorId: str
   if (!parent) unavailable();
 }
 
-/**
- * token snapshot이나 client family/member 값 대신 현재 membership, 활성 행, KR market과 rollout을 다시 판정한다.
- * childMemberId는 parent route의 명시 대상일 때만 사용하며 child caller에는 항상 무시된다.
- */
-export async function resolveStudyGatewayContext(
+async function resolveStudyAccessContext(
   env: Pick<Env, "DB" | "STUDY_RPC_HMAC_SECRET">,
   user: AuthUser,
-  input: { role: "parent" | "child"; childMemberId?: string },
-): Promise<StudyGatewayContext> {
+  role: "parent" | "child",
+): Promise<Readonly<{ familyId: string; actorId: string; role: "parent" | "child" }>> {
   let membership: Awaited<ReturnType<typeof resolveCanonicalFamilyMembership>>;
   try {
     membership = await resolveCanonicalFamilyMembership(env.DB, user.sub, null);
   } catch {
     unavailable();
   }
-  if (!membership || membership.role !== input.role) unavailable();
+  if (!membership || membership.role !== role) unavailable();
 
-  if (input.role === "parent") await assertActiveParent(env.DB, membership.familyId, user.sub);
+  if (role === "parent") await assertActiveParent(env.DB, membership.familyId, user.sub);
 
   let family: { study_market: string | null } | null;
   try {
@@ -213,12 +215,47 @@ export async function resolveStudyGatewayContext(
   }
   if (!enabled) unavailable();
 
+  return { familyId: membership.familyId, actorId: user.sub, role: membership.role };
+}
+
+/** 학년 override는 기존 자동 학년을 계산하지 않고도 canonical KR 관리 경계와 exact active child를 검증한다. */
+export async function resolveStudyManagementMutationContext(
+  env: Pick<Env, "DB" | "STUDY_RPC_HMAC_SECRET">,
+  user: AuthUser,
+  memberId: string,
+): Promise<StudyManagementMutationContext> {
+  const context = await resolveStudyAccessContext(env, user, "parent");
+  let child: { id: string } | null;
+  try {
+    child = await env.DB.prepare(
+      `SELECT id FROM family_members
+        WHERE id=? AND family_id=? AND role='child' AND is_active=1
+        LIMIT 1`,
+    ).bind(memberId, context.familyId).first<{ id: string }>();
+  } catch {
+    unavailable();
+  }
+  if (!child?.id) unavailable();
+  return { familyId: context.familyId, actorId: context.actorId, memberId: child.id };
+}
+
+/**
+ * token snapshot이나 client family/member 값 대신 현재 membership, 활성 행, KR market과 rollout을 다시 판정한다.
+ * childMemberId는 parent route의 명시 대상일 때만 사용하며 child caller에는 항상 무시된다.
+ */
+export async function resolveStudyGatewayContext(
+  env: Pick<Env, "DB" | "STUDY_RPC_HMAC_SECRET">,
+  user: AuthUser,
+  input: { role: "parent" | "child"; childMemberId?: string },
+): Promise<StudyGatewayContext> {
+  const context = await resolveStudyAccessContext(env, user, input.role);
+
   const child = input.role === "child"
-    ? await resolveOwnChild(env.DB, membership.familyId, user.sub)
+    ? await resolveOwnChild(env.DB, context.familyId, user.sub)
     : input.childMemberId === undefined
       ? null
-      : await resolveChild(env.DB, membership.familyId, input.childMemberId);
-  return { familyId: membership.familyId, actorId: user.sub, role: membership.role, child };
+      : await resolveChild(env.DB, context.familyId, input.childMemberId);
+  return { ...context, child };
 }
 
 /** 부모 children 목록은 활성 child만 각 요청 시점의 grade로 만든다. 지원 학년이 아닌 child는 null로만 내려 보낸다. */
@@ -263,6 +300,22 @@ async function withinBindingDeadline<T>(deadlineAt: number, call: () => Promise<
   }
 }
 
+/** status와 business RPC가 같은 5초 예산·API version 판정을 공유한다. */
+export async function isStudyBindingReady(
+  binding: CalendarStudyServiceBinding | null | undefined,
+  deadlineAt = Date.now() + BINDING_TIMEOUT_MS,
+): Promise<boolean> {
+  if (!binding) return false;
+  try {
+    const readiness = await withinBindingDeadline(deadlineAt, () => binding.readiness());
+    return !!readiness
+      && readiness.apiVersion === STUDY_API_VERSION
+      && readiness.status === "ready";
+  } catch {
+    return false;
+  }
+}
+
 /** 서명은 모든 Calendar-side gate가 끝난 직후, 실제 binding 호출 직전에만 발급한다. */
 export async function callStudyBinding<T>(
   env: Pick<Env, "STUDY_SERVICE" | "STUDY_RPC_HMAC_SECRET">,
@@ -276,8 +329,7 @@ export async function callStudyBinding<T>(
   const binding = env.STUDY_SERVICE;
   if (!binding) throw new Error("study_binding_unavailable");
   const deadlineAt = Date.now() + BINDING_TIMEOUT_MS;
-  const readiness = await withinBindingDeadline(deadlineAt, () => binding.readiness());
-  if (!readiness || readiness.apiVersion !== STUDY_API_VERSION || readiness.status !== "ready") {
+  if (!(await isStudyBindingReady(binding, deadlineAt))) {
     throw new Error("study_binding_version_unavailable");
   }
 

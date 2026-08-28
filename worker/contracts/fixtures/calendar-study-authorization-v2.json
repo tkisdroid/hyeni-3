@@ -1,16 +1,53 @@
 {
-  "fixtureVersion": "calendar-study-authorization-v2/2026-08-27",
+  "fixtureVersion": "calendar-study-authorization-v2/2026-08-29",
+  "description": "Calendar gateway의 learner.start 한 건을 Study Worker가 독립 재계산하기 위한 공유 fixture",
+  "consumerContract": "Study Worker는 이 JSON의 rpcInput과 fingerprintPreimage로 fingerprint를, authorization에서 canonical payload와 HMAC을 각각 독립 재계산한다.",
+  "fingerprintRule": "canonical JSON {input,memberId,grade}의 SHA-256 base64url(no padding)",
+  "canonicalPayloadFields": [
+    "apiVersion",
+    "role",
+    "operation",
+    "actorRef",
+    "familyId",
+    "memberId",
+    "studyMarket",
+    "grade.grade",
+    "grade.source",
+    "grade.academicYear",
+    "requestId",
+    "fingerprint",
+    "issuedAt",
+    "expiresAt",
+    "nonce"
+  ],
+  "signatureRule": "canonicalPayloadFields를 LF로 연결한 UTF-8 payload의 HMAC-SHA-256 base64url(no padding)",
+  "operation": "learner.start",
+  "rpcMethod": "startCalendarMission",
   "testSecret": "calendar-study-v2-fixture-secret",
-  "normalizedRequest": {
-    "missionId": "mission-fixture",
-    "mode": "daily"
+  "rpcInput": {
+    "memberId": "study-child-member-a",
+    "mode": "daily",
+    "requestId": "study-request-fixture-0001"
+  },
+  "fingerprintPreimage": {
+    "input": {
+      "memberId": "study-child-member-a",
+      "mode": "daily",
+      "requestId": "study-request-fixture-0001"
+    },
+    "memberId": "study-child-member-a",
+    "grade": {
+      "grade": 4,
+      "source": "hyeni_birth_year",
+      "academicYear": 2026
+    }
   },
   "signInput": {
-    "actorId": "calendar-actor-fixture",
-    "familyId": "family-fixture",
-    "memberId": "child-fixture",
+    "actorId": "study-child-user-a",
+    "familyId": "study-family-a",
+    "memberId": "study-child-member-a",
     "role": "learner",
-    "operation": "learner.state",
+    "operation": "learner.start",
     "grade": {
       "grade": 4,
       "source": "birthdate",
@@ -21,15 +58,15 @@
     "ttlSeconds": 300,
     "nonce": "study-nonce-fixture-0001"
   },
-  "actorRef": "JzYDm9JzPNFuWo5uyA9ngzlqiGWnGmvLXR04UJmUIvE",
-  "requestFingerprint": "YOH0coQ8N2GouGuBJS9TBPZoI8TzZnx2gsU9gKUxKK0",
+  "expectedActorRef": "xxopiE1j6L7-iJTjDVteF6zp1MyiU_rYqFiV17BXjEA",
+  "expectedFingerprint": "C4t7MP7J7YGJJTRkbT6y93-dBjaBRaRh6XAquVGiI9o",
   "authorization": {
     "apiVersion": "2026-08-27",
     "role": "learner",
-    "operation": "learner.state",
-    "actorRef": "JzYDm9JzPNFuWo5uyA9ngzlqiGWnGmvLXR04UJmUIvE",
-    "familyId": "family-fixture",
-    "memberId": "child-fixture",
+    "operation": "learner.start",
+    "actorRef": "xxopiE1j6L7-iJTjDVteF6zp1MyiU_rYqFiV17BXjEA",
+    "familyId": "study-family-a",
+    "memberId": "study-child-member-a",
     "studyMarket": "KR",
     "grade": {
       "grade": 4,
@@ -37,11 +74,11 @@
       "academicYear": 2026
     },
     "requestId": "study-request-fixture-0001",
-    "fingerprint": "YOH0coQ8N2GouGuBJS9TBPZoI8TzZnx2gsU9gKUxKK0",
+    "fingerprint": "C4t7MP7J7YGJJTRkbT6y93-dBjaBRaRh6XAquVGiI9o",
     "issuedAt": "2026-08-29T00:00:00.000Z",
     "expiresAt": "2026-08-29T00:05:00.000Z",
     "nonce": "study-nonce-fixture-0001",
-    "signature": "Tt6ydW1GiQ2GathwJXYNabYIg_itAunbPRDKK_tvJW8"
+    "signature": "JorVvO0HQSNpRqdAjv3NU-ibzZkYIwQ5QUcOPwtlYEI"
   },
-  "canonicalPayload": "2026-08-27\nlearner\nlearner.state\nJzYDm9JzPNFuWo5uyA9ngzlqiGWnGmvLXR04UJmUIvE\nfamily-fixture\nchild-fixture\nKR\n4\nhyeni_birth_year\n2026\nstudy-request-fixture-0001\nYOH0coQ8N2GouGuBJS9TBPZoI8TzZnx2gsU9gKUxKK0\n2026-08-29T00:00:00.000Z\n2026-08-29T00:05:00.000Z\nstudy-nonce-fixture-0001"
+  "expectedCanonicalPayload": "2026-08-27\nlearner\nlearner.start\nxxopiE1j6L7-iJTjDVteF6zp1MyiU_rYqFiV17BXjEA\nstudy-family-a\nstudy-child-member-a\nKR\n4\nhyeni_birth_year\n2026\nstudy-request-fixture-0001\nC4t7MP7J7YGJJTRkbT6y93-dBjaBRaRh6XAquVGiI9o\n2026-08-29T00:00:00.000Z\n2026-08-29T00:05:00.000Z\nstudy-nonce-fixture-0001"
 }

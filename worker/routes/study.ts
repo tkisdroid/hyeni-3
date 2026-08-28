@@ -1,15 +1,18 @@
 import { Hono, type Context } from "hono";
 import { resolveCanonicalFamilyMembership } from "../db/authz";
 import { changeLearningGrade, LearningGradeUnavailableError } from "../lib/learningGrade";
+import { acquireAccountMutationLease, releaseAccountMutationLease } from "../lib/accountMutationLease";
 import { requireAuth } from "../middleware/auth";
 import { isStudyFeatureEnabled } from "../lib/studyFeatureState";
 import {
   StudyGatewayRequestError,
   callStudyBinding,
+  isStudyBindingReady,
   parseStudyJson,
   requestIdForStudy,
   resolveStudyChildren,
   resolveStudyGatewayContext,
+  resolveStudyManagementMutationContext,
   studyAnswer,
   studyId,
   studyMissionMode,
@@ -78,16 +81,9 @@ study.get("/status", requireAuth, async (c) => {
   });
   if (!enabled) return c.json({ state: "feature_disabled" });
 
-  try {
-    const readiness = await c.env.STUDY_SERVICE?.readiness();
-    if (readiness?.apiVersion !== "2026-08-27" || readiness.status !== "ready") {
-      return c.json({ state: "unavailable" }, 503);
-    }
-    return c.json({ state: "enabled" });
-  } catch {
-    console.error("[study-status] Study readiness unavailable");
-    return c.json({ state: "unavailable" }, 503);
-  }
+  return await isStudyBindingReady(c.env.STUDY_SERVICE)
+    ? c.json({ state: "enabled" })
+    : c.json({ state: "unavailable" }, 503);
 });
 
 function gatewayError(c: Context<{ Bindings: Env; Variables: Vars }>, error: unknown) {
@@ -277,26 +273,44 @@ study.put("/children/:memberId/grade", requireAuth, async (c) => {
 
   try {
     const now = new Date();
-    const result = await changeLearningGrade(c.env.DB, {
-      actorId: c.get("user").sub,
-      familyId: (await c.env.DB.prepare(
-        `SELECT family_id FROM family_members
-          WHERE id=? AND role='child' AND is_active=1
-          LIMIT 1`,
-      ).bind(memberId).first<{ family_id: string }>())?.family_id ?? "",
-      memberId,
-      grade: body.grade,
-      rowVersion: body.rowVersion,
-      requestId,
-      occurredAt: now.toISOString(),
-      now,
+    const context = await resolveStudyManagementMutationContext(c.env, c.get("user"), memberId);
+    const leaseResult = await acquireAccountMutationLease(c.env.DB, {
+      userId: context.actorId,
+      familyId: context.familyId,
     });
-    if (result.status !== 200) {
-      const { status, ...errorBody } = result;
-      return c.json(errorBody, status);
+    if (leaseResult.status === "blocked") {
+      return c.json({ error: "account_deletion_in_progress" }, 409);
     }
-    return c.json({ grade: result.grade, rowVersion: result.rowVersion });
+    if (leaseResult.status === "unavailable") {
+      return c.json({ error: "study_grade_storage_unavailable" }, 503);
+    }
+    try {
+      const result = await changeLearningGrade(c.env.DB, {
+        actorId: context.actorId,
+        familyId: context.familyId,
+        memberId: context.memberId,
+        grade: body.grade,
+        rowVersion: body.rowVersion,
+        requestId,
+        occurredAt: now.toISOString(),
+        now,
+      });
+      if (result.status !== 200) {
+        const { status, ...errorBody } = result;
+        return c.json(errorBody, status);
+      }
+      return c.json({ grade: result.grade, rowVersion: result.rowVersion });
+    } finally {
+      try {
+        await releaseAccountMutationLease(c.env.DB, leaseResult.lease.id);
+      } catch {
+        console.error("[study-grade] canonical family mutation lease release failed");
+      }
+    }
   } catch (error) {
+    if (error instanceof StudyGatewayRequestError && error.status === 403) {
+      return c.json({ error: "grade_forbidden" }, 403);
+    }
     if (error instanceof LearningGradeUnavailableError) {
       return c.json({ error: error.code }, 422);
     }

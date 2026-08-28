@@ -33,6 +33,7 @@ import {
 import { invalidOAuthCallbackResponse, oauthCallbackResponse } from "../lib/oauthCallbackPage";
 import { writeOperationalLog } from "../lib/safeOperationalLog";
 import { attachOnboardingPreferences, parseOnboardingInterests } from "../lib/onboardingPreferences";
+import { hasRegistrationCountryColumn, normalizeServiceCountry, recordRegistrationCountry } from "../lib/studyMarket";
 
 // 추가 Secret(메인이 types.ts 로 승격).
 type NaverEnv = Env & {
@@ -125,6 +126,10 @@ naver.post("/naver", async (c) => {
   }
   const deviceId = normalizeDeviceId(body.device_install_id);
   if (!deviceId) return c.json({ error: "device_identity_required" }, 400);
+  const registrationCountry = normalizeServiceCountry(
+    (c.req.raw as Request & { cf?: { country?: unknown } }).cf?.country,
+  );
+  const registrationCountryColumn = await hasRegistrationCountryColumn(db);
   const recoveryId = typeof body.recoveryId === "string" ? body.recoveryId : "";
   const onboardingInterests = parseOnboardingInterests(body.onboardingInterests);
   if (!onboardingInterests.ok) return c.json({ error: "invalid_onboarding_interests" }, 400);
@@ -197,6 +202,7 @@ naver.post("/naver", async (c) => {
     // 기존 네이버 사용자 재로그인. 메타데이터 best-effort 최신화.
     userId = String(identity.user_id);
     accountStatus = "existing";
+    await recordRegistrationCountry(db, userId, registrationCountry);
     try {
       const existing = await db.prepare("SELECT raw_user_meta_data FROM users WHERE id=? LIMIT 1").bind(userId).first<{ raw_user_meta_data: string | null }>();
       let meta: Record<string, unknown> = {};
@@ -246,6 +252,7 @@ naver.post("/naver", async (c) => {
     if (decision.kind === "link") {
       userId = decision.userId;
       accountStatus = "linked";
+      await recordRegistrationCountry(db, userId, registrationCountry);
       try {
         const inserted = await insertAuthIdentityForCurrentUser(db, {
           id: crypto.randomUUID(),
@@ -266,8 +273,13 @@ naver.post("/naver", async (c) => {
       const createdAt = pgNow();
       const signupMeta = attachOnboardingPreferences(meta, onboardingInterests, createdAt);
       try {
+        const userInsert = registrationCountryColumn
+          ? db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, registration_country, created_at) VALUES (?,?,0,?,COALESCE(NULL, ?),?)")
+            .bind(userId, email, JSON.stringify(signupMeta), registrationCountry, createdAt)
+          : db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, created_at) VALUES (?,?,0,?,?)")
+            .bind(userId, email, JSON.stringify(signupMeta), createdAt);
         await db.batch([
-          db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, created_at) VALUES (?,?,0,?,?)").bind(userId, email, JSON.stringify(signupMeta), createdAt),
+          userInsert,
           db.prepare("INSERT INTO auth_identities (id, user_id, provider, provider_id, identity_data, created_at) VALUES (?,?,?,?,?,?)").bind(crypto.randomUUID(), userId, "naver", naverId, identityData, createdAt),
         ]);
       } catch (e) {

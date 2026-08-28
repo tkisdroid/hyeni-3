@@ -41,16 +41,30 @@ test("operation 또는 member가 달라지면 서명이 달라진다", async () 
 });
 
 test("공유 V2 fixture의 actorRef, fingerprint, payload, signature를 독립 expected 값과 일치시킨다", async () => {
-  const fingerprint = await fingerprintStudyRequest(FIXTURE.normalizedRequest);
+  assert.equal(FIXTURE.operation, FIXTURE.signInput.operation);
+  assert.equal(FIXTURE.rpcInput.requestId, FIXTURE.signInput.requestId);
+  assert.deepEqual(FIXTURE.fingerprintPreimage.input, FIXTURE.rpcInput);
+  assert.equal(FIXTURE.fingerprintPreimage.memberId, FIXTURE.signInput.memberId);
+  assert.deepEqual(FIXTURE.fingerprintPreimage.grade, FIXTURE.authorization.grade);
+  assert.match(FIXTURE.fingerprintRule, /\{input,memberId,grade\}/);
+  assert.deepEqual(FIXTURE.canonicalPayloadFields, [
+    "apiVersion", "role", "operation", "actorRef", "familyId", "memberId", "studyMarket",
+    "grade.grade", "grade.source", "grade.academicYear", "requestId", "fingerprint",
+    "issuedAt", "expiresAt", "nonce",
+  ]);
+  assert.match(FIXTURE.signatureRule, /HMAC-SHA-256/);
+  assert.match(FIXTURE.consumerContract, /Study Worker/);
+
+  const fingerprint = await fingerprintStudyRequest(FIXTURE.fingerprintPreimage);
   const authorization = await signStudyAuthorization({
     ...FIXTURE.signInput,
     now: new Date(FIXTURE.signInput.now),
     fingerprint,
   }, FIXTURE.testSecret);
 
-  assert.equal(fingerprint, FIXTURE.requestFingerprint);
-  assert.equal(authorization.actorRef, FIXTURE.actorRef);
-  assert.equal(canonicalStudyAuthorizationPayload({ ...authorization, signature: undefined }), FIXTURE.canonicalPayload);
+  assert.equal(fingerprint, FIXTURE.expectedFingerprint);
+  assert.equal(authorization.actorRef, FIXTURE.expectedActorRef);
+  assert.equal(canonicalStudyAuthorizationPayload({ ...authorization, signature: undefined }), FIXTURE.expectedCanonicalPayload);
   assert.deepEqual(authorization, FIXTURE.authorization);
 });
 

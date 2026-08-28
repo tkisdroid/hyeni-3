@@ -65,7 +65,8 @@ class Db {
   }
 }
 
-function createDb(options) {
+function createDb(options = {}) {
+  const { legacyRegistrationSchema = false, ...dbOptions } = options;
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(`
     CREATE TABLE oauth_state_transactions (
@@ -81,7 +82,8 @@ function createDb(options) {
     );
     CREATE TABLE users (
       id TEXT PRIMARY KEY, phone TEXT, email TEXT, encrypted_password TEXT,
-      is_anonymous INTEGER NOT NULL DEFAULT 0, raw_user_meta_data TEXT, registration_country TEXT, created_at TEXT
+      is_anonymous INTEGER NOT NULL DEFAULT 0, raw_user_meta_data TEXT,
+      ${legacyRegistrationSchema ? "" : "registration_country TEXT,"} created_at TEXT
     );
     CREATE TABLE auth_identities (
       id TEXT, user_id TEXT NOT NULL, provider TEXT NOT NULL, provider_id TEXT NOT NULL,
@@ -130,7 +132,7 @@ function createDb(options) {
     .run("family-1", "parent-1", "2026-07-14 00:00:00+00");
   sqlite.prepare("INSERT INTO family_members VALUES (?,?,?,?,?,?,?,?)")
     .run("member-1", "family-1", "parent-1", "parent", "부모", 1, "2026-07-14 00:00:00+00", null);
-  return new Db(sqlite, options);
+  return new Db(sqlite, dbOptions);
 }
 
 const { privateKey, publicKey } = await generateKeyPair("ES256", { extractable: true });
@@ -163,6 +165,50 @@ async function start(db, provider = "google", body = { client: "web", webOrigin:
     body: JSON.stringify(body),
   });
   return { response, body: await response.json() };
+}
+
+async function exchangeNaver(db, {
+  code,
+  edgeCountry,
+  profile,
+  deviceId = `device-${code}`,
+}) {
+  const prepared = await start(db, "naver");
+  const callback = await appRequest(
+    db,
+    `/api/auth/naver?code=${encodeURIComponent(code)}&state=${encodeURIComponent(prepared.body.state)}`,
+  );
+  assert.equal(callback.status, 200);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (request, init = {}) => {
+    const url = String(request);
+    if (url.includes("nid.naver.com/oauth2.0/token")) {
+      assert.equal(new URL(url).searchParams.get("code"), code);
+      return Response.json({ access_token: `naver-token-${code}` });
+    }
+    if (url.includes("openapi.naver.com/v1/nid/me")) {
+      assert.equal(init.headers?.Authorization, `Bearer naver-token-${code}`);
+      return Response.json({ resultcode: "00", response: profile });
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+  try {
+    const response = await appRequest(db, "/api/auth/naver", {
+      method: "POST",
+      edgeCountry,
+      body: JSON.stringify({
+        code,
+        state: prepared.body.state,
+        transactionSecret: prepared.body.transactionSecret,
+        device_install_id: deviceId,
+        device_platform: "web",
+      }),
+    });
+    return { response, body: await response.json() };
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 }
 
 test("legacy GET과 외부 target은 fail-closed이고 서버가 승인 URL·state·별도 secret을 발급한다", async () => {
@@ -614,6 +660,93 @@ test("OAuth 신규 가입의 registration country는 계정 batch에 있어 post
   }
 });
 
+test("Naver OAuth는 created·existing·linked 모두 최초 edge 국가만 저장한다", async () => {
+  const createdDb = createDb({ failRegistrationUpdate: true });
+  try {
+    const created = await exchangeNaver(createdDb, {
+      code: "naver-country-created",
+      edgeCountry: " kr ",
+      profile: { id: "naver-country-created", email: "naver-created@example.com", name: "신규 보호자" },
+    });
+    assert.equal(created.response.status, 200);
+    assert.equal(created.body.account_status, "created");
+    assert.equal(
+      createdDb.sqlite.prepare("SELECT registration_country FROM users WHERE id=?").get(created.body.user_id).registration_country,
+      "KR",
+    );
+  } finally {
+    createdDb.sqlite.close();
+  }
+
+  const existingDb = createDb();
+  try {
+    existingDb.sqlite.prepare("INSERT INTO auth_identities VALUES (?,?,?,?,?,?)")
+      .run("identity-naver-existing", "parent-1", "naver", "naver-existing", "{}", "2026-08-29T00:00:00.000Z");
+    const first = await exchangeNaver(existingDb, {
+      code: "naver-country-existing-first",
+      edgeCountry: "jp",
+      profile: { id: "naver-existing", email: "parent@example.com", name: "기존 보호자" },
+    });
+    const second = await exchangeNaver(existingDb, {
+      code: "naver-country-existing-second",
+      edgeCountry: "KR",
+      profile: { id: "naver-existing", email: "parent@example.com", name: "기존 보호자" },
+      deviceId: "device-naver-existing-second",
+    });
+    assert.equal(first.response.status, 200);
+    assert.equal(first.body.account_status, "existing");
+    assert.equal(second.response.status, 200);
+    assert.equal(existingDb.sqlite.prepare("SELECT registration_country FROM users WHERE id='parent-1'").get().registration_country, "JP");
+  } finally {
+    existingDb.sqlite.close();
+  }
+
+  const linkedDb = createDb();
+  try {
+    const linked = await exchangeNaver(linkedDb, {
+      code: "naver-country-linked",
+      edgeCountry: "KR",
+      profile: { id: "naver-linked", email: "parent@example.com", name: "연결 보호자" },
+    });
+    assert.equal(linked.response.status, 200);
+    assert.equal(linked.body.account_status, "linked");
+    assert.equal(linked.body.user_id, "parent-1");
+    assert.equal(linkedDb.sqlite.prepare("SELECT registration_country FROM users WHERE id='parent-1'").get().registration_country, "KR");
+  } finally {
+    linkedDb.sqlite.close();
+  }
+});
+
+test("Naver OAuth created·existing·linked는 registration_country migration 전 schema에서도 인증을 복구한다", async () => {
+  for (const accountStatus of ["created", "existing", "linked"]) {
+    const db = createDb({ legacyRegistrationSchema: true });
+    try {
+      const profile = accountStatus === "created"
+        ? { id: "naver-legacy-created", email: "naver-legacy-created@example.com", name: "신규 보호자" }
+        : accountStatus === "existing"
+          ? { id: "naver-legacy-existing", email: "parent@example.com", name: "기존 보호자" }
+          : { id: "naver-legacy-linked", email: "parent@example.com", name: "연결 보호자" };
+      if (accountStatus === "existing") {
+        db.sqlite.prepare("INSERT INTO auth_identities VALUES (?,?,?,?,?,?)")
+          .run("identity-naver-legacy", "parent-1", "naver", profile.id, "{}", "2026-08-29T00:00:00.000Z");
+      }
+      const result = await exchangeNaver(db, {
+        code: `naver-legacy-${accountStatus}`,
+        edgeCountry: "KR",
+        profile,
+      });
+      assert.equal(result.response.status, 200, accountStatus);
+      assert.equal(result.body.account_status, accountStatus);
+      assert.equal(
+        db.sqlite.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('users') WHERE name='registration_country'").get().count,
+        0,
+      );
+    } finally {
+      db.sqlite.close();
+    }
+  }
+});
+
 test("카카오·구글·네이버 OAuth가 신규/기존/연결 계정 상태 계약을 함께 사용한다", () => {
   const oauthSource = readFileSync(resolve(workerDir, "routes/oauth.ts"), "utf8");
   const naverSource = readFileSync(resolve(workerDir, "routes/naver-auth.ts"), "utf8");
@@ -622,6 +755,11 @@ test("카카오·구글·네이버 OAuth가 신규/기존/연결 계정 상태 �
     assert.match(source, /account_status: accountStatus/);
     assert.match(source, /attachOnboardingPreferences/);
   }
+  const naverCountryCapability = naverSource.indexOf("hasRegistrationCountryColumn(db)");
+  const naverTransactionConsume = naverSource.indexOf("consumeOAuthTransaction(db");
+  assert.ok(naverCountryCapability > 0);
+  assert.ok(naverCountryCapability < naverTransactionConsume,
+    "Naver registration country column capability는 단회 OAuth transaction 소비 전에 확정해야 합니다");
 });
 
 test("라우트에는 client state target 복호화와 raw code 로그가 없다", () => {

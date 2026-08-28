@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { SignJWT, exportJWK, generateKeyPair } from "jose";
@@ -14,6 +15,9 @@ const SIBLING_ID = "study-child-user-b";
 const CHILD_MEMBER_ID = "study-child-member-a";
 const SIBLING_MEMBER_ID = "study-child-member-b";
 const SECRET = "study-gateway-test-secret-with-sufficient-length";
+const AUTHORIZATION_FIXTURE = JSON.parse(
+  readFileSync(new URL("../contracts/fixtures/calendar-study-authorization-v2.json", import.meta.url), "utf8"),
+);
 
 class Statement {
   constructor(db, sql, bindings = []) {
@@ -304,19 +308,28 @@ test("아이 시작 요청은 토큰의 정확한 자녀와 계산 학년만 RPC
   }
 });
 
-test("Study가 실제 받은 공개 input과 auth만으로 fingerprint를 독립 재계산할 수 있다", async () => {
+test("Calendar gateway는 공유 fixture의 정확한 RPC input과 {input,memberId,grade} preimage를 그대로 생산한다", async () => {
   const db = createFixture();
   const binding = recordingBinding();
   try {
     const result = await request(db, binding, "/learner/missions", {
       method: "POST",
-      body: { mode: "daily" },
+      body: { mode: AUTHORIZATION_FIXTURE.rpcInput.mode },
       actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+      headers: { "Idempotency-Key": AUTHORIZATION_FIXTURE.rpcInput.requestId },
     });
     assert.equal(result.response.status, 201);
     assert.equal(binding.calls.length, 1);
-    assert.deepEqual(binding.calls[0].auth.grade, { grade: 4, source: "hyeni_birth_year", academicYear: 2026 });
-    assert.equal(binding.calls[0].auth.fingerprint, visibleFingerprint(binding.calls[0]));
+    const call = binding.calls[0];
+    assert.equal(call.method, AUTHORIZATION_FIXTURE.rpcMethod);
+    assert.equal(call.auth.operation, AUTHORIZATION_FIXTURE.operation);
+    assert.deepEqual(call.input, AUTHORIZATION_FIXTURE.rpcInput);
+    assert.deepEqual(
+      { input: call.input, memberId: call.auth.memberId, grade: call.auth.grade },
+      AUTHORIZATION_FIXTURE.fingerprintPreimage,
+    );
+    assert.equal(call.auth.fingerprint, AUTHORIZATION_FIXTURE.expectedFingerprint);
+    assert.equal(call.auth.fingerprint, visibleFingerprint(call));
   } finally {
     db.close();
   }
