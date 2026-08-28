@@ -72,6 +72,10 @@ const studyMarketMigrationUrl = new URL(
   "../db/study-market.sql",
   import.meta.url,
 );
+const authSchemaUrl = new URL(
+  "../db/auth-schema.sql",
+  import.meta.url,
+);
 
 function bootstrap() {
   const db = new DatabaseSync(":memory:");
@@ -167,12 +171,26 @@ test("Study market schema 제약은 source·market·학년의 허용값만 저�
   migrated.close();
 
   const canonical = bootstrap();
+  canonical.prepare("INSERT INTO users(id,registration_country) VALUES ('canonical-user-ok','KR')").run();
+  assert.throws(() => canonical.prepare("INSERT INTO users(id,registration_country) VALUES ('canonical-user-bad','KOR')").run(), /CHECK constraint failed/);
   canonical.prepare("INSERT INTO families(id,parent_id,pair_code,service_country,service_country_source,study_market) VALUES ('canonical-ok','parent','KID-CANONICAL','KR','guardian_confirmed','KR')").run();
   assert.throws(() => canonical.prepare("INSERT INTO families(id,parent_id,pair_code,service_country_source) VALUES ('canonical-source','parent','KID-SOURCE','not-a-source')").run(), /CHECK constraint failed/);
   assert.throws(() => canonical.prepare("INSERT INTO families(id,parent_id,pair_code,study_market) VALUES ('canonical-market','parent','KID-MARKET','JP')").run(), /CHECK constraint failed/);
   canonical.prepare("INSERT INTO family_members(id,family_id,role,learning_grade_override) VALUES ('canonical-member-ok','canonical-ok','child',6)").run();
   assert.throws(() => canonical.prepare("INSERT INTO family_members(id,family_id,role,learning_grade_override) VALUES ('canonical-member-grade','canonical-ok','child',7)").run(), /CHECK constraint failed/);
   canonical.close();
+});
+
+test("인증 schema도 registration_country의 두 글자 제약을 실제 SQLite에서 적용한다", async () => {
+  const authSchema = await readFile(authSchemaUrl, "utf8");
+  const db = new DatabaseSync(":memory:");
+  db.exec(authSchema);
+  db.prepare("INSERT INTO users(id,registration_country) VALUES ('auth-user-ok','KR')").run();
+  assert.throws(
+    () => db.prepare("INSERT INTO users(id,registration_country) VALUES ('auth-user-bad','KOR')").run(),
+    /CHECK constraint failed/,
+  );
+  db.close();
 });
 
 test("인증 진입 UNIQUE migration은 재실행 가능하고 전화·정규화 ID·OTP 경합을 막는다", () => {

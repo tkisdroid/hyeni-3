@@ -30,6 +30,8 @@ class D1StatementAdapter {
 class D1DatabaseAdapter {
   constructor(sqlite) {
     this.sqlite = sqlite;
+    this.batchBarrier = null;
+    this.batchTail = Promise.resolve();
   }
 
   prepare(sql) {
@@ -37,6 +39,13 @@ class D1DatabaseAdapter {
   }
 
   async batch(statements) {
+    if (this.batchBarrier) await this.batchBarrier();
+    const run = this.batchTail.then(() => this.runBatch(statements));
+    this.batchTail = run.catch(() => undefined);
+    return run;
+  }
+
+  async runBatch(statements) {
     this.sqlite.exec("BEGIN");
     try {
       const results = [];
@@ -122,6 +131,7 @@ test("저장 국가에는 ISO alpha-2가 아닌 특수·임의 코드가 들어�
     assert.equal(market.normalizeServiceCountry(code), null, code);
   }
   assert.equal(market.normalizeServiceCountry("JP"), "JP");
+  assert.equal(market.normalizeServiceCountry("MF"), "MF");
 });
 
 test("edge 제안 KR은 보호자 확정 전 Study market을 열지 않는다", async () => {
@@ -195,6 +205,33 @@ test("같은 request id 재시도는 감사 행과 version을 중복시키지 �
   assert.deepEqual(retry, first);
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id='request-idempotent'").get().count, 1);
   assert.equal(sqlite.prepare("SELECT service_country_row_version AS version FROM families WHERE id='family-a'").get().version, 2);
+  sqlite.close();
+});
+
+test("완전히 동시인 같은 request id 요청은 후행도 canonical 200 replay를 반환한다", async () => {
+  const { sqlite, db } = createFixture();
+  let arrivals = 0;
+  let releaseBatches;
+  const bothAtBatch = new Promise((resolve) => { releaseBatches = resolve; });
+  db.batchBarrier = async () => {
+    arrivals += 1;
+    if (arrivals === 2) releaseBatches();
+    await bothAtBatch;
+  };
+  const input = {
+    actorId: "parent", familyId: "family-a", country: "KR", rowVersion: 1,
+    requestId: "request-concurrent-replay", occurredAt: "2026-08-28T00:00:00.000Z",
+  };
+  const [first, second] = await Promise.all([
+    market.confirmServiceCountry(db, input),
+    market.confirmServiceCountry(db, input),
+  ]);
+  const expected = {
+    status: 200, serviceCountry: "KR", studyMarket: "KR", source: "guardian_confirmed", rowVersion: 2,
+  };
+  assert.deepEqual(first, expected);
+  assert.deepEqual(second, expected);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id='request-concurrent-replay'").get().count, 1);
   sqlite.close();
 });
 

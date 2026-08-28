@@ -5,15 +5,25 @@ type ServiceCountrySource = "edge_suggested" | "guardian_confirmed" | "guardian_
 
 // ISO 3166-1 alpha-2 중 사용자 서비스 국가로 저장 가능한 값만 고정한다.
 // access-region의 ZZ fallback은 화면 힌트일 뿐 이 목록에 포함하지 않는다.
-const SERVICE_COUNTRY_CODES = new Set(`
+const SERVICE_COUNTRY_CODE_LIST = `
 AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ
 CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR
 GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP
-KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MG MH MK ML MM MN MO MP MQ MR MS MT MU
+KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU
 MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA
 SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM
 US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW
-`.trim().split(/\s+/));
+`.trim().split(/\s+/);
+const ISO_3166_1_ALPHA_2_CODE_COUNT = 249;
+
+if (
+  SERVICE_COUNTRY_CODE_LIST.length !== ISO_3166_1_ALPHA_2_CODE_COUNT
+  || new Set(SERVICE_COUNTRY_CODE_LIST).size !== ISO_3166_1_ALPHA_2_CODE_COUNT
+) {
+  throw new Error("service_country_iso_3166_1_alpha_2_list_invalid");
+}
+
+const SERVICE_COUNTRY_CODES = new Set(SERVICE_COUNTRY_CODE_LIST);
 
 export interface ConfirmServiceCountryInput {
   actorId: string;
@@ -233,6 +243,20 @@ export async function confirmServiceCountry(
   try {
     const [updated, audited] = await db.batch([update, audit]);
     if (Number(updated?.meta?.changes ?? 0) !== 1 || Number(audited?.meta?.changes ?? 0) !== 1) {
+      const retryAudit = await db.prepare(
+        "SELECT family_id, actor_user_id, setting, next_value, request_row_version FROM study_setting_audit WHERE request_id=? LIMIT 1",
+      ).bind(input.requestId).first<{ family_id: string; actor_user_id: string; setting: string; next_value: string | null; request_row_version: number }>();
+      if (retryAudit) {
+        if (
+          retryAudit.family_id !== input.familyId
+          || retryAudit.actor_user_id !== input.actorId
+          || retryAudit.setting !== "service_country"
+          || retryAudit.next_value !== country
+          || Number(retryAudit.request_row_version) !== input.rowVersion
+        ) return { status: 409, error: "service_country_request_id_conflict" };
+        const canonical = await canonicalFamilyServiceCountry(db, input.familyId);
+        if (canonical) return { status: 200, ...canonical };
+      }
       const latest = await db.prepare("SELECT service_country_row_version FROM families WHERE id=? LIMIT 1")
         .bind(input.familyId).first<{ service_country_row_version: number }>();
       return { status: 409, error: "service_country_version_conflict", rowVersion: Number(latest?.service_country_row_version ?? currentVersion) };
