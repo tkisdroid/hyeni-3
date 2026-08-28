@@ -24,7 +24,7 @@ import {
   releaseAnonymousSignupProtectionClaims,
 } from "../lib/anonymousSignupProtection";
 import { attachOnboardingPreferences, parseOnboardingInterests } from "../lib/onboardingPreferences";
-import { normalizeServiceCountry, recordRegistrationCountry } from "../lib/studyMarket";
+import { hasRegistrationCountryColumn, normalizeServiceCountry } from "../lib/studyMarket";
 
 const auth = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -605,6 +605,7 @@ auth.post("/signup/verify", async (c) => {
   // 재시도 가능한 입력·설치·중복 오류는 일회용 OTP보다 먼저 판정한다.
   // 이 경계가 뒤에 있으면 올바른 OTP를 입력하고도 실패한 뒤 같은 번호로 다시 시도할 수 없다.
   if (!signupDeviceId) return c.json({ error: "device_identity_required" }, 400);
+  const registrationCountryColumn = await hasRegistrationCountryColumn(db);
   if (await isPhoneTaken(db, phone)) return c.json({ error: "phone_exists" }, 409);
   if (!(await isLoginIdAvailable(db, loginId))) return c.json({ error: "login_id_taken" }, 409);
 
@@ -630,24 +631,25 @@ auth.post("/signup/verify", async (c) => {
   }, onboardingInterests, nowTs);
 
   try {
+    const userInsert = registrationCountryColumn
+      ? db.prepare(
+        `INSERT INTO users (id, phone, encrypted_password, is_anonymous, raw_user_meta_data, registration_country, created_at)
+         SELECT ?,?,?,0,?,COALESCE(NULL, ?),?
+         WHERE EXISTS (SELECT 1 FROM phone_otp WHERE phone=? AND code_hash=?)`,
+      ).bind(
+        userId, phoneNoPlus, encryptedPassword, JSON.stringify(meta), registrationCountry, nowTs,
+        phone, validatedOtp.verificationHash,
+      )
+      : db.prepare(
+        `INSERT INTO users (id, phone, encrypted_password, is_anonymous, raw_user_meta_data, created_at)
+         SELECT ?,?,?,0,?,?
+         WHERE EXISTS (SELECT 1 FROM phone_otp WHERE phone=? AND code_hash=?)`,
+      ).bind(
+        userId, phoneNoPlus, encryptedPassword, JSON.stringify(meta), nowTs,
+        phone, validatedOtp.verificationHash,
+      );
     const inserted = await db.batch([
-      db
-        .prepare(
-          `INSERT INTO users (id, phone, encrypted_password, is_anonymous, raw_user_meta_data, created_at)
-           SELECT ?,?,?,0,?,?
-           WHERE EXISTS (
-             SELECT 1 FROM phone_otp WHERE phone=? AND code_hash=?
-           )`,
-        )
-        .bind(
-          userId,
-          phoneNoPlus,
-          encryptedPassword,
-          JSON.stringify(meta),
-          nowTs,
-          phone,
-          validatedOtp.verificationHash,
-        ),
+      userInsert,
       // phone identity — GoTrue 는 phone provider 의 provider_id 를 user.id 로 둔다(충돌 없음).
       db
         .prepare(
@@ -685,9 +687,6 @@ auth.post("/signup/verify", async (c) => {
     if (!(await isLoginIdAvailable(db, loginId))) return c.json({ error: "login_id_taken" }, 409);
     return c.json({ error: "signup_failed" }, 500);
   }
-
-  // 등록 국가는 서버 edge의 첫 알려진 2글자 값만 보존하며, 기기 위치 권한과 무관하다.
-  await recordRegistrationCountry(db, userId, registrationCountry);
 
   // 가입 직후엔 가족이 없다(페어링/가족 생성은 후속). login-password 와 동일한 세션 형태.
   const user: AuthUser = { sub: userId, role: "parent", family_id: null, is_anonymous: false };

@@ -34,23 +34,30 @@ const jwtPublicKey = JSON.stringify(await exportJWK(publicKey));
 const otpSecret = "signup-pairing-error-contract-secret";
 
 class Statement {
-  constructor(sqlite, sql, bindings = []) {
+  constructor(sqlite, sql, bindings = [], failRegistrationUpdate = false) {
     this.sqlite = sqlite;
     this.sql = sql;
     this.bindings = bindings;
+    this.failRegistrationUpdate = failRegistrationUpdate;
   }
-  bind(...bindings) { return new Statement(this.sqlite, this.sql, bindings); }
+  bind(...bindings) { return new Statement(this.sqlite, this.sql, bindings, this.failRegistrationUpdate); }
   async first() { return this.sqlite.prepare(this.sql).get(...this.bindings) ?? null; }
   async all() { return { success: true, results: this.sqlite.prepare(this.sql).all(...this.bindings) }; }
   async run() {
+    if (this.failRegistrationUpdate) throw new Error("registration_country_post_commit_write");
     const result = this.sqlite.prepare(this.sql).run(...this.bindings);
     return { success: true, meta: { changes: Number(result.changes) } };
   }
 }
 
 class Db {
-  constructor(sqlite) { this.sqlite = sqlite; }
-  prepare(sql) { return new Statement(this.sqlite, sql); }
+  constructor(sqlite, { failRegistrationUpdate = false } = {}) {
+    this.sqlite = sqlite;
+    this.failRegistrationUpdate = failRegistrationUpdate;
+  }
+  prepare(sql) {
+    return new Statement(this.sqlite, sql, [], this.failRegistrationUpdate && sql.includes("SET registration_country"));
+  }
   async batch(statements) {
     this.sqlite.exec("BEGIN IMMEDIATE");
     try {
@@ -65,10 +72,10 @@ class Db {
   }
 }
 
-function setup() {
+function setup(options) {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(readFileSync(resolve(repoDir, "cloudflare/schema_d1.sql"), "utf8"));
-  const db = new Db(sqlite);
+  const db = new Db(sqlite, options);
   const app = new Hono();
   app.route("/auth", authRoutes);
   app.route("/api/family", familyRoutes);
@@ -95,15 +102,17 @@ async function authorization(sub, role = "anonymous", isAnonymous = true) {
   return `Bearer ${token}`;
 }
 
-async function post(app, env, path, body, authorizationHeader) {
-  return app.request(`http://test.local${path}`, {
+async function post(app, env, path, body, authorizationHeader, edgeCountry) {
+  const request = new Request(`http://test.local${path}`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       ...(authorizationHeader ? { authorization: authorizationHeader } : {}),
     },
     body: JSON.stringify(body),
-  }, env);
+  });
+  if (edgeCountry) Object.defineProperty(request, "cf", { value: { country: edgeCountry } });
+  return app.fetch(request, env);
 }
 
 test("아이디 확인은 기존 대소문자·공백을 정규화해 중복으로 보고 캐시하지 않는다", async () => {
@@ -264,6 +273,54 @@ test("가입 전제조건 실패는 올바른 OTP를 소비하지 않아 같은 
   );
 });
 
+test("family setup은 명시 serviceCountry가 ISO 코드가 아니면 edge 제안으로 강등하지 않는다", async () => {
+  const { app, env, sqlite } = setup();
+  sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES ('market-parent-invalid',0)").run();
+  const response = await post(
+    app,
+    env,
+    "/api/family/setup",
+    { parentName: "보호자", plannedChildCount: 1, serviceCountry: "KOR" },
+    await authorization("market-parent-invalid", "parent", false),
+  );
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: "invalid_service_country" });
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM families WHERE parent_id='market-parent-invalid'").get().n, 0);
+});
+
+test("family setup은 초기 service market을 가족·멤버 batch와 함께 확정한다", async () => {
+  const { app, db, env, sqlite } = setup();
+  sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES ('market-parent-atomic',0)").run();
+  const originalPrepare = db.prepare.bind(db);
+  db.prepare = (sql) => {
+    const statement = originalPrepare(sql);
+    if (sql.includes("SET service_country=")) {
+      return {
+        ...statement,
+        bind(...bindings) {
+          const bound = statement.bind(...bindings);
+          return { ...bound, async run() { throw new Error("initial_market_post_commit_write"); } };
+        },
+      };
+    }
+    return statement;
+  };
+  const response = await post(
+    app,
+    env,
+    "/api/family/setup",
+    { parentName: "보호자", plannedChildCount: 1, serviceCountry: "KR", serviceCountryMatchedEdge: true },
+    await authorization("market-parent-atomic", "parent", false),
+  );
+  assert.equal(response.status, 200);
+  const family = sqlite.prepare(
+    "SELECT service_country, service_country_source, study_market FROM families WHERE parent_id='market-parent-atomic'",
+  ).get();
+  assert.equal(family.service_country, "KR");
+  assert.equal(family.service_country_source, "guardian_confirmed");
+  assert.equal(family.study_market, "KR");
+});
+
 test("가입 설문은 고정 선택지만 계정 생성 batch의 메타데이터에 저장한다", async () => {
   const { app, env, sqlite } = setup();
   const phone = "+821033334444";
@@ -303,6 +360,27 @@ test("가입 설문은 고정 선택지만 계정 생성 batch의 메타데이�
   const metadata = JSON.parse(user.raw_user_meta_data);
   assert.deepEqual(metadata.onboarding_interests, ["location", "schedule"]);
   assert.equal(typeof metadata.onboarding_completed_at, "string");
+});
+
+test("전화 신규 가입의 registration country는 OTP 계정 batch에 있어 post-commit 오류로 500이 되지 않는다", async () => {
+  const { app, env, sqlite } = setup({ failRegistrationUpdate: true });
+  const phone = "+821044443333";
+  const token = "123456";
+  const codeHash = await hashOtp(phone, token, otpSecret);
+  sqlite.prepare(
+    "INSERT INTO phone_otp(phone,code_hash,expires_at,attempts,created_at) VALUES (?,?,?,0,?)",
+  ).run(phone, codeHash, "2099-01-01 00:00:00", "2026-08-28 00:00:00");
+  const response = await post(app, env, "/auth/signup/verify", {
+    phone: "01044443333",
+    token,
+    password: "signup-password",
+    loginId: "countryphone",
+    name: "보호자",
+    device_install_id: "phone-country-device",
+    device_platform: "web",
+  }, undefined, "KR");
+  assert.equal(response.status, 200);
+  assert.equal(sqlite.prepare("SELECT registration_country FROM users WHERE phone='821044443333'").get().registration_country, "KR");
 });
 
 test("OTP 검증 직후 재발급이 경합하면 계정 행을 만들지 않고 새 OTP를 보존한다", async () => {

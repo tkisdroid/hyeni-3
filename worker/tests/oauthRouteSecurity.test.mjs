@@ -27,23 +27,30 @@ const oauthRoutes = (await import(pathToFileURL(resolve(workerDir, "routes/oauth
 const naverRoutes = (await import(pathToFileURL(resolve(workerDir, "routes/naver-auth.ts")).href)).default;
 
 class Statement {
-  constructor(sqlite, sql, bindings = []) {
+  constructor(sqlite, sql, bindings = [], failRegistrationUpdate = false) {
     this.sqlite = sqlite;
     this.sql = sql;
     this.bindings = bindings;
+    this.failRegistrationUpdate = failRegistrationUpdate;
   }
-  bind(...bindings) { return new Statement(this.sqlite, this.sql, bindings); }
+  bind(...bindings) { return new Statement(this.sqlite, this.sql, bindings, this.failRegistrationUpdate); }
   async first() { return this.sqlite.prepare(this.sql).get(...this.bindings) ?? null; }
   async all() { return { results: this.sqlite.prepare(this.sql).all(...this.bindings) }; }
   async run() {
+    if (this.failRegistrationUpdate) throw new Error("registration_country_post_commit_write");
     const result = this.sqlite.prepare(this.sql).run(...this.bindings);
     return { success: true, meta: { changes: Number(result.changes ?? 0) } };
   }
 }
 
 class Db {
-  constructor(sqlite) { this.sqlite = sqlite; }
-  prepare(sql) { return new Statement(this.sqlite, sql); }
+  constructor(sqlite, { failRegistrationUpdate = false } = {}) {
+    this.sqlite = sqlite;
+    this.failRegistrationUpdate = failRegistrationUpdate;
+  }
+  prepare(sql) {
+    return new Statement(this.sqlite, sql, [], this.failRegistrationUpdate && sql.includes("SET registration_country"));
+  }
   async batch(statements) {
     this.sqlite.exec("BEGIN IMMEDIATE");
     try {
@@ -58,7 +65,7 @@ class Db {
   }
 }
 
-function createDb() {
+function createDb(options) {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(`
     CREATE TABLE oauth_state_transactions (
@@ -74,7 +81,7 @@ function createDb() {
     );
     CREATE TABLE users (
       id TEXT PRIMARY KEY, phone TEXT, email TEXT, encrypted_password TEXT,
-      is_anonymous INTEGER NOT NULL DEFAULT 0, raw_user_meta_data TEXT, created_at TEXT
+      is_anonymous INTEGER NOT NULL DEFAULT 0, raw_user_meta_data TEXT, registration_country TEXT, created_at TEXT
     );
     CREATE TABLE auth_identities (
       id TEXT, user_id TEXT NOT NULL, provider TEXT NOT NULL, provider_id TEXT NOT NULL,
@@ -115,7 +122,7 @@ function createDb() {
       id TEXT PRIMARY KEY, family_id TEXT NOT NULL, child_user_id TEXT NOT NULL
     );
   `);
-  sqlite.prepare("INSERT INTO users VALUES (?,?,?,?,?,?,?)")
+  sqlite.prepare("INSERT INTO users(id,phone,email,encrypted_password,is_anonymous,raw_user_meta_data,created_at) VALUES (?,?,?,?,?,?,?)")
     .run("parent-1", null, "parent@example.com", null, 0, "{}", "2026-07-14 00:00:00+00");
   sqlite.prepare("INSERT INTO auth_identities VALUES (?,?,?,?,?,?)")
     .run("identity-1", "parent-1", "google", "google-parent", "{}", "2026-07-14 00:00:00+00");
@@ -123,7 +130,7 @@ function createDb() {
     .run("family-1", "parent-1", "2026-07-14 00:00:00+00");
   sqlite.prepare("INSERT INTO family_members VALUES (?,?,?,?,?,?,?,?)")
     .run("member-1", "family-1", "parent-1", "parent", "부모", 1, "2026-07-14 00:00:00+00", null);
-  return new Db(sqlite);
+  return new Db(sqlite, options);
 }
 
 const { privateKey, publicKey } = await generateKeyPair("ES256", { extractable: true });
@@ -141,10 +148,13 @@ function appRequest(db, path, init = {}) {
   const app = new Hono();
   app.route("/api/auth", oauthRoutes);
   app.route("/api/auth", naverRoutes);
-  return app.request(`https://api.example.test${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
-  }, { ...envBase, DB: db });
+  const { edgeCountry, ...requestInit } = init;
+  const request = new Request(`https://api.example.test${path}`, {
+    ...requestInit,
+    headers: { "Content-Type": "application/json", ...(requestInit.headers ?? {}) },
+  });
+  if (edgeCountry) Object.defineProperty(request, "cf", { value: { country: edgeCountry } });
+  return app.fetch(request, { ...envBase, DB: db });
 }
 
 async function start(db, provider = "google", body = { client: "web", webOrigin: "https://hyeni-calendar.pages.dev" }) {
@@ -566,6 +576,39 @@ test("OAuth 신규 가입만 allowlist 설문을 저장하고 account_status를 
     const metadata = JSON.parse(row.raw_user_meta_data);
     assert.deepEqual(metadata.onboarding_interests, ["location", "schedule"]);
     assert.equal(typeof metadata.onboarding_completed_at, "string");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("OAuth 신규 가입의 registration country는 계정 batch에 있어 post-commit 오류로 500이 되지 않는다", async () => {
+  const db = createDb({ failRegistrationUpdate: true });
+  const prepared = await start(db);
+  await appRequest(db, `/api/auth/oauth/google/callback?code=country-code&state=${encodeURIComponent(prepared.body.state)}`);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (request) => {
+    const url = String(request);
+    if (url.includes("oauth2.googleapis.com/token")) return Response.json({ access_token: "country-token" });
+    if (url.includes("openidconnect.googleapis.com/v1/userinfo")) {
+      return Response.json({ sub: "google-country-new", email: "country-new@example.com", email_verified: true, name: "보호자" });
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+  try {
+    const response = await appRequest(db, "/api/auth/oauth/google", {
+      method: "POST",
+      edgeCountry: "KR",
+      body: JSON.stringify({
+        code: "country-code",
+        state: prepared.body.state,
+        transactionSecret: prepared.body.transactionSecret,
+        device_install_id: "device-oauth-country",
+        device_platform: "web",
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(db.sqlite.prepare("SELECT registration_country FROM users WHERE id=?").get(payload.user_id).registration_country, "KR");
   } finally {
     globalThis.fetch = originalFetch;
   }

@@ -1,29 +1,10 @@
+import "./helpers/tsModuleResolve.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { registerHooks } from "node:module";
-import { dirname, extname, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import test, { after } from "node:test";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import test from "node:test";
 
-const workerDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const typeScriptResolutionHook = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (specifier.startsWith(".") && !extname(specifier)) {
-      const base = new URL(specifier, context.parentURL);
-      for (const extension of [".ts", ".js"]) {
-        const candidate = new URL(`${base.href}${extension}`);
-        if (existsSync(fileURLToPath(candidate))) return { url: candidate.href, shortCircuit: true };
-      }
-    }
-    return nextResolve(specifier, context);
-  },
-});
-
-after(() => typeScriptResolutionHook.deregister());
-
-const market = await import(pathToFileURL(resolve(workerDir, "lib/studyMarket.ts")).href);
+const market = await import("../lib/studyMarket.ts");
 
 class D1StatementAdapter {
   constructor(sqlite, sql, bindings = []) {
@@ -100,6 +81,7 @@ function createFixture() {
       previous_value TEXT,
       next_value TEXT,
       request_id TEXT NOT NULL UNIQUE,
+      request_row_version INTEGER NOT NULL,
       occurred_at TEXT NOT NULL
     );
     INSERT INTO users(id) VALUES ('parent'), ('coparent'), ('child');
@@ -133,6 +115,13 @@ test("서비스 국가 정규화는 두 글자 코드만 허용한다", () => {
   assert.equal(market.normalizeServiceCountry(" kr "), "KR");
   assert.equal(market.normalizeServiceCountry("KOR"), null);
   assert.equal(market.normalizeServiceCountry(null), null);
+});
+
+test("저장 국가에는 ISO alpha-2가 아닌 특수·임의 코드가 들어가지 않는다", () => {
+  for (const code of ["AA", "XX", "ZZ", "T1"]) {
+    assert.equal(market.normalizeServiceCountry(code), null, code);
+  }
+  assert.equal(market.normalizeServiceCountry("JP"), "JP");
 });
 
 test("edge 제안 KR은 보호자 확정 전 Study market을 열지 않는다", async () => {
@@ -206,6 +195,52 @@ test("같은 request id 재시도는 감사 행과 version을 중복시키지 �
   assert.deepEqual(retry, first);
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id='request-idempotent'").get().count, 1);
   assert.equal(sqlite.prepare("SELECT service_country_row_version AS version FROM families WHERE id='family-a'").get().version, 2);
+  sqlite.close();
+});
+
+test("stale race에서 조건부 update가 0건이면 audit만 남기지 않고 409로 닫는다", async () => {
+  const { sqlite, db } = createFixture();
+  const originalBatch = db.batch.bind(db);
+  db.batch = async (statements) => {
+    sqlite.prepare("UPDATE families SET service_country_row_version=2 WHERE id='family-a'").run();
+    return originalBatch(statements);
+  };
+  const result = await market.confirmServiceCountry(db, {
+    actorId: "parent", familyId: "family-a", country: "KR", rowVersion: 1,
+    requestId: "request-stale-race", occurredAt: "2026-08-28T00:00:00.000Z",
+  });
+  assert.deepEqual(result, { status: 409, error: "service_country_version_conflict", rowVersion: 2 });
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM study_setting_audit WHERE request_id='request-stale-race'").get().count, 0);
+  sqlite.close();
+});
+
+test("같은 request id의 다른 나라나 expected version 재사용은 409로 닫는다", async () => {
+  const { sqlite, db } = createFixture();
+  const input = {
+    actorId: "parent", familyId: "family-a", country: "KR", rowVersion: 1,
+    requestId: "request-payload-conflict", occurredAt: "2026-08-28T00:00:00.000Z",
+  };
+  await market.confirmServiceCountry(db, input);
+  const countryConflict = await market.confirmServiceCountry(db, { ...input, country: "JP" });
+  const versionConflict = await market.confirmServiceCountry(db, { ...input, rowVersion: 2 });
+  assert.deepEqual(countryConflict, { status: 409, error: "service_country_request_id_conflict" });
+  assert.deepEqual(versionConflict, { status: 409, error: "service_country_request_id_conflict" });
+  sqlite.close();
+});
+
+test("동일 request id 재시도는 계산값이 아니라 현재 canonical family 행을 반환한다", async () => {
+  const { sqlite, db } = createFixture();
+  const input = {
+    actorId: "parent", familyId: "family-a", country: "KR", rowVersion: 1,
+    requestId: "request-canonical-replay", occurredAt: "2026-08-28T00:00:00.000Z",
+  };
+  await market.confirmServiceCountry(db, input);
+  sqlite.prepare(
+    "UPDATE families SET service_country='JP', service_country_source='guardian_changed', study_market=NULL, service_country_row_version=3 WHERE id='family-a'",
+  ).run();
+  assert.deepEqual(await market.confirmServiceCountry(db, input), {
+    status: 200, serviceCountry: "JP", studyMarket: null, source: "guardian_changed", rowVersion: 3,
+  });
   sqlite.close();
 });
 

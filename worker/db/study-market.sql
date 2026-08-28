@@ -21,5 +21,6 @@ CREATE TABLE IF NOT EXISTS study_setting_audit (
   previous_value TEXT,
   next_value TEXT,
   request_id TEXT NOT NULL UNIQUE,
+  request_row_version INTEGER NOT NULL,
   occurred_at TEXT NOT NULL
 );

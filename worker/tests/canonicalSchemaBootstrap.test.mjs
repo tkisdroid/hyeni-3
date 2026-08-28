@@ -131,6 +131,7 @@ test("Study market 정본과 additive migration은 국가·학년·감사 열을
     for (const name of expected) assert.ok(actual.has(name), `${table}.${name}`);
   }
   assert.ok(columns(migrated, "study_setting_audit").has("request_id"));
+  assert.ok(columns(migrated, "study_setting_audit").has("request_row_version"));
   migrated.close();
 
   const canonical = bootstrap();
@@ -143,6 +144,34 @@ test("Study market 정본과 additive migration은 국가·학년·감사 열을
     for (const name of expected) assert.ok(actual.has(name), `${table}.${name}`);
   }
   assert.ok(columns(canonical, "study_setting_audit").has("request_id"));
+  assert.ok(columns(canonical, "study_setting_audit").has("request_row_version"));
+  canonical.close();
+});
+
+test("Study market schema 제약은 source·market·학년의 허용값만 저장한다", async () => {
+  const migration = await readFile(studyMarketMigrationUrl, "utf8");
+  const migrated = new DatabaseSync(":memory:");
+  migrated.exec(`
+    CREATE TABLE users(id TEXT PRIMARY KEY);
+    CREATE TABLE families(id TEXT PRIMARY KEY);
+    CREATE TABLE family_members(id TEXT PRIMARY KEY);
+  `);
+  migrated.exec(migration);
+  migrated.prepare("INSERT INTO users(id,registration_country) VALUES ('user-ok','KR')").run();
+  assert.throws(() => migrated.prepare("INSERT INTO users(id,registration_country) VALUES ('user-bad','KOR')").run(), /CHECK constraint failed/);
+  migrated.prepare("INSERT INTO families(id,service_country,service_country_source,study_market) VALUES ('family-ok','KR','guardian_confirmed','KR')").run();
+  assert.throws(() => migrated.prepare("INSERT INTO families(id,service_country_source) VALUES ('family-source','not-a-source')").run(), /CHECK constraint failed/);
+  assert.throws(() => migrated.prepare("INSERT INTO families(id,study_market) VALUES ('family-market','JP')").run(), /CHECK constraint failed/);
+  migrated.prepare("INSERT INTO family_members(id,learning_grade_override) VALUES ('member-ok',3)").run();
+  assert.throws(() => migrated.prepare("INSERT INTO family_members(id,learning_grade_override) VALUES ('member-grade',2)").run(), /CHECK constraint failed/);
+  migrated.close();
+
+  const canonical = bootstrap();
+  canonical.prepare("INSERT INTO families(id,parent_id,pair_code,service_country,service_country_source,study_market) VALUES ('canonical-ok','parent','KID-CANONICAL','KR','guardian_confirmed','KR')").run();
+  assert.throws(() => canonical.prepare("INSERT INTO families(id,parent_id,pair_code,service_country_source) VALUES ('canonical-source','parent','KID-SOURCE','not-a-source')").run(), /CHECK constraint failed/);
+  assert.throws(() => canonical.prepare("INSERT INTO families(id,parent_id,pair_code,study_market) VALUES ('canonical-market','parent','KID-MARKET','JP')").run(), /CHECK constraint failed/);
+  canonical.prepare("INSERT INTO family_members(id,family_id,role,learning_grade_override) VALUES ('canonical-member-ok','canonical-ok','child',6)").run();
+  assert.throws(() => canonical.prepare("INSERT INTO family_members(id,family_id,role,learning_grade_override) VALUES ('canonical-member-grade','canonical-ok','child',7)").run(), /CHECK constraint failed/);
   canonical.close();
 });
 

@@ -39,8 +39,7 @@ import { accountDeletionMutationState } from "../lib/accountDeletionClaims";
 import { recordFamilyLifecycleEvent } from "../lib/familyLifecycleFunnel";
 import {
   confirmServiceCountry,
-  normalizeServiceCountry,
-  storeInitialServiceCountry,
+  resolveInitialServiceCountry,
 } from "../lib/studyMarket";
 import {
   ReferralAttributionError,
@@ -477,11 +476,15 @@ family.post("/setup", requireAuth, async (c) => {
   const children = Array.isArray(body.children) ? (body.children as Record<string, unknown>[]) : [];
   const parentPhone = typeof body.parentPhone === "string" ? body.parentPhone.trim() : "";
   const parentGender = typeof body.parentGender === "string" ? body.parentGender : "";
-  const confirmedServiceCountry = normalizeServiceCountry(body.serviceCountry);
-  const serviceCountryMatchedEdge = body.serviceCountryMatchedEdge === true;
-  const edgeSuggestedServiceCountry = normalizeServiceCountry(
+  const countryDecision = resolveInitialServiceCountry(
+    body.serviceCountry,
+    Object.prototype.hasOwnProperty.call(body, "serviceCountry"),
+    body.serviceCountryMatchedEdge === true,
     (c.req.raw as Request & { cf?: { country?: unknown } }).cf?.country,
+    pgNow(),
   );
+  if (countryDecision.error) return c.json({ error: countryDecision.error }, 400);
+  const initialServiceCountry = countryDecision.initial;
   const referralLikeKeys = Object.keys(body).filter((key) => key.toLowerCase().includes("referral"));
   if (referralLikeKeys.some((key) => key !== "referralCode")) {
     return c.json({ error: "referral_code_invalid" }, 400);
@@ -556,6 +559,21 @@ family.post("/setup", requireAuth, async (c) => {
       sets.push("name=?");
       binds.push(familyName);
     }
+    if (initialServiceCountry) {
+      sets.push(
+        "service_country=CASE WHEN service_country IS NULL THEN ? ELSE service_country END",
+        "service_country_source=CASE WHEN service_country IS NULL THEN ? ELSE service_country_source END",
+        "service_country_confirmed_at=CASE WHEN service_country IS NULL THEN ? ELSE service_country_confirmed_at END",
+        "study_market=CASE WHEN service_country IS NULL THEN ? ELSE study_market END",
+        "service_country_row_version=CASE WHEN service_country IS NULL THEN service_country_row_version+1 ELSE service_country_row_version END",
+      );
+      binds.push(
+        initialServiceCountry.country,
+        initialServiceCountry.source,
+        initialServiceCountry.confirmedAt,
+        initialServiceCountry.studyMarket,
+      );
+    }
     if (sets.length === 0) sets.push("id=id");
     setupStatements.push(
       c.env.DB
@@ -598,8 +616,9 @@ family.post("/setup", requireAuth, async (c) => {
     }
     setupStatements.push(c.env.DB.prepare(
       `INSERT INTO families
-         (id, parent_id, pair_code, planned_child_count, parent_name, name, created_at, referred_by_family_id)
-       SELECT ?,?,?,?,?,?,?,?
+         (id, parent_id, pair_code, planned_child_count, parent_name, name, created_at, referred_by_family_id,
+          service_country, service_country_source, service_country_confirmed_at, study_market)
+       SELECT ?,?,?,?,?,?,?,?,?,?,?,?
         WHERE EXISTS(SELECT 1 FROM users WHERE id=? AND is_anonymous=0)
           AND NOT EXISTS(SELECT 1 FROM families WHERE parent_id=?)
           AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
@@ -613,6 +632,10 @@ family.post("/setup", requireAuth, async (c) => {
         familyName,
         pgNow(),
         referralAttribution?.referrerFamilyId ?? null,
+        initialServiceCountry?.country ?? null,
+        initialServiceCountry?.source ?? null,
+        initialServiceCountry?.confirmedAt ?? null,
+        initialServiceCountry?.studyMarket ?? null,
         userId,
         userId,
         userId,
@@ -772,20 +795,6 @@ family.post("/setup", requireAuth, async (c) => {
     }
     console.error("[family/setup] atomic write failed");
     return c.json({ error: "family_setup_retryable" }, 503);
-  }
-
-  // 가족 서비스 국가는 보호자가 명시한 값만 Study market을 열고, 없으면 edge 제안으로만 남긴다.
-  // 이 정보는 국적이나 GPS/Android 위치 권한에서 읽지 않는다.
-  if (confirmedServiceCountry) {
-    await storeInitialServiceCountry(
-      c.env.DB,
-      familyId,
-      confirmedServiceCountry,
-      true,
-      !serviceCountryMatchedEdge,
-    );
-  } else if (edgeSuggestedServiceCountry) {
-    await storeInitialServiceCountry(c.env.DB, familyId, edgeSuggestedServiceCountry, false);
   }
 
   await notifyPg(c.env, familyId, "family_members", "INSERT", { family_id: familyId }, null);

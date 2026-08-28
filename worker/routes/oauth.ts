@@ -58,7 +58,7 @@ import {
   acknowledgeRecoveredOAuthSession,
   recoverOAuthSession,
 } from "../lib/oauthRecovery";
-import { normalizeServiceCountry, recordRegistrationCountry } from "../lib/studyMarket";
+import { hasRegistrationCountryColumn, normalizeServiceCountry, recordRegistrationCountry } from "../lib/studyMarket";
 
 type OAuthEnv = Env;
 
@@ -637,6 +637,7 @@ oauth.post("/oauth/:provider", async (c) => {
   const registrationCountry = normalizeServiceCountry(
     (c.req.raw as Request & { cf?: { country?: unknown } }).cf?.country,
   );
+  const registrationCountryColumn = await hasRegistrationCountryColumn(db);
   const recoveryId = typeof body.recoveryId === "string" ? body.recoveryId : "";
   const onboardingInterests = parseOnboardingInterests(body.onboardingInterests);
   if (!onboardingInterests.ok) return c.json({ error: "invalid_onboarding_interests" }, 400);
@@ -670,6 +671,7 @@ oauth.post("/oauth/:provider", async (c) => {
     // 기존 사용자(또는 merge-oauth 로 phone user 에 이전된 identity). 메타데이터 best-effort 최신화.
     userId = String(identity.user_id);
     accountStatus = "existing";
+    await recordRegistrationCountry(db, userId, registrationCountry);
     try {
       const existing = await db.prepare("SELECT raw_user_meta_data FROM users WHERE id=? LIMIT 1").bind(userId).first<{ raw_user_meta_data: string | null }>();
       let meta: Record<string, unknown> = {};
@@ -724,6 +726,7 @@ oauth.post("/oauth/:provider", async (c) => {
       // 기존 계정에 이 provider identity 를 붙인다(link). 가족·구독·아이 페어링이 그대로 유지된다.
       userId = decision.userId;
       accountStatus = "linked";
+      await recordRegistrationCountry(db, userId, registrationCountry);
       try {
         const inserted = await insertAuthIdentityForCurrentUser(db, {
           id: crypto.randomUUID(),
@@ -744,9 +747,13 @@ oauth.post("/oauth/:provider", async (c) => {
       const createdAt = pgNow();
       const signupMeta = attachOnboardingPreferences(meta, onboardingInterests, createdAt);
       try {
+        const userInsert = registrationCountryColumn
+          ? db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, registration_country, created_at) VALUES (?,?,0,?,COALESCE(NULL, ?),?)")
+            .bind(userId, email, JSON.stringify(signupMeta), registrationCountry, createdAt)
+          : db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, created_at) VALUES (?,?,0,?,?)")
+            .bind(userId, email, JSON.stringify(signupMeta), createdAt);
         await db.batch([
-          db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, created_at) VALUES (?,?,0,?,?)")
-            .bind(userId, email, JSON.stringify(signupMeta), createdAt),
+          userInsert,
           identityRow.bind(crypto.randomUUID(), userId, provider, providerId, identityData, createdAt),
         ]);
       } catch (e) {
@@ -755,9 +762,6 @@ oauth.post("/oauth/:provider", async (c) => {
       }
     }
   }
-
-  // OAuth 재로그인도 첫 edge 국가만 채운다. 이후 IP 변화는 이 값을 바꾸지 않는다.
-  await recordRegistrationCountry(db, userId, registrationCountry);
 
   // 4. Worker 세션 발급. 응답 user 에 브리지 게이트(getOAuthUserNeedsBridge)가 읽는
   //    app_metadata.provider / phone / user_metadata 를 함께 싣는다.
