@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useIntl } from "react-intl";
 import { useNavigate } from "react-router";
 import { StudyAccessGate } from "@/features/study/StudyAccessGate";
-import { resolveChildStudyEntry } from "@/features/study/childStudyModel";
+import { isLearningGradeUnavailable, resolveChildStudyEntry } from "@/features/study/childStudyModel";
 import { StudyMissionPlayer } from "@/features/study/StudyMissionPlayer";
 import { useStartStudyMission, useStudyLearnerState, useStudyMission } from "@/queries/useStudy";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
@@ -15,6 +15,7 @@ export function ChildStudy() {
   const start = useStartStudyMission();
   const [missionId, setMissionId] = useState<string | null>(null);
   const mission = useStudyMission(missionId);
+  const gradeUnavailable = isLearningGradeUnavailable(learner.error);
   const childStudyQueryState = resolveQueryTruthState([
     { isLoading: learner.isLoading, isError: learner.isError },
     { isLoading: mission.isLoading, isError: mission.isError },
@@ -39,6 +40,11 @@ export function ChildStudy() {
         </header>
         {childStudyQueryState === "loading" && learner.isLoading ? (
           <p role="status">{intl.formatMessage({ id: "study.child.loading" })}</p>
+        ) : gradeUnavailable ? (
+          <section className="child-study-state">
+            <p>{intl.formatMessage({ id: "study.child.gradeHelp" })}</p>
+            <button type="button" onClick={goHome}>{intl.formatMessage({ id: "study.child.askGuardian" })}</button>
+          </section>
         ) : childStudyQueryState === "error" || !learner.data ? (
           <section className="child-study-state" role="alert"><p>{intl.formatMessage({ id: learner.isError ? "study.child.loadError" : "study.child.missionError" })}</p><button type="button" onClick={() => void retryChildStudy()}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button></section>
         ) : (

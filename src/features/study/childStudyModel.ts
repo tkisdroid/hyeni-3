@@ -18,3 +18,9 @@ export function isRetryableStudyFailure(error: unknown): boolean {
   const status = (error as { status?: unknown }).status;
   return typeof status === "number" && status >= 500;
 }
+
+export function isLearningGradeUnavailable(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const value = error as { status?: unknown; code?: unknown };
+  return value.status === 422 && value.code === "learning_grade_unavailable";
+}

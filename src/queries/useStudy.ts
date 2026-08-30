@@ -25,7 +25,7 @@ function stableFamilyId(value: string | null): string {
 }
 
 function shouldRetry(failureCount: number, error: unknown): boolean {
-  if (error instanceof ApiError && (error.status === 401 || error.status === 403)) return false;
+  if (error instanceof ApiError && error.status >= 400 && error.status < 500) return false;
   return failureCount < 2;
 }
 

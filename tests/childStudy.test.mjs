@@ -25,6 +25,13 @@ test("일시 오류만 동일 command 재시도를 허용하고 권한 오류는
   assert.equal(childStudy.isRetryableStudyFailure({ status: 403 }), false);
 });
 
+test("학년 미설정 응답은 일반 장애가 아니라 보호자 확인 상태로 분류한다", () => {
+  assert.equal(childStudy.isLearningGradeUnavailable({ status: 422, code: "learning_grade_unavailable" }), true);
+  assert.equal(childStudy.isLearningGradeUnavailable({ status: 422, code: "invalid_request" }), false);
+  assert.equal(childStudy.isLearningGradeUnavailable({ status: 503, code: "learning_grade_unavailable" }), false);
+  assert.equal(childStudy.isLearningGradeUnavailable(null), false);
+});
+
 test("아이 화면에는 family/member/grade 선택 입력이 없다", async () => {
   const source = await readFile(new URL("../src/screens/study/ChildStudy.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(source, /type=["'](?:text|number)["'][^>]*(?:family|member|grade)|<select[^>]*(?:family|member|grade)/i);
