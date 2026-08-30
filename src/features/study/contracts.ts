@@ -6,7 +6,7 @@ export type StudyMissionMode = "daily" | "review" | "focus";
 
 export type StudyResolvedGrade = Readonly<{
   grade: StudyGrade;
-  source: "hyeni_birth_year" | "parent_override";
+  source: "hyeni_birth_year" | "parent_override" | "learner_selected";
   academicYear: number;
 }>;
 
@@ -67,7 +67,7 @@ export type StudyLearnerStateDto = Readonly<{
   memberId: string;
   status: "available" | "inactive_or_missing";
   grade: Readonly<{ grade: StudyGrade | null; source: "study" | "manual_required" }>;
-  profile: Readonly<{ memberId: string; grade: StudyResolvedGrade }>;
+  profile: Readonly<{ memberId: string; grade: StudyResolvedGrade | null }>;
   activeMissionId: string | null;
 }>;
 

@@ -308,6 +308,38 @@ test("아이 시작 요청은 토큰의 정확한 자녀와 계산 학년만 RPC
   }
 });
 
+test("학년이 없는 아이도 본인 학년을 선택해 즉시 RPC를 시작한다", async () => {
+  const db = createFixture();
+  const binding = recordingBinding();
+  try {
+    db.sqlite.prepare(
+      "UPDATE family_members SET birthdate=NULL, learning_grade_override=NULL WHERE id=?",
+    ).run(CHILD_MEMBER_ID);
+    const state = await request(db, binding, "/learner/me", {
+      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+    });
+    assert.equal(state.response.status, 200);
+    assert.equal(binding.calls[0].auth.grade, null);
+
+    const started = await request(db, binding, "/learner/missions", {
+      method: "POST",
+      body: { mode: "daily", grade: 5 },
+      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+    });
+    assert.equal(started.response.status, 201);
+    assert.deepEqual(binding.calls[1].input, {
+      memberId: CHILD_MEMBER_ID,
+      mode: "daily",
+      grade: 5,
+      requestId: binding.calls[1].input.requestId,
+    });
+    assert.equal(binding.calls[1].auth.grade, null);
+    assert.equal(binding.calls[1].auth.operation, "learner.start");
+  } finally {
+    db.close();
+  }
+});
+
 test("Calendar gateway는 공유 fixture의 정확한 RPC input과 {input,memberId,grade} preimage를 그대로 생산한다", async () => {
   const db = createFixture();
   const binding = recordingBinding();

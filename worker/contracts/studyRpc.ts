@@ -6,7 +6,7 @@ export const CALENDAR_STUDY_ROLES = ["guardian", "primary", "learner", "system_c
 export type CalendarStudyRole = (typeof CALENDAR_STUDY_ROLES)[number];
 
 export type StudyGrade = 3 | 4 | 5 | 6;
-export type GradeSource = "hyeni_birth_year" | "parent_override";
+export type GradeSource = "hyeni_birth_year" | "parent_override" | "learner_selected";
 export type ResolvedLearningGrade = Readonly<{
   grade: StudyGrade;
   source: GradeSource;
@@ -68,6 +68,7 @@ export type LearnerStateInput = Readonly<{
 export type StartCalendarMissionInput = Readonly<{
   memberId: string;
   mode: "daily" | "review" | "focus";
+  grade?: StudyGrade;
   requestId: string;
 }>;
 
@@ -119,7 +120,7 @@ export type CalendarLearnerStateDto = Readonly<{
   memberId: string;
   status: "available" | "inactive_or_missing";
   grade: CalendarGradeDto;
-  profile: Readonly<{ memberId: string; grade: ResolvedLearningGrade }>;
+  profile: Readonly<{ memberId: string; grade: ResolvedLearningGrade | null }>;
   activeMissionId: string | null;
 }>;
 

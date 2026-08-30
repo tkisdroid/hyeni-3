@@ -13,9 +13,23 @@ test("새로고침 뒤 서버의 활성 미션을 시작 호출 없이 이어서
   }), { kind: "resume", missionId: "mission-1" });
 });
 
-test("활성 미션이 없을 때만 하루 미션 시작을 제안한다", () => {
-  assert.deepEqual(childStudy.resolveChildStudyEntry({ status: "available", activeMissionId: null }), { kind: "start" });
-  assert.deepEqual(childStudy.resolveChildStudyEntry({ status: "inactive_or_missing", activeMissionId: null }), { kind: "unavailable" });
+test("활성 미션이 없으면 저장 학년에 따라 선택 또는 시작을 제안한다", () => {
+  assert.deepEqual(childStudy.resolveChildStudyEntry({
+    status: "available",
+    profile: { grade: null },
+    activeMissionId: null,
+  }), { kind: "select_grade" });
+  assert.deepEqual(childStudy.resolveChildStudyEntry({
+    status: "available",
+    profile: { grade: { grade: 4 } },
+    activeMissionId: null,
+  }), { kind: "start" });
+  assert.deepEqual(childStudy.resolveChildStudyEntry({
+    status: "inactive_or_missing",
+    profile: { grade: null },
+    activeMissionId: null,
+  }), { kind: "unavailable" });
+  assert.deepEqual(childStudy.STUDY_GRADE_CHOICES, [3, 4, 5, 6]);
 });
 
 test("일시 오류만 동일 command 재시도를 허용하고 권한 오류는 종료한다", () => {
@@ -25,15 +39,9 @@ test("일시 오류만 동일 command 재시도를 허용하고 권한 오류는
   assert.equal(childStudy.isRetryableStudyFailure({ status: 403 }), false);
 });
 
-test("학년 미설정 응답은 일반 장애가 아니라 보호자 확인 상태로 분류한다", () => {
-  assert.equal(childStudy.isLearningGradeUnavailable({ status: 422, code: "learning_grade_unavailable" }), true);
-  assert.equal(childStudy.isLearningGradeUnavailable({ status: 422, code: "invalid_request" }), false);
-  assert.equal(childStudy.isLearningGradeUnavailable({ status: 503, code: "learning_grade_unavailable" }), false);
-  assert.equal(childStudy.isLearningGradeUnavailable(null), false);
-});
-
-test("아이 화면에는 family/member/grade 선택 입력이 없다", async () => {
+test("아이 화면은 family/member를 받지 않고 학년 선택만 허용한다", async () => {
   const source = await readFile(new URL("../src/screens/study/ChildStudy.tsx", import.meta.url), "utf8");
-  assert.doesNotMatch(source, /type=["'](?:text|number)["'][^>]*(?:family|member|grade)|<select[^>]*(?:family|member|grade)/i);
-  assert.doesNotMatch(source, /query.*(?:family|member|grade)|searchParams.*(?:family|member|grade)/i);
+  assert.doesNotMatch(source, /type=["'](?:text|number)["'][^>]*(?:family|member)|<select[^>]*(?:family|member)/i);
+  assert.doesNotMatch(source, /query.*(?:family|member)|searchParams.*(?:family|member)/i);
+  assert.doesNotMatch(source, /study\.child\.askGuardian/);
 });

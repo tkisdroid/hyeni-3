@@ -128,6 +128,45 @@ test("부모 리포트와 학습자 상태는 비정상 수치와 불완전 grad
     profile: { memberId: "child-2" },
     activeMissionId: null,
   }), isInvalidStudyResponse);
+  const needsSelection = {
+    apiVersion: VERSION,
+    memberId: "child-2",
+    status: "available",
+    grade: { grade: null, source: "manual_required" },
+    profile: { memberId: "child-2", grade: null },
+    activeMissionId: null,
+  };
+  assert.deepEqual(study.parseStudyLearnerState(needsSelection), needsSelection);
+  const selected = {
+    ...needsSelection,
+    grade: { grade: 5, source: "study" },
+    profile: {
+      memberId: "child-2",
+      grade: { grade: 5, source: "learner_selected", academicYear: 2026 },
+    },
+  };
+  assert.deepEqual(study.parseStudyLearnerState(selected), selected);
+});
+
+test("학년 미설정 학습 시작은 선택 학년만 좁은 body로 전송한다", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestBody: unknown;
+  setApiTokens({ access: "access-token", refresh: "refresh-token" });
+  globalThis.fetch = async (_input, init) => {
+    requestBody = JSON.parse(String(init?.body));
+    return Response.json(mission);
+  };
+  try {
+    await study.startStudyMission({
+      mode: "daily",
+      grade: 5,
+      idempotencyKey: "start-grade-00001",
+    });
+    assert.deepEqual(requestBody, { mode: "daily", grade: 5 });
+  } finally {
+    globalThis.fetch = originalFetch;
+    clearApiSession();
+  }
 });
 
 test("답안 재시도는 같은 idempotency key와 정확한 mission 경로를 사용한다", async () => {

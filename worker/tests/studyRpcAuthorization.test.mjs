@@ -153,18 +153,18 @@ test("서명은 최대 300초이고 만료 또는 30초 초과 미래 clock은 �
   );
 });
 
-test("전체 operation policy는 허용 role과 member·grade required 및 forbidden 조합을 고정한다", async () => {
+test("전체 operation policy는 허용 role과 member·grade required·optional·forbidden 조합을 고정한다", async () => {
   const rows = [
-    { operation: "guardian.children", role: "guardian", memberId: null, grade: null },
-    { operation: "guardian.overview", role: "guardian", memberId: "child-1", grade: base().grade },
-    { operation: "guardian.report", role: "guardian", memberId: "child-1", grade: base().grade },
-    { operation: "guardian.grade", role: "guardian", memberId: "child-1", grade: base().grade },
-    { operation: "primary.service-country", role: "primary", memberId: null, grade: null },
-    { operation: "learner.state", role: "learner", memberId: "child-1", grade: base().grade },
-    { operation: "learner.start", role: "learner", memberId: "child-1", grade: base().grade },
-    { operation: "learner.get", role: "learner", memberId: "child-1", grade: base().grade },
-    { operation: "learner.submit", role: "learner", memberId: "child-1", grade: base().grade },
-    { operation: "system.cleanup", role: "system_cleanup", memberId: "child-1", grade: null },
+    { operation: "guardian.children", role: "guardian", memberId: null, grade: null, gradeMode: "forbidden" },
+    { operation: "guardian.overview", role: "guardian", memberId: "child-1", grade: base().grade, gradeMode: "required" },
+    { operation: "guardian.report", role: "guardian", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
+    { operation: "guardian.grade", role: "guardian", memberId: "child-1", grade: base().grade, gradeMode: "required" },
+    { operation: "primary.service-country", role: "primary", memberId: null, grade: null, gradeMode: "forbidden" },
+    { operation: "learner.state", role: "learner", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
+    { operation: "learner.start", role: "learner", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
+    { operation: "learner.get", role: "learner", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
+    { operation: "learner.submit", role: "learner", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
+    { operation: "system.cleanup", role: "system_cleanup", memberId: "child-1", grade: null, gradeMode: "forbidden" },
   ];
 
   for (const row of rows) {
@@ -183,11 +183,19 @@ test("전체 operation policy는 허용 role과 member·grade required 및 forbi
       (error) => error instanceof StudyRpcAuthorizationError && error.code === "authorization_invalid",
       `${row.operation} member`,
     );
-    await assert.rejects(
-      () => signStudyAuthorization(base({ ...row, grade: row.grade === null ? base().grade : null }), SECRET),
-      (error) => error instanceof StudyRpcAuthorizationError && error.code === "authorization_invalid",
-      `${row.operation} grade`,
-    );
+    const toggledGrade = row.grade === null ? base().grade : null;
+    if (row.gradeMode === "optional") {
+      await assert.doesNotReject(
+        () => signStudyAuthorization(base({ ...row, grade: toggledGrade }), SECRET),
+        `${row.operation} optional grade`,
+      );
+    } else {
+      await assert.rejects(
+        () => signStudyAuthorization(base({ ...row, grade: toggledGrade }), SECRET),
+        (error) => error instanceof StudyRpcAuthorizationError && error.code === "authorization_invalid",
+        `${row.operation} grade`,
+      );
+    }
   }
 });
 

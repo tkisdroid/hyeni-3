@@ -14,6 +14,7 @@ import {
   resolveStudyGatewayContext,
   resolveStudyManagementMutationContext,
   studyAnswer,
+  studyGrade,
   studyId,
   studyMissionMode,
   studyRpcGrade,
@@ -206,13 +207,22 @@ study.get("/learner/me", requireAuth, async (c) => {
 
 study.post("/learner/missions", requireAuth, async (c) => {
   try {
-    const body = await parseStudyJson(c.req.raw, ["mode"]);
+    const body = await parseStudyJson(c.req.raw, ["mode", "grade"]);
     const mode = body.mode === undefined ? "daily" : studyMissionMode(body.mode);
+    const selectedGrade = body.grade === undefined ? undefined : studyGrade(body.grade);
     const requestId = requestIdForStudy(c.req.raw);
     const context = await resolveStudyGatewayContext(c.env, c.get("user"), { role: "child" });
     const memberId = context.child?.memberId;
     if (!memberId) throw new StudyGatewayRequestError(403, "study_not_available");
-    const input: StartCalendarMissionInput = { memberId, mode, requestId };
+    if (context.child?.grade === null && selectedGrade === undefined) {
+      throw new StudyGatewayRequestError(400, "invalid_request");
+    }
+    const input: StartCalendarMissionInput = {
+      memberId,
+      mode,
+      ...(context.child?.grade === null ? { grade: selectedGrade } : {}),
+      requestId,
+    };
     const result = await studyResponse(() => callStudyBinding(
       c.env,
       context,

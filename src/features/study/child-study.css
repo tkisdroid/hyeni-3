@@ -1,4 +1,9 @@
-.child-study-screen { display: grid; gap: 16px; padding: 16px; color: var(--hy-text, #342c30); }
+.child-study-screen {
+  display: grid;
+  gap: 16px;
+  padding: max(32px, calc(env(safe-area-inset-top, 0px) + 20px)) 16px 16px;
+  color: var(--hy-text, #342c30);
+}
 .child-study-header { display: flex; align-items: center; gap: 12px; }
 .child-study-header h1,
 .child-study-header p,
@@ -32,6 +37,11 @@
   border-radius: 999px;
   background: #f1eafa;
   font-weight: 800;
+}
+.child-study-grade-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 .child-study-start button,
 .child-study-state button,

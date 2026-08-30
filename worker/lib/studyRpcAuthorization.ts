@@ -49,7 +49,7 @@ export interface VerifyStudyAuthorizationInput {
 type StudyAuthorizationPolicy = Readonly<{
   role: StudyAuthorizationRole;
   memberRequired: boolean;
-  gradeRequired: boolean;
+  gradeMode: "required" | "optional" | "forbidden";
 }>;
 
 export const STUDY_ROUTE_AUTHORIZATION_OPERATIONS = {
@@ -65,16 +65,16 @@ export const STUDY_ROUTE_AUTHORIZATION_OPERATIONS = {
 } as const satisfies Record<string, StudyAuthorizationOperation>;
 
 const POLICIES: Readonly<Record<StudyAuthorizationOperation, StudyAuthorizationPolicy>> = {
-  "guardian.children": { role: "guardian", memberRequired: false, gradeRequired: false },
-  "guardian.overview": { role: "guardian", memberRequired: true, gradeRequired: true },
-  "guardian.report": { role: "guardian", memberRequired: true, gradeRequired: true },
-  "guardian.grade": { role: "guardian", memberRequired: true, gradeRequired: true },
-  "primary.service-country": { role: "primary", memberRequired: false, gradeRequired: false },
-  "learner.state": { role: "learner", memberRequired: true, gradeRequired: true },
-  "learner.start": { role: "learner", memberRequired: true, gradeRequired: true },
-  "learner.get": { role: "learner", memberRequired: true, gradeRequired: true },
-  "learner.submit": { role: "learner", memberRequired: true, gradeRequired: true },
-  "system.cleanup": { role: "system_cleanup", memberRequired: true, gradeRequired: false },
+  "guardian.children": { role: "guardian", memberRequired: false, gradeMode: "forbidden" },
+  "guardian.overview": { role: "guardian", memberRequired: true, gradeMode: "required" },
+  "guardian.report": { role: "guardian", memberRequired: true, gradeMode: "optional" },
+  "guardian.grade": { role: "guardian", memberRequired: true, gradeMode: "required" },
+  "primary.service-country": { role: "primary", memberRequired: false, gradeMode: "forbidden" },
+  "learner.state": { role: "learner", memberRequired: true, gradeMode: "optional" },
+  "learner.start": { role: "learner", memberRequired: true, gradeMode: "optional" },
+  "learner.get": { role: "learner", memberRequired: true, gradeMode: "optional" },
+  "learner.submit": { role: "learner", memberRequired: true, gradeMode: "optional" },
+  "system.cleanup": { role: "system_cleanup", memberRequired: true, gradeMode: "forbidden" },
 };
 
 export class StudyRpcAuthorizationError extends Error {
@@ -151,7 +151,10 @@ function assertScope(value: Pick<CalendarStudyAuthorizationV2, "role" | "operati
   if ((policy.memberRequired && !value.memberId) || (!policy.memberRequired && value.memberId !== null)) {
     throw new StudyRpcAuthorizationError("authorization_invalid");
   }
-  if ((policy.gradeRequired && !value.grade) || (!policy.gradeRequired && value.grade !== null)) {
+  if (
+    (policy.gradeMode === "required" && !value.grade)
+    || (policy.gradeMode === "forbidden" && value.grade !== null)
+  ) {
     throw new StudyRpcAuthorizationError("authorization_invalid");
   }
   if (value.grade && !validGrade(value.grade)) throw new StudyRpcAuthorizationError("authorization_invalid");

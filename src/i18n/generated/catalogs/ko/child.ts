@@ -439,7 +439,7 @@ const messages = {
   "study.child.complete.title": "오늘 학습을 마쳤어!",
   "study.child.error.content": "이 문제는 지금 이어갈 수 없어. 풀어 둔 기록은 그대로 남아 있어.",
   "study.child.error.session": "잠깐 연결이 끊겼어. 풀어 둔 기록은 그대로 남아 있어.",
-  "study.child.gradeHelp": "학년 정보가 필요해. 보호자와 함께 아이 프로필을 확인해 줘.",
+  "study.child.gradeHelp": "학년을 골라 바로 학습을 시작해 봐.",
   "study.child.gradeLabel": "{grade}학년 학습",
   "study.child.home.subtitle": "내 학년 수학을 차근차근 풀어 봐",
   "study.child.home.title": "수학 학습",

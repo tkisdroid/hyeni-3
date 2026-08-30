@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useIntl } from "react-intl";
 import { useNavigate } from "react-router";
 import { StudyAccessGate } from "@/features/study/StudyAccessGate";
-import { isLearningGradeUnavailable, resolveChildStudyEntry } from "@/features/study/childStudyModel";
+import { STUDY_GRADE_CHOICES, resolveChildStudyEntry } from "@/features/study/childStudyModel";
+import type { StudyGrade } from "@/features/study/contracts";
 import { StudyMissionPlayer } from "@/features/study/StudyMissionPlayer";
 import { useStartStudyMission, useStudyLearnerState, useStudyMission } from "@/queries/useStudy";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
@@ -15,7 +16,6 @@ export function ChildStudy() {
   const start = useStartStudyMission();
   const [missionId, setMissionId] = useState<string | null>(null);
   const mission = useStudyMission(missionId);
-  const gradeUnavailable = isLearningGradeUnavailable(learner.error);
   const childStudyQueryState = resolveQueryTruthState([
     { isLoading: learner.isLoading, isError: learner.isError },
     { isLoading: mission.isLoading, isError: mission.isError },
@@ -40,24 +40,23 @@ export function ChildStudy() {
         </header>
         {childStudyQueryState === "loading" && learner.isLoading ? (
           <p role="status">{intl.formatMessage({ id: "study.child.loading" })}</p>
-        ) : gradeUnavailable ? (
-          <section className="child-study-state">
-            <p>{intl.formatMessage({ id: "study.child.gradeHelp" })}</p>
-            <button type="button" onClick={goHome}>{intl.formatMessage({ id: "study.child.askGuardian" })}</button>
-          </section>
         ) : childStudyQueryState === "error" || !learner.data ? (
           <section className="child-study-state" role="alert"><p>{intl.formatMessage({ id: learner.isError ? "study.child.loadError" : "study.child.missionError" })}</p><button type="button" onClick={() => void retryChildStudy()}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button></section>
         ) : (
           <ChildStudyContent
             entry={resolveChildStudyEntry(learner.data)}
-            grade={learner.data.profile.grade.grade}
+            grade={learner.data.profile.grade?.grade ?? null}
             missionId={missionId}
             mission={mission}
             startBusy={start.isPending}
             startError={start.isError}
-            onStart={async () => {
+            onStart={async (grade) => {
               try {
-                const created = await start.mutateAsync({ mode: "daily", idempotencyKey: crypto.randomUUID() });
+                const created = await start.mutateAsync({
+                  mode: "daily",
+                  ...(grade === undefined ? {} : { grade }),
+                  idempotencyKey: crypto.randomUUID(),
+                });
                 setMissionId(created.missionId);
               } catch {
                 // mutation 상태가 동일 카드에 복구 액션을 표시한다. 세션은 503으로 지우지 않는다.
@@ -82,22 +81,44 @@ function ChildStudyContent({
   onHome,
 }: Readonly<{
   entry: ReturnType<typeof resolveChildStudyEntry>;
-  grade: number;
+  grade: StudyGrade | null;
   missionId: string | null;
   mission: ReturnType<typeof useStudyMission>;
   startBusy: boolean;
   startError: boolean;
-  onStart: () => Promise<void>;
+  onStart: (grade?: StudyGrade) => Promise<void>;
   onHome: () => void;
 }>) {
   const intl = useIntl();
   if (entry.kind === "unavailable") {
-    return <section className="child-study-state"><p>{intl.formatMessage({ id: "study.child.gradeHelp" })}</p><button type="button" onClick={onHome}>{intl.formatMessage({ id: "study.child.askGuardian" })}</button></section>;
+    return <section className="child-study-state"><p>{intl.formatMessage({ id: "study.child.loadError" })}</p><button type="button" onClick={onHome}>{intl.formatMessage({ id: "study.common.back" })}</button></section>;
+  }
+  if (!missionId && entry.kind === "select_grade") {
+    return (
+      <section className="child-study-start">
+        <h2>{intl.formatMessage({ id: "study.child.start.title" })}</h2>
+        <p>{intl.formatMessage({ id: "study.child.gradeHelp" })}</p>
+        <div className="child-study-grade-options">
+          {STUDY_GRADE_CHOICES.map((choice) => (
+            <button
+              key={choice}
+              type="button"
+              disabled={startBusy}
+              aria-busy={startBusy}
+              onClick={() => void onStart(choice)}
+            >
+              {intl.formatMessage({ id: "study.child.gradeLabel" }, { grade: choice })}
+            </button>
+          ))}
+        </div>
+        {startError && <p role="alert">{intl.formatMessage({ id: "study.child.start.error" })}</p>}
+      </section>
+    );
   }
   if (!missionId && entry.kind === "start") {
     return (
       <section className="child-study-start">
-        <span>{intl.formatMessage({ id: "study.child.gradeLabel" }, { grade })}</span>
+        <span>{intl.formatMessage({ id: "study.child.gradeLabel" }, { grade: grade! })}</span>
         <h2>{intl.formatMessage({ id: "study.child.start.title" })}</h2>
         <p>{intl.formatMessage({ id: "study.child.start.description" })}</p>
         <button type="button" disabled={startBusy} aria-busy={startBusy} onClick={() => void onStart()}>{intl.formatMessage({ id: startBusy ? "study.child.start.starting" : "study.child.start.button" })}</button>

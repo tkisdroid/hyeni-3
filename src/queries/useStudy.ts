@@ -12,6 +12,7 @@ import {
   updateStudyGrade,
 } from "@/lib/api/endpoints/study";
 import type {
+  StudyGrade,
   StudyLearnerStateDto,
   StudyMissionMode,
   StudyRange,
@@ -84,7 +85,7 @@ export function useStartStudyMission() {
   const { familyId } = useAuth();
   const keyFamilyId = stableFamilyId(familyId);
   return useMutation({
-    mutationFn: (input: { mode: StudyMissionMode; idempotencyKey: string }) => startStudyMission(input),
+    mutationFn: (input: { mode: StudyMissionMode; grade?: StudyGrade; idempotencyKey: string }) => startStudyMission(input),
     onSuccess: async (mission) => {
       client.setQueryData(qk.study.mission(keyFamilyId, mission.missionId), mission);
       await client.invalidateQueries({ queryKey: qk.study.learner(keyFamilyId), exact: true });

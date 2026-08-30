@@ -27,7 +27,7 @@ export type StudyMissionMode = "daily" | "review" | "focus";
 
 export type GatewayChild = Readonly<{
   memberId: string;
-  grade: ResolvedLearningGrade;
+  grade: ResolvedLearningGrade | null;
 }>;
 
 /** 내부 birthdate source는 Study binding 경계에서만 locked literal로 바꾼다. */
@@ -125,6 +125,11 @@ export function studyMissionMode(value: unknown): StudyMissionMode {
   return value as StudyMissionMode;
 }
 
+export function studyGrade(value: unknown): 3 | 4 | 5 | 6 {
+  if (value !== 3 && value !== 4 && value !== 5 && value !== 6) invalidRequest();
+  return value;
+}
+
 export function studyAnswer(value: unknown): string {
   if (typeof value !== "string" || utf8Bytes(value) > MAX_ANSWER_BYTES) invalidRequest();
   return value;
@@ -148,14 +153,16 @@ async function resolveChild(
       LIMIT 1`,
   ).bind(memberId, familyId).first<ChildRow>();
   if (!row?.id) unavailable();
+  let grade: ResolvedLearningGrade | null = null;
   try {
-    return {
-      memberId: row.id,
-      grade: resolveLearningGrade({ birthdate: row.birthdate, overrideGrade: row.learning_grade_override }, new Date()),
-    };
+    grade = resolveLearningGrade(
+      { birthdate: row.birthdate, overrideGrade: row.learning_grade_override },
+      new Date(),
+    );
   } catch {
-    throw new StudyGatewayRequestError(422, "learning_grade_unavailable");
+    grade = null;
   }
+  return { memberId: row.id, grade };
 }
 
 async function resolveOwnChild(db: D1Database, familyId: string, actorId: string): Promise<GatewayChild> {

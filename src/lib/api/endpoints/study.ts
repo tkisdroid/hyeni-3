@@ -93,7 +93,11 @@ function timestamp(value: unknown): string {
 function resolvedGrade(value: unknown): StudyResolvedGrade {
   const record = object(value);
   exact(record, ["grade", "source", "academicYear"]);
-  if (record.source !== "hyeni_birth_year" && record.source !== "parent_override") invalid();
+  if (
+    record.source !== "hyeni_birth_year"
+    && record.source !== "parent_override"
+    && record.source !== "learner_selected"
+  ) invalid();
   return {
     grade: grade(record.grade),
     source: record.source,
@@ -369,7 +373,10 @@ export function parseStudyLearnerState(value: unknown): StudyLearnerStateDto {
     memberId: id(record.memberId),
     status: record.status,
     grade: { grade: gradeRecord.grade as StudyGrade | null, source: gradeRecord.source },
-    profile: { memberId: id(profile.memberId), grade: resolvedGrade(profile.grade) },
+    profile: {
+      memberId: id(profile.memberId),
+      grade: profile.grade === null ? null : resolvedGrade(profile.grade),
+    },
     activeMissionId: record.activeMissionId === null ? null : id(record.activeMissionId),
   };
 }
@@ -448,13 +455,17 @@ export async function fetchStudyLearnerState(): Promise<StudyLearnerStateDto> {
 
 export async function startStudyMission(input: {
   mode: StudyMissionMode;
+  grade?: StudyGrade;
   idempotencyKey: string;
 }): Promise<StudyMissionDto> {
   if (!MODES.has(input.mode)) throw new ApiError("invalid_request", 400);
   return parseStudyMission(await apiRequest<unknown>("/api/study/learner/missions", {
     method: "POST",
     headers: { "Idempotency-Key": requestId(input.idempotencyKey) },
-    body: JSON.stringify({ mode: input.mode }),
+    body: JSON.stringify({
+      mode: input.mode,
+      ...(input.grade === undefined ? {} : { grade: grade(input.grade) }),
+    }),
   }));
 }
 
