@@ -31,6 +31,7 @@ test("만료되거나 변조된 역할·provider의 draft는 복원하지 않는
   }, now);
   assert.equal(parseOnboardingDraft(JSON.stringify(valid), valid.expiresAtMs + 1), null);
   assert.equal(parseOnboardingDraft(JSON.stringify({ ...valid, signupMethod: { kind: "oauth", provider: "apple" } }), now), null);
+  assert.equal(parseOnboardingDraft(JSON.stringify({ ...valid, signupMethod: { kind: "oauth", provider: "naver" } }), now), null);
   assert.equal(parseOnboardingDraft(JSON.stringify({ ...valid, pairInvite: { code: "KID-AB12CD34", role: "admin" } }), now), null);
 });
 

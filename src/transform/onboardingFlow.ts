@@ -1,5 +1,5 @@
 export type OnboardingRole = "parent" | "child" | "teacher";
-export type SignupProvider = "kakao" | "google" | "naver";
+export type SignupProvider = "kakao" | "google";
 export type SignupMethod =
   | { kind: "phone" }
   | { kind: "oauth"; provider: SignupProvider };

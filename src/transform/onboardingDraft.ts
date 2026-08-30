@@ -24,7 +24,7 @@ function isSignupMethod(value: unknown): value is SignupMethod {
   const method = value as Partial<SignupMethod>;
   if (method.kind === "phone") return true;
   return method.kind === "oauth"
-    && (method.provider === "kakao" || method.provider === "google" || method.provider === "naver");
+    && (method.provider === "kakao" || method.provider === "google");
 }
 
 function parsePairInvite(value: unknown): PendingPairInvite | null | undefined {

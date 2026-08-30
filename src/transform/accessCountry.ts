@@ -1,6 +1,6 @@
 import type { SupportedLocale } from "../i18n/locale.ts";
 
-export type RegionalSocialProvider = "kakao" | "google" | "naver";
+export type RegionalSocialProvider = "kakao" | "google";
 
 const TIME_ZONE_COUNTRIES: Readonly<Record<string, string>> = {
   "Asia/Seoul": "KR",
@@ -78,11 +78,10 @@ export function localeForAccessCountry(country: unknown): SupportedLocale {
 /** 국내 전용 OAuth는 한국 접속에서만 보이고 Google은 전 지역 공용으로 유지한다. */
 export function socialProvidersForAccessCountry(
   country: unknown,
-  options: { naverAvailable: boolean },
 ): RegionalSocialProvider[] {
   const normalized = normalizeAccessCountry(country);
   // 국가 판정 실패 시 기존 로그인 수단을 숨기지 않는 fail-open 정책을 쓴다.
   const koreanProviders = normalized === "KR" || normalized === "ZZ";
   if (!koreanProviders) return ["google"];
-  return ["kakao", "google", ...(options.naverAvailable ? ["naver" as const] : [])];
+  return ["kakao", "google"];
 }

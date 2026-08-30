@@ -51,7 +51,6 @@ import {
   parentNameFromUser,
   type JoinFamilyOptions,
 } from "@/lib/api/endpoints/family";
-import { hasNaverClientId } from "@/config/env";
 import { TEACHER_MODE_ENABLED } from "@/config/releaseFeatures";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import { normalizePairCodeInput } from "@/transform/pairCode";
@@ -127,6 +126,7 @@ import {
   resolvePostAuthAction,
   resolveSignupContinuation,
   type SignupMethod,
+  type SignupProvider,
 } from "@/transform/onboardingFlow";
 import {
   clearOnboardingDraft,
@@ -784,7 +784,7 @@ export function Onboarding() {
     };
   }, [clearOAuthExternalBusy, initialDraft, intl, routeAfterParentLogin, show, syncFromSession]);
 
-  const startSignupOAuth = async (provider: OAuthProvider) => {
+  const startSignupOAuth = async (provider: SignupProvider) => {
     if (busy) return;
     setAuthEntryError(null);
     persistOnboardingDraft({
@@ -1285,15 +1285,6 @@ function KakaoIcon() {
   );
 }
 
-/** 네이버 공식 심볼(N) — 브랜드 가이드상 흰색 로고 + 그린 배경. */
-function NaverIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 20 20" fill="#fff" aria-hidden="true">
-      <path d="M13.06 10.7 6.66 1.5H1.5v17h5.44V9.3l6.4 9.2h5.16v-17h-5.44v9.2Z" />
-    </svg>
-  );
-}
-
 function GoogleIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
@@ -1560,9 +1551,7 @@ function LoginStep({
   const autofillFrameRef = useRef<number | null>(null);
   const loginNavigationLocked = isLoginNavigationLocked({ busy, commitBoundaryActive });
   const signingUp = intent === "signup";
-  const socialProviders = socialProvidersForAccessCountry(accessCountry, {
-    naverAvailable: hasNaverClientId,
-  });
+  const socialProviders = socialProvidersForAccessCountry(accessCountry);
 
   const clearFieldError = (field: keyof LoginFormErrors) => {
     setErrors((current) => {
@@ -1576,7 +1565,7 @@ function LoginStep({
   // 소셜 버튼은 intent 를 따른다 — 로그인 탭이면 바로 OAuth, 회원가입 탭이면
   // 설문(20%)을 거친 뒤 같은 provider 로 가입 흐름을 이어간다. 설문 답은
   // surveyChoices 가 유지되므로 휴대폰 가입과 같은 귀속 경로를 쓴다.
-  const social = async (provider: OAuthProvider) => {
+  const social = async (provider: SignupProvider) => {
     if (loginNavigationLocked) return;
     onAuthError(null);
     if (signingUp) {
@@ -1744,13 +1733,6 @@ function LoginStep({
           <button type="button" className="ob-social ob-social--google hy-press hy-busy-quiet" onClick={() => social("google")} disabled={loginNavigationLocked} aria-busy={busy && pendingAction === "google"}>
             <GoogleIcon />
             <BusyLabel busy={busy && pendingAction === "google"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.google" : "onboarding.login.google" })} pending={intl.formatMessage({ id: "onboarding.login.googlePending" })} />
-          </button>
-        )}
-        {/* 한국 접속이면서 키가 있을 때만 네이버를 보여준다 — 키가 없어도 실패하는 버튼은 숨긴다. */}
-        {socialProviders.includes("naver") && (
-          <button type="button" className="ob-social ob-social--naver hy-press hy-busy-quiet" onClick={() => social("naver")} disabled={loginNavigationLocked} aria-busy={busy && pendingAction === "naver"}>
-            <NaverIcon />
-            <BusyLabel busy={busy && pendingAction === "naver"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.naver" : "onboarding.login.naver" })} pending={intl.formatMessage({ id: "onboarding.login.naverPending" })} />
           </button>
         )}
       </div>

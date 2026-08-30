@@ -22,11 +22,5 @@ export const PUBLIC_WEB_BASE = trimTrailingSlash(import.meta.env.VITE_PUBLIC_WEB
 /** Kakao Maps JS 앱키(클라 SDK 용). REST 키는 Worker secret — 절대 VITE_ 금지. */
 export const KAKAO_APP_KEY = (import.meta.env.VITE_KAKAO_APP_KEY || "").trim();
 
-/** Naver 소셜 로그인 Client ID. 미설정 시 네이버 버튼은 "설정 필요" 상태로 표시. */
-export const NAVER_CLIENT_ID = (import.meta.env.VITE_NAVER_CLIENT_ID || "").trim();
-
 /** Kakao 지도 SDK 사용 가능 여부(키 존재). */
 export const hasKakaoKey = KAKAO_APP_KEY.length > 0;
-
-/** 네이버 소셜 로그인 사용 가능 여부(Client ID 존재). */
-export const hasNaverClientId = NAVER_CLIENT_ID.length > 0;

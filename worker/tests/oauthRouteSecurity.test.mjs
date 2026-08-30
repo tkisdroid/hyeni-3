@@ -25,6 +25,9 @@ after(() => hook.deregister());
 
 const oauthRoutes = (await import(pathToFileURL(resolve(workerDir, "routes/oauth.ts")).href)).default;
 const naverRoutes = (await import(pathToFileURL(resolve(workerDir, "routes/naver-auth.ts")).href)).default;
+const { createOAuthTransaction } = await import(
+  pathToFileURL(resolve(workerDir, "lib/oauthState.ts")).href
+);
 
 class Statement {
   constructor(sqlite, sql, bindings = [], failRegistrationUpdate = false) {
@@ -173,10 +176,16 @@ async function exchangeNaver(db, {
   profile,
   deviceId = `device-${code}`,
 }) {
-  const prepared = await start(db, "naver");
+  // 신규 Naver 시작은 비활성화됐지만, 배포 전 생성된 transaction의 callback 안전성은 보존한다.
+  const prepared = await createOAuthTransaction(db, {
+    provider: "naver",
+    clientKind: "web",
+    webOrigin: "https://hyeni-calendar.pages.dev",
+    flowMode: "login",
+  });
   const callback = await appRequest(
     db,
-    `/api/auth/naver?code=${encodeURIComponent(code)}&state=${encodeURIComponent(prepared.body.state)}`,
+    `/api/auth/naver?code=${encodeURIComponent(code)}&state=${encodeURIComponent(prepared.state)}`,
   );
   assert.equal(callback.status, 200);
 
@@ -199,8 +208,8 @@ async function exchangeNaver(db, {
       edgeCountry,
       body: JSON.stringify({
         code,
-        state: prepared.body.state,
-        transactionSecret: prepared.body.transactionSecret,
+        state: prepared.state,
+        transactionSecret: prepared.transactionSecret,
         device_install_id: deviceId,
         device_platform: "web",
       }),
@@ -227,8 +236,8 @@ test("legacy GET과 외부 target은 fail-closed이고 서버가 승인 URL·sta
   assert.notEqual(valid.body.state, valid.body.transactionSecret);
 
   const naver = await start(db, "naver", { client: "native" });
-  assert.equal(naver.response.status, 200);
-  assert.equal(new URL(naver.body.authorizationUrl).origin, "https://nid.naver.com");
+  assert.equal(naver.response.status, 404);
+  assert.equal(naver.body.error, "unsupported_provider");
 });
 
 test("unknown·legacy state callback은 code를 어떤 target에도 전달하지 않는다", async () => {

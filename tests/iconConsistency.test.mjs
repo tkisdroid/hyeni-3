@@ -378,7 +378,7 @@ function collectOAuthBrandViolations(source, file = "Onboarding.tsx") {
   }
 
   const violations = [];
-  for (const component of ["KakaoIcon", "NaverIcon", "GoogleIcon"]) {
+  for (const component of ["KakaoIcon", "GoogleIcon"]) {
     const functionNode = functions.get(component);
     if (!functionNode?.body) {
       violations.push(component);
@@ -593,7 +593,7 @@ test("OAuth 브랜드 SVG는 버튼 이름과 중복 낭독되지 않는다", ()
   assert.deepEqual(
     collectOAuthBrandViolations(onboarding),
     [],
-    "KakaoIcon/NaverIcon/GoogleIcon 각 반환 SVG에 aria-hidden이 필요함",
+    "KakaoIcon/GoogleIcon 각 반환 SVG에 aria-hidden이 필요함",
   );
 });
 

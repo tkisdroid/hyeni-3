@@ -595,12 +595,6 @@ test("단색 CTA와 선택 상태도 전경색에 맞는 AA 전용 토큰을 쓴
       "var(--hy-accent-text)",
     ],
     [
-      "src/screens/onboarding/Onboarding.css",
-      ".ob-social--naver",
-      "#00843c",
-      "#fff",
-    ],
-    [
       "src/screens/teacher/TeacherHome.css",
       ".th-hero__attend",
       "var(--mint-text)",

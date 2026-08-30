@@ -32,6 +32,9 @@ const oauthBridgeRoutes = (
   await import(pathToFileURL(resolve(workerDir, "routes/oauth-bridge.ts")).href)
 ).default;
 const { hashOtp } = await import(pathToFileURL(resolve(workerDir, "lib/otp.ts")).href);
+const { createOAuthTransaction } = await import(
+  pathToFileURL(resolve(workerDir, "lib/oauthState.ts")).href
+);
 
 class Statement {
   constructor(owner, sql, bindings = []) {
@@ -168,12 +171,21 @@ function request(app, db, path, init = {}) {
 }
 
 async function prepareOAuth(app, db, provider) {
-  const startResponse = await request(app, db, `/api/auth/oauth/${provider}/start`, {
-    method: "POST",
-    body: JSON.stringify({ client: "web", webOrigin: "https://hyeni-calendar.pages.dev" }),
-  });
-  assert.equal(startResponse.status, 200, await startResponse.clone().text());
-  const prepared = await startResponse.json();
+  const prepared = provider === "naver"
+    ? await createOAuthTransaction(db, {
+        provider,
+        clientKind: "web",
+        webOrigin: "https://hyeni-calendar.pages.dev",
+        flowMode: "login",
+      })
+    : await (async () => {
+        const startResponse = await request(app, db, `/api/auth/oauth/${provider}/start`, {
+          method: "POST",
+          body: JSON.stringify({ client: "web", webOrigin: "https://hyeni-calendar.pages.dev" }),
+        });
+        assert.equal(startResponse.status, 200, await startResponse.clone().text());
+        return startResponse.json();
+      })();
   const callbackPath = provider === "naver"
     ? `/api/auth/naver?code=provider-code&state=${encodeURIComponent(prepared.state)}`
     : `/api/auth/oauth/${provider}/callback?code=provider-code&state=${encodeURIComponent(prepared.state)}`;

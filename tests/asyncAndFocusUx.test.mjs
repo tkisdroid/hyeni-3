@@ -66,10 +66,8 @@ test("ID·소셜·가입 확인 버튼은 중복 실행을 막은 채 BusyLabel�
     // 소셜 버튼은 탭(intent)에 따라 로그인/가입 라벨을 바꿔 쓴다 — 화면의 조건부 id를 함께 고정한다.
     ["onboarding.login.kakao", "onboarding.login.kakaoPending", "카카오로 계속하기", "카카오 로그인 중…"],
     ["onboarding.login.google", "onboarding.login.googlePending", "Google로 계속하기", "Google 로그인 중…"],
-    ["onboarding.login.naver", "onboarding.login.naverPending", "네이버로 계속하기", "네이버 로그인 중…"],
     ["onboarding.signup.kakao", null, "카카오로 가입하기", null],
     ["onboarding.signup.google", null, "Google로 가입하기", null],
-    ["onboarding.signup.naver", null, "네이버로 가입하기", null],
     ["onboarding.signup.verify", "onboarding.signup.verifying", "인증하고 가입 완료", "가입 확인 중…"],
   ]) {
     assert.match(onboarding, new RegExp(`"${idleId.replaceAll(".", "\\.")}"`));
@@ -80,7 +78,7 @@ test("ID·소셜·가입 확인 버튼은 중복 실행을 막은 채 BusyLabel�
     }
   }
   // 소셜 버튼은 signingUp 조건으로 로그인/가입 idle 문구를 갈아끼운다.
-  for (const provider of ["kakao", "google", "naver"]) {
+  for (const provider of ["kakao", "google"]) {
     const pattern = new RegExp(`id: signingUp \\? "onboarding\\.signup\\.${provider}" : "onboarding\\.login\\.${provider}"`);
     assert.match(onboarding, pattern);
   }

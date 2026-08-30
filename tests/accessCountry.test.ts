@@ -23,8 +23,8 @@ test("접속 국가에 맞는 첫 언어를 고르고 미지원 국가는 영어
   assert.equal(normalizeAccessCountry("T1"), "ZZ");
 });
 
-test("한국 접속은 국내 소셜 로그인을, 다른 국가는 Google만 우선 노출한다", () => {
-  assert.deepEqual(socialProvidersForAccessCountry("KR", { naverAvailable: true }), ["kakao", "google", "naver"]);
-  assert.deepEqual(socialProvidersForAccessCountry("JP", { naverAvailable: true }), ["google"]);
-  assert.deepEqual(socialProvidersForAccessCountry("ZZ", { naverAvailable: false }), ["kakao", "google"]);
+test("한국 접속도 Naver 설정과 무관하게 카카오와 Google 로그인만 노출한다", () => {
+  assert.deepEqual(socialProvidersForAccessCountry("KR"), ["kakao", "google"]);
+  assert.deepEqual(socialProvidersForAccessCountry("JP"), ["google"]);
+  assert.deepEqual(socialProvidersForAccessCountry("ZZ"), ["kakao", "google"]);
 });

@@ -165,7 +165,6 @@ function configError(c: Context<{ Bindings: Env; Variables: Vars }>, provider: s
 }
 
 function isOAuthProviderConfigured(env: OAuthEnv, provider: string): boolean {
-  if (provider === "naver") return !!env.NAVER_CLIENT_ID && !!env.NAVER_CLIENT_SECRET;
   const cfg = PROVIDERS[provider];
   if (!cfg) return false;
   return !!cfg.clientId(env) && (!cfg.requireClientSecret || !!cfg.clientSecret(env));
@@ -186,27 +185,14 @@ function resolveScope(env: OAuthEnv, provider: string, cfg: ProviderConfig): str
 // 서버 origin 에서 동일하게 계산한다(클라가 보낸 값에 의존하지 않음).
 function callbackUrl(reqUrl: string, provider: string): string {
   const origin = new URL(reqUrl).origin;
-  if (provider === "naver") return `${origin}/api/auth/naver`;
   return `${origin}/api/auth/oauth/${provider}/callback`;
 }
-
-const NAVER_AUTHORIZE_URL = "https://nid.naver.com/oauth2.0/authorize";
 
 function authorizationUrl(
   c: Context<{ Bindings: Env; Variables: Vars }>,
   provider: string,
   state: string,
 ): string | Response {
-  if (provider === "naver") {
-    const clientId = c.env.NAVER_CLIENT_ID || "";
-    if (!isOAuthProviderConfigured(c.env, provider)) return configError(c, provider);
-    return `${NAVER_AUTHORIZE_URL}?${new URLSearchParams({
-      response_type: "code",
-      client_id: clientId,
-      redirect_uri: callbackUrl(c.req.url, provider),
-      state,
-    }).toString()}`;
-  }
   const cfg = PROVIDERS[provider];
   if (!cfg) return c.json({ error: "unsupported_provider" }, 404);
   const clientId = cfg.clientId(c.env);
@@ -228,10 +214,7 @@ async function prepareOAuth(
   userId: string | null,
 ): Promise<Response> {
   const provider = String(c.req.param("provider") ?? "");
-  if (!PROVIDERS[provider] && provider !== "naver") {
-    return c.json({ error: "unsupported_provider" }, 404);
-  }
-  if (flowMode === "link" && provider === "naver") {
+  if (!PROVIDERS[provider]) {
     return c.json({ error: "unsupported_provider" }, 404);
   }
   let rawBody: unknown;
