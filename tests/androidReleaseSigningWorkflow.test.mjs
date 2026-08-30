@@ -102,12 +102,17 @@ test("release 서명 스크립트는 Android SDK를 빌드 전에 찾아 Gradle 
   assert.equal(source.match(/\$sdkRoot = Get-AndroidSdkRoot/g)?.length, 1);
 });
 
-test("연결 worktree release 빌드는 정본 .env의 Kakao 공개 키만 값 노출 없이 전달한다", () => {
-  assert.match(source, /Get-RequiredViteKakaoKeyState/);
+test("연결 worktree release 빌드는 정본 .env의 모든 VITE 공개 설정을 값 노출 없이 전달한다", () => {
+  assert.match(source, /Get-ViteReleaseEnvironmentState/);
+  assert.match(source, /Get-DotEnvVariables/);
   assert.match(source, /--git-common-dir/);
   assert.match(source, /VITE_KAKAO_APP_KEY/);
+  assert.match(source, /VITE_NAVER_CLIENT_ID/);
   assert.match(source, /viteKakaoKeyConfigured/);
   assert.match(source, /viteKakaoKeySource/);
+  assert.match(source, /viteNaverClientIdConfigured/);
+  assert.match(source, /viteNaverClientIdSource/);
+  assert.match(source, /vitePublicVariableNames/);
   assert.doesNotMatch(source, /\$envCandidates \| Sort-Object/);
 
   const currentEnvIndex = source.indexOf("$envCandidates = @((Join-Path $repoRoot '.env'))");
@@ -115,15 +120,15 @@ test("연결 worktree release 빌드는 정본 .env의 Kakao 공개 키만 값 �
   assert.ok(currentEnvIndex > 0);
   assert.ok(currentEnvIndex < primaryEnvIndex);
 
-  const resolveIndex = source.indexOf("$viteKakaoKeyState = Get-RequiredViteKakaoKeyState");
+  const resolveIndex = source.indexOf("$viteReleaseEnvironmentState = Get-ViteReleaseEnvironmentState");
   const webBuildIndex = source.indexOf("& npm.cmd run build");
   assert.ok(resolveIndex > 0);
   assert.ok(resolveIndex < webBuildIndex);
 
   const buildSetup = source.slice(resolveIndex, webBuildIndex);
-  assert.match(buildSetup, /\$env:VITE_KAKAO_APP_KEY = \$viteKakaoKeyState\.Value/);
-  assert.doesNotMatch(source, /Write-(?:Host|Output)[^\n]*\$viteKakaoKeyState\.Value/);
-  assert.match(source, /Restore-ViteKakaoKeyEnvironment/);
+  assert.match(buildSetup, /Set-ViteReleaseEnvironment/);
+  assert.doesNotMatch(source, /Write-(?:Host|Output)[^\n]*\.Values/);
+  assert.match(source, /Restore-ViteReleaseEnvironment/);
 });
 
 test("release 증거 도구는 웹 빌드와 비밀번호 입력 전에 모두 확인한다", () => {

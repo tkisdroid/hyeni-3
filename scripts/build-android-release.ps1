@@ -215,23 +215,24 @@ function Get-GitState {
     }
 }
 
-function Get-DotEnvValue {
-    param(
-        [Parameter(Mandatory)][string]$Path,
-        [Parameter(Mandatory)][string]$Name
-    )
+function Get-DotEnvVariables {
+    param([Parameter(Mandatory)][string]$Path)
 
+    $values = [ordered]@{}
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
-        return $null
+        return $values
     }
 
-    $escapedName = [regex]::Escape($Name)
     foreach ($line in [System.IO.File]::ReadLines($Path)) {
-        $match = [regex]::Match($line, "^\s*(?:export\s+)?${escapedName}\s*=\s*(?<value>.*)\s*$")
+        $match = [regex]::Match(
+            $line,
+            '^\s*(?:export\s+)?(?<name>VITE_[A-Za-z0-9_]+)\s*=\s*(?<value>.*)\s*$'
+        )
         if (-not $match.Success) {
             continue
         }
 
+        $name = $match.Groups['name'].Value
         $value = $match.Groups['value'].Value.Trim()
         if ($value.Length -ge 2 -and (
             ($value.StartsWith('"') -and $value.EndsWith('"')) `
@@ -241,19 +242,20 @@ function Get-DotEnvValue {
         } else {
             $value = [regex]::Replace($value, '\s+#.*$', '').Trim()
         }
-        return $value
+        $values[$name] = $value
     }
-    return $null
+    return $values
 }
 
-function Get-RequiredViteKakaoKeyState {
-    $processValue = [Environment]::GetEnvironmentVariable('VITE_KAKAO_APP_KEY', 'Process')
-    if (-not [string]::IsNullOrWhiteSpace($processValue)) {
-        return [pscustomobject]@{
-            Configured = $true
-            Source = 'process-environment'
-            Value = $processValue.Trim()
+function Get-ViteReleaseEnvironmentState {
+    $values = @{}
+    $sources = @{}
+    foreach ($processVariable in Get-ChildItem Env: | Where-Object { $_.Name -match '^VITE_[A-Za-z0-9_]+$' }) {
+        if ([string]::IsNullOrWhiteSpace($processVariable.Value)) {
+            continue
         }
+        $values[$processVariable.Name] = $processVariable.Value
+        $sources[$processVariable.Name] = 'process-environment'
     }
 
     $gitCommonDir = $null
@@ -281,37 +283,58 @@ function Get-RequiredViteKakaoKeyState {
         }
         $seenEnvCandidates[$fullCandidate] = $true
 
-        $value = Get-DotEnvValue -Path $fullCandidate -Name 'VITE_KAKAO_APP_KEY'
-        if (-not [string]::IsNullOrWhiteSpace($value)) {
-            return [pscustomobject]@{
-                Configured = $true
-                Source = if ($fullCandidate -eq [System.IO.Path]::GetFullPath((Join-Path $repoRoot '.env'))) {
-                    'current-worktree-env'
-                } else {
-                    'primary-worktree-env'
-                }
-                Value = $value.Trim()
+        $sourceLabel = if ($fullCandidate -eq [System.IO.Path]::GetFullPath((Join-Path $repoRoot '.env'))) {
+            'current-worktree-env'
+        } else {
+            'primary-worktree-env'
+        }
+        $candidateValues = Get-DotEnvVariables -Path $fullCandidate
+        foreach ($name in $candidateValues.Keys) {
+            if ($values.ContainsKey($name) -or [string]::IsNullOrWhiteSpace($candidateValues[$name])) {
+                continue
             }
+            $values[$name] = $candidateValues[$name]
+            $sources[$name] = $sourceLabel
         }
     }
 
+    $kakaoName = 'VITE_KAKAO_APP_KEY'
+    $naverName = 'VITE_NAVER_CLIENT_ID'
     return [pscustomobject]@{
-        Configured = $false
-        Source = 'missing'
-        Value = $null
+        Values = $values
+        VariableNames = @($values.Keys | Sort-Object)
+        KakaoConfigured = $values.ContainsKey($kakaoName)
+        KakaoSource = if ($sources.ContainsKey($kakaoName)) { $sources[$kakaoName] } else { 'missing' }
+        NaverClientIdConfigured = $values.ContainsKey($naverName)
+        NaverClientIdSource = if ($sources.ContainsKey($naverName)) { $sources[$naverName] } else { 'missing' }
     }
 }
 
-function Restore-ViteKakaoKeyEnvironment {
-    param(
-        [Parameter(Mandatory)][bool]$HadOriginalValue,
-        [AllowNull()][string]$OriginalValue
-    )
+function Set-ViteReleaseEnvironment {
+    param([Parameter(Mandatory)]$State)
 
-    if ($HadOriginalValue) {
-        [Environment]::SetEnvironmentVariable('VITE_KAKAO_APP_KEY', $OriginalValue, 'Process')
-    } else {
-        Remove-Item -LiteralPath 'Env:VITE_KAKAO_APP_KEY' -ErrorAction SilentlyContinue
+    $snapshot = @()
+    foreach ($name in $State.VariableNames) {
+        $originalValue = [Environment]::GetEnvironmentVariable($name, 'Process')
+        $snapshot += [pscustomobject]@{
+            Name = $name
+            HadOriginalValue = $null -ne $originalValue
+            OriginalValue = $originalValue
+        }
+        [Environment]::SetEnvironmentVariable($name, $State.Values[$name], 'Process')
+    }
+    return $snapshot
+}
+
+function Restore-ViteReleaseEnvironment {
+    param([Parameter(Mandatory)][object[]]$Snapshot)
+
+    foreach ($entry in $Snapshot) {
+        if ($entry.HadOriginalValue) {
+            [Environment]::SetEnvironmentVariable($entry.Name, $entry.OriginalValue, 'Process')
+        } else {
+            [Environment]::SetEnvironmentVariable($entry.Name, $null, 'Process')
+        }
     }
 }
 
@@ -433,7 +456,7 @@ if ($playUploadCertificatePresent) {
 }
 
 $gitState = Get-GitState
-$viteKakaoKeyState = Get-RequiredViteKakaoKeyState
+$viteReleaseEnvironmentState = Get-ViteReleaseEnvironmentState
 $forbiddenProperties = @(Get-ForbiddenSigningProperties)
 $preflight = [ordered]@{
     sourceCommit = $gitState.Head
@@ -445,8 +468,11 @@ $preflight = [ordered]@{
     playExpectedUploadCertificateSha1 = $playExpectedUploadCertificateSha1
     forbiddenGradlePropertyNames = $forbiddenProperties
     legacyCredentialFilePresent = Test-Path -LiteralPath $legacyCredentialFile -PathType Leaf
-    viteKakaoKeyConfigured = $viteKakaoKeyState.Configured
-    viteKakaoKeySource = $viteKakaoKeyState.Source
+    viteKakaoKeyConfigured = $viteReleaseEnvironmentState.KakaoConfigured
+    viteKakaoKeySource = $viteReleaseEnvironmentState.KakaoSource
+    viteNaverClientIdConfigured = $viteReleaseEnvironmentState.NaverClientIdConfigured
+    viteNaverClientIdSource = $viteReleaseEnvironmentState.NaverClientIdSource
+    vitePublicVariableNames = $viteReleaseEnvironmentState.VariableNames
     releaseAabPath = $releaseAab
 }
 
@@ -455,7 +481,7 @@ if ($PreflightOnly) {
     if (-not $gitState.Clean `
         -or -not $preflight.keystorePresent `
         -or -not $playUploadCertificatePresent `
-        -or -not $viteKakaoKeyState.Configured) {
+        -or -not $viteReleaseEnvironmentState.KakaoConfigured) {
         exit 2
     }
     exit 0
@@ -470,7 +496,7 @@ if (-not $preflight.keystorePresent) {
 if (-not $playUploadCertificatePresent) {
     throw "Play Console에서 받은 업로드 인증서가 없습니다: $selectedPlayUploadCertificate"
 }
-if (-not $viteKakaoKeyState.Configured) {
+if (-not $viteReleaseEnvironmentState.KakaoConfigured) {
     throw 'production release에 필요한 VITE_KAKAO_APP_KEY를 현재 또는 기본 worktree의 .env에서 찾지 못했습니다.'
 }
 if (-not (Test-Path -LiteralPath $gradleWrapper -PathType Leaf)) {
@@ -488,18 +514,14 @@ $readelf = Find-LatestTool -Parent (Join-Path $sdkRoot 'ndk') `
 Ensure-Bundletool
 
 Write-Host '1/6 production 웹 번들을 만들고 Android에 동기화합니다.'
-$originalViteKakaoKey = [Environment]::GetEnvironmentVariable('VITE_KAKAO_APP_KEY', 'Process')
-$hadOriginalViteKakaoKey = $null -ne $originalViteKakaoKey
-$env:VITE_KAKAO_APP_KEY = $viteKakaoKeyState.Value
+$viteEnvironmentSnapshot = @(Set-ViteReleaseEnvironment -State $viteReleaseEnvironmentState)
 Push-Location $repoRoot
 try {
     Invoke-External -Command { & npm.cmd run build } -FailureMessage 'production 웹 빌드 실패' | Out-Null
     Invoke-External -Command { & npx.cmd cap sync android } -FailureMessage 'Capacitor Android 동기화 실패' | Out-Null
 } finally {
     Pop-Location
-    Restore-ViteKakaoKeyEnvironment `
-        -HadOriginalValue $hadOriginalViteKakaoKey `
-        -OriginalValue $originalViteKakaoKey
+    Restore-ViteReleaseEnvironment -Snapshot $viteEnvironmentSnapshot
 }
 
 $postSyncGit = Get-GitState
