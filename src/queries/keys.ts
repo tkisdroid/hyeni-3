@@ -104,6 +104,8 @@ export const qk = {
     report: (familyId: string, memberId: string, range: "7d" | "30d" | "term") =>
       ["study", "report", familyId, memberId, range] as const,
     learner: (familyId: string) => ["study", "learner", familyId] as const,
+    concepts: (familyId: string, grade: 3 | 4 | 5 | 6) =>
+      ["study", "concepts", familyId, grade] as const,
     mission: (familyId: string, missionId: string) =>
       ["study", "mission", familyId, missionId] as const,
   },

@@ -19,8 +19,10 @@ export type StudyAuthorizationOperation =
   | "guardian.grade"
   | "primary.service-country"
   | "learner.state"
+  | "learner.catalog"
   | "learner.start"
   | "learner.get"
+  | "learner.abandon"
   | "learner.submit"
   | "system.cleanup";
 
@@ -59,8 +61,10 @@ export const STUDY_ROUTE_AUTHORIZATION_OPERATIONS = {
   grade: "guardian.grade",
   serviceCountry: "primary.service-country",
   learnerState: "learner.state",
+  learnerCatalog: "learner.catalog",
   learnerStart: "learner.start",
   learnerGet: "learner.get",
+  learnerAbandon: "learner.abandon",
   learnerSubmit: "learner.submit",
 } as const satisfies Record<string, StudyAuthorizationOperation>;
 
@@ -71,8 +75,10 @@ const POLICIES: Readonly<Record<StudyAuthorizationOperation, StudyAuthorizationP
   "guardian.grade": { role: "guardian", memberRequired: true, gradeMode: "required" },
   "primary.service-country": { role: "primary", memberRequired: false, gradeMode: "forbidden" },
   "learner.state": { role: "learner", memberRequired: true, gradeMode: "optional" },
+  "learner.catalog": { role: "learner", memberRequired: true, gradeMode: "optional" },
   "learner.start": { role: "learner", memberRequired: true, gradeMode: "optional" },
   "learner.get": { role: "learner", memberRequired: true, gradeMode: "optional" },
+  "learner.abandon": { role: "learner", memberRequired: true, gradeMode: "optional" },
   "learner.submit": { role: "learner", memberRequired: true, gradeMode: "optional" },
   "system.cleanup": { role: "system_cleanup", memberRequired: true, gradeMode: "forbidden" },
 };

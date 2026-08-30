@@ -34,8 +34,21 @@ test("브라우저 QA는 아이 미션과 같은 idempotency key 재전송을 �
   const scenario = { role: "child", tier: "free", studyState: "enabled", studyTransientSubmit: true };
   const learner = mockApi("/api/study/learner/me", scenario);
   assert.equal(learner.activeMissionId, null);
-  const mission = mockApi("/api/study/learner/missions", scenario, "POST", { mode: "daily" });
+  const catalog = mockApi("/api/study/learner/concepts", scenario);
+  assert.equal(catalog.grade, 4);
+  assert.deepEqual(catalog.concepts.map(({ unitKey }) => unitKey), ["수와 연산", "수와 연산", "도형"]);
+
+  const mission = mockApi("/api/study/learner/missions", scenario, "POST", {
+    mode: "daily",
+    grade: 4,
+    conceptId: "g4-multiplication",
+  });
   assert.equal(mission.items[0].type, "integer_input");
+  assert.deepEqual(mission.selection, {
+    kind: "concept",
+    conceptId: "g4-multiplication",
+    title: "곱셈구구와 곱셈",
+  });
 
   const headers = { "idempotency-key": "qa-answer-key-123456" };
   assert.deepEqual(
@@ -48,14 +61,18 @@ test("브라우저 QA는 아이 미션과 같은 idempotency key 재전송을 �
   assert.deepEqual(scenario.studySubmissionKeys, ["qa-answer-key-123456", "qa-answer-key-123456"]);
 });
 
-test("브라우저 QA는 완료 뒤 재진입과 다음 학습 묶음을 서로 다른 미션으로 검증한다", () => {
+test("브라우저 QA는 완료 뒤 같은 세부 개념의 다음 학습을 새 미션으로 이어 간다", () => {
   const scenario = {
     role: "child",
     tier: "free",
     studyState: "enabled",
     studyLearnerSelected: true,
   };
-  const first = mockApi("/api/study/learner/missions", scenario, "POST", { mode: "daily", grade: 4 });
+  const first = mockApi("/api/study/learner/missions", scenario, "POST", {
+    mode: "daily",
+    grade: 4,
+    conceptId: "g4-multiplication",
+  });
   mockApi(
     `/api/study/learner/missions/${first.missionId}/submissions`,
     scenario,
@@ -67,10 +84,23 @@ test("브라우저 QA는 완료 뒤 재진입과 다음 학습 묶음을 서로 
   assert.equal(completed.activeMissionId, null);
   assert.equal(completed.profile.grade.source, "learner_selected");
 
-  const next = mockApi("/api/study/learner/missions", scenario, "POST", { mode: "daily", grade: 5 });
+  const next = mockApi("/api/study/learner/missions", scenario, "POST", {
+    mode: "daily",
+    grade: 4,
+    conceptId: first.selection.conceptId,
+  });
   assert.notEqual(next.missionId, first.missionId);
-  assert.equal(next.grade, 5);
+  assert.equal(next.grade, 4);
   assert.equal(next.status, "started");
+  assert.deepEqual(next.selection, first.selection);
+
+  const abandoned = mockApi(
+    `/api/study/learner/missions/${next.missionId}/abandon`,
+    scenario,
+    "POST",
+  );
+  assert.equal(abandoned.status, "abandoned");
+  assert.equal(mockApi("/api/study/learner/me", scenario).activeMissionId, null);
 });
 
 test("브라우저 QA는 국외·미확정·장애 상태를 서로 구분한다", () => {

@@ -26,6 +26,7 @@ import type {
   CalendarMissionInput,
   ChildReportInput,
   LearnerStateInput,
+  ListCalendarConceptsInput,
   ParentOverviewInput,
   StartCalendarMissionInput,
   SubmitCalendarAnswerInput,
@@ -205,11 +206,40 @@ study.get("/learner/me", requireAuth, async (c) => {
   }
 });
 
+study.get("/learner/concepts", requireAuth, async (c) => {
+  try {
+    const rawGrade = c.req.query("grade");
+    if (!/^[3-6]$/u.test(rawGrade ?? "")) throw new StudyGatewayRequestError(400, "invalid_request");
+    const selectedGrade = studyGrade(Number(rawGrade));
+    const requestId = requestIdForStudy(c.req.raw);
+    const context = await resolveStudyGatewayContext(c.env, c.get("user"), { role: "child" });
+    const memberId = context.child?.memberId;
+    if (!memberId) throw new StudyGatewayRequestError(403, "study_not_available");
+    if (context.child?.grade !== null && context.child?.grade.grade !== selectedGrade) {
+      throw new StudyGatewayRequestError(400, "invalid_request");
+    }
+    const input: ListCalendarConceptsInput = { memberId, grade: selectedGrade, requestId };
+    const result = await studyResponse(() => callStudyBinding(
+      c.env,
+      context,
+      input,
+      "learner.catalog",
+      "learner",
+      requestId,
+      (binding, auth) => binding.listCalendarConcepts(input, auth),
+    ));
+    return result.ok ? c.json(result.value) : c.json({ error: "study_unavailable" }, 503);
+  } catch (error) {
+    return gatewayError(c, error);
+  }
+});
+
 study.post("/learner/missions", requireAuth, async (c) => {
   try {
-    const body = await parseStudyJson(c.req.raw, ["mode", "grade"]);
+    const body = await parseStudyJson(c.req.raw, ["mode", "grade", "conceptId"]);
     const mode = body.mode === undefined ? "daily" : studyMissionMode(body.mode);
     const selectedGrade = body.grade === undefined ? undefined : studyGrade(body.grade);
+    const conceptId = body.conceptId === undefined ? undefined : studyId(body.conceptId);
     const requestId = requestIdForStudy(c.req.raw);
     const context = await resolveStudyGatewayContext(c.env, c.get("user"), { role: "child" });
     const memberId = context.child?.memberId;
@@ -221,6 +251,7 @@ study.post("/learner/missions", requireAuth, async (c) => {
       memberId,
       mode,
       ...(context.child?.grade === null ? { grade: selectedGrade } : {}),
+      ...(conceptId === undefined ? {} : { conceptId }),
       requestId,
     };
     const result = await studyResponse(() => callStudyBinding(
@@ -233,6 +264,29 @@ study.post("/learner/missions", requireAuth, async (c) => {
       (binding, auth) => binding.startCalendarMission(input, auth),
     ));
     return result.ok ? c.json(result.value, 201) : c.json({ error: "study_unavailable" }, 503);
+  } catch (error) {
+    return gatewayError(c, error);
+  }
+});
+
+study.post("/learner/missions/:missionId/abandon", requireAuth, async (c) => {
+  try {
+    const missionId = studyId(c.req.param("missionId"));
+    const requestId = requestIdForStudy(c.req.raw);
+    const context = await resolveStudyGatewayContext(c.env, c.get("user"), { role: "child" });
+    const memberId = context.child?.memberId;
+    if (!memberId) throw new StudyGatewayRequestError(403, "study_not_available");
+    const input: CalendarMissionInput = { memberId, missionId, requestId };
+    const result = await studyResponse(() => callStudyBinding(
+      c.env,
+      context,
+      input,
+      "learner.abandon",
+      "learner",
+      requestId,
+      (binding, auth) => binding.abandonCalendarMission(input, auth),
+    ));
+    return result.ok ? c.json(result.value) : c.json({ error: "study_unavailable" }, 503);
   } catch (error) {
     return gatewayError(c, error);
   }

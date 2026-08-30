@@ -51,10 +51,60 @@ test("아이 화면은 family/member를 받지 않고 학년 선택만 허용한
   assert.doesNotMatch(source, /study\.child\.askGuardian/);
 });
 
-test("완료 화면은 같은 학년의 다음 묶음과 학년 다시 고르기를 모두 제공한다", async () => {
-  const source = await readFile(new URL("../src/features/study/StudyMissionResult.tsx", import.meta.url), "utf8");
-  assert.match(source, /onContinue/);
-  assert.match(source, /onChooseGrade/);
-  assert.match(source, /study\.child\.start\.button/);
-  assert.match(source, /study\.child\.gradeHelp/);
+test("8문제 묶음 완료는 완료 화면을 노출하지 않고 같은 주제를 자동으로 이어 간다", async () => {
+  const source = await readFile(new URL("../src/features/study/StudyMissionPlayer.tsx", import.meta.url), "utf8");
+  assert.match(source, /state\.phase !== ["']completed["']/);
+  assert.match(source, /void onContinue\(\)/);
+  assert.match(source, /STUDY_TOPIC_COPY\.nextLoading/);
+  assert.doesNotMatch(source, /<StudyMissionResult/);
+  assert.doesNotMatch(source, /study\.child\.progress/);
+});
+
+test("완료된 캐시 미션은 새 화면의 learner 재조회 전에 복원하지 않는다", async () => {
+  assert.equal(typeof childStudy.activeMissionToRestore, "function");
+  assert.equal(childStudy.activeMissionToRestore({
+    localMissionId: null,
+    choosingGrade: false,
+    learnerFetchedAfterMount: false,
+    activeMissionId: "completed-cache-mission",
+  }), null);
+  assert.equal(childStudy.activeMissionToRestore({
+    localMissionId: null,
+    choosingGrade: false,
+    learnerFetchedAfterMount: true,
+    activeMissionId: "server-active-mission",
+  }), "server-active-mission");
+
+  const querySource = await readFile(new URL("../src/queries/useStudy.ts", import.meta.url), "utf8");
+  const screenSource = await readFile(new URL("../src/screens/study/ChildStudy.tsx", import.meta.url), "utf8");
+  assert.match(querySource, /refetchOnMount:\s*["']always["']/);
+  assert.match(screenSource, /learner\.isFetchedAfterMount/);
+});
+
+test("세부 개념은 서버 순서를 유지하며 단원별로 묶고 골고루 풀기를 별도 선택한다", () => {
+  const groups = childStudy.groupStudyConcepts([
+    { conceptId: "c1", unitKey: "수와 연산", title: "곱셈", problemCount: 36 },
+    { conceptId: "c2", unitKey: "수와 연산", title: "나눗셈", problemCount: 36 },
+    { conceptId: "c3", unitKey: "도형", title: "삼각형", problemCount: 36 },
+  ]);
+  assert.deepEqual(groups, [
+    { unitKey: "수와 연산", concepts: [
+      { conceptId: "c1", unitKey: "수와 연산", title: "곱셈", problemCount: 36 },
+      { conceptId: "c2", unitKey: "수와 연산", title: "나눗셈", problemCount: 36 },
+    ] },
+    { unitKey: "도형", concepts: [
+      { conceptId: "c3", unitKey: "도형", title: "삼각형", problemCount: 36 },
+    ] },
+  ]);
+  assert.deepEqual(childStudy.startInputForSelection(4, { kind: "adaptive" }), { grade: 4 });
+  assert.deepEqual(childStudy.startInputForSelection(4, { kind: "concept", conceptId: "c2" }), {
+    grade: 4,
+    conceptId: "c2",
+  });
+});
+
+test("학년 로딩 표시는 실제로 누른 학년에만 켜진다", () => {
+  assert.equal(childStudy.isSelectedGradeLoading(4, 4, true), true);
+  assert.equal(childStudy.isSelectedGradeLoading(3, 4, true), false);
+  assert.equal(childStudy.isSelectedGradeLoading(4, 4, false), false);
 });

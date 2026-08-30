@@ -161,8 +161,10 @@ test("전체 operation policy는 허용 role과 member·grade required·optional
     { operation: "guardian.grade", role: "guardian", memberId: "child-1", grade: base().grade, gradeMode: "required" },
     { operation: "primary.service-country", role: "primary", memberId: null, grade: null, gradeMode: "forbidden" },
     { operation: "learner.state", role: "learner", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
+    { operation: "learner.catalog", role: "learner", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
     { operation: "learner.start", role: "learner", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
     { operation: "learner.get", role: "learner", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
+    { operation: "learner.abandon", role: "learner", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
     { operation: "learner.submit", role: "learner", memberId: "child-1", grade: base().grade, gradeMode: "optional" },
     { operation: "system.cleanup", role: "system_cleanup", memberId: "child-1", grade: null, gradeMode: "forbidden" },
   ];

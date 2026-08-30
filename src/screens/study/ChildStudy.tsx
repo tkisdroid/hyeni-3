@@ -1,22 +1,39 @@
 import { useEffect, useState } from "react";
-import { useIntl } from "react-intl";
 import { useNavigate } from "react-router";
 import { StudyAccessGate } from "@/features/study/StudyAccessGate";
-import { STUDY_GRADE_CHOICES, resolveChildStudyEntry } from "@/features/study/childStudyModel";
-import type { StudyGrade } from "@/features/study/contracts";
+import {
+  activeMissionToRestore,
+  groupStudyConcepts,
+  isSelectedGradeLoading,
+  STUDY_GRADE_CHOICES,
+  resolveChildStudyEntry,
+  startInputForSelection,
+  type StudyTopicSelection,
+} from "@/features/study/childStudyModel";
+import type { StudyConceptCatalogDto, StudyGrade } from "@/features/study/contracts";
 import { StudyMissionPlayer } from "@/features/study/StudyMissionPlayer";
-import { useStartStudyMission, useStudyLearnerState, useStudyMission } from "@/queries/useStudy";
+import { STUDY_TOPIC_COPY } from "@/features/study/studyTopicCopy";
+import {
+  useAbandonStudyMission,
+  useStartStudyMission,
+  useStudyConcepts,
+  useStudyLearnerState,
+  useStudyMission,
+} from "@/queries/useStudy";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "@/features/study/child-study.css";
 
 export function ChildStudy() {
-  const intl = useIntl();
   const navigate = useNavigate();
   const learner = useStudyLearnerState();
   const start = useStartStudyMission();
+  const abandon = useAbandonStudyMission();
   const [missionId, setMissionId] = useState<string | null>(null);
   const [choosingGrade, setChoosingGrade] = useState(false);
+  const [catalogGrade, setCatalogGrade] = useState<StudyGrade | null>(null);
+  const [startingTopic, setStartingTopic] = useState<string | null>(null);
   const mission = useStudyMission(missionId);
+  const concepts = useStudyConcepts(catalogGrade);
   const childStudyQueryState = resolveQueryTruthState([
     { isLoading: learner.isLoading, isError: learner.isError },
     { isLoading: mission.isLoading, isError: mission.isError },
@@ -28,50 +45,91 @@ export function ChildStudy() {
   };
 
   useEffect(() => {
-    if (!missionId && !choosingGrade && learner.data?.activeMissionId) {
-      setMissionId(learner.data.activeMissionId);
-    }
-  }, [choosingGrade, learner.data?.activeMissionId, missionId]);
+    const activeMissionId = activeMissionToRestore({
+      localMissionId: missionId,
+      choosingGrade,
+      learnerFetchedAfterMount: learner.isFetchedAfterMount,
+      activeMissionId: learner.data?.activeMissionId,
+    });
+    if (activeMissionId) setMissionId(activeMissionId);
+  }, [choosingGrade, learner.data?.activeMissionId, learner.isFetchedAfterMount, missionId]);
+
+  useEffect(() => {
+    if (missionId || choosingGrade || catalogGrade !== null) return;
+    const grade = learner.data?.profile.grade;
+    if (grade && grade.source !== "learner_selected") setCatalogGrade(grade.grade);
+  }, [catalogGrade, choosingGrade, learner.data?.profile.grade, missionId]);
 
   const goHome = () => navigate("/child/home");
+  const startSelection = async (grade: StudyGrade, selection: StudyTopicSelection): Promise<void> => {
+    const selectionInput = startInputForSelection(grade, selection);
+    setStartingTopic(selection.kind === "concept" ? selection.conceptId : "adaptive");
+    try {
+      const created = await start.mutateAsync({
+        mode: "daily",
+        ...selectionInput,
+        idempotencyKey: crypto.randomUUID(),
+      });
+      setChoosingGrade(false);
+      setCatalogGrade(created.grade);
+      setMissionId(created.missionId);
+    } catch {
+      // 동일 주제 카드에서 재시도할 수 있도록 mutation 상태를 유지한다.
+    } finally {
+      setStartingTopic(null);
+    }
+  };
+  const leaveMission = async (next: "topics" | "grades"): Promise<void> => {
+    const activeMissionId = mission.data?.status === "completed" ? null : missionId;
+    if (activeMissionId) {
+      try {
+        await abandon.mutateAsync({ missionId: activeMissionId, idempotencyKey: crypto.randomUUID() });
+      } catch {
+        return;
+      }
+    }
+    start.reset();
+    setMissionId(null);
+    if (next === "grades") {
+      setCatalogGrade(null);
+      setChoosingGrade(true);
+    } else {
+      setCatalogGrade(mission.data?.grade ?? learner.data?.profile.grade?.grade ?? catalogGrade);
+      setChoosingGrade(false);
+    }
+  };
   return (
     <StudyAccessGate deniedPath="/child/home" onBack={goHome}>
       <div className="child-study-screen">
         <header className="child-study-header">
-          <button type="button" onClick={goHome} aria-label={intl.formatMessage({ id: "study.common.back" })}>←</button>
-          <div><h1>{intl.formatMessage({ id: "study.child.title" })}</h1><p>{intl.formatMessage({ id: "study.child.subtitle" })}</p></div>
+          <button type="button" onClick={goHome} aria-label={STUDY_TOPIC_COPY.back}>←</button>
+          <div><h1>{STUDY_TOPIC_COPY.screenTitle}</h1><p>{STUDY_TOPIC_COPY.screenSubtitle}</p></div>
         </header>
         {childStudyQueryState === "loading" && learner.isLoading ? (
-          <p role="status">{intl.formatMessage({ id: "study.child.loading" })}</p>
+          <p role="status">{STUDY_TOPIC_COPY.learnerLoading}</p>
         ) : childStudyQueryState === "error" || !learner.data ? (
-          <section className="child-study-state" role="alert"><p>{intl.formatMessage({ id: learner.isError ? "study.child.loadError" : "study.child.missionError" })}</p><button type="button" onClick={() => void retryChildStudy()}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button></section>
+          <section className="child-study-state" role="alert"><p>{STUDY_TOPIC_COPY.learnerLoadError}</p><button type="button" onClick={() => void retryChildStudy()}>{STUDY_TOPIC_COPY.retry}</button></section>
         ) : (
           <ChildStudyContent
             entry={choosingGrade ? { kind: "select_grade" } : resolveChildStudyEntry(learner.data)}
-            grade={learner.data.profile.grade?.grade ?? null}
+            catalogGrade={catalogGrade}
+            concepts={concepts}
             missionId={missionId}
             mission={mission}
             startBusy={start.isPending}
             startError={start.isError}
-            onStart={async (grade) => {
-              try {
-                const created = await start.mutateAsync({
-                  mode: "daily",
-                  ...(grade === undefined ? {} : { grade }),
-                  idempotencyKey: crypto.randomUUID(),
-                });
-                setChoosingGrade(false);
-                setMissionId(created.missionId);
-              } catch {
-                // mutation 상태가 동일 카드에 복구 액션을 표시한다. 세션은 503으로 지우지 않는다.
-              }
-            }}
-            canChooseGrade={learner.data.profile.grade?.source === "learner_selected"}
-            onChooseGrade={() => {
+            startingTopic={startingTopic}
+            onSelectGrade={(grade) => {
               start.reset();
+              setCatalogGrade(grade);
               setChoosingGrade(true);
-              setMissionId(null);
             }}
+            onStart={startSelection}
+            canChooseGrade={learner.data.profile.grade?.source === "learner_selected"}
+            onChooseGrade={() => void leaveMission("grades")}
+            onChooseTopic={() => void leaveMission("topics")}
+            abandonBusy={abandon.isPending}
+            abandonError={abandon.isError}
             onHome={goHome}
           />
         )}
@@ -82,78 +140,170 @@ export function ChildStudy() {
 
 function ChildStudyContent({
   entry,
-  grade,
+  catalogGrade,
+  concepts,
   missionId,
   mission,
   startBusy,
   startError,
+  startingTopic,
+  onSelectGrade,
   onStart,
   canChooseGrade,
   onChooseGrade,
+  onChooseTopic,
+  abandonBusy,
+  abandonError,
   onHome,
 }: Readonly<{
   entry: ReturnType<typeof resolveChildStudyEntry>;
-  grade: StudyGrade | null;
+  catalogGrade: StudyGrade | null;
+  concepts: ReturnType<typeof useStudyConcepts>;
   missionId: string | null;
   mission: ReturnType<typeof useStudyMission>;
   startBusy: boolean;
   startError: boolean;
-  onStart: (grade?: StudyGrade) => Promise<void>;
+  startingTopic: string | null;
+  onSelectGrade: (grade: StudyGrade) => void;
+  onStart: (grade: StudyGrade, selection: StudyTopicSelection) => Promise<void>;
   canChooseGrade: boolean;
   onChooseGrade: () => void;
+  onChooseTopic: () => void;
+  abandonBusy: boolean;
+  abandonError: boolean;
   onHome: () => void;
 }>) {
-  const intl = useIntl();
   if (entry.kind === "unavailable") {
-    return <section className="child-study-state"><p>{intl.formatMessage({ id: "study.child.loadError" })}</p><button type="button" onClick={onHome}>{intl.formatMessage({ id: "study.common.back" })}</button></section>;
+    return <section className="child-study-state"><p>{STUDY_TOPIC_COPY.learnerLoadError}</p><button type="button" onClick={onHome}>{STUDY_TOPIC_COPY.backHome}</button></section>;
   }
-  if (!missionId && entry.kind === "select_grade") {
+  const needsGradeChoice = entry.kind === "select_grade";
+  const selectedGradePending = catalogGrade !== null && concepts.isPending;
+  if (!missionId && needsGradeChoice && (catalogGrade === null || selectedGradePending || concepts.isError)) {
     return (
       <section className="child-study-start">
-        <h2>{intl.formatMessage({ id: "study.child.start.title" })}</h2>
-        <p>{intl.formatMessage({ id: "study.child.gradeHelp" })}</p>
+        <h2>{STUDY_TOPIC_COPY.chooseGradeTitle}</h2>
+        <p>{STUDY_TOPIC_COPY.chooseGradeHelp}</p>
         <div className="child-study-grade-options">
           {STUDY_GRADE_CHOICES.map((choice) => (
             <button
               key={choice}
               type="button"
-              disabled={startBusy}
-              aria-busy={startBusy}
-              onClick={() => void onStart(choice)}
+              className={catalogGrade === choice ? "is-selected" : undefined}
+              disabled={concepts.isFetching}
+              aria-busy={isSelectedGradeLoading(choice, catalogGrade, concepts.isFetching)}
+              onClick={() => onSelectGrade(choice)}
             >
-              {intl.formatMessage({ id: "study.child.gradeLabel" }, { grade: choice })}
+              <span>{STUDY_TOPIC_COPY.gradeLabel(choice)}</span>
+              {isSelectedGradeLoading(choice, catalogGrade, concepts.isFetching) && (
+                <span className="child-study-grade-loader" aria-hidden="true" />
+              )}
             </button>
           ))}
         </div>
-        {startError && <p role="alert">{intl.formatMessage({ id: "study.child.start.error" })}</p>}
+        {concepts.isError && <p role="alert">{STUDY_TOPIC_COPY.gradeRetry}</p>}
       </section>
     );
   }
-  if (!missionId && entry.kind === "start") {
+  if (!missionId && catalogGrade !== null && concepts.data) {
     return (
-      <section className="child-study-start">
-        <span>{intl.formatMessage({ id: "study.child.gradeLabel" }, { grade: grade! })}</span>
-        <h2>{intl.formatMessage({ id: "study.child.start.title" })}</h2>
-        <p>{intl.formatMessage({ id: "study.child.start.description" })}</p>
-        <button type="button" disabled={startBusy} aria-busy={startBusy} onClick={() => void onStart(grade!)}>{intl.formatMessage({ id: startBusy ? "study.child.start.starting" : "study.child.gradeLabel" }, { grade: grade! })}</button>
-        {startError && <p role="alert">{intl.formatMessage({ id: "study.child.start.error" })}</p>}
-      </section>
+      <StudyTopicPicker
+        grade={catalogGrade}
+        catalog={concepts.data}
+        startingTopic={startingTopic}
+        startBusy={startBusy}
+        startError={startError}
+        canChooseGrade={canChooseGrade}
+        onChooseGrade={onChooseGrade}
+        onStart={onStart}
+      />
     );
+  }
+  if (!missionId && (entry.kind === "start" || catalogGrade !== null)) {
+    return <p role="status">{STUDY_TOPIC_COPY.topicLoading}</p>;
   }
   if (mission.isPending || !mission.data) {
-    return <p role="status">{intl.formatMessage({ id: "study.child.loadingMission" })}</p>;
+    return <p role="status">{STUDY_TOPIC_COPY.missionLoading}</p>;
   }
   return (
     <StudyMissionPlayer
       key={mission.data.missionId}
       mission={mission.data}
-      onContinue={onStart}
-      onChooseGrade={canChooseGrade ? onChooseGrade : null}
-      continueBusy={startBusy}
+      onContinue={() => onStart(mission.data.grade, mission.data.selection)}
+      onChangeTopic={onChooseTopic}
+      changeTopicBusy={abandonBusy}
+      changeTopicError={abandonError}
       continueError={startError}
       onHome={onHome}
       onForbidden={onHome}
     />
+  );
+}
+
+function StudyTopicPicker({
+  grade,
+  catalog,
+  startingTopic,
+  startBusy,
+  startError,
+  canChooseGrade,
+  onChooseGrade,
+  onStart,
+}: Readonly<{
+  grade: StudyGrade;
+  catalog: StudyConceptCatalogDto;
+  startingTopic: string | null;
+  startBusy: boolean;
+  startError: boolean;
+  canChooseGrade: boolean;
+  onChooseGrade: () => void;
+  onStart: (grade: StudyGrade, selection: StudyTopicSelection) => Promise<void>;
+}>) {
+  const groups = groupStudyConcepts(catalog.concepts);
+  return (
+    <section className="child-study-topics" aria-labelledby="study-topic-title">
+      <div className="child-study-topic-heading">
+        <span>{STUDY_TOPIC_COPY.gradeLabel(grade)}</span>
+        <h2 id="study-topic-title">{STUDY_TOPIC_COPY.chooseTopicTitle}</h2>
+        <p>{STUDY_TOPIC_COPY.chooseTopicHelp}</p>
+      </div>
+      <button
+        type="button"
+        className="child-study-adaptive-topic"
+        disabled={startBusy}
+        aria-busy={startBusy && startingTopic === "adaptive"}
+        onClick={() => void onStart(grade, { kind: "adaptive" })}
+      >
+        <strong>{STUDY_TOPIC_COPY.adaptiveTitle}</strong>
+        <span>{STUDY_TOPIC_COPY.adaptiveDescription}</span>
+        {startBusy && startingTopic === "adaptive" && <span className="child-study-topic-loader" aria-hidden="true" />}
+      </button>
+      {groups.map((group) => (
+        <section key={group.unitKey} className="child-study-topic-unit">
+          <h3>{group.unitKey}</h3>
+          <div className="child-study-topic-list">
+            {group.concepts.map((concept) => (
+              <button
+                key={concept.conceptId}
+                type="button"
+                disabled={startBusy}
+                aria-busy={startBusy && startingTopic === concept.conceptId}
+                onClick={() => void onStart(grade, {
+                  kind: "concept",
+                  conceptId: concept.conceptId,
+                  title: concept.title,
+                })}
+              >
+                <strong>{concept.title}</strong>
+                <span>{STUDY_TOPIC_COPY.conceptProblemCount(concept.problemCount)}</span>
+                {startBusy && startingTopic === concept.conceptId && <span className="child-study-topic-loader" aria-hidden="true" />}
+              </button>
+            ))}
+          </div>
+        </section>
+      ))}
+      {canChooseGrade && <button type="button" className="child-study-change-grade" onClick={onChooseGrade}>{STUDY_TOPIC_COPY.changeGrade}</button>}
+      {startError && <p role="alert">{STUDY_TOPIC_COPY.startError}</p>}
+    </section>
   );
 }
 

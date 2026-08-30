@@ -4,6 +4,53 @@ export type ChildStudyEntry =
 
 export const STUDY_GRADE_CHOICES = [3, 4, 5, 6] as const;
 
+export type StudyTopicSelection = StudyMissionDto["selection"];
+
+export function groupStudyConcepts(
+  concepts: StudyConceptCatalogDto["concepts"],
+): readonly Readonly<{
+  unitKey: string;
+  concepts: StudyConceptCatalogDto["concepts"];
+}>[] {
+  const groups = new Map<string, StudyConceptCatalogDto["concepts"][number][]>();
+  for (const concept of concepts) {
+    const group = groups.get(concept.unitKey);
+    if (group) group.push(concept);
+    else groups.set(concept.unitKey, [concept]);
+  }
+  return Array.from(groups, ([unitKey, groupedConcepts]) => ({
+    unitKey,
+    concepts: groupedConcepts,
+  }));
+}
+
+export function startInputForSelection(
+  grade: StudyGrade,
+  selection: Pick<StudyTopicSelection, "kind"> & Partial<Pick<Extract<StudyTopicSelection, { kind: "concept" }>, "conceptId">>,
+): Readonly<{ grade: StudyGrade; conceptId?: string }> {
+  return selection.kind === "concept" && selection.conceptId
+    ? { grade, conceptId: selection.conceptId }
+    : { grade };
+}
+
+export function isSelectedGradeLoading(
+  grade: StudyGrade,
+  selectedGrade: StudyGrade | null,
+  loading: boolean,
+): boolean {
+  return loading && selectedGrade === grade;
+}
+
+export function activeMissionToRestore(input: Readonly<{
+  localMissionId: string | null;
+  choosingGrade: boolean;
+  learnerFetchedAfterMount: boolean;
+  activeMissionId: string | null | undefined;
+}>): string | null {
+  if (input.localMissionId || input.choosingGrade || !input.learnerFetchedAfterMount) return null;
+  return input.activeMissionId ?? null;
+}
+
 export function resolveChildStudyEntry(state: Readonly<{
   status: "available" | "inactive_or_missing";
   profile: Readonly<{
@@ -27,3 +74,4 @@ export function isRetryableStudyFailure(error: unknown): boolean {
   const status = (error as { status?: unknown }).status;
   return typeof status === "number" && status >= 500;
 }
+import type { StudyConceptCatalogDto, StudyGrade, StudyMissionDto } from "./contracts";
