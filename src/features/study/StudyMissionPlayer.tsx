@@ -84,7 +84,7 @@ export function StudyMissionPlayer({ mission, onHome, onForbidden }: Props) {
       {state.phase === "retryable" && (
         <div className="study-retry-panel" role="alert">
           <p>{intl.formatMessage({ id: "study.child.retry.sameAnswer" })}</p>
-          <button type="button" disabled={submit.isPending} onClick={retry}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button>
+          <button type="button" disabled={submit.isPending} aria-busy={submit.isPending} onClick={retry}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button>
         </div>
       )}
       {errorCode && state.phase !== "retryable" && (

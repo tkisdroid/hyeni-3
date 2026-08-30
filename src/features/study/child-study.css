@@ -1,4 +1,4 @@
-.child-study-screen { display: grid; gap: 18px; padding: 16px; color: var(--hy-text, #342c30); }
+.child-study-screen { display: grid; gap: 16px; padding: 16px; color: var(--hy-text, #342c30); }
 .child-study-header { display: flex; align-items: center; gap: 12px; }
 .child-study-header h1,
 .child-study-header p,
@@ -6,17 +6,56 @@
 .child-study-start p,
 .study-mission-result h2,
 .study-mission-result p { margin: 0; }
-.child-study-header > button { width: 48px; height: 48px; border: 0; border-radius: 14px; background: var(--hy-surface-muted, #f4eef1); font-size: 1.4rem; }
+.child-study-header > button {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--hy-surface-muted, #f4eef1);
+  font-size: 1.4rem;
+}
 .child-study-start,
 .child-study-state,
 .study-mission-result,
-.study-retry-panel { display: grid; gap: 14px; padding: 20px; border-radius: 22px; background: var(--hy-surface, #fff); border: 1px solid var(--hy-border-subtle, #e7dfe3); }
-.child-study-start > span { justify-self: start; padding: 7px 12px; border-radius: 999px; background: #f1eafa; font-weight: 800; }
+.study-retry-panel {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--hy-surface, #fff);
+  border: 1px solid var(--hy-border-subtle, #e7dfe3);
+}
+.child-study-start > span {
+  justify-self: start;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f1eafa;
+  font-weight: 800;
+}
 .child-study-start button,
 .child-study-state button,
 .study-mission-result button,
-.study-retry-panel button { min-height: 48px; border: 0; border-radius: 14px; background: var(--hy-primary, #ef5e9d); color: #fff; font: inherit; font-weight: 800; }
+.study-retry-panel button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--hy-primary, #ef5e9d);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+}
 .study-mission-player { display: grid; gap: 16px; }
-.study-mission-progress { display: grid; gap: 7px; font-weight: 800; }
+.study-mission-progress { display: grid; gap: 8px; font-weight: 800; }
 .study-mission-progress progress { width: 100%; min-height: 14px; }
-.study-complete-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #dff5e7; color: #17753b; font-size: 2rem; font-weight: 900; }
+.study-complete-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #dff5e7;
+  color: #17753b;
+  font-size: 2rem;
+  font-weight: 900;
+}

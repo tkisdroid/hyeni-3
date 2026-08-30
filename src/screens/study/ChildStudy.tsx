@@ -5,6 +5,7 @@ import { StudyAccessGate } from "@/features/study/StudyAccessGate";
 import { resolveChildStudyEntry } from "@/features/study/childStudyModel";
 import { StudyMissionPlayer } from "@/features/study/StudyMissionPlayer";
 import { useStartStudyMission, useStudyLearnerState, useStudyMission } from "@/queries/useStudy";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "@/features/study/child-study.css";
 
 export function ChildStudy() {
@@ -14,6 +15,15 @@ export function ChildStudy() {
   const start = useStartStudyMission();
   const [missionId, setMissionId] = useState<string | null>(null);
   const mission = useStudyMission(missionId);
+  const childStudyQueryState = resolveQueryTruthState([
+    { isLoading: learner.isLoading, isError: learner.isError },
+    { isLoading: mission.isLoading, isError: mission.isError },
+  ]);
+  const retryChildStudy = async (): Promise<void> => {
+    const retries: Promise<unknown>[] = [learner.refetch()];
+    if (missionId) retries.push(mission.refetch());
+    await Promise.all(retries);
+  };
 
   useEffect(() => {
     if (!missionId && learner.data?.activeMissionId) setMissionId(learner.data.activeMissionId);
@@ -27,10 +37,10 @@ export function ChildStudy() {
           <button type="button" onClick={goHome} aria-label={intl.formatMessage({ id: "study.common.back" })}>←</button>
           <div><h1>{intl.formatMessage({ id: "study.child.title" })}</h1><p>{intl.formatMessage({ id: "study.child.subtitle" })}</p></div>
         </header>
-        {learner.isPending ? (
+        {childStudyQueryState === "loading" && learner.isLoading ? (
           <p role="status">{intl.formatMessage({ id: "study.child.loading" })}</p>
-        ) : learner.isError || !learner.data ? (
-          <section className="child-study-state" role="alert"><p>{intl.formatMessage({ id: "study.child.loadError" })}</p><button type="button" onClick={() => void learner.refetch()}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button></section>
+        ) : childStudyQueryState === "error" || !learner.data ? (
+          <section className="child-study-state" role="alert"><p>{intl.formatMessage({ id: learner.isError ? "study.child.loadError" : "study.child.missionError" })}</p><button type="button" onClick={() => void retryChildStudy()}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button></section>
         ) : (
           <ChildStudyContent
             entry={resolveChildStudyEntry(learner.data)}
@@ -84,13 +94,12 @@ function ChildStudyContent({
         <span>{intl.formatMessage({ id: "study.child.gradeLabel" }, { grade })}</span>
         <h2>{intl.formatMessage({ id: "study.child.start.title" })}</h2>
         <p>{intl.formatMessage({ id: "study.child.start.description" })}</p>
-        <button type="button" disabled={startBusy} onClick={() => void onStart()}>{intl.formatMessage({ id: startBusy ? "study.child.start.starting" : "study.child.start.button" })}</button>
+        <button type="button" disabled={startBusy} aria-busy={startBusy} onClick={() => void onStart()}>{intl.formatMessage({ id: startBusy ? "study.child.start.starting" : "study.child.start.button" })}</button>
         {startError && <p role="alert">{intl.formatMessage({ id: "study.child.start.error" })}</p>}
       </section>
     );
   }
   if (mission.isPending || !mission.data) {
-    if (mission.isError) return <section className="child-study-state" role="alert"><p>{intl.formatMessage({ id: "study.child.missionError" })}</p><button type="button" onClick={() => void mission.refetch()}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button></section>;
     return <p role="status">{intl.formatMessage({ id: "study.child.loadingMission" })}</p>;
   }
   return <StudyMissionPlayer key={mission.data.missionId} mission={mission.data} onHome={onHome} onForbidden={onHome} />;

@@ -39,6 +39,8 @@ test("라우트 역할과 기능별 namespace 묶음이 명시되어 있다", ()
     'const ONBOARDING_NAMESPACES = ["core", "onboarding", "shared"] as const;',
     'const PARENT_NAMESPACES = ["core", "parent", "shared"] as const;',
     'const CHILD_NAMESPACES = ["core", "child", "shared"] as const;',
+    'const PARENT_STUDY_NAMESPACES = ["core", "onboarding", "parent", "shared"] as const;',
+    'const CHILD_STUDY_NAMESPACES = ["core", "onboarding", "child", "shared"] as const;',
     // 결제 화면은 티어 라벨·잠금 안내가 parent.* id 를 쓰므로 parent 를 함께 싣는다(2026-08-17).
     'const BILLING_NAMESPACES = ["core", "billing", "parent", "shared"] as const;',
     'const REPORT_NAMESPACES = ["core", "reports", "parent", "shared"] as const;',
@@ -59,6 +61,8 @@ test("라우트 역할과 기능별 namespace 묶음이 명시되어 있다", ()
     ["location-status", "PARENT_NOTIFICATION_NAMESPACES"],
     ["location-settings", "PARENT_NOTIFICATION_NAMESPACES"],
     ["child/home", "CHILD_NAMESPACES"],
+    ["study", "PARENT_STUDY_NAMESPACES"],
+    ["study/learn", "CHILD_STUDY_NAMESPACES"],
     ["subscription", "BILLING_NAMESPACES"],
     ["ai-credit", "BILLING_NAMESPACES"],
     ["trial-lock", "BILLING_NAMESPACES"],
@@ -125,6 +129,8 @@ test("화면이 쓰는 모든 message namespace를 그 라우트가 싣는다", 
       if (source.includes(module)) used.add(namespace);
     }
     for (const namespace of used) {
+      // Study message ID는 화면 역할에 따라 onboarding/parent/child 카탈로그에 분할 저장한다.
+      if (namespace === "study" && ["CHILD_NAMESPACES", "PARENT_STUDY_NAMESPACES", "CHILD_STUDY_NAMESPACES"].includes(group)) continue;
       if (!groups.has(`${namespace.toUpperCase()}_NAMESPACES`) && !namespace.match(/^[a-z]+$/)) continue;
       if (!namespaces.includes(namespace)) offenders.push(`${screen} (${group}) → ${namespace}.*`);
     }

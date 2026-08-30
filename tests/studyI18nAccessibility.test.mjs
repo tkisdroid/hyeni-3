@@ -140,3 +140,9 @@ test("Study 완료와 오류 상태는 스크린리더가 상태 변화를 알 �
   assert.match(result, /aria-labelledby="study-mission-complete-title"/);
   assert.match(player, /role="alert"/);
 });
+
+test("부모 Study 뒤로 버튼은 긴 제목 옆에서도 48px 터치 폭을 유지한다", async () => {
+  const css = await readFile(new URL("src/features/study/parent-study.css", ROOT), "utf8");
+  assert.match(css, /\.study-back-button\s*\{[^}]*flex:\s*0\s+0\s+48px/s);
+  assert.match(css, /\.study-back-button\s*\{[^}]*width:\s*48px[^}]*height:\s*48px/s);
+});

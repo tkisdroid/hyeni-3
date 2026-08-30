@@ -974,6 +974,7 @@ test("같은 request id 경쟁의 후행 요청은 canonical 결과를 재생한
       requestGrade(db, CHILD_MEMBER_ID, { body: input }),
     ]);
     const expected = {
+      memberId: CHILD_MEMBER_ID,
       grade: { grade: 5, source: "parent_override", academicYear: 2026 },
       rowVersion: 2,
     };

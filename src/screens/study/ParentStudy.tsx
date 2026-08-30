@@ -10,6 +10,7 @@ import { StudyGradeEditor } from "@/features/study/StudyGradeEditor";
 import { StudyReport } from "@/features/study/StudyReport";
 import { buildStudyGradeCommand, resolveParentStudyTarget } from "@/features/study/parentStudyModel";
 import type { StudyGrade, StudyRange } from "@/features/study/contracts";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "@/features/study/parent-study.css";
 
 export function ParentStudy() {
@@ -24,6 +25,12 @@ export function ParentStudy() {
   const [gradeSaveState, setGradeSaveState] = useState<"idle" | "conflict" | "failed">("idle");
   const report = useStudyReport(memberId, range);
   const gradeMutation = useUpdateStudyGrade();
+  const parentStudyQueryState = resolveQueryTruthState([
+    { isLoading: report.isLoading, isError: report.isError },
+  ]);
+  const retryParentStudy = async (): Promise<void> => {
+    await report.refetch();
+  };
 
   useEffect(() => {
     if (target.kind === "ready" && target.fromDeepLink && target.child.id !== selectedActiveChild?.id) {
@@ -74,10 +81,10 @@ export function ParentStudy() {
               <span>{intl.formatMessage({ id: "study.parent.currentChild" })}</span>
               <strong>{target.child.name || intl.formatMessage({ id: "study.parent.childFallback" })}</strong>
             </section>
-            {report.isPending ? (
+            {parentStudyQueryState === "loading" ? (
               <p role="status">{intl.formatMessage({ id: "study.parent.loadingReport" })}</p>
-            ) : report.isError || !report.data ? (
-              <section className="study-parent-state" role="alert"><p>{intl.formatMessage({ id: "study.parent.reportError" })}</p><button type="button" onClick={() => void report.refetch()}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button></section>
+            ) : parentStudyQueryState === "error" || !report.data ? (
+              <section className="study-parent-state" role="alert"><p>{intl.formatMessage({ id: "study.parent.reportError" })}</p><button type="button" onClick={() => void retryParentStudy()}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button></section>
             ) : (
               <>
                 <ParentStudySummary report={report.data} />

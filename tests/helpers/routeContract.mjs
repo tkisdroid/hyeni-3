@@ -76,6 +76,8 @@ const ROUTE_NAMESPACE_IDENTIFIERS = new Set([
   // 부모 홈은 구독 카드의 플랜 라벨(billing)을 함께 싣는다(2026-08-25 A17 실측).
   "PARENT_HOME_NAMESPACES",
   "CHILD_NAMESPACES",
+  "PARENT_STUDY_NAMESPACES",
+  "CHILD_STUDY_NAMESPACES",
   "BILLING_NAMESPACES",
   "REPORT_NAMESPACES",
   "PARENT_NOTIFICATION_NAMESPACES",
@@ -250,8 +252,8 @@ function duplicateValues(values) {
 
 export function assertAppRouteContract(source, expected) {
   const parsed = parseAppRouteContract(source);
-  assert.equal(parsed.lazyScreens.length, 59, "지연 화면은 정확히 59개여야 합니다.");
-  assert.equal(parsed.routes.length, 60, "지연 라우트는 정확히 60개여야 합니다.");
+  assert.equal(parsed.lazyScreens.length, 61, "지연 화면은 정확히 61개여야 합니다.");
+  assert.equal(parsed.routes.length, 62, "지연 라우트는 정확히 62개여야 합니다.");
   assert.deepEqual(parsed.staticScreenImports, [], "Splash 외 화면의 정적 import를 허용하지 않습니다.");
   assert.deepEqual(parsed.lazyScreens, expected.lazyScreens, "지연 화면 모듈·named export 정본이 다릅니다.");
   assert.deepEqual(parsed.routes, expected.routes, "라우트 path·화면·guard 정본이 다릅니다.");

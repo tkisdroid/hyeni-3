@@ -23,7 +23,7 @@ test("최종 브라우저 QA는 production dist를 390x844 격리 프로필에�
 });
 
 test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 계약을 빠짐없이 고정한다", () => {
-  assert.equal(PARENT_BROWSER_QA_ROUTES.length, 43);
+  assert.equal(PARENT_BROWSER_QA_ROUTES.length, 44);
   assert.ok(PARENT_BROWSER_QA_ROUTES.includes("child-digest"), "아이 하루 대시보드도 QA 대상이다");
   // 문구 검사는 한국어 정본 기준이다. 표시 언어를 고정하지 않으면 Linux CI(en-US)에서
   // 영어 화면을 한국어로 검사하게 되어 12건이 항상 실패한다(2026-08-19 실사고).
@@ -31,7 +31,9 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   // navigator.languages 는 --lang 이 아니라 --accept-lang 이 정한다.
   // 이걸 빼면 Linux CI 에서 여전히 영어로 렌더된다(2026-08-19 실측).
   assert.match(source, /"--accept-lang=ko-KR,ko"/);
-  assert.equal(CHILD_BROWSER_QA_ROUTES.length, 14);
+  assert.equal(CHILD_BROWSER_QA_ROUTES.length, 15);
+  assert.ok(PARENT_BROWSER_QA_ROUTES.includes("study"));
+  assert.ok(CHILD_BROWSER_QA_ROUTES.includes("study/learn"));
   assert.ok(PARENT_BROWSER_QA_ROUTES.includes("subscription"));
   assert.ok(PARENT_BROWSER_QA_ROUTES.includes("place-manager"));
   assert.ok(CHILD_BROWSER_QA_ROUTES.includes("child/home"));

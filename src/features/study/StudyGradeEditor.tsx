@@ -32,11 +32,11 @@ export function StudyGradeEditor({ grade, rowVersion, busy, conflict = false, sa
             ))}
           </select>
         </label>
-        <button type="button" disabled={busy || rowVersion === null} onClick={() => void onChange(selected)}>
+        <button type="button" disabled={busy || rowVersion === null} aria-busy={busy} onClick={() => void onChange(selected)}>
           {intl.formatMessage({ id: busy ? "study.parent.grade.saving" : "study.parent.grade.save" })}
         </button>
         {grade?.source === "parent_override" && (
-          <button type="button" className="study-secondary-button" disabled={busy || rowVersion === null} onClick={() => void onChange(null)}>
+          <button type="button" className="study-secondary-button" disabled={busy || rowVersion === null} aria-busy={busy} onClick={() => void onChange(null)}>
             {intl.formatMessage({ id: "study.parent.grade.reset" })}
           </button>
         )}
