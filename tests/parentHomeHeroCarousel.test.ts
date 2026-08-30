@@ -17,12 +17,12 @@ import {
 
 const controls = DEFAULT_PARENT_HOME_HERO_CONTROLS;
 
-test("혜니스터디 카탈로그는 외부 URL 없이 앱 내부 Study route만 연다", () => {
+test("혜니스터디 카탈로그는 미니앱 허브를 거쳐 수학으로 진입한다", () => {
   assert.deepEqual(
     PARENT_HOME_HERO_SLIDE_CATALOG,
     [
       { id: "today", kind: "today", route: "/parent/calendar" },
-      { id: "hyeni_study", kind: "promo", internalPath: "/study" },
+      { id: "hyeni_study", kind: "promo", internalPath: "/miniapps" },
       { id: "hyeni_world", kind: "promo", externalUrl: "https://www.youtube.com/@hyeniworld" },
     ],
     "추후 활성화할 전체 카탈로그는 보존해야 합니다",
@@ -39,7 +39,7 @@ test("혜니스터디 카탈로그는 외부 URL 없이 앱 내부 Study route�
   // 현재 릴리스의 today 는 앱 내부 혜니캘린더로 이동한다.
   assert.equal(DEFAULT_PARENT_HOME_HERO_SLIDES[0].route, "/parent/calendar");
   const study = PARENT_HOME_HERO_SLIDE_CATALOG.find((slide) => slide.id === "hyeni_study");
-  assert.equal(study?.internalPath, "/study");
+  assert.equal(study?.internalPath, "/miniapps");
   assert.equal("externalUrl" in (study ?? {}), false);
 });
 

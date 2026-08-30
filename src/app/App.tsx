@@ -47,6 +47,7 @@ const ChildSos = lazyScreen(() => import("@/screens/child/ChildSos"), "ChildSos"
 const AiFriendChat = lazyScreen(() => import("@/screens/child/AiFriendChat"), "AiFriendChat");
 const ParentStudy = lazyScreen(() => import("@/screens/study/ParentStudy"), "ParentStudy");
 const ChildStudy = lazyScreen(() => import("@/screens/study/ChildStudy"), "ChildStudy");
+const MiniApps = lazyScreen(() => import("@/screens/miniapps/MiniApps"), "MiniApps");
 const TeacherHome = lazyScreen(() => import("@/screens/teacher/TeacherHome"), "TeacherHome");
 const TeacherStudents = lazyScreen(() => import("@/screens/teacher/TeacherStudents"), "TeacherStudents");
 const TeacherSettings = lazyScreen(() => import("@/screens/teacher/TeacherSettings"), "TeacherSettings");
@@ -351,6 +352,7 @@ const router = createHashRouter([
       {
         element: <RequireAnyRole roles={["parent", "child"]} />,
         children: [
+          { path: "miniapps", element: routeElement(<MiniApps />, SHARED_NAMESPACES) },
           { path: "supplies", element: routeElement(<Supplies />, SHARED_NAMESPACES) },
           { path: "route", element: routeElement(<RouteView />, SHARED_NAMESPACES) },
         ],

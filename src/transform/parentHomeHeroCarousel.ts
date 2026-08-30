@@ -41,7 +41,7 @@ export const MAX_PARENT_HOME_HERO_SLIDES = 6;
  */
 export const PARENT_HOME_HERO_SLIDE_CATALOG: readonly ParentHomeHeroSlide[] = Object.freeze([
   { id: "today", kind: "today", route: "/parent/calendar" },
-  { id: "hyeni_study", kind: "promo", internalPath: "/study" },
+  { id: "hyeni_study", kind: "promo", internalPath: "/miniapps" },
   { id: "hyeni_world", kind: "promo", externalUrl: "https://www.youtube.com/@hyeniworld" },
 ]);
 

@@ -14,6 +14,7 @@ import { useStickerSummary, useReceivedStickers } from "@/queries/useStickers";
 import { useMemoThread, useSendMemo } from "@/queries/useMemo";
 import { useAiCreditPublicStatus, useAiFriendPublicSettings } from "@/queries/useAi";
 import { useStudyStatus } from "@/queries/useStudyStatus";
+import { MINI_APP_COPY } from "@/features/miniapps/miniAppCopy";
 import { placePhoneCall } from "@/lib/native/phone";
 import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
@@ -759,11 +760,11 @@ export function ChildHome() {
           <div className="kd-sec-title kd-title">{intl.formatMessage({ id: "child.home.quickActions" })}</div>
           <div className="kd-tiles">
             {studyLearnerEnabled && (
-              <button type="button" className="kd-tile kd-tile--study hy-press" onClick={() => navigate("/study/learn")}>
+              <button type="button" className="kd-tile kd-tile--study hy-press" onClick={() => navigate("/miniapps")}>
                 <img src={asset("mascot/diary.webp")} alt="" />
                 <span>
-                  <span className="kd-tile__title">{intl.formatMessage({ id: "study.child.home.title" })}</span>
-                  <span className="kd-tile__sub">{intl.formatMessage({ id: "study.child.home.subtitle" })}</span>
+                  <span className="kd-tile__title">{MINI_APP_COPY.title}</span>
+                  <span className="kd-tile__sub">{MINI_APP_COPY.homeSubtitle}</span>
                 </span>
               </button>
             )}
