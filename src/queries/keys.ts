@@ -92,4 +92,19 @@ export const qk = {
   adminHeroCarousel: ["admin", "heroCarousel"] as const,
   /** 부모 홈 히어로 캐러셀 표시 개수(운영자 전역 설정). 가족별이 아니라 전역이라 키에 id 가 없다. */
   parentHomeHeroCarousel: ["parentHome", "heroCarousel"] as const,
+
+  // 학습 — 부모/자녀 역할과 정확한 자녀 member를 키에 고정해 캐시가 섞이지 않게 한다.
+  study: {
+    all: ["study"] as const,
+    status: (familyId: string, role: "parent" | "child") =>
+      ["study", "status", familyId, role] as const,
+    children: (familyId: string) => ["study", "children", familyId] as const,
+    overview: (familyId: string, memberId: string) =>
+      ["study", "overview", familyId, memberId] as const,
+    report: (familyId: string, memberId: string, range: "7d" | "30d" | "term") =>
+      ["study", "report", familyId, memberId, range] as const,
+    learner: (familyId: string) => ["study", "learner", familyId] as const,
+    mission: (familyId: string, missionId: string) =>
+      ["study", "mission", familyId, missionId] as const,
+  },
 } as const;
