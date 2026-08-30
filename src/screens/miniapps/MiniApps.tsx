@@ -2,18 +2,20 @@ import { Calculator, ChevronLeft, ChevronRight } from "lucide-react";
 import { Navigate, useNavigate } from "react-router";
 import { useAuth } from "@/auth/AuthContext";
 import { MINI_APP_COPY } from "@/features/miniapps/miniAppCopy";
-import { resolveMathMiniAppDestination } from "@/features/miniapps/miniAppNavigation";
+import { isMiniAppsMarket, resolveMathMiniAppDestination } from "@/features/miniapps/miniAppNavigation";
+import { useLocale } from "@/i18n/useLocale";
 import { asset } from "@/lib/assets";
 import "./mini-apps.css";
 
 export function MiniApps() {
   const auth = useAuth();
+  const { accessCountry } = useLocale();
   const navigate = useNavigate();
   const isChild = auth.role === "child";
   const homePath = isChild ? "/child/home" : "/parent/home";
   const mathPath = auth.role ? resolveMathMiniAppDestination(auth.role) : null;
 
-  if (!mathPath) return <Navigate to={homePath} replace />;
+  if (!mathPath || !isMiniAppsMarket(accessCountry)) return <Navigate to={homePath} replace />;
 
   return (
     <section className="mini-apps-screen" aria-labelledby="mini-apps-title">

@@ -68,6 +68,7 @@ import { openExternal } from "@/lib/native/browser";
 import { ParentHomeHeroCarousel } from "@/components/ParentHomeHeroCarousel";
 import { useParentHomeHeroCarousel } from "@/queries/useParentHomeHero";
 import { useStudyStatus } from "@/queries/useStudyStatus";
+import { isMiniAppsMarket } from "@/features/miniapps/miniAppNavigation";
 import {
   DEFAULT_PARENT_HOME_HERO_SLIDES,
   PARENT_HOME_HERO_SLIDE_CATALOG,
@@ -312,7 +313,7 @@ export function ParentHome() {
   const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
-  const { locale } = useLocale();
+  const { locale, accessCountry } = useLocale();
 
   // ── 실 데이터: 오늘 일정 + 아이 현황(가족·위치) ──
   const [now, setNow] = useState(() => new Date());
@@ -627,15 +628,14 @@ export function ParentHome() {
   // 히어로 캐러셀: 표시 개수는 운영자 전역 설정, 광고 숨김은 구독 여부로 정한다.
   // ⚠️ entitlement.ready 가 false 면 무료 개수로 강등하지 않는다(R9) — resolve 함수가 오늘 한 장만 돌려준다.
   const { controls: heroControls } = useParentHomeHeroCarousel();
-  const studyStatus = useStudyStatus();
-  const studyManagementEnabled = studyStatus.data?.state === "enabled"
-    && studyStatus.data.role === "parent"
-    && studyStatus.data.managementEnabled;
+  // 수학 화면 전환 직후 상태를 바로 쓰도록 미리 불러오되, 한국 미니앱 허브 진입 자체는 막지 않는다.
+  useStudyStatus();
+  const miniAppsAvailable = isMiniAppsMarket(accessCountry);
   const availableHeroSlides = useMemo(
-    () => studyManagementEnabled
+    () => miniAppsAvailable
       ? PARENT_HOME_HERO_SLIDE_CATALOG.filter((slide) => slide.id === "today" || slide.id === "hyeni_study")
       : DEFAULT_PARENT_HOME_HERO_SLIDES,
-    [studyManagementEnabled],
+    [miniAppsAvailable],
   );
   const heroSlides = useMemo(() => resolveParentHomeHeroSlides({
     slides: availableHeroSlides,

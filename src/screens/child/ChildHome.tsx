@@ -15,6 +15,7 @@ import { useMemoThread, useSendMemo } from "@/queries/useMemo";
 import { useAiCreditPublicStatus, useAiFriendPublicSettings } from "@/queries/useAi";
 import { useStudyStatus } from "@/queries/useStudyStatus";
 import { MINI_APP_COPY } from "@/features/miniapps/miniAppCopy";
+import { isMiniAppsMarket } from "@/features/miniapps/miniAppNavigation";
 import { placePhoneCall } from "@/lib/native/phone";
 import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
@@ -78,7 +79,7 @@ const MAP_PATH = "M 292 78 C 250 128 152 112 126 172 C 100 236 224 244 252 306 C
 
 export function ChildHome() {
   const intl = useIntl();
-  const { locale } = useLocale();
+  const { locale, accessCountry } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { accent, setAccent } = useAccent();
@@ -120,10 +121,9 @@ export function ChildHome() {
   const nowMinutes = dateTimeScope.minutesSinceMidnight;
 
   const familyQuery = useMyFamily();
-  const studyStatus = useStudyStatus();
-  const studyLearnerEnabled = studyStatus.data?.state === "enabled"
-    && studyStatus.data.role === "child"
-    && studyStatus.data.learnerEnabled;
+  // 수학 화면 전환 직후 상태를 바로 쓰도록 미리 불러오되, 한국 미니앱 허브 진입 자체는 막지 않는다.
+  useStudyStatus();
+  const miniAppsAvailable = isMiniAppsMarket(accessCountry);
   const eventsQuery = useEvents();
   const placesQuery = useSavedPlaces();
   const family = familyQuery.data;
@@ -759,7 +759,7 @@ export function ChildHome() {
         <section>
           <div className="kd-sec-title kd-title">{intl.formatMessage({ id: "child.home.quickActions" })}</div>
           <div className="kd-tiles">
-            {studyLearnerEnabled && (
+            {miniAppsAvailable && (
               <button type="button" className="kd-tile kd-tile--study hy-press" onClick={() => navigate("/miniapps")}>
                 <img src={asset("mascot/diary.webp")} alt="" />
                 <span>
