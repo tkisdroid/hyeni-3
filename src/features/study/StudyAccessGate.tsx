@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useIntl } from "react-intl";
+import { Navigate } from "react-router";
 import { useMyFamily, useConfirmServiceCountry } from "@/queries/useFamily";
 import { useStudyStatus } from "@/queries/useStudy";
 import { StudyCountryConfirmation } from "./StudyCountryConfirmation";
@@ -9,7 +10,8 @@ import "./study-access.css";
 export function StudyAccessGate({
   children,
   onBack,
-}: Readonly<{ children: ReactNode; onBack?: () => void }>) {
+  deniedPath,
+}: Readonly<{ children: ReactNode; onBack?: () => void; deniedPath: string }>) {
   const intl = useIntl();
   const status = useStudyStatus();
   const family = useMyFamily();
@@ -19,11 +21,13 @@ export function StudyAccessGate({
   if (status.isPending || view.kind === "loading") {
     return <div className="study-access-status" role="status">{intl.formatMessage({ id: "study.access.loading" })}</div>;
   }
-  if (view.kind === "hidden") return null;
+  if (view.kind === "hidden") return <Navigate to={deniedPath} replace />;
   if (view.kind === "enabled") return <>{children}</>;
   if (view.kind === "confirm") {
     const rowVersion = family.data?.serviceCountryRowVersion;
-    if (!family.data?.isPrimaryParent || rowVersion === null || rowVersion === undefined) return null;
+    if (!family.data?.isPrimaryParent || rowVersion === null || rowVersion === undefined) {
+      return <Navigate to={deniedPath} replace />;
+    }
     return (
       <StudyCountryConfirmation
         suggestedCountry={view.inferredCountry}

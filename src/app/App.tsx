@@ -45,6 +45,8 @@ const ChildHome = lazyScreen(() => import("@/screens/child/ChildHome"), "ChildHo
 const StickerBook = lazyScreen(() => import("@/screens/child/StickerBook"), "StickerBook");
 const ChildSos = lazyScreen(() => import("@/screens/child/ChildSos"), "ChildSos");
 const AiFriendChat = lazyScreen(() => import("@/screens/child/AiFriendChat"), "AiFriendChat");
+const ParentStudy = lazyScreen(() => import("@/screens/study/ParentStudy"), "ParentStudy");
+const ChildStudy = lazyScreen(() => import("@/screens/study/ChildStudy"), "ChildStudy");
 const TeacherHome = lazyScreen(() => import("@/screens/teacher/TeacherHome"), "TeacherHome");
 const TeacherStudents = lazyScreen(() => import("@/screens/teacher/TeacherStudents"), "TeacherStudents");
 const TeacherSettings = lazyScreen(() => import("@/screens/teacher/TeacherSettings"), "TeacherSettings");
@@ -167,6 +169,7 @@ const PWA_DRAFT_PROTECTED_ROUTES = new Set([
   "/remote-ring",
   "/child/sos",
   "/child/ai-friend-setup",
+  "/study/learn",
   "/feedback",
   "/supplies",
   "/teacher/notice",
@@ -307,6 +310,7 @@ const router = createHashRouter([
           { path: "remote-audio-audit", element: routeElement(<RemoteAudioAudit />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "remote-ring", element: routeElement(<RemoteRing />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "sos-receive", element: routeElement(<SosReceive />, PARENT_NOTIFICATION_NAMESPACES) },
+          { path: "study", element: routeElement(<ParentStudy />, PARENT_NAMESPACES) },
         ],
       },
 
@@ -320,6 +324,7 @@ const router = createHashRouter([
           { path: "child/settings", element: routeElement(<ChildSettings />, CHILD_NAMESPACES) },
           { path: "child/ai-friend-setup", element: routeElement(<AiFriendSetup />, CHILD_NAMESPACES) },
           { path: "playdate-accept", element: routeElement(<PlaydateAccept />, CHILD_NAMESPACES) },
+          { path: "study/learn", element: routeElement(<ChildStudy />, CHILD_NAMESPACES) },
         ],
       },
 

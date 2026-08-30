@@ -17,12 +17,12 @@ import {
 
 const controls = DEFAULT_PARENT_HOME_HERO_CONTROLS;
 
-test("현재 릴리스 기본 히어로는 혜니캘린더 today 한 장만 활성화한다", () => {
+test("혜니스터디 카탈로그는 외부 URL 없이 앱 내부 Study route만 연다", () => {
   assert.deepEqual(
     PARENT_HOME_HERO_SLIDE_CATALOG,
     [
       { id: "today", kind: "today", route: "/parent/calendar" },
-      { id: "hyeni_study", kind: "promo", externalUrl: "https://hyenistudy.com" },
+      { id: "hyeni_study", kind: "promo", internalPath: "/study" },
       { id: "hyeni_world", kind: "promo", externalUrl: "https://www.youtube.com/@hyeniworld" },
     ],
     "추후 활성화할 전체 카탈로그는 보존해야 합니다",
@@ -38,6 +38,9 @@ test("현재 릴리스 기본 히어로는 혜니캘린더 today 한 장만 활�
   );
   // 현재 릴리스의 today 는 앱 내부 혜니캘린더로 이동한다.
   assert.equal(DEFAULT_PARENT_HOME_HERO_SLIDES[0].route, "/parent/calendar");
+  const study = PARENT_HOME_HERO_SLIDE_CATALOG.find((slide) => slide.id === "hyeni_study");
+  assert.equal(study?.internalPath, "/study");
+  assert.equal("externalUrl" in (study ?? {}), false);
 });
 
 test("운영 설정이 최대 개수와 자동 전환을 요구해도 현재 릴리스는 한 장에서 멈춘다", () => {

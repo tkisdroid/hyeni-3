@@ -21,7 +21,7 @@ export function ChildStudy() {
 
   const goHome = () => navigate("/child/home");
   return (
-    <StudyAccessGate onBack={goHome}>
+    <StudyAccessGate deniedPath="/child/home" onBack={goHome}>
       <div className="child-study-screen">
         <header className="child-study-header">
           <button type="button" onClick={goHome} aria-label={intl.formatMessage({ id: "study.common.back" })}>←</button>

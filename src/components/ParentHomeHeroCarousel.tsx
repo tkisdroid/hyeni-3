@@ -54,6 +54,8 @@ export interface ParentHomeHeroCarouselProps {
   children: React.ReactNode;
   /** 소식 슬라이드를 눌러 외부 링크를 열 때. 호출부가 네이티브/웹을 구분한다. */
   onOpenExternal: (url: string, slideId: string) => void;
+  /** 캘린더 안에 포함된 기능 슬라이드로 이동할 때. */
+  onNavigateInternal: (path: string) => void;
 }
 
 export function ParentHomeHeroCarousel({
@@ -61,6 +63,7 @@ export function ParentHomeHeroCarousel({
   controls,
   children,
   onOpenExternal,
+  onNavigateInternal,
 }: ParentHomeHeroCarouselProps) {
   const intl = useIntl();
   const [index, setIndex] = useState(0);
@@ -219,11 +222,15 @@ export function ParentHomeHeroCarousel({
     const copy = SLIDE_COPY[slide.id];
     if (!copy) return null;
     const url = slide.externalUrl;
+    const path = slide.internalPath;
     return (
       <button
         type="button"
         className="ph-hero ph-hero--promo"
-        onClick={() => { if (url) onOpenExternal(url, slide.id); }}
+        onClick={() => {
+          if (path) onNavigateInternal(path);
+          else if (url) onOpenExternal(url, slide.id);
+        }}
       >
         <span className="ph-hero__mascot">
           <img src={asset(copy.image)} alt="" />
@@ -232,7 +239,9 @@ export function ParentHomeHeroCarousel({
         <div className="ph-hero__title">{intl.formatMessage({ id: copy.title })}</div>
         <div className="ph-hero__live">
           <span className="ph-hero__location-state">{intl.formatMessage({ id: copy.body })}</span>
-          <ExternalLink size={14} strokeWidth={2.2} aria-hidden="true" />
+          {path
+            ? <ChevronRight size={14} strokeWidth={2.2} aria-hidden="true" />
+            : <ExternalLink size={14} strokeWidth={2.2} aria-hidden="true" />}
         </div>
       </button>
     );

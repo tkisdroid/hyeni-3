@@ -13,6 +13,7 @@ import { useSavedPlaces } from "@/queries/useLocation";
 import { useStickerSummary, useReceivedStickers } from "@/queries/useStickers";
 import { useMemoThread, useSendMemo } from "@/queries/useMemo";
 import { useAiCreditPublicStatus, useAiFriendPublicSettings } from "@/queries/useAi";
+import { useStudyStatus } from "@/queries/useStudy";
 import { placePhoneCall } from "@/lib/native/phone";
 import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
@@ -118,6 +119,10 @@ export function ChildHome() {
   const nowMinutes = dateTimeScope.minutesSinceMidnight;
 
   const familyQuery = useMyFamily();
+  const studyStatus = useStudyStatus();
+  const studyLearnerEnabled = studyStatus.data?.state === "enabled"
+    && studyStatus.data.role === "child"
+    && studyStatus.data.learnerEnabled;
   const eventsQuery = useEvents();
   const placesQuery = useSavedPlaces();
   const family = familyQuery.data;
@@ -753,6 +758,16 @@ export function ChildHome() {
         <section>
           <div className="kd-sec-title kd-title">{intl.formatMessage({ id: "child.home.quickActions" })}</div>
           <div className="kd-tiles">
+            {studyLearnerEnabled && (
+              <button type="button" className="kd-tile hy-press" onClick={() => navigate("/study/learn")}>
+                <img src={asset("mascot/diary.webp")} alt="" />
+                <span>
+                  <span className="kd-tile__title">{intl.formatMessage({ id: "study.child.home.title" })}</span>
+                  <span className="kd-tile__sub">{intl.formatMessage({ id: "study.child.home.subtitle" })}</span>
+                </span>
+              </button>
+            )}
+
             <button type="button" className="kd-tile hy-press" onClick={() => navigate("/child/memo")}>
               {unreadCount > 0 && <span className="kd-tile__badge">{unreadCount}</span>}
               <img src={asset("ui/chat-heart.webp")} alt="" />

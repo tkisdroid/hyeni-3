@@ -67,7 +67,12 @@ import {
 import { openExternal } from "@/lib/native/browser";
 import { ParentHomeHeroCarousel } from "@/components/ParentHomeHeroCarousel";
 import { useParentHomeHeroCarousel } from "@/queries/useParentHomeHero";
-import { resolveParentHomeHeroSlides } from "@/transform/parentHomeHeroCarousel";
+import { useStudyStatus } from "@/queries/useStudy";
+import {
+  DEFAULT_PARENT_HOME_HERO_SLIDES,
+  PARENT_HOME_HERO_SLIDE_CATALOG,
+  resolveParentHomeHeroSlides,
+} from "@/transform/parentHomeHeroCarousel";
 import "./ParentHome.css";
 import "./ParentHome.redesign.css";
 
@@ -622,11 +627,22 @@ export function ParentHome() {
   // 히어로 캐러셀: 표시 개수는 운영자 전역 설정, 광고 숨김은 구독 여부로 정한다.
   // ⚠️ entitlement.ready 가 false 면 무료 개수로 강등하지 않는다(R9) — resolve 함수가 오늘 한 장만 돌려준다.
   const { controls: heroControls } = useParentHomeHeroCarousel();
+  const studyStatus = useStudyStatus();
+  const studyManagementEnabled = studyStatus.data?.state === "enabled"
+    && studyStatus.data.role === "parent"
+    && studyStatus.data.managementEnabled;
+  const availableHeroSlides = useMemo(
+    () => studyManagementEnabled
+      ? PARENT_HOME_HERO_SLIDE_CATALOG.filter((slide) => slide.id === "today" || slide.id === "hyeni_study")
+      : DEFAULT_PARENT_HOME_HERO_SLIDES,
+    [studyManagementEnabled],
+  );
   const heroSlides = useMemo(() => resolveParentHomeHeroSlides({
+    slides: availableHeroSlides,
     controls: heroControls,
     entitlementReady: entitlement.ready,
     isPremium: entitlement.isPremium,
-  }), [heroControls, entitlement.ready, entitlement.isPremium]);
+  }), [availableHeroSlides, heroControls, entitlement.ready, entitlement.isPremium]);
   const openHeroLink = useCallback((url: string) => {
     // 외부 링크는 앱 안에서 열지 않는다(네이티브는 기본 브라우저, 웹은 새 탭).
     void openExternal(url);
@@ -1020,7 +1036,12 @@ export function ParentHome() {
 
       <div className="hy-content">
         {/* 히어로: 오늘 + 소식 캐러셀. 첫 장은 항상 오늘이고 광고 성격 슬라이드는 구독 가족에게 감춘다. */}
-        <ParentHomeHeroCarousel slides={heroSlides} controls={heroControls} onOpenExternal={openHeroLink}>
+        <ParentHomeHeroCarousel
+          slides={heroSlides}
+          controls={heroControls}
+          onOpenExternal={openHeroLink}
+          onNavigateInternal={(path) => navigate(path)}
+        >
         <button type="button" className="ph-hero" onClick={() => navigate("/parent/calendar")}>
           <span className="ph-hero__sheen" />
           <span className="ph-hero__mascot">

@@ -24,10 +24,12 @@ export interface ParentHomeHeroSlide {
   /** 안정 식별자. 분석·운영 설정에서 이 값을 쓴다(문구가 바뀌어도 유지). */
   id: string;
   kind: ParentHomeHeroSlideKind;
-  /** promo·ad 가 열 외부 링크. today 는 앱 내부로 이동하므로 없다. */
+  /** 외부 소식 promo·ad 가 열 링크. */
   externalUrl?: string;
-  /** today 가 이동할 앱 내부 경로. */
+  /** today 와 앱 내부 기능 promo 가 이동할 경로. */
   route?: string;
+  /** 앱 내부 기능 promo 가 이동할 경로. 외부 URL 과 함께 둘 수 없다. */
+  internalPath?: string;
 }
 
 /** 히어로에 둘 수 있는 슬라이드 상한. 운영자 입력 검증에도 쓴다. */
@@ -39,7 +41,7 @@ export const MAX_PARENT_HOME_HERO_SLIDES = 6;
  */
 export const PARENT_HOME_HERO_SLIDE_CATALOG: readonly ParentHomeHeroSlide[] = Object.freeze([
   { id: "today", kind: "today", route: "/parent/calendar" },
-  { id: "hyeni_study", kind: "promo", externalUrl: "https://hyenistudy.com" },
+  { id: "hyeni_study", kind: "promo", internalPath: "/study" },
   { id: "hyeni_world", kind: "promo", externalUrl: "https://www.youtube.com/@hyeniworld" },
 ]);
 

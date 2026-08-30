@@ -49,10 +49,10 @@ export function ParentStudy() {
   };
 
   return (
-    <StudyAccessGate onBack={() => navigate("/home")}>
+    <StudyAccessGate deniedPath="/parent/home" onBack={() => navigate("/parent/home")}>
       <div className="parent-study-screen">
         <header className="parent-study-header">
-          <button type="button" className="study-back-button" onClick={() => navigate("/home")} aria-label={intl.formatMessage({ id: "study.common.back" })}>←</button>
+          <button type="button" className="study-back-button" onClick={() => navigate("/parent/home")} aria-label={intl.formatMessage({ id: "study.common.back" })}>←</button>
           <div><h1>{intl.formatMessage({ id: "study.parent.title" })}</h1><p>{intl.formatMessage({ id: "study.parent.subtitle" })}</p></div>
         </header>
 
