@@ -436,7 +436,7 @@ async function checkAndRecordAttempt(db: D1Database, userId: string): Promise<bo
 }
 
 const MEMBER_COLS =
-  "id, user_id, role, name, phone, gender, emoji, child_order, color_hex, birthdate, photo_url, device_label, device_health";
+  "id, user_id, role, name, phone, gender, emoji, child_order, color_hex, birthdate, learning_grade_row_version, photo_url, device_label, device_health";
 
 function hydrateMember(m: Record<string, unknown>): Record<string, unknown> {
   return { ...m, device_health: parseJson(m.device_health) };

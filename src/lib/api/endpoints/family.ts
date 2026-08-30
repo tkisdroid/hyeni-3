@@ -90,6 +90,8 @@ export interface FamilyMember {
   child_order?: number | null;
   color_hex?: string | null;
   birthdate?: string | null;
+  /** Study 학년 optimistic concurrency version. */
+  learning_grade_row_version?: number | null;
   device_label?: string | null;
   /** 아이 기기 자기-리포트 상태(부모 안전 지표원). 미리포트면 없음/null. */
   device_health?: DeviceHealth | null;

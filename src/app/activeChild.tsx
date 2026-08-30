@@ -18,6 +18,8 @@ interface ActiveChildValue {
   setActiveChildId: (memberId: string) => void;
   /** 검증된 활성 아이 멤버(저장값이 무효면 첫 아이로 폴백). */
   activeChild: FamilyMember | null;
+  /** 저장된 선택이 현재 활성 자녀와 정확히 일치할 때만 값이 있다(Study 등 fallback 금지 화면용). */
+  selectedActiveChild: FamilyMember | null;
   /** role=child 멤버 목록(정렬: child_order → 원순서). */
   childMembers: FamilyMember[];
   /**
@@ -71,18 +73,23 @@ export function ActiveChildProvider({ children }: { children: ReactNode }) {
     () => childMembers.find((m) => m.id === storedId) ?? childMembers[0] ?? null,
     [childMembers, storedId],
   );
+  const selectedActiveChild = useMemo(
+    () => childMembers.find((member) => member.id === storedId) ?? null,
+    [childMembers, storedId],
+  );
 
   const value = useMemo<ActiveChildValue>(
     () => ({
       activeChildId: activeChild?.id ?? null,
       setActiveChildId,
       activeChild,
+      selectedActiveChild,
       childMembers,
       familyLoading,
     }),
     // setActiveChildId 는 familyId 클로저만 가진 안정 함수 취급(재생성 무해)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeChild, childMembers, familyId, familyLoading],
+    [activeChild, selectedActiveChild, childMembers, familyId, familyLoading],
   );
 
   return <ActiveChildContext.Provider value={value}>{children}</ActiveChildContext.Provider>;

@@ -157,7 +157,7 @@ export type SubmitStudyAnswerCommand = Readonly<{
 
 export type UpdateStudyGradeCommand = Readonly<{
   memberId: string;
-  grade: StudyGrade;
+  grade: StudyGrade | null;
   rowVersion: number;
   requestId: string;
 }>;

@@ -136,6 +136,7 @@ export function useUpdateStudyGrade() {
     mutationFn: (command: UpdateStudyGradeCommand) => updateStudyGrade(command),
     onSuccess: async (result) => {
       await Promise.all([
+        client.invalidateQueries({ queryKey: qk.family(familyId), exact: true }),
         client.invalidateQueries({ queryKey: qk.study.children(keyFamilyId), exact: true }),
         client.invalidateQueries({ queryKey: qk.study.overview(keyFamilyId, result.memberId), exact: true }),
         client.invalidateQueries({ queryKey: ["study", "report", keyFamilyId, result.memberId] }),

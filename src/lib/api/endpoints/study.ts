@@ -513,7 +513,11 @@ export async function updateStudyGrade(command: UpdateStudyGradeCommand): Promis
   const raw = await apiRequest<unknown>(`/api/study/children/${encodeURIComponent(id(command.memberId))}/grade`, {
     method: "PUT",
     headers: { "Idempotency-Key": requestId(command.requestId) },
-    body: JSON.stringify({ grade: grade(command.grade), rowVersion: command.rowVersion, requestId: command.requestId }),
+    body: JSON.stringify({
+      grade: command.grade === null ? null : grade(command.grade),
+      rowVersion: command.rowVersion,
+      requestId: command.requestId,
+    }),
   });
   const record = object(raw);
   exact(record, ["memberId", "grade", "rowVersion"]);
