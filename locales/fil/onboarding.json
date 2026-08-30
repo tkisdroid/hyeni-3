@@ -158,5 +158,20 @@
   "onboarding.pairing.parent.title": "Sumali bilang co-guardian",
   "onboarding.pairing.parent.description": "Gamitin ang QR code o connection code mula sa guardian na nag-imbita sa iyo.",
   "onboarding.pairing.parent.recovery": "Pagkatapos sumali, maaari ninyong sabay na pamahalaan ang family calendar at safety information ng bata gamit ang guardian access.",
-  "onboarding.oauth.returnToApp": "Hindi matatapos ang pag-login sa browser. Pakisubukang muli ang social login sa Kalendaryo Hyeni app."
+  "onboarding.oauth.returnToApp": "Hindi matatapos ang pag-login sa browser. Pakisubukang muli ang social login sa Kalendaryo Hyeni app.",
+  "study.access.loading": "Tinitingnan kung magagamit ang pag-aaral…",
+  "study.common.back": "Bumalik",
+  "study.common.no": "Hindi",
+  "study.common.yes": "Oo",
+  "study.country.confirm": "Kumpirmahin ang bansang ito",
+  "study.country.confirmed": "Nakumpirma",
+  "study.country.confirming": "Kinukumpirma…",
+  "study.country.description": "Natukoy namin ang {country} bilang bansang ginagamit mo para sa serbisyo sa pag-aaral. Pakikumpirma kung tama ito.",
+  "study.country.inputHelp": "Ilagay ang dalawang-titik na country code. KR ang South Korea.",
+  "study.country.inputLabel": "Bansa ng serbisyo sa pag-aaral",
+  "study.country.title": "Kumpirmahin ang bansa para sa pag-aaral",
+  "study.country.unknown": "Hindi matukoy",
+  "study.unavailable.back": "Bumalik sa Kalendaryo",
+  "study.unavailable.retry": "Subukan ulit",
+  "study.unavailable.title": "Hindi magagamit ang pag-aaral sa ngayon."
 }

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useIntl } from "react-intl";
 import { Navigate } from "react-router";
 import { useMyFamily, useConfirmServiceCountry } from "@/queries/useFamily";
-import { useStudyStatus } from "@/queries/useStudy";
+import { useStudyStatus } from "@/queries/useStudyStatus";
 import { StudyCountryConfirmation } from "./StudyCountryConfirmation";
 import { resolveStudyAccessView } from "./studyAccessModel";
 import "./study-access.css";

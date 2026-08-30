@@ -158,5 +158,20 @@
   "onboarding.pairing.parent.title": "Tham gia với vai trò người giám hộ chung",
   "onboarding.pairing.parent.description": "Hãy dùng mã QR hoặc mã kết nối từ người giám hộ đã mời bạn.",
   "onboarding.pairing.parent.recovery": "Sau khi tham gia, bạn có thể cùng quản lý lịch gia đình và thông tin an toàn của trẻ với quyền người giám hộ.",
-  "onboarding.oauth.returnToApp": "Không thể hoàn tất đăng nhập trên trình duyệt. Vui lòng thử đăng nhập mạng xã hội lại trong ứng dụng Lịch Hyeni."
+  "onboarding.oauth.returnToApp": "Không thể hoàn tất đăng nhập trên trình duyệt. Vui lòng thử đăng nhập mạng xã hội lại trong ứng dụng Lịch Hyeni.",
+  "study.access.loading": "Tôi đang kiểm tra tính năng học tập.",
+  "study.common.back": "< Quay lại",
+  "study.common.no": "Không co",
+  "study.common.yes": "CÃ³",
+  "study.country.confirm": "Xác nhận với quốc gia này",
+  "study.country.confirmed": "Tôi hiểu rồi",
+  "study.country.confirming": "Đang kiểm tra...",
+  "study.country.description": "Quốc gia nơi bạn sẽ sử dụng dịch vụ học tập đã được xác định là {country}. Vui lòng đảm bảo bạn đang ở đúng quốc gia.",
+  "study.country.inputHelp": "Vui lòng nhập mã quốc gia gồm hai chữ cái bằng tiếng Anh. Hàn Quốc là KR.",
+  "study.country.inputLabel": "Các quốc gia có Dịch vụ học tập",
+  "study.country.title": "Vui lòng xác nhận quốc gia của bạn",
+  "study.country.unknown": "Chưa xác nhận",
+  "study.unavailable.back": "Quay lại lịch",
+  "study.unavailable.retry": "Thử lại",
+  "study.unavailable.title": "Tôi không thể tải việc học ngay bây giờ."
 }

@@ -158,7 +158,22 @@ const messages = {
   "onboarding.validation.passwordMismatch": "Konfirmasi kata sandi tidak cocok.",
   "onboarding.validation.passwordRequired": "Silakan masukkan kata sandi Anda.",
   "onboarding.validation.passwordWeak": "Masukkan kata sandi minimal 6 karakter.",
-  "onboarding.validation.phoneInvalid": "Masukkan nomor ponsel 11 digit yang diawali 010."
+  "onboarding.validation.phoneInvalid": "Masukkan nomor ponsel 11 digit yang diawali 010.",
+  "study.access.loading": "Saya memeriksa fitur pembelajaran.",
+  "study.common.back": "Kembali",
+  "study.common.no": "Tidak.",
+  "study.common.yes": "ija",
+  "study.country.confirm": "Konfirmasikan dengan negara ini",
+  "study.country.confirmed": "Saya mengerti",
+  "study.country.confirming": "Memeriksa…",
+  "study.country.description": "Negara tempat Anda akan menggunakan layanan pembelajaran telah diidentifikasi sebagai {country}. Pastikan Anda berada di negara yang benar.",
+  "study.country.inputHelp": "Masukkan kode negara dua huruf bahasa Inggris. Korea Selatan adalah KR.",
+  "study.country.inputLabel": "Negara dengan Layanan Pembelajaran",
+  "study.country.title": "Konfirmasikan negara Anda",
+  "study.country.unknown": "Belum dikonfirmasi",
+  "study.unavailable.back": "Kembali ke kalender",
+  "study.unavailable.retry": "Coba lagi",
+  "study.unavailable.title": "Saya tidak dapat memuat pembelajaran saat ini."
 } as const;
 
 export default messages;

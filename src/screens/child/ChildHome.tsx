@@ -13,7 +13,7 @@ import { useSavedPlaces } from "@/queries/useLocation";
 import { useStickerSummary, useReceivedStickers } from "@/queries/useStickers";
 import { useMemoThread, useSendMemo } from "@/queries/useMemo";
 import { useAiCreditPublicStatus, useAiFriendPublicSettings } from "@/queries/useAi";
-import { useStudyStatus } from "@/queries/useStudy";
+import { useStudyStatus } from "@/queries/useStudyStatus";
 import { placePhoneCall } from "@/lib/native/phone";
 import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";

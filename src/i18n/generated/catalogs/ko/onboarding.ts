@@ -158,7 +158,22 @@ const messages = {
   "onboarding.validation.passwordMismatch": "비밀번호 확인이 일치하지 않아요.",
   "onboarding.validation.passwordRequired": "비밀번호를 입력해 주세요.",
   "onboarding.validation.passwordWeak": "비밀번호는 6자 이상 입력해 주세요.",
-  "onboarding.validation.phoneInvalid": "010으로 시작하는 휴대폰 번호 11자리를 입력해 주세요."
+  "onboarding.validation.phoneInvalid": "010으로 시작하는 휴대폰 번호 11자리를 입력해 주세요.",
+  "study.access.loading": "학습 기능을 확인하고 있어요.",
+  "study.common.back": "뒤로",
+  "study.common.no": "아니요",
+  "study.common.yes": "예",
+  "study.country.confirm": "이 국가로 확인",
+  "study.country.confirmed": "확인했어요",
+  "study.country.confirming": "확인하는 중…",
+  "study.country.description": "학습 서비스를 이용할 국가가 {country}(으)로 확인됐어요. 실제 이용 국가가 맞는지 확인해 주세요.",
+  "study.country.inputHelp": "영문 두 글자 국가 코드를 입력해 주세요. 한국은 KR이에요.",
+  "study.country.inputLabel": "학습 서비스 이용 국가",
+  "study.country.title": "학습 서비스 이용 국가를 확인해 주세요",
+  "study.country.unknown": "확인되지 않음",
+  "study.unavailable.back": "캘린더로 돌아가기",
+  "study.unavailable.retry": "다시 시도",
+  "study.unavailable.title": "지금은 학습 기능을 불러올 수 없어요."
 } as const;
 
 export default messages;

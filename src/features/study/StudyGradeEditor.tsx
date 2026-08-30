@@ -6,11 +6,12 @@ type Props = Readonly<{
   grade: StudyResolvedGrade | null;
   rowVersion: number | null;
   busy: boolean;
-  errorCode?: string | null;
+  conflict?: boolean;
+  saveFailed?: boolean;
   onChange: (grade: StudyGrade | null) => void | Promise<void>;
 }>;
 
-export function StudyGradeEditor({ grade, rowVersion, busy, errorCode = null, onChange }: Props) {
+export function StudyGradeEditor({ grade, rowVersion, busy, conflict = false, saveFailed = false, onChange }: Props) {
   const intl = useIntl();
   const [selected, setSelected] = useState<StudyGrade>(grade?.grade ?? 3);
   useEffect(() => setSelected(grade?.grade ?? 3), [grade?.grade]);
@@ -42,7 +43,8 @@ export function StudyGradeEditor({ grade, rowVersion, busy, errorCode = null, on
       </div>
       <p className="study-grade-note">{intl.formatMessage({ id: "study.parent.grade.nextMission" })}</p>
       {rowVersion === null && <p role="alert">{intl.formatMessage({ id: "study.parent.grade.versionUnavailable" })}</p>}
-      {errorCode && <p role="alert">{intl.formatMessage({ id: errorCode === "grade_changed" ? "study.parent.grade.changed" : "study.parent.grade.error" })}</p>}
+      {conflict && <p role="alert">{intl.formatMessage({ id: "study.parent.grade.changed" })}</p>}
+      {saveFailed && <p role="alert">{intl.formatMessage({ id: "study.parent.grade.error" })}</p>}
     </section>
   );
 }

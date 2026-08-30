@@ -158,5 +158,20 @@
   "onboarding.pairing.parent.title": "Join as a co-guardian",
   "onboarding.pairing.parent.description": "Use the QR code or connection code from the guardian who invited you.",
   "onboarding.pairing.parent.recovery": "After joining, you can manage the same family calendar and child safety information as a guardian.",
-  "onboarding.oauth.returnToApp": "Login cannot be completed in the browser. Please try social sign-in again in the Hyeni Calendar app."
+  "onboarding.oauth.returnToApp": "Login cannot be completed in the browser. Please try social sign-in again in the Hyeni Calendar app.",
+  "study.access.loading": "Checking learning availability…",
+  "study.common.back": "Back",
+  "study.common.no": "No",
+  "study.common.yes": "Yes",
+  "study.country.confirm": "Confirm this country",
+  "study.country.confirmed": "Confirmed",
+  "study.country.confirming": "Confirming…",
+  "study.country.description": "We detected {country} as the country where you use the learning service. Please confirm that it is correct.",
+  "study.country.inputHelp": "Enter the two-letter country code. South Korea is KR.",
+  "study.country.inputLabel": "Learning service country",
+  "study.country.title": "Confirm your learning service country",
+  "study.country.unknown": "Unknown",
+  "study.unavailable.back": "Back to Calendar",
+  "study.unavailable.retry": "Try again",
+  "study.unavailable.title": "Learning is unavailable right now."
 }

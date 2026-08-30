@@ -8,6 +8,8 @@ test("부모·아이 Study route는 각 역할 가드 아래 내부 경로로만
   assert.match(source, /lazyScreen\(\(\) => import\("@\/screens\/study\/ChildStudy"\), "ChildStudy"\)/);
   assert.match(source, /path: "study", element: routeElement\(<ParentStudy/);
   assert.match(source, /path: "study\/learn", element: routeElement\(<ChildStudy/);
+  assert.match(source, /PARENT_STUDY_NAMESPACES = \["core", "onboarding", "parent", "shared"\]/);
+  assert.match(source, /CHILD_STUDY_NAMESPACES = \["core", "onboarding", "child", "shared"\]/);
   assert.match(source, /PWA_DRAFT_PROTECTED_ROUTES[\s\S]*"\/study\/learn"/);
 });
 

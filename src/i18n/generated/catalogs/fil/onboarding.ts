@@ -158,7 +158,22 @@ const messages = {
   "onboarding.validation.passwordMismatch": "Hindi tugma ang pagkumpirma ng password.",
   "onboarding.validation.passwordRequired": "Mangyaring ipasok ang iyong password.",
   "onboarding.validation.passwordWeak": "Maglagay ng password na hindi bababa sa 6 character.",
-  "onboarding.validation.phoneInvalid": "Maglagay ng 11-digit na mobile number na nagsisimula sa 010."
+  "onboarding.validation.phoneInvalid": "Maglagay ng 11-digit na mobile number na nagsisimula sa 010.",
+  "study.access.loading": "Tinitingnan kung magagamit ang pag-aaral…",
+  "study.common.back": "Bumalik",
+  "study.common.no": "Hindi",
+  "study.common.yes": "Oo",
+  "study.country.confirm": "Kumpirmahin ang bansang ito",
+  "study.country.confirmed": "Nakumpirma",
+  "study.country.confirming": "Kinukumpirma…",
+  "study.country.description": "Natukoy namin ang {country} bilang bansang ginagamit mo para sa serbisyo sa pag-aaral. Pakikumpirma kung tama ito.",
+  "study.country.inputHelp": "Ilagay ang dalawang-titik na country code. KR ang South Korea.",
+  "study.country.inputLabel": "Bansa ng serbisyo sa pag-aaral",
+  "study.country.title": "Kumpirmahin ang bansa para sa pag-aaral",
+  "study.country.unknown": "Hindi matukoy",
+  "study.unavailable.back": "Bumalik sa Kalendaryo",
+  "study.unavailable.retry": "Subukan ulit",
+  "study.unavailable.title": "Hindi magagamit ang pag-aaral sa ngayon."
 } as const;
 
 export default messages;

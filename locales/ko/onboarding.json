@@ -158,5 +158,20 @@
   "onboarding.pairing.parent.title": "공동 보호자로 가족에 연결",
   "onboarding.pairing.parent.description": "초대한 보호자에게 받은 QR 또는 연결 코드를 확인해 주세요.",
   "onboarding.pairing.parent.recovery": "연결 후에는 같은 가족 일정과 아이 안전 정보를 보호자 권한으로 함께 관리해요.",
-  "onboarding.oauth.returnToApp": "브라우저에서는 로그인을 마칠 수 없어요. 혜니캘린더 앱에서 소셜 로그인을 다시 시도해 주세요."
+  "onboarding.oauth.returnToApp": "브라우저에서는 로그인을 마칠 수 없어요. 혜니캘린더 앱에서 소셜 로그인을 다시 시도해 주세요.",
+  "study.access.loading": "학습 기능을 확인하고 있어요.",
+  "study.common.back": "뒤로",
+  "study.common.no": "아니요",
+  "study.common.yes": "예",
+  "study.country.confirm": "이 국가로 확인",
+  "study.country.confirmed": "확인했어요",
+  "study.country.confirming": "확인하는 중…",
+  "study.country.description": "학습 서비스를 이용할 국가가 {country}(으)로 확인됐어요. 실제 이용 국가가 맞는지 확인해 주세요.",
+  "study.country.inputHelp": "영문 두 글자 국가 코드를 입력해 주세요. 한국은 KR이에요.",
+  "study.country.inputLabel": "학습 서비스 이용 국가",
+  "study.country.title": "학습 서비스 이용 국가를 확인해 주세요",
+  "study.country.unknown": "확인되지 않음",
+  "study.unavailable.back": "캘린더로 돌아가기",
+  "study.unavailable.retry": "다시 시도",
+  "study.unavailable.title": "지금은 학습 기능을 불러올 수 없어요."
 }

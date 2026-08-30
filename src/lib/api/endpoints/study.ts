@@ -16,11 +16,12 @@ import {
   type StudyRange,
   type StudyReportDto,
   type StudyResolvedGrade,
-  type StudyStatusDto,
   type StudySubmissionFeedback,
   type SubmitStudyAnswerCommand,
   type UpdateStudyGradeCommand,
 } from "@/features/study/contracts";
+
+export { fetchStudyStatus, parseStudyStatus } from "./studyStatus";
 
 const GRADES = new Set([3, 4, 5, 6]);
 const RANGES = new Set(["7d", "30d", "term"]);
@@ -301,34 +302,6 @@ function feedback(value: unknown): StudySubmissionFeedback {
   }
 }
 
-export function parseStudyStatus(value: unknown): StudyStatusDto {
-  const record = object(value);
-  if (record.state === "enabled") {
-    exact(record, ["state", "market", "role", "managementEnabled", "learnerEnabled"]);
-    if (record.market !== "KR" || (record.role !== "parent" && record.role !== "child")) invalid();
-    return {
-      state: "enabled",
-      market: "KR",
-      role: record.role,
-      managementEnabled: bool(record.managementEnabled),
-      learnerEnabled: bool(record.learnerEnabled),
-    };
-  }
-  if (record.state === "not_confirmed") {
-    exact(record, ["state", "inferredCountry", "canConfirm"]);
-    return {
-      state: "not_confirmed",
-      inferredCountry: record.inferredCountry === null ? null : string(record.inferredCountry, 2),
-      canConfirm: bool(record.canConfirm),
-    };
-  }
-  if (["outside_market", "feature_disabled", "unavailable", "no_family"].includes(String(record.state))) {
-    exact(record, ["state"]);
-    return { state: record.state as "outside_market" | "feature_disabled" | "unavailable" | "no_family" };
-  }
-  invalid();
-}
-
 export function parseStudyChildren(value: unknown): StudyChildrenOverviewDto {
   const record = object(value);
   exact(record, ["apiVersion", "children"]);
@@ -452,10 +425,6 @@ export function parseStudyAttempt(value: unknown): StudyAttemptResultDto {
 function requestId(value: string): string {
   if (!IDEMPOTENCY_KEY.test(value)) throw new ApiError("invalid_request", 400);
   return value;
-}
-
-export async function fetchStudyStatus(): Promise<StudyStatusDto> {
-  return parseStudyStatus(await apiGet<unknown>("/api/study/status"));
 }
 
 export async function fetchStudyChildren(): Promise<StudyChildrenOverviewDto> {

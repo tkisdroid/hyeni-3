@@ -25426,7 +25426,7 @@
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "히어로 소식 슬라이드(혜니스터디) 설명 — 외부 링크로 이동함을 밝힌다"
+    "description": "히어로 소식 슬라이드(혜니스터디) 설명 — 캘린더 내부 학습 관리 화면으로 이동함을 밝힌다"
   },
   "parent.home.heroSlide.world.eyebrow": {
     "namespace": "parent",
@@ -25448,5 +25448,818 @@
     "qualityTier": "B",
     "variables": {},
     "description": "히어로 소식 슬라이드(혜니월드 유튜브) 설명 — 외부 링크로 이동함을 밝힌다"
+  },
+  "study.access.loading": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.access.loading"
+  },
+  "study.common.back": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.common.back"
+  },
+  "study.common.no": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.common.no"
+  },
+  "study.common.yes": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.common.yes"
+  },
+  "study.country.confirm": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.country.confirm"
+  },
+  "study.country.confirmed": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.country.confirmed"
+  },
+  "study.country.confirming": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.country.confirming"
+  },
+  "study.country.description": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {
+      "country": "string"
+    },
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.country.description"
+  },
+  "study.country.inputHelp": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.country.inputHelp"
+  },
+  "study.country.inputLabel": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.country.inputLabel"
+  },
+  "study.country.title": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.country.title"
+  },
+  "study.country.unknown": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.country.unknown"
+  },
+  "study.unavailable.back": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.unavailable.back"
+  },
+  "study.unavailable.retry": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.unavailable.retry"
+  },
+  "study.unavailable.title": {
+    "namespace": "onboarding",
+    "audience": "family",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study onboarding 화면 문구: study.unavailable.title"
+  },
+  "study.parent.childFallback": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.childFallback"
+  },
+  "study.parent.chooseChild": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.chooseChild"
+  },
+  "study.parent.currentChild": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.currentChild"
+  },
+  "study.parent.editBirthdate": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.editBirthdate"
+  },
+  "study.parent.grade.birthSource": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "year": "number",
+      "grade": "number"
+    },
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.birthSource"
+  },
+  "study.parent.grade.changed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.changed"
+  },
+  "study.parent.grade.error": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.error"
+  },
+  "study.parent.grade.guardianSource": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "grade": "number",
+      "year": "number"
+    },
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.guardianSource"
+  },
+  "study.parent.grade.nextMission": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.nextMission"
+  },
+  "study.parent.grade.option": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "grade": "number"
+    },
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.option"
+  },
+  "study.parent.grade.reset": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.reset"
+  },
+  "study.parent.grade.save": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.save"
+  },
+  "study.parent.grade.saving": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.saving"
+  },
+  "study.parent.grade.select": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.select"
+  },
+  "study.parent.grade.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.title"
+  },
+  "study.parent.grade.unavailable": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.unavailable"
+  },
+  "study.parent.grade.versionUnavailable": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.grade.versionUnavailable"
+  },
+  "study.parent.invalidChild": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.invalidChild"
+  },
+  "study.parent.loadingFamily": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.loadingFamily"
+  },
+  "study.parent.loadingReport": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.loadingReport"
+  },
+  "study.parent.range": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.range"
+  },
+  "study.parent.range30d": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.range30d"
+  },
+  "study.parent.range7d": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.range7d"
+  },
+  "study.parent.rangeTerm": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.rangeTerm"
+  },
+  "study.parent.report.empty": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.report.empty"
+  },
+  "study.parent.report.masteryLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "concept": "string",
+      "mastery": "number"
+    },
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.report.masteryLabel"
+  },
+  "study.parent.report.noSessions": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.report.noSessions"
+  },
+  "study.parent.report.problemCount": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.report.problemCount"
+  },
+  "study.parent.report.recent": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.report.recent"
+  },
+  "study.parent.report.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.report.title"
+  },
+  "study.parent.reportError": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.reportError"
+  },
+  "study.parent.subtitle": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.subtitle"
+  },
+  "study.parent.summary.accuracy": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.summary.accuracy"
+  },
+  "study.parent.summary.completed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.summary.completed"
+  },
+  "study.parent.summary.lastStudied": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "date": "string"
+    },
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.summary.lastStudied"
+  },
+  "study.parent.summary.noHistory": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.summary.noHistory"
+  },
+  "study.parent.summary.reviewDue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.summary.reviewDue"
+  },
+  "study.parent.summary.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.summary.title"
+  },
+  "study.parent.summary.today": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.summary.today"
+  },
+  "study.parent.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study parent 화면 문구: study.parent.title"
+  },
+  "study.answer.single_choice.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.single_choice.label"
+  },
+  "study.answer.multiple_choice.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.multiple_choice.label"
+  },
+  "study.answer.integer_input.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.integer_input.label"
+  },
+  "study.answer.decimal_input.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.decimal_input.label"
+  },
+  "study.answer.fraction_input.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.fraction_input.label"
+  },
+  "study.answer.measurement_input.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.measurement_input.label"
+  },
+  "study.answer.ordering.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.ordering.label"
+  },
+  "study.answer.coordinate_input.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.coordinate_input.label"
+  },
+  "study.answer.true_false.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.true_false.label"
+  },
+  "study.answer.text_input.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.text_input.label"
+  },
+  "study.answer.self_check.label": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.self_check.label"
+  },
+  "study.answer.denominator": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.denominator"
+  },
+  "study.answer.false": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.false"
+  },
+  "study.answer.moveDown": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "item": "string"
+    },
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.moveDown"
+  },
+  "study.answer.moveUp": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "item": "string"
+    },
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.moveUp"
+  },
+  "study.answer.numerator": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.numerator"
+  },
+  "study.answer.selected": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.selected"
+  },
+  "study.answer.submit": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.submit"
+  },
+  "study.answer.submitting": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.submitting"
+  },
+  "study.answer.true": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.true"
+  },
+  "study.answer.unit": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.answer.unit"
+  },
+  "study.child.askGuardian": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.askGuardian"
+  },
+  "study.child.complete.home": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.complete.home"
+  },
+  "study.child.complete.saved": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.complete.saved"
+  },
+  "study.child.complete.summary": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.complete.summary"
+  },
+  "study.child.complete.title": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.complete.title"
+  },
+  "study.child.error.content": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.error.content"
+  },
+  "study.child.error.session": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.error.session"
+  },
+  "study.child.gradeHelp": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.gradeHelp"
+  },
+  "study.child.gradeLabel": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "grade": "number"
+    },
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.gradeLabel"
+  },
+  "study.child.home.subtitle": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.home.subtitle"
+  },
+  "study.child.home.title": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.home.title"
+  },
+  "study.child.loadError": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.loadError"
+  },
+  "study.child.loading": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.loading"
+  },
+  "study.child.loadingMission": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.loadingMission"
+  },
+  "study.child.missionError": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.missionError"
+  },
+  "study.child.progress": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "total": "number",
+      "current": "number"
+    },
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.progress"
+  },
+  "study.child.progressLabel": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "total": "number",
+      "current": "number"
+    },
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.progressLabel"
+  },
+  "study.child.retry.sameAnswer": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.retry.sameAnswer"
+  },
+  "study.child.start.button": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.start.button"
+  },
+  "study.child.start.description": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.start.description"
+  },
+  "study.child.start.error": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.start.error"
+  },
+  "study.child.start.starting": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.start.starting"
+  },
+  "study.child.start.title": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.start.title"
+  },
+  "study.child.subtitle": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.subtitle"
+  },
+  "study.child.title": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.child.title"
+  },
+  "study.problem.objective": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "objective": "string"
+    },
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.problem.objective"
+  },
+  "study.problem.unsupportedVisual": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.problem.unsupportedVisual"
+  },
+  "study.problem.visualDescription": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "domain": "string",
+      "concept": "string"
+    },
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.problem.visualDescription"
+  },
+  "study.result.answer": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.result.answer"
+  },
+  "study.result.correct": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.result.correct"
+  },
+  "study.result.hint": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.result.hint"
+  },
+  "study.result.next": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.result.next"
+  },
+  "study.result.retryAnswer": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.result.retryAnswer"
+  },
+  "study.result.selfCheck": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.result.selfCheck"
+  },
+  "study.result.tryAgain": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "혜니캘린더 내장 Study child 화면 문구: study.result.tryAgain"
   }
 }

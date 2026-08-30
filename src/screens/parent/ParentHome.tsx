@@ -67,7 +67,7 @@ import {
 import { openExternal } from "@/lib/native/browser";
 import { ParentHomeHeroCarousel } from "@/components/ParentHomeHeroCarousel";
 import { useParentHomeHeroCarousel } from "@/queries/useParentHomeHero";
-import { useStudyStatus } from "@/queries/useStudy";
+import { useStudyStatus } from "@/queries/useStudyStatus";
 import {
   DEFAULT_PARENT_HOME_HERO_SLIDES,
   PARENT_HOME_HERO_SLIDE_CATALOG,

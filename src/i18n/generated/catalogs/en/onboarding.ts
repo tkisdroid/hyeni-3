@@ -158,7 +158,22 @@ const messages = {
   "onboarding.validation.passwordMismatch": "The password confirmation does not match.",
   "onboarding.validation.passwordRequired": "Please enter your password.",
   "onboarding.validation.passwordWeak": "Please enter a password of at least 6 characters.",
-  "onboarding.validation.phoneInvalid": "Please enter an 11-digit mobile number starting with 010."
+  "onboarding.validation.phoneInvalid": "Please enter an 11-digit mobile number starting with 010.",
+  "study.access.loading": "Checking learning availability…",
+  "study.common.back": "Back",
+  "study.common.no": "No",
+  "study.common.yes": "Yes",
+  "study.country.confirm": "Confirm this country",
+  "study.country.confirmed": "Confirmed",
+  "study.country.confirming": "Confirming…",
+  "study.country.description": "We detected {country} as the country where you use the learning service. Please confirm that it is correct.",
+  "study.country.inputHelp": "Enter the two-letter country code. South Korea is KR.",
+  "study.country.inputLabel": "Learning service country",
+  "study.country.title": "Confirm your learning service country",
+  "study.country.unknown": "Unknown",
+  "study.unavailable.back": "Back to Calendar",
+  "study.unavailable.retry": "Try again",
+  "study.unavailable.title": "Learning is unavailable right now."
 } as const;
 
 export default messages;

@@ -7,7 +7,6 @@ import {
   fetchStudyLearnerState,
   fetchStudyMission,
   fetchStudyReport,
-  fetchStudyStatus,
   startStudyMission,
   submitStudyAnswer,
   updateStudyGrade,
@@ -28,18 +27,6 @@ function stableFamilyId(value: string | null): string {
 function shouldRetry(failureCount: number, error: unknown): boolean {
   if (error instanceof ApiError && (error.status === 401 || error.status === 403)) return false;
   return failureCount < 2;
-}
-
-export function useStudyStatus() {
-  const { familyId, role, status } = useAuth();
-  const queryRole = role === "child" ? "child" : "parent";
-  return useQuery({
-    queryKey: qk.study.status(stableFamilyId(familyId), queryRole),
-    queryFn: fetchStudyStatus,
-    enabled: status === "authenticated",
-    staleTime: 15_000,
-    retry: shouldRetry,
-  });
 }
 
 export function useStudyChildren() {

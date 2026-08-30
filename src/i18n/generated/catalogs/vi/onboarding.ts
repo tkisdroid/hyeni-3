@@ -158,7 +158,22 @@ const messages = {
   "onboarding.validation.passwordMismatch": "Mật khẩu xác nhận không khớp.",
   "onboarding.validation.passwordRequired": "Vui lòng nhập mật khẩu của bạn.",
   "onboarding.validation.passwordWeak": "Vui lòng nhập mật khẩu có ít nhất 6 ký tự.",
-  "onboarding.validation.phoneInvalid": "Vui lòng nhập số điện thoại 11 chữ số bắt đầu bằng 010."
+  "onboarding.validation.phoneInvalid": "Vui lòng nhập số điện thoại 11 chữ số bắt đầu bằng 010.",
+  "study.access.loading": "Tôi đang kiểm tra tính năng học tập.",
+  "study.common.back": "< Quay lại",
+  "study.common.no": "Không co",
+  "study.common.yes": "CÃ³",
+  "study.country.confirm": "Xác nhận với quốc gia này",
+  "study.country.confirmed": "Tôi hiểu rồi",
+  "study.country.confirming": "Đang kiểm tra...",
+  "study.country.description": "Quốc gia nơi bạn sẽ sử dụng dịch vụ học tập đã được xác định là {country}. Vui lòng đảm bảo bạn đang ở đúng quốc gia.",
+  "study.country.inputHelp": "Vui lòng nhập mã quốc gia gồm hai chữ cái bằng tiếng Anh. Hàn Quốc là KR.",
+  "study.country.inputLabel": "Các quốc gia có Dịch vụ học tập",
+  "study.country.title": "Vui lòng xác nhận quốc gia của bạn",
+  "study.country.unknown": "Chưa xác nhận",
+  "study.unavailable.back": "Quay lại lịch",
+  "study.unavailable.retry": "Thử lại",
+  "study.unavailable.title": "Tôi không thể tải việc học ngay bây giờ."
 } as const;
 
 export default messages;

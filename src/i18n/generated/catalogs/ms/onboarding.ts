@@ -158,7 +158,22 @@ const messages = {
   "onboarding.validation.passwordMismatch": "Pengesahan kata laluan tidak sepadan.",
   "onboarding.validation.passwordRequired": "Sila masukkan kata laluan anda.",
   "onboarding.validation.passwordWeak": "Masukkan kata laluan sekurang-kurangnya 6 aksara.",
-  "onboarding.validation.phoneInvalid": "Masukkan nombor telefon 11 digit bermula dengan 010."
+  "onboarding.validation.phoneInvalid": "Masukkan nombor telefon 11 digit bermula dengan 010.",
+  "study.access.loading": "Saya sedang menyemak ciri pembelajaran.",
+  "study.common.back": "Berundur.",
+  "study.common.no": "- No",
+  "study.common.yes": "예",
+  "study.country.confirm": "Sahkan dengan negara ini",
+  "study.country.confirmed": "Saya faham",
+  "study.country.confirming": "Sedang menyemak...",
+  "study.country.description": "Negara tempat anda akan menggunakan perkhidmatan pembelajaran telah dikenal pasti sebagai {country}. Sila pastikan anda berada di negara yang betul.",
+  "study.country.inputHelp": "Sila masukkan kod negara dua huruf Bahasa Inggeris. Korea Selatan ialah KR.",
+  "study.country.inputLabel": "Negara dengan Perkhidmatan Pembelajaran",
+  "study.country.title": "Sila sahkan negara anda",
+  "study.country.unknown": "Belum disahkan",
+  "study.unavailable.back": "Kembali ke kalendar",
+  "study.unavailable.retry": "Cuba lagi",
+  "study.unavailable.title": "Saya tidak dapat memuatkan pembelajaran sekarang."
 } as const;
 
 export default messages;

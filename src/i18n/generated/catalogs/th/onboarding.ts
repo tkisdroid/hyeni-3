@@ -158,7 +158,22 @@ const messages = {
   "onboarding.validation.passwordMismatch": "การยืนยันรหัสผ่านไม่ตรงกัน",
   "onboarding.validation.passwordRequired": "กรุณากรอกรหัสผ่านของคุณ",
   "onboarding.validation.passwordWeak": "กรุณากรอกรหัสผ่านอย่างน้อย 6 ตัวอักษร",
-  "onboarding.validation.phoneInvalid": "กรุณากรอกหมายเลขโทรศัพท์ 11 หลักที่ขึ้นต้นด้วย 010"
+  "onboarding.validation.phoneInvalid": "กรุณากรอกหมายเลขโทรศัพท์ 11 หลักที่ขึ้นต้นด้วย 010",
+  "study.access.loading": "ฉันกำลังตรวจสอบคุณลักษณะการเรียนรู้",
+  "study.common.back": "ย้อนกลับ",
+  "study.common.no": "\"ไม่เลยครับ",
+  "study.common.yes": "state of PCI item",
+  "study.country.confirm": "ยืนยันกับประเทศนี้",
+  "study.country.confirmed": "เข้าใจแล้ว",
+  "study.country.confirming": "กำลังตรวจสอบ...",
+  "study.country.description": "ประเทศที่คุณจะใช้บริการการเรียนรู้ได้รับการระบุเป็น {country} โปรดตรวจสอบให้แน่ใจว่าคุณอยู่ในประเทศที่ถูกต้อง",
+  "study.country.inputHelp": "โปรดกรอกรหัสประเทศ 2 ตัวอักษรภาษาอังกฤษเกาหลีใต้คือ KR",
+  "study.country.inputLabel": "ประเทศที่มีบริการการเรียนรู้",
+  "study.country.title": "โปรดยืนยันประเทศของคุณ",
+  "study.country.unknown": "ยังไม่ได้ยืนยัน",
+  "study.unavailable.back": "กลับไปที่ปฏิทิน",
+  "study.unavailable.retry": "ลองใหม่",
+  "study.unavailable.title": "ฉันไม่สามารถโหลดการเรียนรู้ได้ในขณะนี้"
 } as const;
 
 export default messages;

@@ -158,7 +158,22 @@ const messages = {
   "onboarding.validation.passwordMismatch": "確認用パスワードが一致しません。",
   "onboarding.validation.passwordRequired": "パスワードを入力してください。",
   "onboarding.validation.passwordWeak": "パスワードは6文字以上で入力してください。",
-  "onboarding.validation.phoneInvalid": "010から始まる11桁の携帯電話番号を入力してください。"
+  "onboarding.validation.phoneInvalid": "010から始まる11桁の携帯電話番号を入力してください。",
+  "study.access.loading": "学習機能を確認しています。",
+  "study.common.back": "戻る",
+  "study.common.no": "いいえ",
+  "study.common.yes": "れい",
+  "study.country.confirm": "こちらの国で確認してください",
+  "study.country.confirmed": "わかりました",
+  "study.country.confirming": "確認しています…",
+  "study.country.description": "ラーニングサービスを使用する国は{country}と識別されています。正しい国にお住まいであることをご確認ください。",
+  "study.country.inputHelp": "英語の2文字の国コードを入力してください。韓国はKRです。",
+  "study.country.inputLabel": "ラーニングサービスが提供されている国",
+  "study.country.title": "国を確認してください",
+  "study.country.unknown": "未確認",
+  "study.unavailable.back": "カレンダーに戻る",
+  "study.unavailable.retry": "ジオメトリ",
+  "study.unavailable.title": "今は学習を読み込めません。"
 } as const;
 
 export default messages;

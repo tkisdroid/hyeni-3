@@ -21,7 +21,7 @@ export function ParentStudy() {
   const target = resolveParentStudyTarget(childMembers, selectedActiveChild?.id ?? null, requestedId);
   const memberId = target.kind === "ready" ? target.child.id : null;
   const [range, setRange] = useState<StudyRange>("30d");
-  const [gradeError, setGradeError] = useState<string | null>(null);
+  const [gradeSaveState, setGradeSaveState] = useState<"idle" | "conflict" | "failed">("idle");
   const report = useStudyReport(memberId, range);
   const gradeMutation = useUpdateStudyGrade();
 
@@ -35,7 +35,7 @@ export function ParentStudy() {
     if (target.kind !== "ready") return;
     const rowVersion = target.child.learning_grade_row_version;
     if (!Number.isSafeInteger(rowVersion) || Number(rowVersion) < 1) return;
-    setGradeError(null);
+    setGradeSaveState("idle");
     try {
       await gradeMutation.mutateAsync(buildStudyGradeCommand({
         memberId: target.child.id,
@@ -44,7 +44,7 @@ export function ParentStudy() {
         requestId: crypto.randomUUID(),
       }));
     } catch (error) {
-      setGradeError(error instanceof ApiError ? error.code : "study_grade_error");
+      setGradeSaveState(error instanceof ApiError && error.code === "grade_changed" ? "conflict" : "failed");
     }
   };
 
@@ -85,7 +85,8 @@ export function ParentStudy() {
                   grade={report.data.grade}
                   rowVersion={Number.isSafeInteger(target.child.learning_grade_row_version) ? Number(target.child.learning_grade_row_version) : null}
                   busy={gradeMutation.isPending}
-                  errorCode={gradeError}
+                  conflict={gradeSaveState === "conflict"}
+                  saveFailed={gradeSaveState === "failed"}
                   onChange={saveGrade}
                 />
                 {report.data.state === "grade_unavailable" && (

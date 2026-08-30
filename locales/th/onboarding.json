@@ -158,5 +158,20 @@
   "onboarding.pairing.parent.title": "เข้าร่วมในฐานะผู้ปกครองร่วม",
   "onboarding.pairing.parent.description": "ใช้คิวอาร์โค้ดหรือรหัสเชื่อมต่อจากผู้ปกครองที่เชิญคุณ",
   "onboarding.pairing.parent.recovery": "หลังเข้าร่วม คุณสามารถจัดการปฏิทินครอบครัวและข้อมูลความปลอดภัยของเด็กร่วมกันด้วยสิทธิ์ผู้ปกครอง",
-  "onboarding.oauth.returnToApp": "ไม่สามารถล็อกอินให้เสร็จในเบราว์เซอร์ได้ โปรดลองล็อกอินผ่านโซเชียลอีกครั้งในแอป ปฏิทิน Hyeni"
+  "onboarding.oauth.returnToApp": "ไม่สามารถล็อกอินให้เสร็จในเบราว์เซอร์ได้ โปรดลองล็อกอินผ่านโซเชียลอีกครั้งในแอป ปฏิทิน Hyeni",
+  "study.access.loading": "ฉันกำลังตรวจสอบคุณลักษณะการเรียนรู้",
+  "study.common.back": "ย้อนกลับ",
+  "study.common.no": "\"ไม่เลยครับ",
+  "study.common.yes": "state of PCI item",
+  "study.country.confirm": "ยืนยันกับประเทศนี้",
+  "study.country.confirmed": "เข้าใจแล้ว",
+  "study.country.confirming": "กำลังตรวจสอบ...",
+  "study.country.description": "ประเทศที่คุณจะใช้บริการการเรียนรู้ได้รับการระบุเป็น {country} โปรดตรวจสอบให้แน่ใจว่าคุณอยู่ในประเทศที่ถูกต้อง",
+  "study.country.inputHelp": "โปรดกรอกรหัสประเทศ 2 ตัวอักษรภาษาอังกฤษเกาหลีใต้คือ KR",
+  "study.country.inputLabel": "ประเทศที่มีบริการการเรียนรู้",
+  "study.country.title": "โปรดยืนยันประเทศของคุณ",
+  "study.country.unknown": "ยังไม่ได้ยืนยัน",
+  "study.unavailable.back": "กลับไปที่ปฏิทิน",
+  "study.unavailable.retry": "ลองใหม่",
+  "study.unavailable.title": "ฉันไม่สามารถโหลดการเรียนรู้ได้ในขณะนี้"
 }

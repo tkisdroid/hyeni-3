@@ -158,7 +158,22 @@ const messages = {
   "onboarding.validation.passwordMismatch": "两次输入的密码不一致。",
   "onboarding.validation.passwordRequired": "请输入您的密码。",
   "onboarding.validation.passwordWeak": "请输入至少6位密码。",
-  "onboarding.validation.phoneInvalid": "请输入以010开头的11位手机号。"
+  "onboarding.validation.phoneInvalid": "请输入以010开头的11位手机号。",
+  "study.access.loading": "我正在检查学习功能。",
+  "study.common.back": "返回",
+  "study.common.no": "否",
+  "study.common.yes": "喜欢。",
+  "study.country.confirm": "与此国家/地区确认",
+  "study.country.confirmed": "我瞭解了",
+  "study.country.confirming": "正在检查……",
+  "study.country.description": "您将使用学习服务的国家/地区已被识别为{country}。请确保您位于正确的国家/地区。",
+  "study.country.inputHelp": "请输入英文双字母国家代码。韩国是KR。",
+  "study.country.inputLabel": "提供学习服务的国家/地区",
+  "study.country.title": "请确认您的国家/地区",
+  "study.country.unknown": "未确认",
+  "study.unavailable.back": "返回日历",
+  "study.unavailable.retry": "再试一次",
+  "study.unavailable.title": "我现在无法加载学习。"
 } as const;
 
 export default messages;

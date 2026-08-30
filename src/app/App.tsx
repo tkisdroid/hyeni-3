@@ -131,6 +131,8 @@ const PARENT_NAMESPACES = ["core", "parent", "shared"] as const;
 // billing 을 빼면 콜드 스타트에서 카드 설명이 원시 message id 로 보인다(2026-08-25 A17 실측).
 const PARENT_HOME_NAMESPACES = ["core", "parent", "billing", "shared"] as const;
 const CHILD_NAMESPACES = ["core", "child", "shared"] as const;
+const PARENT_STUDY_NAMESPACES = ["core", "onboarding", "parent", "shared"] as const;
+const CHILD_STUDY_NAMESPACES = ["core", "onboarding", "child", "shared"] as const;
 // 결제 화면도 parent 를 함께 싣는다 — 티어 라벨·잠금 안내(transform/tierPolicy, premiumUpsell)가
 // `parent.tier.*`·`parent.upsell.*` 를 쓰므로, 없으면 플랜 비교 열 제목이 "parent.tier.free" 원문 id로 보인다
 // (2026-08-17 브라우저 스윕에서 실제로 확인).
@@ -310,7 +312,7 @@ const router = createHashRouter([
           { path: "remote-audio-audit", element: routeElement(<RemoteAudioAudit />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "remote-ring", element: routeElement(<RemoteRing />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "sos-receive", element: routeElement(<SosReceive />, PARENT_NOTIFICATION_NAMESPACES) },
-          { path: "study", element: routeElement(<ParentStudy />, PARENT_NAMESPACES) },
+          { path: "study", element: routeElement(<ParentStudy />, PARENT_STUDY_NAMESPACES) },
         ],
       },
 
@@ -324,7 +326,7 @@ const router = createHashRouter([
           { path: "child/settings", element: routeElement(<ChildSettings />, CHILD_NAMESPACES) },
           { path: "child/ai-friend-setup", element: routeElement(<AiFriendSetup />, CHILD_NAMESPACES) },
           { path: "playdate-accept", element: routeElement(<PlaydateAccept />, CHILD_NAMESPACES) },
-          { path: "study/learn", element: routeElement(<ChildStudy />, CHILD_NAMESPACES) },
+          { path: "study/learn", element: routeElement(<ChildStudy />, CHILD_STUDY_NAMESPACES) },
         ],
       },
 
