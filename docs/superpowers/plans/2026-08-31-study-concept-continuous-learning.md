@@ -18,7 +18,7 @@
 - Study API version 문자열 `2026-08-27`은 additive 배포 호환을 위해 유지한다.
 - 내부 8문제 세션은 UI에 노출하지 않으며 마지막 문제 뒤 같은 선택으로 자동 연결한다.
 - Study migration → Study Worker → Calendar Worker → Pages 순서로 배포한다.
-- Play 스토어는 갱신하지 않고 A17에 `adb install -r`로 별도 debug APK만 설치한다.
+- Play 스토어는 갱신하지 않고 A17과 razr에 `adb install -r`로 동일 debug APK만 설치한다.
 
 ---
 
@@ -336,7 +336,7 @@ git add src/features/study/StudyTopicPicker.tsx src/screens/study/ChildStudy.tsx
 git commit -m "학년별 세부 개념을 자유롭게 계속 학습한다"
 ```
 
-### Task 7: 전체 회귀, 메인 통합, 배포, A17 출시 판정
+### Task 7: 전체 회귀, 메인 통합, 배포, A17·razr 출시 판정
 
 **Files:**
 - Verify both repositories and generated artifacts; no Play metadata changes.
@@ -359,15 +359,17 @@ Read both worktree statuses, preserve all unrelated/untracked user artifacts, ru
 
 Apply only migration 0009 with Wrangler 4.127.1, read back schema version 9/index/foreign-key check, deploy Study Worker and confirm its new version is 100%. Deploy Calendar Worker, verify `/api/health` exact ready and unauthenticated Study route 401. Deploy Calendar `dist` to Pages from an external temp directory and verify fixed/deployment URLs serve matching entry and Study chunk SHA-256.
 
-- [ ] **Step 5: Build and install A17 artifact without clearing data**
+- [ ] **Step 5: Build and install both-device artifacts without clearing data**
 
-Run: `npx cap sync android; .\android\gradlew.bat -p android assembleDebug; npm run android:install:debug -- RFKL40DP73J`
+Run the build once, then install the exact same APK with the repository installer on the fresh `adb devices -l` serials for A17 and razr:
 
-Verify firstInstallTime unchanged, embedded web asset hashes equal `dist`, and package remains `com.hyeni.calendar` version 1.4.4 code 16.
+`npx cap sync android; .\android\gradlew.bat -p android assembleDebug; npm run android:install:debug -- RFKL40DP73J; npm run android:install:debug -- ZY22H9VTQD`
 
-- [ ] **Step 6: Perform production A17 journey**
+Verify both devices' firstInstallTime remains unchanged, embedded web asset hashes equal `dist`, and package remains `com.hyeni.calendar` version 1.4.4 code 16.
 
-Use CDP/ADB on exact serial to click 아이 홈→미니앱→수학, select each of two different grades in separate clean flows, confirm only the tapped grade loader moves, inspect several grouped concept cards, solve adaptive and named-concept problems across an internal boundary, change topic mid-session, relaunch and resume, and measure answer-to-feedback median/p95/max. Record screenshots and a PII-free JSON report.
+- [ ] **Step 6: Establish roles, pairing, permissions, and perform the production journey**
+
+Use existing secure sessions or device autofill without printing credentials. Set A17 to the tkisdroid parent role and razr to the paired child role, grant all app-required permissions through Android UI, and read back role/family consistency plus permission state. On razr click 아이 홈→미니앱→수학, select two grades in separate clean flows, confirm only the tapped grade loader moves, inspect grouped concept cards, solve adaptive and named-concept problems across an internal boundary, change topic mid-session, relaunch and resume, and measure answer-to-feedback median/p95/max. On A17 open the same child's parent Study management view. Record screenshots and a PII-free JSON report.
 
 - [ ] **Step 7: Issue release decision**
 

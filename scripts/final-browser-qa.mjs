@@ -422,6 +422,9 @@ function studyMissionFixture(scenario) {
     missionId: currentStudyMissionId(scenario),
     status: completed ? "completed" : "started",
     grade: scenario.studySelectedGrade ?? scenario.studyGradeOverride ?? 4,
+    selection: scenario.studySelectedConceptId
+      ? { kind: "concept", conceptId: scenario.studySelectedConceptId, title: "곱셈구구와 곱셈" }
+      : { kind: "adaptive" },
     items: [{
       problemId: currentStudyProblemId(scenario),
       position: 0,
@@ -613,12 +616,33 @@ export function mockApi(pathname, scenario, method = "GET", requestBody = null, 
         : null,
     };
   }
+  if (pathname === "/api/study/learner/concepts") {
+    return {
+      apiVersion: STUDY_API_VERSION,
+      grade: scenario.studySelectedGrade ?? scenario.studyGradeOverride ?? 4,
+      concepts: [
+        { conceptId: "g4-multiplication", unitKey: "수와 연산", title: "곱셈구구와 곱셈", problemCount: 36 },
+        { conceptId: "g4-division", unitKey: "수와 연산", title: "나눗셈의 몫", problemCount: 36 },
+        { conceptId: "g4-triangles", unitKey: "도형", title: "삼각형 분류", problemCount: 36 },
+      ],
+    };
+  }
   if (pathname === "/api/study/learner/missions" && method === "POST") {
     scenario.studyMissionSequence = (scenario.studyMissionSequence ?? 0) + 1;
     scenario.studySelectedGrade = requestBody?.grade ?? scenario.studySelectedGrade ?? scenario.studyGradeOverride ?? 4;
+    scenario.studySelectedConceptId = requestBody?.conceptId ?? null;
     scenario.studyMissionStarted = true;
     scenario.studyMissionCompleted = false;
     return studyMissionFixture(scenario);
+  }
+  if (/^\/api\/study\/learner\/missions\/[^/]+\/abandon$/u.test(pathname) && method === "POST") {
+    scenario.studyMissionStarted = false;
+    scenario.studyMissionCompleted = false;
+    return {
+      apiVersion: STUDY_API_VERSION,
+      missionId: decodeURIComponent(pathname.split("/").at(-2) ?? ""),
+      status: "abandoned",
+    };
   }
   if (/^\/api\/study\/learner\/missions\/[^/]+$/u.test(pathname)) {
     return studyMissionFixture(scenario);
@@ -3063,12 +3087,34 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     const childStartFacts = await cdp.evaluate(`(() => ({
       hash: location.hash,
       title: document.querySelector(".child-study-start h2")?.textContent?.trim() ?? null,
-      startVisible: Boolean(document.querySelector(".child-study-start button")),
+      gradeButtonCount: document.querySelectorAll(".child-study-grade-options button").length,
     }))()`);
-    if (childStartFacts.hash !== "#/study/learn" || !childStartFacts.title?.includes("오늘 수학") || !childStartFacts.startVisible) {
+    if (
+      childStartFacts.hash !== "#/study/learn"
+      || childStartFacts.title !== "몇 학년 수학을 풀어볼까?"
+      || childStartFacts.gradeButtonCount !== 4
+    ) {
       report.problems.push({ scope: "study-child-start", facts: childStartFacts });
     }
-    await clickSelector(cdp, ".child-study-start button");
+    await clickSelector(cdp, ".child-study-grade-options button:nth-child(2)");
+    await wait(900);
+    const childTopicFacts = await cdp.evaluate(`(() => ({
+      title: document.querySelector("#study-topic-title")?.textContent?.trim() ?? null,
+      adaptiveVisible: Boolean(document.querySelector(".child-study-adaptive-topic")),
+      unitCount: document.querySelectorAll(".child-study-topic-unit").length,
+      conceptCount: document.querySelectorAll(".child-study-topic-list button").length,
+      changeGradeVisible: Boolean(document.querySelector(".child-study-change-grade")),
+    }))()`);
+    if (
+      childTopicFacts.title !== "어떤 주제를 풀어볼까?"
+      || !childTopicFacts.adaptiveVisible
+      || childTopicFacts.unitCount !== 2
+      || childTopicFacts.conceptCount !== 3
+      || !childTopicFacts.changeGradeVisible
+    ) {
+      report.problems.push({ scope: "study-child-topic-catalog", facts: childTopicFacts });
+    }
+    await clickSelector(cdp, ".child-study-topic-list button");
     await wait(1_300);
     await setInputValue(cdp, ".study-answer-group input", "12");
     await clickSelector(cdp, ".study-submit");
@@ -3100,40 +3146,34 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     }
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "study-child-answer-feedback.png"));
     await clickSelector(cdp, ".study-result .study-submit");
-    await wait(500);
-    const completeFacts = await cdp.evaluate(`(() => ({
-      title: document.querySelector("#study-mission-complete-title")?.textContent?.trim() ?? null,
-      saved: document.querySelector(".study-mission-result")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
-      continueVisible: [...document.querySelectorAll(".study-result-actions button")]
-        .some((button) => button.textContent?.includes("계속 학습하기")),
-      gradeVisible: [...document.querySelectorAll(".study-result-actions button")]
-        .some((button) => button.textContent?.includes("학년 선택 또는 변경")),
-    }))()`);
-    if (
-      completeFacts.title !== "오늘 학습을 마쳤어!"
-      || !completeFacts.saved?.includes("안전하게 저장했어")
-      || !completeFacts.continueVisible
-      || !completeFacts.gradeVisible
-    ) {
-      report.problems.push({ scope: "study-child-completion", facts: completeFacts });
-    }
-    report.screenshots.push(await screenshot(cdp, freshOutputDir, "study-child-complete.png"));
-    await clickSelector(cdp, ".study-result-actions button");
-    await wait(1_200);
+    await wait(1_500);
     const continuedFacts = await cdp.evaluate(`(() => ({
       problem: document.querySelector(".study-problem h2")?.textContent?.trim() ?? null,
       completeVisible: Boolean(document.querySelector(".study-mission-result")),
+      topic: document.querySelector(".study-mission-context strong")?.textContent?.trim() ?? null,
+      continuous: document.querySelector(".study-mission-context span")?.textContent?.trim() ?? null,
+      changeTopicVisible: [...document.querySelectorAll(".study-mission-context button")]
+        .some((button) => button.textContent?.includes("주제 바꾸기")),
     }))()`);
     if (
       continuedFacts.problem !== "5 × 3은 얼마일까?"
       || continuedFacts.completeVisible
+      || continuedFacts.topic !== "곱셈구구와 곱셈"
+      || continuedFacts.continuous !== "계속 학습 중"
+      || !continuedFacts.changeTopicVisible
       || childStudyScenario.studyMissionSequence !== 2
+      || childStudyScenario.studySelectedConceptId !== "g4-multiplication"
     ) {
       report.problems.push({
         scope: "study-child-unlimited-continue",
-        facts: { ...continuedFacts, missionSequence: childStudyScenario.studyMissionSequence },
+        facts: {
+          ...continuedFacts,
+          missionSequence: childStudyScenario.studyMissionSequence,
+          selectedConceptId: childStudyScenario.studySelectedConceptId,
+        },
       });
     }
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "study-child-continuous.png"));
 
     const completedReentryScenario = {
       role: "child",
@@ -3166,6 +3206,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       report.problems.push({ scope: "study-child-completed-reentry", facts: reentryFacts });
     }
     await clickSelector(cdp, ".child-study-grade-options button");
+    await wait(900);
+    await clickSelector(cdp, ".child-study-adaptive-topic");
     await wait(1_100);
     const reentryRestartFacts = await cdp.evaluate(`(() => ({
       problem: document.querySelector(".study-problem h2")?.textContent?.trim() ?? null,
@@ -3205,7 +3247,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       asksGuardian: document.body.textContent?.includes("보호자에게 학년을 확인") ?? false,
     }))()`);
     if (
-      !childGradeMissingFacts.text?.includes("학년 선택 또는 변경")
+      !childGradeMissingFacts.text?.includes("몇 학년 수학을 풀어볼까?")
       || childGradeMissingFacts.gradeButtonCount !== 4
       || childGradeMissingFacts.asksGuardian
       || rowProblems(childGradeMissing).length > 0
@@ -3225,9 +3267,9 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       child: {
         entry: { home: childStudyEntryFacts, miniApps: childMiniAppsFacts },
         start: childStartFacts,
+        topics: childTopicFacts,
         retry: retryFacts,
         accepted: acceptedFacts,
-        complete: completeFacts,
         continued: continuedFacts,
         completedReentry: reentryFacts,
         completedRestart: reentryRestartFacts,

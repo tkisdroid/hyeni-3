@@ -5,10 +5,12 @@ import {
   type StudyAttemptResultDto,
   type StudyChildOverviewDto,
   type StudyChildrenOverviewDto,
+  type StudyConceptCatalogDto,
   type StudyGrade,
   type StudyGradeMutationResult,
   type StudyLearnerStateDto,
   type StudyMissionDto,
+  type StudyMissionAbandonDto,
   type StudyMissionItemDto,
   type StudyMissionMode,
   type StudyProblemInput,
@@ -383,7 +385,7 @@ export function parseStudyLearnerState(value: unknown): StudyLearnerStateDto {
 
 export function parseStudyMission(value: unknown): StudyMissionDto {
   const record = object(value);
-  exact(record, ["apiVersion", "missionId", "status", "grade", "items", "progress"]);
+  exact(record, ["apiVersion", "missionId", "status", "grade", "selection", "items", "progress"]);
   version(record.apiVersion);
   if (typeof record.status !== "string" || !MISSION_STATUSES.has(record.status)) invalid();
   if (!Array.isArray(record.items) || record.items.length < 1 || record.items.length > 12) invalid();
@@ -395,13 +397,52 @@ export function parseStudyMission(value: unknown): StudyMissionDto {
   const total = integer(progress.total, 1, 12);
   const completed = integer(progress.completed, 0, total);
   if (total !== items.length) invalid();
+  const selectionRecord = object(record.selection);
+  let selection: StudyMissionDto["selection"];
+  if (selectionRecord.kind === "adaptive") {
+    exact(selectionRecord, ["kind"]);
+    selection = { kind: "adaptive" };
+  } else if (selectionRecord.kind === "concept") {
+    exact(selectionRecord, ["kind", "conceptId", "title"]);
+    selection = {
+      kind: "concept",
+      conceptId: id(selectionRecord.conceptId),
+      title: string(selectionRecord.title, 240),
+    };
+  } else {
+    invalid();
+  }
   return {
     apiVersion: STUDY_API_VERSION,
     missionId: id(record.missionId),
     status: record.status as StudyMissionDto["status"],
     grade: grade(record.grade),
+    selection,
     items,
     progress: { completed, total },
+  };
+}
+
+export function parseStudyConceptCatalog(value: unknown): StudyConceptCatalogDto {
+  const record = object(value);
+  exact(record, ["apiVersion", "grade", "concepts"]);
+  version(record.apiVersion);
+  if (!Array.isArray(record.concepts) || record.concepts.length < 1 || record.concepts.length > 128) invalid();
+  const concepts = record.concepts.map((entry) => {
+    const concept = object(entry);
+    exact(concept, ["conceptId", "unitKey", "title", "problemCount"]);
+    return {
+      conceptId: id(concept.conceptId),
+      unitKey: string(concept.unitKey, 240),
+      title: string(concept.title, 240),
+      problemCount: integer(concept.problemCount, 1, 100_000),
+    };
+  });
+  if (new Set(concepts.map(concept => concept.conceptId)).size !== concepts.length) invalid();
+  return {
+    apiVersion: STUDY_API_VERSION,
+    grade: grade(record.grade),
+    concepts,
   };
 }
 
@@ -456,6 +497,7 @@ export async function fetchStudyLearnerState(): Promise<StudyLearnerStateDto> {
 export async function startStudyMission(input: {
   mode: StudyMissionMode;
   grade?: StudyGrade;
+  conceptId?: string;
   idempotencyKey: string;
 }): Promise<StudyMissionDto> {
   if (!MODES.has(input.mode)) throw new ApiError("invalid_request", 400);
@@ -465,14 +507,44 @@ export async function startStudyMission(input: {
     body: JSON.stringify({
       mode: input.mode,
       ...(input.grade === undefined ? {} : { grade: grade(input.grade) }),
+      ...(input.conceptId === undefined ? {} : { conceptId: id(input.conceptId) }),
     }),
   }));
+}
+
+export async function fetchStudyConcepts(selectedGrade: StudyGrade): Promise<StudyConceptCatalogDto> {
+  const parsedGrade = grade(selectedGrade);
+  return parseStudyConceptCatalog(await apiGet<unknown>(
+    `/api/study/learner/concepts?grade=${encodeURIComponent(String(parsedGrade))}`,
+  ));
 }
 
 export async function fetchStudyMission(missionId: string): Promise<StudyMissionDto> {
   return parseStudyMission(await apiGet<unknown>(
     `/api/study/learner/missions/${encodeURIComponent(id(missionId))}`,
   ));
+}
+
+export async function abandonStudyMission(input: Readonly<{
+  missionId: string;
+  idempotencyKey: string;
+}>): Promise<StudyMissionAbandonDto> {
+  const raw = await apiRequest<unknown>(
+    `/api/study/learner/missions/${encodeURIComponent(id(input.missionId))}/abandon`,
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": requestId(input.idempotencyKey) },
+    },
+  );
+  const record = object(raw);
+  exact(record, ["apiVersion", "missionId", "status"]);
+  version(record.apiVersion);
+  if (record.status !== "abandoned") invalid();
+  return {
+    apiVersion: STUDY_API_VERSION,
+    missionId: id(record.missionId),
+    status: "abandoned",
+  };
 }
 
 export async function submitStudyAnswer(

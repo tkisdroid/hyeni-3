@@ -76,8 +76,28 @@ export type StudyMissionDto = Readonly<{
   missionId: string;
   status: "ready" | "started" | "completed";
   grade: StudyGrade;
+  selection:
+    | Readonly<{ kind: "adaptive" }>
+    | Readonly<{ kind: "concept"; conceptId: string; title: string }>;
   items: readonly StudyMissionItemDto[];
   progress: Readonly<{ completed: number; total: number }>;
+}>;
+
+export type StudyConceptCatalogDto = Readonly<{
+  apiVersion: typeof STUDY_API_VERSION;
+  grade: StudyGrade;
+  concepts: readonly Readonly<{
+    conceptId: string;
+    unitKey: string;
+    title: string;
+    problemCount: number;
+  }>[];
+}>;
+
+export type StudyMissionAbandonDto = Readonly<{
+  apiVersion: typeof STUDY_API_VERSION;
+  missionId: string;
+  status: "abandoned";
 }>;
 
 export type StudyHintDto = Readonly<{ level: 1 | 2; text: string; representation?: string }>;

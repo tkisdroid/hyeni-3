@@ -60,8 +60,8 @@ Calendar는 현재 membership, KR market, child member, 학년 정본을 기존 
 - Calendar: 선택한 학년만 busy인지, 94개 정본 DTO를 좁게 파싱하는지, 학년→개념→미션 요청 body가 정확한지, 완료 캐시를 재복원하지 않는지, 마지막 문제 뒤 자동 연속 학습과 주제 변경 오류 복구를 테스트한다.
 - 전체 typecheck, Worker tests, Calendar 전체 테스트, 빌드, i18n 검사, Worker dry-run, 브라우저 QA를 통과한다.
 - Study migration → Study Worker → Calendar Worker → Pages 순서로 배포하고 원격 schema/version/health/assets를 읽어 확인한다.
-- Play 스토어는 갱신하지 않는다. 동일 소스의 별도 Android debug APK를 기존 A17 데이터 위에 `adb install -r`로 설치해 아이 홈→미니앱→수학→학년→여러 세부 개념→연속 문제→주제 변경→재진입을 실기기에서 검증한다.
+- Play 스토어는 갱신하지 않는다. 동일 소스의 별도 Android debug APK를 기존 A17과 razr 데이터 위에 `adb install -r`로 설치한다. A17은 tkisdroid 부모 모드, razr는 같은 가족의 아이 모드로 연결하고 필수 권한까지 확보한 뒤, razr에서 아이 홈→미니앱→수학→학년→여러 세부 개념→연속 문제→주제 변경→재진입을 검증한다. A17에서는 부모 모드·가족 연결·아이 학습 관리 readback을 확인한다.
 
 ## 출시 판정
 
-메인 원격 SHA, Cloudflare 활성 버전, Pages asset SHA, A17 세션 보존, 개념 선택 및 연속 학습, 답안·해설 지연 측정이 모두 확인되면 별도 미니앱 출시 가능으로 판정한다. Play 게시 상태는 이 판정과 분리한다.
+메인 원격 SHA, Cloudflare 활성 버전, Pages asset SHA, A17 부모·razr 아이 역할과 가족 연결, 양쪽 필수 권한, 개념 선택 및 연속 학습, 답안·해설 지연 측정이 모두 확인되면 별도 미니앱 출시 가능으로 판정한다. Play 게시 상태는 이 판정과 분리한다.

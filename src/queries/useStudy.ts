@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthContext";
 import { ApiError } from "@/lib/api/errors";
 import {
+  abandonStudyMission,
+  fetchStudyConcepts,
   fetchStudyChildOverview,
   fetchStudyChildren,
   fetchStudyLearnerState,
@@ -67,6 +69,7 @@ export function useStudyLearnerState() {
     queryKey: qk.study.learner(stableFamilyId(familyId)),
     queryFn: fetchStudyLearnerState,
     enabled: status === "authenticated" && role === "child" && !!familyId,
+    refetchOnMount: "always",
     retry: shouldRetry,
   });
 }
@@ -81,16 +84,47 @@ export function useStudyMission(missionId: string | null) {
   });
 }
 
+export function useStudyConcepts(grade: StudyGrade | null) {
+  const { familyId, role, status } = useAuth();
+  return useQuery({
+    queryKey: qk.study.concepts(stableFamilyId(familyId), grade ?? 3),
+    queryFn: () => fetchStudyConcepts(grade ?? 3),
+    enabled: status === "authenticated" && role === "child" && !!familyId && grade !== null,
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
+    retry: shouldRetry,
+  });
+}
+
 export function useStartStudyMission() {
   const client = useQueryClient();
   const { familyId } = useAuth();
   const keyFamilyId = stableFamilyId(familyId);
   return useMutation({
-    mutationFn: (input: { mode: StudyMissionMode; grade?: StudyGrade; idempotencyKey: string }) => startStudyMission(input),
+    mutationFn: (input: {
+      mode: StudyMissionMode;
+      grade?: StudyGrade;
+      conceptId?: string;
+      idempotencyKey: string;
+    }) => startStudyMission(input),
     meta: { silentError: true },
     onSuccess: (mission) => {
       client.setQueryData(qk.study.mission(keyFamilyId, mission.missionId), mission);
       void client.invalidateQueries({ queryKey: qk.study.learner(keyFamilyId), exact: true });
+    },
+  });
+}
+
+export function useAbandonStudyMission() {
+  const client = useQueryClient();
+  const { familyId } = useAuth();
+  const keyFamilyId = stableFamilyId(familyId);
+  return useMutation({
+    mutationFn: abandonStudyMission,
+    meta: { silentError: true },
+    onSuccess: async (result) => {
+      client.removeQueries({ queryKey: qk.study.mission(keyFamilyId, result.missionId), exact: true });
+      await client.invalidateQueries({ queryKey: qk.study.learner(keyFamilyId), exact: true });
     },
   });
 }

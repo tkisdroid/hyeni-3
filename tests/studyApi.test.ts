@@ -18,6 +18,7 @@ const mission = {
   missionId: "mission-1",
   status: "started",
   grade: 4,
+  selection: { kind: "adaptive" },
   items: [{
     problemId: "problem-1",
     position: 0,
@@ -54,6 +55,25 @@ test("Study query key는 역할과 정확한 자녀 member를 포함한다", () 
     qk.study.report("family-1", "child-1", "30d"),
     qk.study.report("family-1", "child-2", "30d"),
   );
+  assert.deepEqual(qk.study.concepts("family-1", 4), ["study", "concepts", "family-1", 4]);
+  assert.notDeepEqual(qk.study.concepts("family-1", 3), qk.study.concepts("family-1", 4));
+});
+
+test("세부 개념 카탈로그는 학년 경계와 최소 공개 필드만 허용한다", () => {
+  const catalog = {
+    apiVersion: VERSION,
+    grade: 4,
+    concepts: [
+      { conceptId: "g4-long-division", unitKey: "나눗셈", title: "두 자리 수를 한 자리 수로 나누기", problemCount: 36 },
+      { conceptId: "g4-equality", unitKey: "규칙과 관계", title: "등호의 뜻", problemCount: 36 },
+    ],
+  };
+  assert.deepEqual(study.parseStudyConceptCatalog(catalog), catalog);
+  assert.throws(() => study.parseStudyConceptCatalog({
+    ...catalog,
+    concepts: [{ ...catalog.concepts[0], problemId: "secret-problem" }],
+  }), isInvalidStudyResponse);
+  assert.throws(() => study.parseStudyConceptCatalog({ ...catalog, grade: 2 }), isInvalidStudyResponse);
 });
 
 test("Study 상태는 서버 플래그와 확인 권한을 엄격히 파싱한다", () => {

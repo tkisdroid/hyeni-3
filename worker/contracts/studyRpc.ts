@@ -65,10 +65,17 @@ export type LearnerStateInput = Readonly<{
   requestId: string;
 }>;
 
+export type ListCalendarConceptsInput = Readonly<{
+  memberId: string;
+  grade: StudyGrade;
+  requestId: string;
+}>;
+
 export type StartCalendarMissionInput = Readonly<{
   memberId: string;
   mode: "daily" | "review" | "focus";
   grade?: StudyGrade;
+  conceptId?: string;
   requestId: string;
 }>;
 
@@ -154,8 +161,28 @@ export type CalendarMissionDto = Readonly<{
   missionId: string;
   status: "ready" | "started" | "completed";
   grade: StudyGrade;
+  selection:
+    | Readonly<{ kind: "adaptive" }>
+    | Readonly<{ kind: "concept"; conceptId: string; title: string }>;
   items: readonly CalendarMissionItemDto[];
   progress: Readonly<{ completed: number; total: number }>;
+}>;
+
+export type CalendarConceptCatalogDto = Readonly<{
+  apiVersion: typeof STUDY_API_VERSION;
+  grade: StudyGrade;
+  concepts: readonly Readonly<{
+    conceptId: string;
+    unitKey: string;
+    title: string;
+    problemCount: number;
+  }>[];
+}>;
+
+export type CalendarMissionAbandonDto = Readonly<{
+  apiVersion: typeof STUDY_API_VERSION;
+  missionId: string;
+  status: "abandoned";
 }>;
 
 export type CalendarAttemptResultDto = Readonly<{
@@ -184,8 +211,10 @@ export interface CalendarStudyServiceBinding {
   getChildrenOverview(input: ParentOverviewInput, auth: CalendarStudyAuthorizationV2): Promise<ChildrenOverviewDto>;
   getChildReport(input: ChildReportInput, auth: CalendarStudyAuthorizationV2): Promise<ChildReportDto>;
   getLearnerState(input: LearnerStateInput, auth: CalendarStudyAuthorizationV2): Promise<CalendarLearnerStateDto>;
+  listCalendarConcepts(input: ListCalendarConceptsInput, auth: CalendarStudyAuthorizationV2): Promise<CalendarConceptCatalogDto>;
   startCalendarMission(input: StartCalendarMissionInput, auth: CalendarStudyAuthorizationV2): Promise<CalendarMissionDto>;
   getCalendarMission(input: CalendarMissionInput, auth: CalendarStudyAuthorizationV2): Promise<CalendarMissionDto>;
+  abandonCalendarMission(input: CalendarMissionInput, auth: CalendarStudyAuthorizationV2): Promise<CalendarMissionAbandonDto>;
   submitCalendarAnswer(input: SubmitCalendarAnswerInput, auth: CalendarStudyAuthorizationV2): Promise<CalendarAttemptResultDto>;
   readiness(): Promise<StudyReadinessDto>;
 }

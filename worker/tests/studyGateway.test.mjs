@@ -165,6 +165,8 @@ function recordingBinding({ reject = false } = {}) {
     if (method === "getChildrenOverview") return { apiVersion: "2026-08-27", children: [] };
     if (method === "getChildReport") return { apiVersion: "2026-08-27", memberId: input.memberId, status: "available" };
     if (method === "getLearnerState") return { apiVersion: "2026-08-27", memberId: input.memberId, status: "available", grade: { grade: 4, source: "study" } };
+    if (method === "listCalendarConcepts") return { apiVersion: "2026-08-27", grade: input.grade, concepts: [] };
+    if (method === "abandonCalendarMission") return { apiVersion: "2026-08-27", missionId: input.missionId, status: "abandoned" };
     if (method === "submitCalendarAnswer") return { apiVersion: "2026-08-27", missionId: input.missionId, result: "accepted" };
     return { apiVersion: "2026-08-27", missionId: input.missionId ?? "mission-server-a", status: "started" };
   };
@@ -174,8 +176,10 @@ function recordingBinding({ reject = false } = {}) {
     getChildrenOverview: record("getChildrenOverview"),
     getChildReport: record("getChildReport"),
     getLearnerState: record("getLearnerState"),
+    listCalendarConcepts: record("listCalendarConcepts"),
     startCalendarMission: record("startCalendarMission"),
     getCalendarMission: record("getCalendarMission"),
+    abandonCalendarMission: record("abandonCalendarMission"),
     submitCalendarAnswer: record("submitCalendarAnswer"),
     async readiness() {
       this.readinessCalls += 1;
@@ -335,6 +339,42 @@ test("학년이 없는 아이도 본인 학년을 선택해 즉시 RPC를 시작
     });
     assert.equal(binding.calls[1].auth.grade, null);
     assert.equal(binding.calls[1].auth.operation, "learner.start");
+  } finally {
+    db.close();
+  }
+});
+
+test("아이의 학년별 개념 조회와 주제 선택·포기는 정확한 signed RPC만 호출한다", async () => {
+  const db = createFixture();
+  const binding = recordingBinding();
+  try {
+    const catalog = await request(db, binding, "/learner/concepts?grade=4", {
+      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+    });
+    assert.equal(catalog.response.status, 200);
+    assert.equal(binding.calls[0].method, "listCalendarConcepts");
+    assert.deepEqual(binding.calls[0].input, {
+      memberId: CHILD_MEMBER_ID,
+      grade: 4,
+      requestId: binding.calls[0].input.requestId,
+    });
+    assert.equal(binding.calls[0].auth.operation, "learner.catalog");
+
+    const started = await request(db, binding, "/learner/missions", {
+      method: "POST",
+      body: { mode: "daily", conceptId: "g4-long-division" },
+      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+    });
+    assert.equal(started.response.status, 201);
+    assert.equal(binding.calls[1].input.conceptId, "g4-long-division");
+
+    const abandoned = await request(db, binding, "/learner/missions/mission-server-a/abandon", {
+      method: "POST",
+      actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" },
+    });
+    assert.equal(abandoned.response.status, 200);
+    assert.equal(binding.calls[2].method, "abandonCalendarMission");
+    assert.equal(binding.calls[2].auth.operation, "learner.abandon");
   } finally {
     db.close();
   }
