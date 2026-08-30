@@ -69,3 +69,8 @@
   font-size: 2rem;
   font-weight: 900;
 }
+.study-result-actions { display: grid; gap: 10px; }
+.study-mission-result button.is-secondary {
+  background: var(--hy-surface-muted, #f4eef1);
+  color: var(--hy-text, #342c30);
+}

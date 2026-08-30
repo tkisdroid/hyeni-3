@@ -48,6 +48,31 @@ test("브라우저 QA는 아이 미션과 같은 idempotency key 재전송을 �
   assert.deepEqual(scenario.studySubmissionKeys, ["qa-answer-key-123456", "qa-answer-key-123456"]);
 });
 
+test("브라우저 QA는 완료 뒤 재진입과 다음 학습 묶음을 서로 다른 미션으로 검증한다", () => {
+  const scenario = {
+    role: "child",
+    tier: "free",
+    studyState: "enabled",
+    studyLearnerSelected: true,
+  };
+  const first = mockApi("/api/study/learner/missions", scenario, "POST", { mode: "daily", grade: 4 });
+  mockApi(
+    `/api/study/learner/missions/${first.missionId}/submissions`,
+    scenario,
+    "POST",
+    { problemId: first.items[0].problemId, answer: "12" },
+    { "idempotency-key": "qa-first-answer" },
+  );
+  const completed = mockApi("/api/study/learner/me", scenario);
+  assert.equal(completed.activeMissionId, null);
+  assert.equal(completed.profile.grade.source, "learner_selected");
+
+  const next = mockApi("/api/study/learner/missions", scenario, "POST", { mode: "daily", grade: 5 });
+  assert.notEqual(next.missionId, first.missionId);
+  assert.equal(next.grade, 5);
+  assert.equal(next.status, "started");
+});
+
 test("브라우저 QA는 국외·미확정·장애 상태를 서로 구분한다", () => {
   assert.deepEqual(mockApi("/api/study/status", { role: "parent", studyState: "outside_market" }), { state: "outside_market" });
   assert.deepEqual(mockApi("/api/study/status", { role: "parent", studyState: "unavailable" }), { state: "unavailable" });

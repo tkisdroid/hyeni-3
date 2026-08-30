@@ -13,7 +13,7 @@ test("새로고침 뒤 서버의 활성 미션을 시작 호출 없이 이어서
   }), { kind: "resume", missionId: "mission-1" });
 });
 
-test("활성 미션이 없으면 저장 학년에 따라 선택 또는 시작을 제안한다", () => {
+test("활성 미션이 없으면 학습자 선택 학년은 다시 고르게 하고 보호자 학년만 바로 시작한다", () => {
   assert.deepEqual(childStudy.resolveChildStudyEntry({
     status: "available",
     profile: { grade: null },
@@ -21,7 +21,12 @@ test("활성 미션이 없으면 저장 학년에 따라 선택 또는 시작을
   }), { kind: "select_grade" });
   assert.deepEqual(childStudy.resolveChildStudyEntry({
     status: "available",
-    profile: { grade: { grade: 4 } },
+    profile: { grade: { grade: 4, source: "learner_selected" } },
+    activeMissionId: null,
+  }), { kind: "select_grade" });
+  assert.deepEqual(childStudy.resolveChildStudyEntry({
+    status: "available",
+    profile: { grade: { grade: 4, source: "parent_override" } },
     activeMissionId: null,
   }), { kind: "start" });
   assert.deepEqual(childStudy.resolveChildStudyEntry({
@@ -44,4 +49,12 @@ test("아이 화면은 family/member를 받지 않고 학년 선택만 허용한
   assert.doesNotMatch(source, /type=["'](?:text|number)["'][^>]*(?:family|member)|<select[^>]*(?:family|member)/i);
   assert.doesNotMatch(source, /query.*(?:family|member)|searchParams.*(?:family|member)/i);
   assert.doesNotMatch(source, /study\.child\.askGuardian/);
+});
+
+test("완료 화면은 같은 학년의 다음 묶음과 학년 다시 고르기를 모두 제공한다", async () => {
+  const source = await readFile(new URL("../src/features/study/StudyMissionResult.tsx", import.meta.url), "utf8");
+  assert.match(source, /onContinue/);
+  assert.match(source, /onChooseGrade/);
+  assert.match(source, /study\.child\.start\.button/);
+  assert.match(source, /study\.child\.gradeHelp/);
 });

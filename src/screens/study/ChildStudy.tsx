@@ -15,6 +15,7 @@ export function ChildStudy() {
   const learner = useStudyLearnerState();
   const start = useStartStudyMission();
   const [missionId, setMissionId] = useState<string | null>(null);
+  const [choosingGrade, setChoosingGrade] = useState(false);
   const mission = useStudyMission(missionId);
   const childStudyQueryState = resolveQueryTruthState([
     { isLoading: learner.isLoading, isError: learner.isError },
@@ -27,8 +28,10 @@ export function ChildStudy() {
   };
 
   useEffect(() => {
-    if (!missionId && learner.data?.activeMissionId) setMissionId(learner.data.activeMissionId);
-  }, [learner.data?.activeMissionId, missionId]);
+    if (!missionId && !choosingGrade && learner.data?.activeMissionId) {
+      setMissionId(learner.data.activeMissionId);
+    }
+  }, [choosingGrade, learner.data?.activeMissionId, missionId]);
 
   const goHome = () => navigate("/child/home");
   return (
@@ -44,7 +47,7 @@ export function ChildStudy() {
           <section className="child-study-state" role="alert"><p>{intl.formatMessage({ id: learner.isError ? "study.child.loadError" : "study.child.missionError" })}</p><button type="button" onClick={() => void retryChildStudy()}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button></section>
         ) : (
           <ChildStudyContent
-            entry={resolveChildStudyEntry(learner.data)}
+            entry={choosingGrade ? { kind: "select_grade" } : resolveChildStudyEntry(learner.data)}
             grade={learner.data.profile.grade?.grade ?? null}
             missionId={missionId}
             mission={mission}
@@ -57,10 +60,17 @@ export function ChildStudy() {
                   ...(grade === undefined ? {} : { grade }),
                   idempotencyKey: crypto.randomUUID(),
                 });
+                setChoosingGrade(false);
                 setMissionId(created.missionId);
               } catch {
                 // mutation 상태가 동일 카드에 복구 액션을 표시한다. 세션은 503으로 지우지 않는다.
               }
+            }}
+            canChooseGrade={learner.data.profile.grade?.source === "learner_selected"}
+            onChooseGrade={() => {
+              start.reset();
+              setChoosingGrade(true);
+              setMissionId(null);
             }}
             onHome={goHome}
           />
@@ -78,6 +88,8 @@ function ChildStudyContent({
   startBusy,
   startError,
   onStart,
+  canChooseGrade,
+  onChooseGrade,
   onHome,
 }: Readonly<{
   entry: ReturnType<typeof resolveChildStudyEntry>;
@@ -87,6 +99,8 @@ function ChildStudyContent({
   startBusy: boolean;
   startError: boolean;
   onStart: (grade?: StudyGrade) => Promise<void>;
+  canChooseGrade: boolean;
+  onChooseGrade: () => void;
   onHome: () => void;
 }>) {
   const intl = useIntl();
@@ -121,7 +135,7 @@ function ChildStudyContent({
         <span>{intl.formatMessage({ id: "study.child.gradeLabel" }, { grade: grade! })}</span>
         <h2>{intl.formatMessage({ id: "study.child.start.title" })}</h2>
         <p>{intl.formatMessage({ id: "study.child.start.description" })}</p>
-        <button type="button" disabled={startBusy} aria-busy={startBusy} onClick={() => void onStart()}>{intl.formatMessage({ id: startBusy ? "study.child.start.starting" : "study.child.start.button" })}</button>
+        <button type="button" disabled={startBusy} aria-busy={startBusy} onClick={() => void onStart(grade!)}>{intl.formatMessage({ id: startBusy ? "study.child.start.starting" : "study.child.gradeLabel" }, { grade: grade! })}</button>
         {startError && <p role="alert">{intl.formatMessage({ id: "study.child.start.error" })}</p>}
       </section>
     );
@@ -129,7 +143,18 @@ function ChildStudyContent({
   if (mission.isPending || !mission.data) {
     return <p role="status">{intl.formatMessage({ id: "study.child.loadingMission" })}</p>;
   }
-  return <StudyMissionPlayer key={mission.data.missionId} mission={mission.data} onHome={onHome} onForbidden={onHome} />;
+  return (
+    <StudyMissionPlayer
+      key={mission.data.missionId}
+      mission={mission.data}
+      onContinue={onStart}
+      onChooseGrade={canChooseGrade ? onChooseGrade : null}
+      continueBusy={startBusy}
+      continueError={startError}
+      onHome={onHome}
+      onForbidden={onHome}
+    />
+  );
 }
 
 export default ChildStudy;

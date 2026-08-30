@@ -367,10 +367,20 @@ const STUDY_API_VERSION = "2026-08-27";
 const STUDY_MISSION_ID = "qa-mission";
 const STUDY_PROBLEM_ID = "qa-problem";
 
+function currentStudyMissionId(scenario) {
+  return `${STUDY_MISSION_ID}-${scenario.studyMissionSequence ?? 1}`;
+}
+
+function currentStudyProblemId(scenario) {
+  return `${STUDY_PROBLEM_ID}-${scenario.studyMissionSequence ?? 1}`;
+}
+
 function studyResolvedGrade(scenario) {
   return {
-    grade: scenario.studyGradeOverride ?? 4,
-    source: scenario.studyGradeOverride == null ? "hyeni_birth_year" : "parent_override",
+    grade: scenario.studySelectedGrade ?? scenario.studyGradeOverride ?? 4,
+    source: scenario.studyLearnerSelected
+      ? "learner_selected"
+      : scenario.studyGradeOverride == null ? "hyeni_birth_year" : "parent_override",
     academicYear: 2026,
   };
 }
@@ -406,15 +416,16 @@ function studyReportFixture(scenario) {
 
 function studyMissionFixture(scenario) {
   const completed = scenario.studyMissionCompleted === true;
+  const sequence = scenario.studyMissionSequence ?? 1;
   return {
     apiVersion: STUDY_API_VERSION,
-    missionId: STUDY_MISSION_ID,
+    missionId: currentStudyMissionId(scenario),
     status: completed ? "completed" : "started",
-    grade: scenario.studyGradeOverride ?? 4,
+    grade: scenario.studySelectedGrade ?? scenario.studyGradeOverride ?? 4,
     items: [{
-      problemId: STUDY_PROBLEM_ID,
+      problemId: currentStudyProblemId(scenario),
       position: 0,
-      prompt: "3 × 4는 얼마일까?",
+      prompt: sequence === 1 ? "3 × 4는 얼마일까?" : "5 × 3은 얼마일까?",
       childObjective: "곱셈식을 계산할 수 있어",
       domainLabel: "수와 연산",
       conceptTitle: "곱셈",
@@ -587,17 +598,26 @@ export function mockApi(pathname, scenario, method = "GET", requestBody = null, 
     return {
       apiVersion: STUDY_API_VERSION,
       memberId: CHILD_MEMBER_ID,
-      status: scenario.studyGradeUnavailable ? "inactive_or_missing" : "available",
+      status: scenario.studyProfileInactive ? "inactive_or_missing" : "available",
       grade: {
         grade: scenario.studyGradeUnavailable ? null : (scenario.studyGradeOverride ?? 4),
         source: scenario.studyGradeUnavailable ? "manual_required" : "study",
       },
-      profile: { memberId: CHILD_MEMBER_ID, grade: studyResolvedGrade(scenario) },
-      activeMissionId: scenario.studyActiveMission || scenario.studyMissionStarted ? STUDY_MISSION_ID : null,
+      profile: {
+        memberId: CHILD_MEMBER_ID,
+        grade: scenario.studyGradeUnavailable ? null : studyResolvedGrade(scenario),
+      },
+      activeMissionId: (scenario.studyActiveMission || scenario.studyMissionStarted)
+        && scenario.studyMissionCompleted !== true
+        ? currentStudyMissionId(scenario)
+        : null,
     };
   }
   if (pathname === "/api/study/learner/missions" && method === "POST") {
+    scenario.studyMissionSequence = (scenario.studyMissionSequence ?? 0) + 1;
+    scenario.studySelectedGrade = requestBody?.grade ?? scenario.studySelectedGrade ?? scenario.studyGradeOverride ?? 4;
     scenario.studyMissionStarted = true;
+    scenario.studyMissionCompleted = false;
     return studyMissionFixture(scenario);
   }
   if (/^\/api\/study\/learner\/missions\/[^/]+$/u.test(pathname)) {
@@ -614,8 +634,8 @@ export function mockApi(pathname, scenario, method = "GET", requestBody = null, 
     scenario.studyMissionCompleted = true;
     return {
       apiVersion: STUDY_API_VERSION,
-      missionId: STUDY_MISSION_ID,
-      problemId: STUDY_PROBLEM_ID,
+      missionId: currentStudyMissionId(scenario),
+      problemId: currentStudyProblemId(scenario),
       requestId: "qa-study-result-123456",
       result: "accepted",
       outcome: {
@@ -2790,6 +2810,20 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       report.problems.push({ scope: "study-parent-internal-entry", facts: parentStudyEntryFacts, routeProblems: rowProblems(parentStudyEntry) });
     }
     await clickSelector(cdp, ".ph-hero--promo");
+    await wait(900);
+    const parentMiniAppsFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      title: document.querySelector("#mini-apps-title")?.textContent?.trim() ?? null,
+      mathVisible: Boolean(document.querySelector(".mini-app-card--math")),
+    }))()`);
+    if (
+      parentMiniAppsFacts.hash !== "#/miniapps"
+      || parentMiniAppsFacts.title !== "미니앱"
+      || !parentMiniAppsFacts.mathVisible
+    ) {
+      report.problems.push({ scope: "study-parent-miniapps-entry", facts: parentMiniAppsFacts });
+    }
+    await clickSelector(cdp, ".mini-app-card--math");
     await wait(1_400);
     const parentStudySelectionFacts = await cdp.evaluate(`(() => ({
       hash: location.hash,
@@ -2950,7 +2984,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || !unavailableFacts.sessionKept
       || unavailableCoreFacts.hash !== "#/parent/home"
       || !unavailableCoreFacts.calendarHome
-      || unavailableCoreFacts.promoVisible
+      || !unavailableCoreFacts.promoVisible
       || !unavailableCoreFacts.sessionKept
       || rowProblems(unavailableStudy).length > 0
       || rowProblems(unavailableCore).length > 0
@@ -2998,6 +3032,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       catalogMode: "valid",
       overLimit: false,
       studyState: "enabled",
+      studyLearnerSelected: true,
       studyTransientSubmit: true,
     };
     const childStudyEntry = await navigate(childStudyScenario, "child/home");
@@ -3006,10 +3041,24 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       visible: Boolean(document.querySelector(".kd-tile--study")),
       text: document.querySelector(".kd-tile--study")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
     }))()`);
-    if (!childStudyEntryFacts.visible || !childStudyEntryFacts.text?.includes("수학 학습") || rowProblems(childStudyEntry).length > 0) {
+    if (!childStudyEntryFacts.visible || !childStudyEntryFacts.text?.includes("미니앱") || rowProblems(childStudyEntry).length > 0) {
       report.problems.push({ scope: "study-child-internal-entry", facts: childStudyEntryFacts, routeProblems: rowProblems(childStudyEntry) });
     }
     await clickSelector(cdp, ".kd-tile--study");
+    await wait(800);
+    const childMiniAppsFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      title: document.querySelector("#mini-apps-title")?.textContent?.trim() ?? null,
+      mathVisible: Boolean(document.querySelector(".mini-app-card--math")),
+    }))()`);
+    if (
+      childMiniAppsFacts.hash !== "#/miniapps"
+      || childMiniAppsFacts.title !== "미니앱"
+      || !childMiniAppsFacts.mathVisible
+    ) {
+      report.problems.push({ scope: "study-child-miniapps-entry", facts: childMiniAppsFacts });
+    }
+    await clickSelector(cdp, ".mini-app-card--math");
     await wait(1_200);
     const childStartFacts = await cdp.evaluate(`(() => ({
       hash: location.hash,
@@ -3055,11 +3104,84 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     const completeFacts = await cdp.evaluate(`(() => ({
       title: document.querySelector("#study-mission-complete-title")?.textContent?.trim() ?? null,
       saved: document.querySelector(".study-mission-result")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      continueVisible: [...document.querySelectorAll(".study-result-actions button")]
+        .some((button) => button.textContent?.includes("계속 학습하기")),
+      gradeVisible: [...document.querySelectorAll(".study-result-actions button")]
+        .some((button) => button.textContent?.includes("학년 선택 또는 변경")),
     }))()`);
-    if (completeFacts.title !== "오늘 학습을 마쳤어!" || !completeFacts.saved?.includes("안전하게 저장했어")) {
+    if (
+      completeFacts.title !== "오늘 학습을 마쳤어!"
+      || !completeFacts.saved?.includes("안전하게 저장했어")
+      || !completeFacts.continueVisible
+      || !completeFacts.gradeVisible
+    ) {
       report.problems.push({ scope: "study-child-completion", facts: completeFacts });
     }
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "study-child-complete.png"));
+    await clickSelector(cdp, ".study-result-actions button");
+    await wait(1_200);
+    const continuedFacts = await cdp.evaluate(`(() => ({
+      problem: document.querySelector(".study-problem h2")?.textContent?.trim() ?? null,
+      completeVisible: Boolean(document.querySelector(".study-mission-result")),
+    }))()`);
+    if (
+      continuedFacts.problem !== "5 × 3은 얼마일까?"
+      || continuedFacts.completeVisible
+      || childStudyScenario.studyMissionSequence !== 2
+    ) {
+      report.problems.push({
+        scope: "study-child-unlimited-continue",
+        facts: { ...continuedFacts, missionSequence: childStudyScenario.studyMissionSequence },
+      });
+    }
+
+    const completedReentryScenario = {
+      role: "child",
+      tier: "free",
+      catalogMode: "valid",
+      overLimit: false,
+      studyState: "enabled",
+      studyLearnerSelected: true,
+      studyMissionStarted: true,
+      studyMissionCompleted: true,
+      studyMissionSequence: 1,
+    };
+    await navigate(completedReentryScenario, "child/home", 1_200);
+    await clickSelector(cdp, ".kd-tile--study");
+    await wait(700);
+    await clickSelector(cdp, ".mini-app-card--math");
+    await wait(1_000);
+    const reentryFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      gradeButtonCount: document.querySelectorAll(".child-study-grade-options button").length,
+      startError: Boolean(document.querySelector(".child-study-start [role='alert']")),
+      toast: document.querySelector("[role='status'].hy-toast")?.textContent?.trim() ?? null,
+    }))()`);
+    if (
+      reentryFacts.hash !== "#/study/learn"
+      || reentryFacts.gradeButtonCount !== 4
+      || reentryFacts.startError
+      || reentryFacts.toast !== null
+    ) {
+      report.problems.push({ scope: "study-child-completed-reentry", facts: reentryFacts });
+    }
+    await clickSelector(cdp, ".child-study-grade-options button");
+    await wait(1_100);
+    const reentryRestartFacts = await cdp.evaluate(`(() => ({
+      problem: document.querySelector(".study-problem h2")?.textContent?.trim() ?? null,
+      startError: Boolean(document.querySelector(".child-study-start [role='alert']")),
+    }))()`);
+    if (
+      reentryRestartFacts.problem !== "5 × 3은 얼마일까?"
+      || reentryRestartFacts.startError
+      || completedReentryScenario.studyMissionSequence !== 2
+      || completedReentryScenario.studySelectedGrade !== 3
+    ) {
+      report.problems.push({
+        scope: "study-child-completed-restart",
+        facts: { ...reentryRestartFacts, scenario: completedReentryScenario },
+      });
+    }
 
     const resumedStudy = await navigate({
       role: "child", tier: "free", catalogMode: "valid", overLimit: false,
@@ -3078,14 +3200,20 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       studyState: "enabled", studyGradeUnavailable: true,
     }, "study/learn", 1_500);
     const childGradeMissingFacts = await cdp.evaluate(`(() => ({
-      text: document.querySelector(".child-study-state")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
-      gradeSelector: Boolean(document.querySelector("select")),
+      text: document.querySelector(".child-study-start")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      gradeButtonCount: document.querySelectorAll(".child-study-grade-options button").length,
+      asksGuardian: document.body.textContent?.includes("보호자에게 학년을 확인") ?? false,
     }))()`);
-    if (!childGradeMissingFacts.text?.includes("보호자와 함께 아이 프로필") || childGradeMissingFacts.gradeSelector || rowProblems(childGradeMissing).length > 0) {
-      report.problems.push({ scope: "study-child-no-grade-selection", facts: childGradeMissingFacts, routeProblems: rowProblems(childGradeMissing) });
+    if (
+      !childGradeMissingFacts.text?.includes("학년 선택 또는 변경")
+      || childGradeMissingFacts.gradeButtonCount !== 4
+      || childGradeMissingFacts.asksGuardian
+      || rowProblems(childGradeMissing).length > 0
+    ) {
+      report.problems.push({ scope: "study-child-grade-selection", facts: childGradeMissingFacts, routeProblems: rowProblems(childGradeMissing) });
     }
     report.focused.study = {
-      parentEntry: parentStudyEntryFacts,
+      parentEntry: { home: parentStudyEntryFacts, miniApps: parentMiniAppsFacts },
       parentReport: parentStudyLandingFacts,
       gradeOverride: gradeOverrideFacts,
       gradeReset: gradeResetFacts,
@@ -3094,7 +3222,18 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       access: { outsideMarket: outsideMarketFacts, childOnParent: childOnParentFacts, parentOnChild: parentOnChildFacts },
       unavailable: { feature: unavailableFacts, calendar: unavailableCoreFacts },
       accessibility: { keyboard: keyboardFacts, desktopZoom: desktopZoomFacts },
-      child: { entry: childStudyEntryFacts, start: childStartFacts, retry: retryFacts, accepted: acceptedFacts, complete: completeFacts, resume: resumedFacts, gradeMissing: childGradeMissingFacts },
+      child: {
+        entry: { home: childStudyEntryFacts, miniApps: childMiniAppsFacts },
+        start: childStartFacts,
+        retry: retryFacts,
+        accepted: acceptedFacts,
+        complete: completeFacts,
+        continued: continuedFacts,
+        completedReentry: reentryFacts,
+        completedRestart: reentryRestartFacts,
+        resume: resumedFacts,
+        gradeMissing: childGradeMissingFacts,
+      },
       idempotencyKeysMatch: childStudyScenario.studySubmissionKeys?.[0] === childStudyScenario.studySubmissionKeys?.[1],
     };
 

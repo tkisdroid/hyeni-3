@@ -11,11 +11,23 @@ import { createStudyPlayerState, reduceStudyPlayer } from "./player/studyPlayerS
 
 type Props = Readonly<{
   mission: StudyMissionDto;
+  onContinue: (grade: StudyMissionDto["grade"]) => Promise<void>;
+  onChooseGrade: (() => void) | null;
+  continueBusy: boolean;
+  continueError: boolean;
   onHome: () => void;
   onForbidden: () => void;
 }>;
 
-export function StudyMissionPlayer({ mission, onHome, onForbidden }: Props) {
+export function StudyMissionPlayer({
+  mission,
+  onContinue,
+  onChooseGrade,
+  continueBusy,
+  continueError,
+  onHome,
+  onForbidden,
+}: Props) {
   const intl = useIntl();
   const submit = useSubmitStudyAnswer();
   const [state, dispatch] = useReducer(reduceStudyPlayer, mission, createStudyPlayerState);
@@ -42,7 +54,16 @@ export function StudyMissionPlayer({ mission, onHome, onForbidden }: Props) {
   };
 
   if (state.phase === "completed" || !item) {
-    return <StudyMissionResult mission={mission} onHome={onHome} />;
+    return (
+      <StudyMissionResult
+        mission={mission}
+        onContinue={() => void onContinue(mission.grade)}
+        onChooseGrade={onChooseGrade}
+        continueBusy={continueBusy}
+        continueError={continueError}
+        onHome={onHome}
+      />
+    );
   }
 
   const draft = state.draft ?? initialStudyAnswer(item);

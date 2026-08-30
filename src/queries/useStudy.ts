@@ -20,6 +20,7 @@ import type {
   UpdateStudyGradeCommand,
 } from "@/features/study/contracts";
 import { qk } from "./keys";
+import { refreshStudyAfterAnswer } from "./studyQueryRefresh";
 
 function stableFamilyId(value: string | null): string {
   return value ?? "none";
@@ -86,9 +87,10 @@ export function useStartStudyMission() {
   const keyFamilyId = stableFamilyId(familyId);
   return useMutation({
     mutationFn: (input: { mode: StudyMissionMode; grade?: StudyGrade; idempotencyKey: string }) => startStudyMission(input),
-    onSuccess: async (mission) => {
+    meta: { silentError: true },
+    onSuccess: (mission) => {
       client.setQueryData(qk.study.mission(keyFamilyId, mission.missionId), mission);
-      await client.invalidateQueries({ queryKey: qk.study.learner(keyFamilyId), exact: true });
+      void client.invalidateQueries({ queryKey: qk.study.learner(keyFamilyId), exact: true });
     },
   });
 }
@@ -99,19 +101,14 @@ export function useSubmitStudyAnswer() {
   const keyFamilyId = stableFamilyId(familyId);
   return useMutation({
     mutationFn: (command: SubmitStudyAnswerCommand) => submitStudyAnswer(command),
-    onSuccess: async (result) => {
+    meta: { silentError: true },
+    onSuccess: (result) => {
       const learner = client.getQueryData<StudyLearnerStateDto>(qk.study.learner(keyFamilyId));
-      const invalidations = [
-        client.invalidateQueries({ queryKey: qk.study.mission(keyFamilyId, result.missionId), exact: true }),
-        client.invalidateQueries({ queryKey: qk.study.learner(keyFamilyId), exact: true }),
-      ];
-      if (learner?.memberId) {
-        invalidations.push(
-          client.invalidateQueries({ queryKey: qk.study.overview(keyFamilyId, learner.memberId), exact: true }),
-          client.invalidateQueries({ queryKey: ["study", "report", keyFamilyId, learner.memberId] }),
-        );
-      }
-      await Promise.all(invalidations);
+      refreshStudyAfterAnswer(client, {
+        familyId: keyFamilyId,
+        learnerMemberId: learner?.memberId ?? null,
+        missionId: result.missionId,
+      });
     },
   });
 }
