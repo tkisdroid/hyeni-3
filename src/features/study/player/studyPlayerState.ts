@@ -42,6 +42,7 @@ export type StudyPlayerAction =
   | Readonly<{ type: "FAILED"; retryable: boolean }>
   | Readonly<{ type: "RETRY" }>
   | Readonly<{ type: "SUCCEEDED"; result: unknown }>
+  | Readonly<{ type: "TRY_AGAIN" }>
   | Readonly<{ type: "NEXT" }>;
 
 export function createStudyPlayerState(mission: MissionState): StudyPlayerState {
@@ -99,6 +100,10 @@ export function reduceStudyPlayer(state: StudyPlayerState, action: StudyPlayerAc
     case "SUCCEEDED":
       return current.phase === "submitting"
         ? { ...current, phase: "revealed", result: action.result, retryCommand: null }
+        : current;
+    case "TRY_AGAIN":
+      return current.phase === "revealed"
+        ? { ...current, phase: "ready", draft: null, retryCommand: null, result: null }
         : current;
     case "NEXT": {
       if (current.phase !== "revealed") return current;

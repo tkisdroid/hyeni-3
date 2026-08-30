@@ -17,6 +17,7 @@ type Props = Readonly<{
   onSubmit: (answer: string) => void;
   result?: StudyAttemptResultDto | null;
   onNext?: () => void;
+  onTryAgain?: () => void;
   disabled?: boolean;
 }>;
 
@@ -38,7 +39,11 @@ function ProblemVisual({ item }: Readonly<{ item: StudyMissionItemDto }>) {
   }
 }
 
-function ResultPanel({ result, onNext }: Readonly<{ result: StudyAttemptResultDto; onNext?: () => void }>) {
+function ResultPanel({ result, onNext, onTryAgain }: Readonly<{
+  result: StudyAttemptResultDto;
+  onNext?: () => void;
+  onTryAgain?: () => void;
+}>) {
   const intl = useIntl();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const feedback = result.outcome.feedback;
@@ -59,6 +64,7 @@ function ResultPanel({ result, onNext }: Readonly<{ result: StudyAttemptResultDt
       {feedback.kind === "retry" && <p><strong>{intl.formatMessage({ id: "study.result.hint" })}</strong> {feedback.hint.text}</p>}
       {feedback.kind === "explanation_ready" && <ol>{feedback.explanation.steps.map((step) => <li key={step}>{step}</li>)}</ol>}
       {onNext && feedback.next === "continue" && <button type="button" className="study-submit" onClick={onNext}>{intl.formatMessage({ id: "study.result.next" })}</button>}
+      {onTryAgain && feedback.next === "retry" && <button type="button" className="study-submit" onClick={onTryAgain}>{intl.formatMessage({ id: "study.result.retryAnswer" })}</button>}
     </section>
   );
 }
@@ -70,6 +76,7 @@ export function StudyProblemRenderer({
   onSubmit,
   result = null,
   onNext,
+  onTryAgain,
   disabled = false,
 }: Props) {
   const intl = useIntl();
@@ -98,7 +105,7 @@ export function StudyProblemRenderer({
           {intl.formatMessage({ id: disabled ? "study.answer.submitting" : "study.answer.submit" })}
         </button>
       )}
-      {result && <ResultPanel result={result} onNext={onNext} />}
+      {result && <ResultPanel result={result} onNext={onNext} onTryAgain={onTryAgain} />}
     </article>
   );
 }
