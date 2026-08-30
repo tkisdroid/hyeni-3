@@ -662,7 +662,13 @@ test("Study binding 거부는 세션 오류를 노출하거나 Calendar 상태�
 
     const calendarRead = await request(db, recordingBinding(), "/status", { authorizationHeader: accessToken });
     assert.equal(calendarRead.response.status, 200);
-    assert.deepEqual(calendarRead.body, { state: "enabled" });
+    assert.deepEqual(calendarRead.body, {
+      state: "enabled",
+      market: "KR",
+      role: "child",
+      managementEnabled: true,
+      learnerEnabled: true,
+    });
   } finally {
     db.close();
   }
@@ -686,7 +692,13 @@ test("Study binding timeout도 Calendar 세션을 건드리지 않고 sanitized 
 
     const calendarRead = await request(db, recordingBinding(), "/status", { authorizationHeader: accessToken });
     assert.equal(calendarRead.response.status, 200);
-    assert.deepEqual(calendarRead.body, { state: "enabled" });
+    assert.deepEqual(calendarRead.body, {
+      state: "enabled",
+      market: "KR",
+      role: "child",
+      managementEnabled: true,
+      learnerEnabled: true,
+    });
   } finally {
     db.close();
   }

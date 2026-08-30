@@ -142,6 +142,10 @@ import {
   subscribeNativeOAuthLoginCompletion,
 } from "@/transform/nativeOAuthLoginCompletion";
 import type { OnboardingInterest } from "@/transform/onboardingPreferences";
+import {
+  normalizeSuggestedStudyCountry,
+  StudyCountryConfirmation,
+} from "@/features/study/StudyCountryConfirmation";
 
 type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
 type AuthIntent = "login" | "signup";
@@ -230,6 +234,11 @@ export function Onboarding() {
   // 친구 초대 ref는 가족 생성 성공 전까지 유지해 로그인·가입 단계를 지나도 귀속한다.
   const [referralPrefill, setReferralPrefill] = useState<string | null>(() => readReferralParam());
   const [referralDraft, setReferralDraft] = useState(() => readReferralParam() ?? "");
+  const suggestedStudyCountry = normalizeSuggestedStudyCountry(accessCountry);
+  const [selectedStudyCountry, setSelectedStudyCountry] = useState(
+    () => normalizeSuggestedStudyCountry(accessCountry) ?? "KR",
+  );
+  const [studyCountryConfirmed, setStudyCountryConfirmed] = useState(false);
   const oauthLoginPromiseRef = useRef<ReturnType<typeof finishOAuthLogin> | null>(null);
   const nativeOAuthCompletionInFlightRef = useRef<string | null>(null);
   const nativeOAuthCompletionRetryRef = useRef<{ id: string; attempts: number } | null>(null);
@@ -1060,6 +1069,17 @@ export function Onboarding() {
           referralCode={referralPrefill}
           referralDraft={referralDraft}
           onReferralDraftChange={applyReferralDraft}
+          suggestedStudyCountry={suggestedStudyCountry}
+          selectedStudyCountry={selectedStudyCountry}
+          studyCountryConfirmed={studyCountryConfirmed}
+          onStudyCountryChange={(country) => {
+            setSelectedStudyCountry(country);
+            setStudyCountryConfirmed(false);
+          }}
+          onStudyCountryConfirm={(country) => {
+            setSelectedStudyCountry(country);
+            setStudyCountryConfirmed(true);
+          }}
           onBack={() => {
             clearOnboardingDraft();
             setPendingPairInvite(null);
@@ -1074,6 +1094,12 @@ export function Onboarding() {
               await setupFamily({
                 parentName: (signupName ?? "").trim() || parentNameFromUser(user),
                 referralCode: referralPrefill ?? undefined,
+                studyCountry: {
+                  serviceCountry: selectedStudyCountry,
+                  serviceCountrySource: selectedStudyCountry === suggestedStudyCountry
+                    ? "guardian_confirmed"
+                    : "guardian_changed",
+                },
               });
               clearReferralParam();
               syncFromSession();
@@ -2419,6 +2445,11 @@ function ConnectStep({
   referralCode,
   referralDraft,
   onReferralDraftChange,
+  suggestedStudyCountry,
+  selectedStudyCountry,
+  studyCountryConfirmed,
+  onStudyCountryChange,
+  onStudyCountryConfirm,
   onBack,
   onNewFamily,
   onJoin,
@@ -2428,6 +2459,11 @@ function ConnectStep({
   referralCode?: string | null;
   referralDraft: string;
   onReferralDraftChange: (value: string) => void;
+  suggestedStudyCountry: string | null;
+  selectedStudyCountry: string;
+  studyCountryConfirmed: boolean;
+  onStudyCountryChange: (country: string) => void;
+  onStudyCountryConfirm: (country: string) => void;
   onBack: () => void;
   onNewFamily: () => void | Promise<void>;
   onJoin: () => void | Promise<void>;
@@ -2479,12 +2515,21 @@ function ConnectStep({
         />
       </div>
 
+      <StudyCountryConfirmation
+        suggestedCountry={suggestedStudyCountry}
+        initialCountry={selectedStudyCountry}
+        busy={busy}
+        confirmed={studyCountryConfirmed}
+        onCountryChange={onStudyCountryChange}
+        onConfirm={onStudyCountryConfirm}
+      />
+
       <div className="ob-connect-list">
         <button
           type="button"
           className="ob-connect-card hy-press"
           onClick={() => runAction("new-family", onNewFamily)}
-          disabled={busy}
+          disabled={busy || !studyCountryConfirmed}
           aria-busy={pendingAction === "new-family"}
         >
           <img className="ob-connect-ic" src={asset("ui/place-home.webp")} alt="" />

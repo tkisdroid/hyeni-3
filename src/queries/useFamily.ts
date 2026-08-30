@@ -15,6 +15,8 @@ import {
   setChildProfile,
   reportDeviceStatus,
   sendChildSettingRequest,
+  confirmServiceCountry,
+  type ConfirmServiceCountryInput,
   type SettingRequestMenu,
   type DeviceHealth,
 } from "@/lib/api/endpoints/family";
@@ -52,6 +54,24 @@ export function useMyFamily(opts?: { pollMs?: number }) {
   });
   const data = useResolvedFamilyPhotos(query.data);
   return { ...query, data };
+}
+
+/** 이용 국가 변경 성공 시 family snapshot과 Study access 상태를 함께 다시 읽는다. */
+export function useConfirmServiceCountry() {
+  const qc = useQueryClient();
+  const { familyId } = useAuth();
+  return useMutation({
+    mutationFn: (input: Omit<ConfirmServiceCountryInput, "familyId">) => {
+      if (!familyId) throw new Error("가족 정보가 없어요");
+      return confirmServiceCountry({ ...input, familyId });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: qk.family(familyId), exact: true }),
+        qc.invalidateQueries({ queryKey: qk.study.all }),
+      ]);
+    },
+  });
 }
 
 /** 본인 프로필(이름/전화/캐릭터) 수정 → 가족 캐시 무효화. */

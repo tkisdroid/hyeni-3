@@ -3,7 +3,7 @@
  * 온보딩(setup/join)과 가족 화면(mine/profile/pair-code)이 공용.
  * join/join-as-parent 는 서버가 세션을 재발급하므로 applyApiSession + setApiUser 필수.
  */
-import { apiGet, apiPost, apiPatch } from "../client";
+import { apiGet, apiPost, apiPatch, apiPut } from "../client";
 import { ApiError } from "../errors";
 import {
   applyApiSession,
@@ -112,6 +112,9 @@ export interface FamilyInfo {
   isPrimaryParent: boolean;
   /** 내가 보조 보호자(co-parent)인가. */
   isCoParent: boolean;
+  /** Study 이용 국가 확인 snapshot. 국적이 아니며 대표 보호자만 변경한다. */
+  serviceCountry: string | null;
+  serviceCountryRowVersion: number | null;
 }
 
 interface FamilyMineResponse {
@@ -125,6 +128,8 @@ interface FamilyMineResponse {
   primaryParentId?: string | null;
   isPrimaryParent?: boolean;
   isCoParent?: boolean;
+  serviceCountry?: string | null;
+  serviceCountryRowVersion?: number | null;
 }
 
 interface SessionResponse {
@@ -174,6 +179,10 @@ export async function getMyFamily(): Promise<FamilyInfo | null> {
     primaryParentId: data.primaryParentId ?? null,
     isPrimaryParent: data.isPrimaryParent === true,
     isCoParent: data.isCoParent === true,
+    serviceCountry: typeof data.serviceCountry === "string" ? data.serviceCountry : null,
+    serviceCountryRowVersion: Number.isSafeInteger(data.serviceCountryRowVersion)
+      ? (data.serviceCountryRowVersion as number)
+      : null,
   };
 }
 
@@ -185,6 +194,10 @@ export interface SetupFamilyInput {
   parentPhone?: string;
   parentGender?: string;
   referralCode?: string;
+  studyCountry?: Readonly<{
+    serviceCountry: string;
+    serviceCountrySource: "guardian_confirmed" | "guardian_changed";
+  }>;
 }
 
 /**
@@ -206,15 +219,18 @@ export function defaultChildColor(index: number): string {
   return DEFAULT_CHILD_COLORS[i % DEFAULT_CHILD_COLORS.length];
 }
 
-/** 로그인 후 새 가족 생성. { id, pair_code } 반환. */
-export async function setupFamily(input: SetupFamilyInput): Promise<{ id: string; pair_code: string }> {
+export function buildSetupFamilyPayload(input: SetupFamilyInput): Record<string, unknown> {
   let parentPhone = "";
   try {
     parentPhone = input.parentPhone ? normalizePhoneForStorage(input.parentPhone) : "";
   } catch {
     parentPhone = "";
   }
-  return apiPost("/api/family/setup", {
+  const serviceCountry = input.studyCountry?.serviceCountry.trim().toUpperCase();
+  if (serviceCountry !== undefined && !/^[A-Z]{2}$/u.test(serviceCountry)) {
+    throw new ApiError("invalid_service_country", 400);
+  }
+  return {
     parentName: input.parentName,
     familyName: input.familyName ?? "",
     plannedChildCount: input.plannedChildCount ?? 1,
@@ -222,6 +238,45 @@ export async function setupFamily(input: SetupFamilyInput): Promise<{ id: string
     parentPhone,
     parentGender: input.parentGender ?? "",
     referralCode: input.referralCode?.trim() || undefined,
+    ...(serviceCountry === undefined ? {} : {
+      serviceCountry,
+      serviceCountryMatchedEdge: input.studyCountry?.serviceCountrySource === "guardian_confirmed",
+    }),
+  };
+}
+
+/** 로그인 후 새 가족 생성. { id, pair_code } 반환. */
+export async function setupFamily(input: SetupFamilyInput): Promise<{ id: string; pair_code: string }> {
+  return apiPost("/api/family/setup", buildSetupFamilyPayload(input));
+}
+
+export interface ConfirmServiceCountryInput {
+  familyId: string;
+  country: string;
+  rowVersion: number;
+  requestId: string;
+}
+
+export interface ConfirmServiceCountryResult {
+  serviceCountry: string;
+  studyMarket: "KR" | null;
+  source: "guardian_confirmed" | "guardian_changed";
+  rowVersion: number;
+}
+
+/** 대표 보호자가 가족의 이용 국가를 명시적으로 확인한다. */
+export async function confirmServiceCountry(
+  input: ConfirmServiceCountryInput,
+): Promise<ConfirmServiceCountryResult> {
+  const country = input.country.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/u.test(country) || !Number.isSafeInteger(input.rowVersion) || input.rowVersion < 1) {
+    throw new ApiError("invalid_service_country", 400);
+  }
+  return apiPut<ConfirmServiceCountryResult>("/api/family/service-country", {
+    familyId: input.familyId,
+    country,
+    rowVersion: input.rowVersion,
+    requestId: input.requestId,
   });
 }
 

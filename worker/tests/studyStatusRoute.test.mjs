@@ -379,6 +379,33 @@ for (const row of [
   });
 }
 
+test("대표 보호자만 제안된 이용 국가를 확인할 수 있다", async () => {
+  const db = createFixture({ country: "KR", market: null, confirmed: false });
+  try {
+    saveSettings(db);
+    db.sqlite.prepare("UPDATE families SET parent_id=? WHERE id=?").run(USER_ID, FAMILY_ID);
+    const primary = await requestStudyStatus(db);
+    assert.equal(primary.response.status, 200);
+    assert.deepEqual(primary.body, {
+      state: "not_confirmed",
+      inferredCountry: "KR",
+      canConfirm: true,
+    });
+
+    const coparent = await requestStudyStatus(db, {
+      token: { userId: COPARENT_USER_ID, deviceId: "study-coparent-device" },
+    });
+    assert.equal(coparent.response.status, 200);
+    assert.deepEqual(coparent.body, {
+      state: "not_confirmed",
+      inferredCountry: "KR",
+      canConfirm: false,
+    });
+  } finally {
+    db.close();
+  }
+});
+
 test("유효하지 않은 access token은 Study 상태를 열지 않는다", async () => {
   const db = createFixture();
   try {
@@ -413,13 +440,13 @@ for (const row of [
   { name: "비활성 가족 구성원", options: { membershipActive: false } },
   { name: "가족 없음", options: { includeFamily: false } },
 ]) {
-  test(`${row.name}은 확정 전 상태로 닫는다`, async () => {
+  test(`${row.name}은 가족 없음 상태로 닫는다`, async () => {
     const db = createFixture(row.options);
     try {
       saveSettings(db);
       const result = await requestStudyStatus(db);
       assert.equal(result.response.status, 200);
-      assert.deepEqual(result.body, { state: "not_confirmed" });
+      assert.deepEqual(result.body, { state: "no_family" });
       assert.equal(result.binding.readinessCalls, 0);
     } finally {
       db.close();
@@ -484,7 +511,13 @@ test("활성 learner membership은 management flag가 아니라 learner flag를 
     });
     const result = await requestStudyStatus(db, { token: { role: "child" } });
     assert.equal(result.response.status, 200);
-    assert.deepEqual(result.body, { state: "enabled" });
+    assert.deepEqual(result.body, {
+      state: "enabled",
+      market: "KR",
+      role: "child",
+      managementEnabled: false,
+      learnerEnabled: true,
+    });
     assert.equal(result.binding.readinessCalls, 1);
   } finally {
     db.close();
@@ -497,7 +530,7 @@ test("확정된 KR인데 market 값이 없으면 Study를 열지 않는다", asy
     saveSettings(db);
     const result = await requestStudyStatus(db);
     assert.equal(result.response.status, 200);
-    assert.deepEqual(result.body, { state: "not_confirmed" });
+    assert.deepEqual(result.body, { state: "not_confirmed", inferredCountry: "KR", canConfirm: false });
     assert.equal(result.binding.readinessCalls, 0);
   } finally {
     db.close();
@@ -560,7 +593,13 @@ test("정확히 일치한 canary familyRef만 rollout 전에 Study를 연다", a
     });
     const eligible = await requestStudyStatus(eligibleDb);
     assert.equal(eligible.response.status, 200);
-    assert.deepEqual(eligible.body, { state: "enabled" });
+    assert.deepEqual(eligible.body, {
+      state: "enabled",
+      market: "KR",
+      role: "parent",
+      managementEnabled: true,
+      learnerEnabled: true,
+    });
     assert.equal(eligible.binding.readinessCalls, 1);
   } finally {
     eligibleDb.close();
@@ -676,6 +715,7 @@ test("활성 보호자는 정확히 지정한 활성 아이의 학년 override�
     });
     assert.equal(result.response.status, 200);
     assert.deepEqual(result.body, {
+      memberId: CHILD_MEMBER_ID,
       grade: { grade: 5, source: "parent_override", academicYear: 2026 },
       rowVersion: 2,
     });
@@ -805,6 +845,7 @@ test("자동 학년이 unavailable이어도 parent override로 복구하며 Stud
     });
     assert.equal(result.response.status, 200);
     assert.deepEqual(result.body, {
+      memberId: CHILD_MEMBER_ID,
       grade: { grade: 4, source: "parent_override", academicYear: 2026 },
       rowVersion: 2,
     });

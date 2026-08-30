@@ -3,7 +3,7 @@ import { resolveCanonicalFamilyMembership } from "../db/authz";
 import { changeLearningGrade, LearningGradeUnavailableError } from "../lib/learningGrade";
 import { acquireAccountMutationLease, releaseAccountMutationLease } from "../lib/accountMutationLease";
 import { requireAuth } from "../middleware/auth";
-import { isStudyFeatureEnabled } from "../lib/studyFeatureState";
+import { resolveStudyFeatureAccess } from "../lib/studyFeatureState";
 import {
   StudyGatewayRequestError,
   callStudyBinding,
@@ -49,16 +49,22 @@ study.get("/status", requireAuth, async (c) => {
     console.error("[study-status] membership resolution failed");
     return c.json({ state: "unavailable" }, 503);
   }
-  if (!membership) return c.json({ state: "not_confirmed" });
+  if (!membership) return c.json({ state: "no_family" });
 
-  let family: { service_country: string | null; service_country_source: string | null; study_market: string | null } | null;
+  let family: {
+    parent_id: string;
+    service_country: string | null;
+    service_country_source: string | null;
+    study_market: string | null;
+  } | null;
   try {
     family = await c.env.DB.prepare(
-      `SELECT service_country, service_country_source, study_market
+      `SELECT parent_id, service_country, service_country_source, study_market
          FROM families
         WHERE id=?
         LIMIT 1`,
     ).bind(membership.familyId).first<{
+      parent_id: string;
       service_country: string | null;
       service_country_source: string | null;
       study_market: string | null;
@@ -67,22 +73,37 @@ study.get("/status", requireAuth, async (c) => {
     console.error("[study-status] market resolution failed");
     return c.json({ state: "unavailable" }, 503);
   }
-  if (!family || family.study_market !== "KR") {
-    const confirmedOutsideMarket = family?.service_country !== "KR"
-      && family?.service_country
+  if (!family) return c.json({ state: "no_family" });
+  if (family.study_market !== "KR") {
+    const confirmedOutsideMarket = family.service_country !== "KR"
+      && family.service_country
       && (family.service_country_source === "guardian_confirmed" || family.service_country_source === "guardian_changed");
-    return c.json({ state: confirmedOutsideMarket ? "outside_market" : "not_confirmed" });
+    if (confirmedOutsideMarket) return c.json({ state: "outside_market" });
+    const inferredCountry = /^[A-Z]{2}$/u.test(family.service_country ?? "") ? family.service_country : null;
+    return c.json({
+      state: "not_confirmed",
+      inferredCountry,
+      canConfirm: membership.role === "parent" && family.parent_id === user.sub,
+    });
   }
 
-  const enabled = await isStudyFeatureEnabled(c.env.DB, {
+  const access = await resolveStudyFeatureAccess(c.env.DB, {
     familyId: membership.familyId,
     role: membership.role,
     rolloutSecret: c.env.STUDY_RPC_HMAC_SECRET,
   });
-  if (!enabled) return c.json({ state: "feature_disabled" });
+  const enabled = access?.rolloutEligible === true
+    && (membership.role === "parent" ? access.managementEnabled : access.learnerEnabled);
+  if (!enabled || !access) return c.json({ state: "feature_disabled" });
 
   return await isStudyBindingReady(c.env.STUDY_SERVICE)
-    ? c.json({ state: "enabled" })
+    ? c.json({
+        state: "enabled",
+        market: "KR",
+        role: membership.role,
+        managementEnabled: access.managementEnabled,
+        learnerEnabled: access.learnerEnabled,
+      })
     : c.json({ state: "unavailable" }, 503);
 });
 
@@ -299,7 +320,11 @@ study.put("/children/:memberId/grade", requireAuth, async (c) => {
         const { status, ...errorBody } = result;
         return c.json(errorBody, status);
       }
-      return c.json({ grade: result.grade, rowVersion: result.rowVersion });
+      return c.json({
+        memberId: context.memberId,
+        grade: studyRpcGrade(result.grade),
+        rowVersion: result.rowVersion,
+      });
     } finally {
       try {
         await releaseAccountMutationLease(c.env.DB, leaseResult.lease.id);

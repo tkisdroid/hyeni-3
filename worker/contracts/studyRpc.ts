@@ -85,15 +85,33 @@ export type SubmitCalendarAnswerInput = Readonly<{
   requestId: string;
 }>;
 
-export type ChildrenOverviewDto = Readonly<{
-  apiVersion: typeof STUDY_API_VERSION;
-  children: readonly CalendarChildProjectionDto[];
+export type CalendarParentChildOverviewDto = Readonly<{
+  memberId: string;
+  state: "ready" | "grade_unavailable";
+  grade: ResolvedLearningGrade | null;
+  hasStudyData: boolean;
+  todayProblemCount: number;
+  completedToday: boolean;
+  lastStudiedAt: string | null;
 }>;
 
-export type ChildReportDto = Readonly<{
+export type ChildrenOverviewDto = Readonly<{
   apiVersion: typeof STUDY_API_VERSION;
-  memberId: string;
-  status: "available" | "inactive_or_missing";
+  children: readonly CalendarParentChildOverviewDto[];
+}>;
+
+export type ChildReportDto = Readonly<CalendarParentChildOverviewDto & {
+  apiVersion: typeof STUDY_API_VERSION;
+  range: "7d" | "30d" | "term";
+  accuracy: number | null;
+  conceptMastery: readonly Readonly<{ conceptId: string; label: string; mastery: number }>[];
+  reviewDueCount: number;
+  recentSessions: readonly Readonly<{
+    sessionId: string;
+    startedAt: string;
+    problemCount: number;
+    accuracy: number | null;
+  }>[];
 }>;
 
 export type CalendarLearnerStateDto = Readonly<{
@@ -101,23 +119,64 @@ export type CalendarLearnerStateDto = Readonly<{
   memberId: string;
   status: "available" | "inactive_or_missing";
   grade: CalendarGradeDto;
+  profile: Readonly<{ memberId: string; grade: ResolvedLearningGrade }>;
+  activeMissionId: string | null;
+}>;
+
+export type CalendarMissionItemDto = Readonly<{
+  problemId: string;
+  position: number;
+  prompt: string;
+  childObjective: string;
+  domainLabel: string;
+  conceptTitle: string;
+  difficulty: number;
+  difficultyBand: "foundation" | "standard" | "challenge";
+  type: string;
+  choices?: readonly Readonly<{ id: string; text: string }>[];
+  input: Readonly<Record<string, unknown>>;
+  visual?: Readonly<Record<string, unknown>>;
+  opened: boolean;
+  resolved: boolean;
+  revealedHints: readonly Readonly<{ level: 1 | 2; text: string; representation?: string }>[];
+  nextHintLevel: 1 | 2 | null;
+  allowedActions: Readonly<{
+    canSubmit: boolean;
+    canRequestHint: boolean;
+    canRequestExplanation: boolean;
+    canSkip: boolean;
+  }>;
 }>;
 
 export type CalendarMissionDto = Readonly<{
   apiVersion: typeof STUDY_API_VERSION;
   missionId: string;
   status: "ready" | "started" | "completed";
+  grade: StudyGrade;
+  items: readonly CalendarMissionItemDto[];
+  progress: Readonly<{ completed: number; total: number }>;
 }>;
 
 export type CalendarAttemptResultDto = Readonly<{
   apiVersion: typeof STUDY_API_VERSION;
   missionId: string;
+  problemId: string;
+  requestId: string;
   result: "accepted" | "rejected";
+  outcome: Readonly<{
+    isCorrect: boolean | null;
+    resolutionCode: "submitted" | "skipped" | null;
+    feedback: Readonly<Record<string, unknown>>;
+    encouragement: string;
+  }>;
 }>;
 
 export type StudyReadinessDto = Readonly<{
   apiVersion: typeof STUDY_API_VERSION;
   status: "ready" | "not_ready";
+  schemaVersion: number;
+  problemCount: number;
+  contentDigest: string;
 }>;
 
 export interface CalendarStudyServiceBinding {

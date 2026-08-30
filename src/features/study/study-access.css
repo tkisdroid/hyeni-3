@@ -1,0 +1,52 @@
+.study-access-status,
+.study-country-card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--hy-border-subtle, #e7dfe3);
+  border-radius: 20px;
+  background: var(--hy-surface, #fff);
+  color: var(--hy-text, #342c30);
+}
+
+.study-access-status h2,
+.study-country-card h2,
+.study-country-card p {
+  margin: 0;
+}
+
+.study-country-input {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--hy-border, #cfc4ca);
+  border-radius: 12px;
+  font: inherit;
+  text-transform: uppercase;
+}
+
+.study-access-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.study-access-action {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--hy-primary, #ef5e9d);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+}
+
+.study-access-action:disabled {
+  opacity: 0.55;
+}
+
+.study-access-secondary {
+  background: var(--hy-surface-muted, #f4eef1);
+  color: var(--hy-text, #342c30);
+}

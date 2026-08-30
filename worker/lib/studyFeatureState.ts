@@ -7,7 +7,7 @@ export const STUDY_ROLLOUT_CANARY_REFS_KEY = "study_rollout_canary_refs";
 
 type StudyAccessRole = "parent" | "child";
 
-interface StudyFeatureSettings {
+export interface StudyFeatureSettings {
   managementEnabled: boolean;
   learnerEnabled: boolean;
   rolloutBasisPoints: number;
@@ -105,12 +105,21 @@ export async function isStudyFeatureEnabled(
   db: D1Database,
   input: { familyId: string; role: StudyAccessRole; rolloutSecret: string | undefined },
 ): Promise<boolean> {
-  const settings = await readStudyFeatureSettings(db);
-  if (!settings) return false;
-  if (input.role === "parent" ? !settings.managementEnabled : !settings.learnerEnabled) return false;
+  const access = await resolveStudyFeatureAccess(db, input);
+  if (!access || !access.rolloutEligible) return false;
+  return input.role === "parent" ? access.managementEnabled : access.learnerEnabled;
+}
 
+/** status 응답도 business gate와 동일한 단일 설정 snapshot을 사용한다. */
+export async function resolveStudyFeatureAccess(
+  db: D1Database,
+  input: { familyId: string; role: StudyAccessRole; rolloutSecret: string | undefined },
+): Promise<Readonly<StudyFeatureSettings & { rolloutEligible: boolean }> | null> {
+  const settings = await readStudyFeatureSettings(db);
+  if (!settings) return null;
   const familyRef = await createFamilyRef(input.rolloutSecret ?? "", input.familyId);
-  if (!familyRef) return false;
-  if (settings.rolloutCanaryRefs.has(familyRef.ref)) return true;
-  return isInBasisPointRollout(familyRef.first16Bits, settings.rolloutBasisPoints);
+  if (!familyRef) return null;
+  const rolloutEligible = settings.rolloutCanaryRefs.has(familyRef.ref)
+    || isInBasisPointRollout(familyRef.first16Bits, settings.rolloutBasisPoints);
+  return { ...settings, rolloutEligible };
 }

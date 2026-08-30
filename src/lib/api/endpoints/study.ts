@@ -516,13 +516,10 @@ export async function updateStudyGrade(command: UpdateStudyGradeCommand): Promis
     body: JSON.stringify({ grade: grade(command.grade), rowVersion: command.rowVersion, requestId: command.requestId }),
   });
   const record = object(raw);
-  exact(record, ["grade", "rowVersion"]);
-  const gradeRecord = object(record.grade);
-  exact(gradeRecord, ["grade", "source", "academicYear"]);
-  if (gradeRecord.source === "birthdate") gradeRecord.source = "hyeni_birth_year";
+  exact(record, ["memberId", "grade", "rowVersion"]);
   return {
-    memberId: id(command.memberId),
-    grade: resolvedGrade(gradeRecord),
+    memberId: id(record.memberId),
+    grade: resolvedGrade(record.grade),
     rowVersion: integer(record.rowVersion, 1, Number.MAX_SAFE_INTEGER),
   };
 }

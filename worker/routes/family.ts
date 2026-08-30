@@ -1632,6 +1632,26 @@ family.post("/join-as-parent", requireAuth, async (c) => {
 });
 
 // ── GET /mine — getMyFamily (membership OR parent-owned family) ───────────────
+async function readFamilyStudyCountry(db: D1Database, familyId: string): Promise<{
+  serviceCountry: string | null;
+  serviceCountryRowVersion: number | null;
+}> {
+  try {
+    const row = await db.prepare(
+      "SELECT service_country, service_country_row_version FROM families WHERE id=? LIMIT 1",
+    ).bind(familyId).first<{ service_country: string | null; service_country_row_version: number | null }>();
+    return {
+      serviceCountry: row?.service_country ?? null,
+      serviceCountryRowVersion: Number.isSafeInteger(row?.service_country_row_version)
+        ? Number(row?.service_country_row_version)
+        : null,
+    };
+  } catch {
+    // expand-only migration 전 Worker에서도 가족 기본 화면은 유지하고 Study 확인만 닫는다.
+    return { serviceCountry: null, serviceCountryRowVersion: null };
+  }
+}
+
 family.get("/mine", requireAuth, async (c) => {
   const user = c.get("user");
   const userId = user.sub;
@@ -1666,6 +1686,7 @@ family.get("/mine", requireAuth, async (c) => {
     )
       .bind(pf.id)
       .all<Record<string, unknown>>();
+    const studyCountry = await readFamilyStudyCountry(c.env.DB, String(pf.id));
     return c.json({
       familyId: pf.id,
       pairCode: finalPairCode,
@@ -1678,6 +1699,7 @@ family.get("/mine", requireAuth, async (c) => {
       isPrimaryParent: pf.parent_id === userId,
       isCoParent: false,
       registeredPlaceAlertsEnabled: Number(pf.registered_place_alerts_enabled) !== 0,
+      ...studyCountry,
     });
   }
 
@@ -1702,6 +1724,7 @@ family.get("/mine", requireAuth, async (c) => {
     .bind(membership.family_id)
     .all<Record<string, unknown>>();
   const members = (results ?? []).map(hydrateMember);
+  const studyCountry = await readFamilyStudyCountry(c.env.DB, membership.family_id);
 
   const parentMembers = members.filter((m) => m.role === "parent" && m.user_id);
   const explicitPrimary = String(fam?.parent_id ?? "");
@@ -1723,6 +1746,7 @@ family.get("/mine", requireAuth, async (c) => {
     isPrimaryParent,
     isCoParent,
     registeredPlaceAlertsEnabled: Number(fam?.registered_place_alerts_enabled) !== 0,
+    ...studyCountry,
   });
 });
 
