@@ -3,7 +3,7 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
-**학습 화면 상단 여백 정합화(2026-08-31, 구현·검증 완료 / 미배포)**:
+**학습 화면 상단 여백 정합화(2026-08-31, Pages 배포·Android 보존 설치 완료)**:
 부모 학습 화면만 상단을 고정 `16px`로 두어 Android 상태바 safe area를 반영하지 못했고, Study 접근 게이트의
 로딩·장애·이용 국가 확인 상태는 화면용 바깥 여백 자체가 없었다. 이제 부모 학습 화면과 Study 라우트의 게이트
 상태를 다른 상세 화면과 같은 `calc(env(safe-area-inset-top, 0px) + 16px)` 기준으로 맞췄다. 온보딩에서도 재사용되는
@@ -14,7 +14,20 @@ TDD RED에서 부모 학습의 기존 `padding:16px`를 재현했고 집중 31/3
 i18n verify, production build가 통과했다. 격리 브라우저 QA는 390×844에서 부모 44화면·아이 15화면·문제 0건이며
 부모/아이 Study와 국가 확인·장애·학년/주제 선택 흐름을 포함한다. 한글 worktree 경로 때문에 Android manifest
 테스트의 Gradle path check가 기본 실행에서만 막혀 `ORG_GRADLE_PROJECT_android.overridePathCheck=true`로 같은 검사를
-포함한 전체 테스트를 재실행했다. Pages·Worker·Play·APK 설치·운영 계정·세션·페어링은 변경하지 않았다.
+포함한 전체 테스트를 재실행했다. 구현 커밋 `c453255`는 `origin/tkisdroid/아이정보수정`에 push했다.
+
+Pages 최종 배포는 `https://f8e2873f.hyeni-calendar.pages.dev`다. 배포별 주소·고정
+`hyeni-calendar.pages.dev`·브랜드 `hyenicalendar.com`은 모두 entry `assets/index-CZfBNtDa.js`
+SHA-256 `2F149B7E423AAA20FF3B7259759E3FAFC1FCAF2BDA066AAD437906AA16507913`, CSS
+`assets/index-DMuUhfUk.css` SHA-256 `177583E46CE74CDA70B47B5F3139D3D674ABD5923F433B0E610A5279A41CE6F4`,
+Service Worker SHA-256 `F4C0C84960FE93287E22768F81B01D78D8957FE1826D43839FE247E4E66CD6D3`가 로컬과
+일치하고 `/oauth/callback`도 세 주소 모두 200이다.
+
+주 체크아웃의 `VITE_KAKAO_APP_KEY` 한 항목만 값 노출 없이 주입해 S25 지도 키를 보존한 debug APK는
+16,045,835 bytes, SHA-256 `2F80DEFE3BAABC86856018B607F542FEA93FC30D189F17465673E1D1B64AF67C`다.
+A17(`RFKL40DP73J`)·S25(`R5CY521CFNZ`) 사용자 0에 저장소 설치 스크립트로 보존 설치했고 두 기기 모두
+v1.4.4/code 16, `firstInstallTime` 보존, 기기 APK 해시 일치와 `MainActivity` top-resumed를 확인했다.
+razr는 연결되지 않아 미설치다. Worker·D1·Play·운영 계정·역할·세션·페어링·refresh token은 변경하지 않았다.
 
 **아이 정보 저장 실패·중복 팝업 수정(2026-08-31, Worker 배포·Android 보존 설치 완료)**:
 `ProfileEdit`는 빈 전화번호를 공개 API의 `phone:null`(지움)으로 보냈지만, 운영 D1을 읽기 전용
