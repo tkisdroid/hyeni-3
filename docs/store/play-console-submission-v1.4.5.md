@@ -35,7 +35,7 @@
 - 크기: `13,114,530 bytes`
 - SHA-256: `6a80f8f9209c90d380e6723ee40d359180ad957566539063d9ff87b1ac9c20c0`
 - 승인 upload certificate SHA-256:
-  `32f729942dbe38dcb186b6eae0c772c54fa2c85d100ef0dc491e1a9e5fca81db`
+  `32f729e8cc1df82d94eacd0d264439fcd7102b15fcdc269660254a87f25a81db`
 - package/version: `com.hyeni.calendar` / `1.4.5` / `17`
 - non-debuggable, 서명·certificate·웹 자산·16KiB ELF 검증 모두 GREEN
 - 증거 파일:

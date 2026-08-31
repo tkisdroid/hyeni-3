@@ -40,5 +40,7 @@ test("1.4.5 Play 문서는 code 17 제출과 실제 게시 전 상태를 분리�
   assert.match(submission, /Google Play 검토 진행 중, 게시 전/);
   assert.match(submission, /기존 code 16 심사를 취소하고 최신 code 17로 검토를 다시 시작/);
   assert.match(submission, /\- \[ \] Google Play 검토 통과와 실제 production 게시 확인/);
+  assert.match(submission, /6a80f8f9209c90d380e6723ee40d359180ad957566539063d9ff87b1ac9c20c0/);
+  assert.match(submission, /32f729e8cc1df82d94eacd0d264439fcd7102b15fcdc269660254a87f25a81db/);
   assert.match(submission, /D1.*migration.*없/s);
 });
