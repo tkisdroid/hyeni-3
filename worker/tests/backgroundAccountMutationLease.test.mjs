@@ -53,7 +53,7 @@ for (const [label, relativePath, loopMarker, writeMarker] of [
   ["등록장소", "../cron/registered-place-geofence-check.ts", "for (const child of children)", "deliverParentAlert"],
   ["위험장소", "../cron/danger-zone-geofence-check.ts", "for (const child of children)", "persistPlacePresence"],
   ["위치 끊김", "../cron/location-staleness-check.ts", "for (const child of children)", "deliverWake"],
-  ["미등록 체류", "../cron/unregistered-stay-check.ts", "for (const child of loaded.children)", "reverseGeocodeAreaLabel"],
+  ["미등록 체류", "../cron/unregistered-stay-check.ts", "for (const child of loaded.children)", "resolveFamilyMapLabel"],
 ]) {
   test(`${label} cron은 자녀·가족 lease를 쓰기·외부 호출보다 먼저 잡고 finally에서 해제한다`, () => {
     const text = source(relativePath);

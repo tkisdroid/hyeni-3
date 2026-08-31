@@ -24,6 +24,7 @@ import {
   recordLocationConfirmation,
 } from "./locationConfirmationAudit";
 import { awardAutomaticStickerForBehavior } from "./automaticStickerReward";
+import { resolveFamilyMapLabel } from "./maps/labelResolver";
 
 const ANCHOR_RADIUS_M = 150; // 이 반경을 벗어나면 이동 중 → 앵커 리셋
 const DWELL_MS = 5 * 60 * 1000; // 5분 이상 머물면 "도착"
@@ -52,32 +53,6 @@ interface ArrivalState {
   last_notif_lat: number | null;
   last_notif_lng: number | null;
   last_notif_at: string | null;
-}
-
-// Kakao 역지오코딩(일반 REST 키로 동작하는 local API) — 도로명 우선, 실패 시 null.
-async function reverseGeocode(env: PushEnv, lat: number, lng: number): Promise<string | null> {
-  const key =
-    (env as unknown as { KAKAO_REST_KEY?: string; KAKAO_REST_API_KEY?: string }).KAKAO_REST_KEY ||
-    (env as unknown as { KAKAO_REST_API_KEY?: string }).KAKAO_REST_API_KEY ||
-    "";
-  if (!key) return null;
-  try {
-    const res = await fetch(
-      `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`,
-      { headers: { Authorization: `KakaoAK ${key}` } },
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      documents?: Array<{
-        road_address?: { address_name?: string } | null;
-        address?: { address_name?: string } | null;
-      }>;
-    };
-    const doc = data.documents?.[0];
-    return doc?.road_address?.address_name || doc?.address?.address_name || null;
-  } catch {
-    return null;
-  }
 }
 
 async function overlappingScheduleEvent(
@@ -255,7 +230,11 @@ export async function detectArbitraryArrival(
       : { active: null, nearby: null };
     const scheduleMatch = scheduleMatches.active;
     const scheduleAssociation = scheduleMatches.nearby;
-    const address = scheduleMatch ? null : await reverseGeocode(env, state.anchor_lat, state.anchor_lng);
+    const address = scheduleMatch ? null : await resolveFamilyMapLabel({
+      env,
+      familyId,
+      point: { lat: state.anchor_lat, lng: state.anchor_lng },
+    });
     const placeLabel = address || "새로운 장소";
 
     // 한글 조사(이/가) — 이름 끝 글자 받침 유무로 선택("혜니가"/"지훈이가").

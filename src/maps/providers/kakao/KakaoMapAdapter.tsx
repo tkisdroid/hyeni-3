@@ -4,61 +4,20 @@ import { useIntl } from "react-intl";
  * SDK 로드 실패(키 미인증 등) 시 스타일 폴백으로 대체.
  */
 import { useEffect, useRef, useState } from "react";
-import { loadKakaoMaps } from "@/lib/kakaoMap";
+import { loadKakaoMaps } from "./loadKakaoMaps";
 import { asset } from "@/lib/assets";
 import { LoaderMark } from "@/components/ui/LoaderMark";
-import type { LocationRoutePoint } from "@/transform/locationRoute";
+import type { FamilyMapProps } from "@/maps/contracts";
 import {
   getMapFocusPanOffset,
   normalizeMapViewportPadding,
-  type MapViewportPadding,
 } from "@/transform/mapViewportPadding";
-
-export interface MapChild {
-  lat: number;
-  lng: number;
-  name: string;
-  avatar: string; // asset 경로 또는 http/blob URL
-  /** 특정 시각 위치를 보고 있을 때 아바타 위에 표시할 시각. */
-  caption?: string;
-  tone?: "normal" | "danger";
-}
-export interface MapZone {
-  lat: number;
-  lng: number;
-  radiusM: number;
-  name: string;
-}
-export interface MapPlace {
-  lat: number;
-  lng: number;
-  name: string;
-  isHome?: boolean;
-}
 
 function src(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
-export interface LatLngPoint {
-  lat: number;
-  lng: number;
-}
-
-export interface MapStay {
-  lat: number;
-  lng: number;
-  /** 방문 순번(1부터). 마커에 표시. */
-  order: number;
-  /** 체류 시간 라벨(예: "1시간 20분"). */
-  dwellLabel: string;
-  /** 장소명(있으면). */
-  placeName?: string | null;
-  /** 강조(목록에서 선택) 여부. */
-  active?: boolean;
-}
-
-export function KakaoMap({
+export function KakaoMapAdapter({
   child,
   zones = [],
   places = [],
@@ -73,34 +32,7 @@ export function KakaoMap({
   viewportPadding,
   className,
   tone = "formal",
-}: {
-  child?: MapChild | null;
-  zones?: MapZone[];
-  places?: MapPlace[];
-  /** 도보 경로 폴리라인 좌표(출발→도착). 2점 이상이면 그린다. */
-  route?: LocationRoutePoint[];
-  /** 스테이포인트(머무른 장소) 마커 + 순번·체류시간 라벨 + 연결 폴리라인. */
-  stays?: MapStay[];
-  /** 도착지 마커(경로 끝점). */
-  destination?: MapPlace | null;
-  /** 선택된 위치(picker 모드) — 있으면 해당 좌표에 마커. */
-  picked?: LatLngPoint | null;
-  /** 지도 클릭 시 좌표 콜백(picker 모드). */
-  onPick?: (lat: number, lng: number) => void;
-  /** 명시적 중심(주소 검색 결과 등). 없으면 자녀 위치/기본값. */
-  center?: LatLngPoint | null;
-  /**
-   * 명시적 중심으로 이동할 때 원하는 확대 단계(작을수록 확대).
-   * 이미 더 확대된 화면은 건드리지 않는다(사용자 확대 존중 — 확대 방향으로만 보정).
-   */
-  centerLevel?: number | null;
-  /** 값이 바뀌면 center 가 같은 좌표여도 강제로 재이동(현재 위치 버튼 등). */
-  recenterKey?: number;
-  /** 자동 bounds 맞춤 시 상단 도구막대와 패널을 피하기 위한 화면 안쪽 여백. */
-  viewportPadding?: Partial<MapViewportPadding>;
-  className?: string;
-  tone?: "formal" | "child";
-}) {
+}: FamilyMapProps) {
   const intl = useIntl();
   const ref = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

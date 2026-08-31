@@ -13,7 +13,7 @@ import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
-import { KakaoMap, type MapZone, type MapPlace, type MapStay } from "@/components/KakaoMap";
+import { FamilyMap, type MapZone, type MapPlace, type MapStay } from "@/maps/FamilyMap";
 import {
   useChildLocations,
   useDangerZones,
@@ -691,7 +691,7 @@ export function ParentLocation() {
     <div className={`pl-root${activeView === "history" ? " pl-root--history" : ""}`}>
       {/* 실 Kakao 지도 — 실시간(마커·구역·장소) ↔ 오늘경로(이동 폴리라인 + 출발/현재 마커). */}
       {activeView === "history" ? (
-        <KakaoMap
+        <FamilyMap
           className="pl-map"
           child={historyChildMarker}
           route={trail}
@@ -702,7 +702,7 @@ export function ParentLocation() {
           viewportPadding={HISTORY_MAP_VIEWPORT_PADDING}
         />
       ) : (
-        <KakaoMap
+        <FamilyMap
           className="pl-map"
           child={!isLocked && loc ? { lat: loc.lat, lng: loc.lng, name: childName, avatar: childAvatar } : null}
           zones={mapZones}

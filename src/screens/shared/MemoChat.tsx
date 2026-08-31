@@ -26,7 +26,7 @@ import { resolveMemoChatCopy } from "@/transform/memoChatCopy";
 import { useRecentDateKeys } from "@/app/useRecentDateKeys";
 import { apiUploadChildPhoto, acquireChildPhotoObjectUrl } from "@/lib/api/client";
 import { resizeImageFileSafe, dataUrlToBlob } from "@/lib/imageResize";
-import { loadKakaoMaps } from "@/lib/kakaoMap";
+import { reverseRawMapLabel } from "@/lib/mapActions";
 import { openExternal } from "@/lib/native/browser";
 import { MessageSafetyDialog, type ReportReasonOption } from "@/components/MessageSafetyDialog";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
@@ -565,30 +565,8 @@ export function MemoChat() {
       );
     });
   const reverseAddress = async (lat: number, lng: number): Promise<string> => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const maps: any = await loadKakaoMaps();
-      if (!maps?.services) return "";
-      return await new Promise<string>((resolve) => {
-        const geocoder = new maps.services.Geocoder();
-        geocoder.coord2Address(
-          lng,
-          lat,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (results: any[], status: string) => {
-            if (status !== "OK" || !results[0]) {
-              resolve("");
-              return;
-            }
-            resolve(
-              results[0].road_address?.address_name || results[0].address?.address_name || "",
-            );
-          },
-        );
-      });
-    } catch {
-      return "";
-    }
+    if (!familyId) return "";
+    return reverseRawMapLabel(familyId, { lat, lng }, intl.locale, "memo_share").catch(() => "");
   };
   const shareLocation = async () => {
     if (sharing || sendMemo.isPending || !scopeChild || !memoDateKey) return;

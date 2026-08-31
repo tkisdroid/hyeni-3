@@ -1,16 +1,15 @@
 /**
  * 좌표를 화면 표시용 위치명으로 변환한다.
- * 우선순위: 저장장소(200m 이내) → Kakao 역지오코딩 건물명/도로명주소 → "주소 확인 중".
+ * 우선순위: 저장장소(200m 이내) → 가족 국가 정책의 공통 역지오코딩 → "주소 확인 중".
  */
 import { useCallback, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
 import { qk } from "./keys";
-import {
-  reverseGeocodeLocation,
-  type ChildLocation,
-  type SavedPlace,
-} from "@/lib/api/endpoints/location";
+import type { ChildLocation, SavedPlace } from "@/lib/api/endpoints/location";
+import { mapsApi } from "@/lib/api/endpoints/maps";
+import { useAuth } from "@/auth/AuthContext";
+import { useMyFamily } from "./useFamily";
 import { exactSavedPlaceLabel } from "@/transform/locationView";
 
 function coordKey(loc: Pick<ChildLocation, "lat" | "lng">): string {
@@ -27,6 +26,9 @@ export function useLocationLabels(
   places: SavedPlace[] | undefined,
 ): (loc: ChildLocation) => string {
   const intl = useIntl();
+  const { familyId } = useAuth();
+  const family = useMyFamily();
+  const provider = family.data?.mapPolicy.provider ?? "unsupported";
   const candidates = useMemo(() => {
     const out = new Map<string, ChildLocation>();
     for (const loc of locations ?? []) {
@@ -39,9 +41,14 @@ export function useLocationLabels(
   }, [locations, places]);
 
   const queries = useQueries({
-    queries: candidates.map(({ key, loc }) => ({
-      queryKey: qk.reverseGeocode(key),
-      queryFn: () => reverseGeocodeLocation({ lat: loc.lat, lng: loc.lng }),
+    queries: candidates.map(({ loc }) => ({
+      queryKey: qk.mapReverse(familyId, provider, { kind: "child_location", childUserId: loc.user_id, measuredAt: loc.updated_at }),
+      queryFn: () => mapsApi.reverse({
+        familyId: familyId!,
+        locale: intl.locale,
+        source: { kind: "child_location", childUserId: loc.user_id },
+      }),
+      enabled: Boolean(familyId) && provider !== "unsupported",
       staleTime: 24 * 60 * 60_000,
       gcTime: 7 * 24 * 60 * 60_000,
       retry: 1,

@@ -6,11 +6,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { qk } from "./keys";
 import { useAuth } from "@/auth/AuthContext";
-import {
-  fetchWalkingDirections,
-  type RoutePoint,
-  type WalkingRoute,
-} from "@/lib/api/endpoints/route";
+import type { RoutePoint, WalkingRoute } from "@/lib/api/endpoints/route";
+import { mapsApi, type MapDirectionsRequest } from "@/lib/api/endpoints/maps";
 
 // 좌표를 쿼리키 문자열로.
 // ⚠️ 소수 5자리(≈1m)는 GPS 지터를 그대로 통과시킨다 — 실측(2026-08-17)에서 출발 좌표가
@@ -22,13 +19,25 @@ function coordKey(p: RoutePoint | null): string {
 }
 
 /** 출발→도착 도보 경로. 좌표 중 하나라도 없으면 비활성. */
-export function useWalkingRoute(origin: RoutePoint | null, destination: RoutePoint | null) {
-  const { status } = useAuth();
-  const enabled = status === "authenticated" && !!origin && !!destination;
+export function useWalkingRoute(
+  origin: RoutePoint | null,
+  destination: RoutePoint | null,
+  refs?: MapDirectionsRequest | null,
+) {
+  const { status, familyId } = useAuth();
+  const enabled = status === "authenticated" && !!familyId && !!origin && !!destination && !!refs;
   return useQuery<WalkingRoute>({
-    queryKey: qk.walkingRoute(coordKey(origin), coordKey(destination)),
-    queryFn: () =>
-      fetchWalkingDirections({ origin: origin as RoutePoint, destination: destination as RoutePoint }),
+    queryKey: [...qk.walkingRoute(coordKey(origin), coordKey(destination)), JSON.stringify(refs)] as const,
+    queryFn: async () => {
+      const result = await mapsApi.directions({ familyId: familyId!, locale: navigator.language, ...(refs as MapDirectionsRequest) });
+      if (result.routeSource === "none" || result.points.length < 2 || result.distanceMeters == null) throw new Error("map_directions_failed");
+      return {
+        points: result.points,
+        distanceM: result.distanceMeters,
+        durationSec: result.durationSeconds,
+        guides: [],
+      };
+    },
     enabled,
     staleTime: 5 * 60_000,
     retry: 1,

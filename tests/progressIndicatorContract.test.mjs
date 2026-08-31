@@ -202,7 +202,7 @@ test("화면 로딩은 전부 공용 로딩 마크 하나를 쓴다", () => {
     ["src/components/ui/Loading.tsx", "calendar"],
     ["src/components/ui/RouteLoading.tsx", "calendar"],
     ["src/components/ui/ScreenQueryState.tsx", "calendar"],
-    ["src/components/KakaoMap.tsx", "location"],
+    ["src/maps/providers/kakao/KakaoMapAdapter.tsx", "location"],
     ["src/screens/feature/RouteView.tsx", "location"],
   ];
   for (const [file, variant] of consumers) {

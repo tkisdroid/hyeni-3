@@ -24,7 +24,7 @@ test("길찾기는 부모 전용이 아니라 부모·아이 공용 역할 가�
 test("길찾기는 역할에 따라 아이 선택·홈 경로·존댓말과 반말을 분리한다", () => {
   const source = readSource("src/screens/feature/RouteView.tsx");
 
-  assert.match(source, /const \{ role, userId \} = useAuth\(\)/);
+  assert.match(source, /const \{ role, userId, familyId \} = useAuth\(\)/);
   assert.match(source, /const isChild = role === "child"/);
   assert.match(source, /const homePath = isChild \? "\/child\/home" : "\/parent\/home"/);
   assert.match(source, /const childMember = isChild \? ownChild : activeChildMember/);
@@ -96,7 +96,7 @@ test("길찾기 목적지는 현재 child owner가 일치하는 값만 경로·�
     source,
     /const destination = selectRouteDestinationForChild\(destinationState, childMember\?\.id \?\? null\)/,
   );
-  assert.match(source, /useWalkingRoute\(origin, destination\?\.point \?\? null\)/);
+  assert.match(source, /useWalkingRoute\(\s*origin,\s*destination\?\.point \?\? null,/s);
   assert.match(
     source,
     /resolveRouteDestination\(current, ownerChildMemberId, value\)/,

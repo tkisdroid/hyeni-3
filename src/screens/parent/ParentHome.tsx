@@ -26,7 +26,6 @@ import { REFERRAL_REWARD_CREDITS_DISPLAY } from "@/transform/referralReward";
 import { useActiveChild } from "@/app/activeChild";
 import { useAuth } from "@/auth/AuthContext";
 import { requestDeviceStatus } from "@/lib/api/endpoints/remote";
-import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import type { ChildLocation } from "@/lib/api/endpoints/location";
@@ -587,11 +586,6 @@ export function ParentHome() {
 
   const places = placesQuery.data;
   const locationLabel = useLocationLabels(locationsForDisplay, places);
-
-  // 홈 바로가기에서 위치추적을 누를 때 지도 SDK 다운로드 대기 시간을 줄인다.
-  useEffect(() => {
-    void loadKakaoMaps().catch(() => undefined);
-  }, []);
 
   // 알림 벨 빨간 점 + 바로가기 배지 — 실제 미읽음 알림 개수 기반(하드코딩 항상-3 제거).
   const alertsQuery = useParentAlerts();
@@ -1591,7 +1585,6 @@ export function ParentHome() {
                   key={s.id}
                   type="button"
                   className="ph-shortcut ph-neu-control hy-press"
-                  onPointerDown={s.id === "sc2" ? () => void loadKakaoMaps().catch(() => undefined) : undefined}
                   onClick={() => openShortcut(s.id)}
                 >
                   <span

@@ -24,3 +24,8 @@ export const KAKAO_APP_KEY = (import.meta.env.VITE_KAKAO_APP_KEY || "").trim();
 
 /** Kakao 지도 SDK 사용 가능 여부(키 존재). */
 export const hasKakaoKey = KAKAO_APP_KEY.length > 0;
+
+/** Google Maps JavaScript 공개 browser key. Worker/Android 자격과 이름부터 분리한다. */
+export const GOOGLE_MAPS_WEB_KEY = (import.meta.env.VITE_GOOGLE_MAPS_WEB_KEY || "").trim();
+
+export const hasGoogleMapsWebKey = GOOGLE_MAPS_WEB_KEY.length > 0;

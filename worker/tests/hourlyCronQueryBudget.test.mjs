@@ -31,6 +31,7 @@ test("hourly maintenance는 12개 invocation으로 분리되고 각 D1 query 예
     "location-confirmation-retention",
     "location-history-retention",
     "location-history-ingest-usage-cleanup",
+    "maps-request-control-cleanup",
     "memo-interaction-lease-cleanup",
     "pending-notification-retention",
     "premium-funnel-retention",

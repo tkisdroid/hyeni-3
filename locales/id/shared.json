@@ -832,5 +832,19 @@
   "shared.supply.limit.prep.child": "Sehari bisa menambah maksimal {max} barang",
   "shared.supply.limit.prep.formal": "Anda dapat menambahkan maksimal {max} barang per hari",
   "shared.supply.limit.hw.child": "Sehari bisa menambah maksimal {max} PR",
-  "shared.supply.limit.hw.formal": "Anda dapat menambahkan maksimal {max} PR per hari"
+  "shared.supply.limit.hw.formal": "Anda dapat menambahkan maksimal {max} PR per hari",
+  "shared.map.countryUnresolved": "Konfirmasikan negara penggunaan keluarga terlebih dahulu.",
+  "shared.map.countryUnsupported": "Peta belum didukung di negara penggunaan saat ini.",
+  "shared.map.providerUnavailable": "Peta tidak dapat dimuat.",
+  "shared.map.googlePlayServicesUnavailable": "Peta tidak dapat dibuka karena layanan Google Play tidak tersedia.",
+  "shared.map.locationStale": "Lokasi terbaru anak terlalu lama untuk membuat rute.",
+  "shared.map.quotaExceeded": "Batas permintaan peta untuk sementara terlampaui.",
+  "shared.map.networkUnavailable": "Periksa jaringan lalu coba lagi.",
+  "shared.map.searchFailed": "Pencarian tempat gagal.",
+  "shared.map.reverseFailed": "Alamat tidak dapat ditemukan.",
+  "shared.map.directionsFailed": "Rute jalan kaki tidak dapat dimuat.",
+  "shared.map.walkingDataIncomplete": "Data rute jalan kaki Google mungkin belum lengkap di beberapa wilayah.",
+  "shared.map.retry": "Coba lagi",
+  "shared.map.openCountrySettings": "Buka pengaturan negara penggunaan",
+  "shared.map.reopenForLocale": "Buka kembali layar peta untuk menerapkan perubahan bahasa atau negara."
 }

@@ -7,8 +7,9 @@ import { useIntl } from "react-intl";
  */
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Home, MapPin, X } from "lucide-react";
-import { KakaoMap, type MapPlace } from "@/components/KakaoMap";
-import { loadKakaoMaps } from "@/lib/kakaoMap";
+import { FamilyMap, type MapPlace } from "@/maps/FamilyMap";
+import { reverseRawMapLabel } from "@/lib/mapActions";
+import { useAuth } from "@/auth/AuthContext";
 import type { SavedPlace } from "@/lib/api/endpoints/location";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import "./MapPickerSheet.css";
@@ -37,6 +38,7 @@ export function MapPickerSheet({
   onClose: () => void;
 }) {
   const intl = useIntl();
+  const { familyId } = useAuth();
   const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(initial ?? null);
   const [address, setAddress] = useState("");
   const [pickedName, setPickedName] = useState<string | null>(null);
@@ -49,22 +51,6 @@ export function MapPickerSheet({
     onClose,
     initialFocusRef: closeRef,
   });
-
-  // 역지오코더(coord→주소). 로드 실패해도 좌표 선택 자체는 가능(주소만 빈 값).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const geocoderRef = useRef<any>(null);
-  useEffect(() => {
-    let cancelled = false;
-    loadKakaoMaps()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .then((maps: any) => {
-        if (!cancelled && maps.services) geocoderRef.current = new maps.services.Geocoder();
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // 초기 중심: 기존 좌표 > 현재 위치(4초 제한) > 집 > 첫 저장장소 > 서울.
   useEffect(() => {
@@ -107,19 +93,7 @@ export function MapPickerSheet({
     setPicked({ lat, lng });
     setPickedName(null);
     setAddress("");
-    const geocoder = geocoderRef.current;
-    if (!geocoder) return;
-    geocoder.coord2Address(
-      lng,
-      lat,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (results: any[], status: string) => {
-        if (status !== "OK" || !results[0]) return;
-        const road = results[0].road_address?.address_name;
-        const jibun = results[0].address?.address_name;
-        if (road || jibun) setAddress(road || jibun);
-      },
-    );
+    if (familyId) void reverseRawMapLabel(familyId, { lat, lng }, intl.locale, "picker_pin").then(setAddress).catch(() => undefined);
   };
 
   // 저장장소 칩 선택 → 그 좌표·이름으로 지정 + 지도 중심 이동.
@@ -177,7 +151,7 @@ export function MapPickerSheet({
         </div>
 
         <div className="mps-map">
-          <KakaoMap className="mps-map__canvas" center={center} picked={picked} onPick={handlePick} places={mapPlaces} />
+          <FamilyMap className="mps-map__canvas" center={center} picked={picked} onPick={handlePick} places={mapPlaces} />
           {!picked && <span className="mps-map__hint">{intl.formatMessage({ id: "parent.mapPickerSheet.copy001" })}</span>}
         </div>
 

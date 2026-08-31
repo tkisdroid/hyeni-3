@@ -203,7 +203,7 @@ TDD RED에서 자동완성 판정·1회 latch·브라우저 selector 폴백·수
 Chrome/Playwright Chromium, 연결된 ADB 기기가 없어 실제 비밀번호 관리자 autofill·실 OAuth 동의·실기기 이벤트 전달은
 미검증으로 남겼다. 운영 계정·세션·refresh token·Worker·D1은 건드리지 않았고 Pages/Worker/스토어에 배포하지 않았다.
 
-**글로벌 locale·Google 지도 구현 계획 확정(2026-08-26, 구현 전)**:
+**글로벌 locale·Google 지도 구현(2026-09-01, 로컬 코드 완료·운영 HOLD)**:
 TK가 `KR=Kakao`, 승인된 비중국 국가=`Google Maps`, `CN/ZZ=미지원`을 확정했다. 해외 웹 PWA는 Maps
 JavaScript API, Capacitor Android는 공식 `@capacitor/google-maps`의 네이티브 Maps SDK를 사용하고,
 Places·Geocoding·Routes는 인증·가족 국가·권한·quota를 다시 확인하는 Worker 공통 API로 제한한다. 기존
@@ -226,6 +226,14 @@ Android 공식 plugin `8.0.1`은 JS `apiKey`가 아니라 Manifest metadata를 �
 않는다. 또한 family-local 오전 8시 경계·retention·quota·일정/도착 cron·quiet hours의 DST 시간대 작업이 끝나기
 전에는 지도 구현 여부와 무관하게 비한국 allowlist를 열지 않는다.
 실사용 A17·razr·S25의 역할·세션·페어링·가족 국가는 이 검증을 위해 바꾸지 않는다.
+
+구현은 `FamilyMap`의 Kakao/Google web/Google Android/unsupported 어댑터, `/api/maps/search|reverse|directions`,
+가족 `country_code` 정본, 검색 session HMAC·quota, background 장소 label 공급자 분기, provider-neutral 외부 링크,
+10개 locale 오류 문구, CSP·법적 공개·Android preflight까지 완료했다. Google 검색 후보와 provider ID는 저장하지 않고
+사용자가 지도 제스처로 확정한 핀만 기존 장소 schema에 저장한다. `GOOGLE_MAP_RELEASE_COUNTRIES`는 자격 증명·공식
+Routes OAuth scope·D1·국가별 time zone/DST·실기기 E2E 증거가 없으므로 빈 배열이다. 준비 검사는
+`npm run verify:google-maps:readiness`, 운영 HOLD 검사는 `npm run verify:google-maps:release`, 절차 정본은
+`docs/operations/google-maps-release-readiness.md`다. Pages·Worker·Play 배포와 운영 secret 변경은 수행하지 않았다.
 
 **부모 홈 히어로 캐러셀·브랜드 locale 현지화 배포 완료(2026-08-26)**:
 부모 홈 히어로를 「오늘」 한 장에서 좌우로 넘기고 자동 전환되는 캐러셀로 넓혔다. **첫 장은 항상 `today`** 이고

@@ -311,6 +311,7 @@ export function ParentSettings() {
               <button
                 type="button"
                 className="hy-btn hy-btn--primary"
+                aria-busy={updateFamilyRegion.isPending}
                 disabled={updateFamilyRegion.isPending || !/^[A-Z]{2}$/u.test(countryDraft)}
                 onClick={() => void saveFamilyCountry()}
               >

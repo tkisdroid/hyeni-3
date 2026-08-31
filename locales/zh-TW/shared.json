@@ -832,5 +832,19 @@
   "shared.supply.limit.prep.child": "每天最多可以登錄 {max} 件物品",
   "shared.supply.limit.prep.formal": "每天最多可登錄 {max} 件物品",
   "shared.supply.limit.hw.child": "每天最多可以登錄 {max} 項作業",
-  "shared.supply.limit.hw.formal": "每天最多可登錄 {max} 項作業"
+  "shared.supply.limit.hw.formal": "每天最多可登錄 {max} 項作業",
+  "shared.map.countryUnresolved": "請先確認家庭的使用國家或地區。",
+  "shared.map.countryUnsupported": "目前使用國家或地區暫不支援地圖。",
+  "shared.map.providerUnavailable": "無法載入地圖。",
+  "shared.map.googlePlayServicesUnavailable": "Google Play 服務無法使用，因此無法開啟地圖。",
+  "shared.map.locationStale": "孩子的最新位置過舊，無法建立路線。",
+  "shared.map.quotaExceeded": "暫時超過地圖請求上限。",
+  "shared.map.networkUnavailable": "請檢查網路後再試一次。",
+  "shared.map.searchFailed": "地點搜尋失敗。",
+  "shared.map.reverseFailed": "無法確認地址。",
+  "shared.map.directionsFailed": "無法載入步行路線。",
+  "shared.map.walkingDataIncomplete": "部分地區的 Google 步行路線資料可能不完整。",
+  "shared.map.retry": "再試一次",
+  "shared.map.openCountrySettings": "開啟使用國家或地區設定",
+  "shared.map.reopenForLocale": "若要套用語言或國家地區變更，請重新開啟地圖畫面。"
 }

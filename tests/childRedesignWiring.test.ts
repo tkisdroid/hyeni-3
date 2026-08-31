@@ -125,7 +125,8 @@ test("친구놀이는 실제 후보를 쓰고 거리·이름을 지어내지 않
 });
 
 test("길찾기는 실제 도보 경로를 쓰고, 없으면 정직하게 강등한다", () => {
-  assert.match(routeView, /useWalkingRoute\(origin, destination\?\.point \?\? null\)/);
+  assert.match(routeView, /useWalkingRoute\(\s*origin,\s*destination\?\.point \?\? null,/s);
+  assert.match(routeView, /kind: "child_location"/);
   assert.match(routeView, /routeState === "no-dest"/);
   assert.match(routeView, /routeState === "no-origin"/);
   assert.match(routeView, /routeState === "error"/);

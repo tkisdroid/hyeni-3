@@ -23,6 +23,10 @@ export const qk = {
   childLocations: (familyId: string) => ["location", "children", familyId] as const,
   locationPreferences: (familyId: string) => ["location", "preferences", familyId] as const,
   reverseGeocode: (coord: string) => ["location", "reverseGeocode", coord] as const,
+  mapReverse: (familyId: string | null, provider: string, source: unknown) =>
+    ["maps", "reverse", familyId, provider, JSON.stringify(source)] as const,
+  mapDirections: (familyId: string | null, provider: string, request: unknown) =>
+    ["maps", "directions", familyId, provider, JSON.stringify(request)] as const,
   locationHistory: (familyId: string, start: string, end: string) =>
     ["location", "history", familyId, start, end] as const,
   locationIncidents: (familyId: string) => ["location", "incidents", familyId] as const,

@@ -12,12 +12,6 @@ export interface ChildLocation {
   accuracy_m?: number | null;
 }
 
-export interface ReverseGeocodeResult {
-  ok: boolean;
-  label: string;
-  address: string;
-  buildingName: string | null;
-}
 
 export interface LocationHistoryPoint {
   user_id: string;
@@ -113,14 +107,6 @@ export function saveLocationPreferences(
     background_enabled: prefs.background_enabled,
     interval_mode: prefs.interval_mode,
     battery_saver_exception: prefs.battery_saver_exception,
-  });
-}
-
-/** 좌표 → 사용자 표시용 건물명/주소. */
-export function reverseGeocodeLocation(point: { lat: number; lng: number }): Promise<ReverseGeocodeResult> {
-  return apiPost<ReverseGeocodeResult>("/api/kakao/reverse-geocode", {
-    lat: point.lat,
-    lng: point.lng,
   });
 }
 

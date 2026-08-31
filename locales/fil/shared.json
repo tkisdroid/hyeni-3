@@ -832,5 +832,19 @@
   "shared.supply.limit.prep.child": "Hanggang {max} gamit lang kada araw",
   "shared.supply.limit.prep.formal": "Maaari kang magdagdag ng hanggang {max} gamit kada araw",
   "shared.supply.limit.hw.child": "Hanggang {max} homework lang kada araw",
-  "shared.supply.limit.hw.formal": "Maaari kang magdagdag ng hanggang {max} homework kada araw"
+  "shared.supply.limit.hw.formal": "Maaari kang magdagdag ng hanggang {max} homework kada araw",
+  "shared.map.countryUnresolved": "Kumpirmahin muna ang bansang ginagamit ng pamilya.",
+  "shared.map.countryUnsupported": "Hindi pa suportado ang mapa sa kasalukuyang bansa.",
+  "shared.map.providerUnavailable": "Hindi ma-load ang mapa.",
+  "shared.map.googlePlayServicesUnavailable": "Hindi mabuksan ang mapa dahil hindi available ang Google Play services.",
+  "shared.map.locationStale": "Masyado nang luma ang pinakabagong lokasyon ng bata para gumawa ng ruta.",
+  "shared.map.quotaExceeded": "Pansamantalang lumampas sa limitasyon ng map request.",
+  "shared.map.networkUnavailable": "Suriin ang network at subukan ulit.",
+  "shared.map.searchFailed": "Hindi nahanap ang lugar.",
+  "shared.map.reverseFailed": "Hindi matukoy ang address.",
+  "shared.map.directionsFailed": "Hindi ma-load ang lakarang ruta.",
+  "shared.map.walkingDataIncomplete": "Maaaring hindi kumpleto ang Google walking-route data sa ilang lugar.",
+  "shared.map.retry": "Subukan ulit",
+  "shared.map.openCountrySettings": "Buksan ang country settings",
+  "shared.map.reopenForLocale": "Buksang muli ang map screen para mailapat ang pagbabago sa wika o bansa."
 }

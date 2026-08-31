@@ -21,6 +21,7 @@ def hyeniGitHead = hyeniGitOutput(["rev-parse", "HEAD"])
 def hyeniGitStatus = hyeniGitOutput(["status", "--porcelain=v1", "--untracked-files=all"])
 def hyeniGitHeadIsValid = hyeniGitHead != null && hyeniGitHead ==~ /(?i)[0-9a-f]{40}/
 def hyeniReleaseSourceSha = hyeniGitHeadIsValid ? hyeniGitHead.toLowerCase(Locale.ROOT) : "unavailable"
+def hyeniMapsApiKey = providers.gradleProperty("MAPS_API_KEY").getOrElse("").trim()
 
 def isHyeniReleaseArtifactTask = { task ->
     if (task.project.path != project.path) return false
@@ -74,6 +75,9 @@ gradle.taskGraph.whenReady { graph ->
             "릴리즈 서명 환경변수가 누락되었습니다: ${missingHyeniSigningVariables.join(", ")}"
         )
     }
+    if (!hyeniMapsApiKey) {
+        throw new GradleException("릴리즈 Google Maps API key Gradle property가 누락되었습니다.")
+    }
     if (!hyeniGitHeadIsValid) {
         throw new GradleException("릴리즈 AAB에 넣을 앱 Git commit SHA를 확인할 수 없습니다.")
     }
@@ -97,7 +101,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 17
         versionName hyeniPackageVersion
-        manifestPlaceholders = [hyeniReleaseSourceSha: hyeniReleaseSourceSha]
+        manifestPlaceholders = [hyeniReleaseSourceSha: hyeniReleaseSourceSha, MAPS_API_KEY: hyeniMapsApiKey]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

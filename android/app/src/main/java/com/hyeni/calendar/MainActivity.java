@@ -51,6 +51,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ShareSheetPlugin.class);
         registerPlugin(DeviceActionPlugin.class);
         registerPlugin(InstallReferrerPlugin.class);
+        registerPlugin(GoogleMapsPreflightPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Samsung Pass·Google 비밀번호 관리자 등 Android Autofill 서비스가

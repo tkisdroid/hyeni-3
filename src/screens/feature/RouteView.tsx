@@ -4,7 +4,7 @@ import { useIntl, type IntlShape } from "react-intl";
 import { ChevronLeft, Home, Map, MapPin, Navigation, RotateCw } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { childAvatarPath } from "@/lib/avatar";
-import { KakaoMap, type MapPlace } from "@/components/KakaoMap";
+import { FamilyMap, type MapPlace } from "@/maps/FamilyMap";
 import { LoaderMark } from "@/components/ui/LoaderMark";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
@@ -13,7 +13,8 @@ import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useEvents } from "@/queries/useSchedule";
 import { useWalkingRoute } from "@/queries/useRoute";
-import { loadKakaoMaps } from "@/lib/kakaoMap";
+import { searchMapPlace } from "@/lib/mapActions";
+import type { MapBiasRef } from "@/lib/api/endpoints/maps";
 import { straightLineHint } from "@/transform/straightLineRoute";
 import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
@@ -27,7 +28,7 @@ import {
   type OwnedRouteDestination,
 } from "@/transform/routeDestinationScope";
 import { formatDurationUnit, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
-import { buildKakaoToUrl } from "@/transform/routeExternalUrl";
+import { buildExternalMapUrl } from "@/transform/externalMapUrl";
 import { useLocale } from "@/i18n/useLocale";
 import "./RouteView.css";
 
@@ -47,11 +48,14 @@ const SHORT_KILOMETER_FORMAT = {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 } as const;
+const UNSUPPORTED_MAP_PROVIDER = "unsupported" as const;
+const DIRECTIONS_MAP_ACTION = "directions" as const;
 
 type Step = { tone: "pink" | "mint"; text: string };
 interface DestPick {
   name: string;
   point: RoutePoint;
+  ref: MapBiasRef | null;
 }
 
 // 경로 표시 상태(모두 실데이터 기반 — 직선 근사·가짜 경로 없음).
@@ -70,11 +74,6 @@ function durationLabel(
   );
 }
 
-// 외부 지도 도보 길안내 URL(구글맵 — 웹·안드로이드 모두 좌표 기반으로 열림).
-function buildWalkDirectionsUrl(o: RoutePoint, d: RoutePoint): string {
-  return `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lng}&destination=${d.lat},${d.lng}&travelmode=walking`;
-}
-
 export function RouteView() {
   const intl = useIntl();
   const { locale } = useLocale();
@@ -89,7 +88,7 @@ export function RouteView() {
   const [searchParams] = useSearchParams();
   const requestedEventId = searchParams.get("event")?.trim() || null;
   const { show } = useToast();
-  const { role, userId } = useAuth();
+  const { role, userId, familyId } = useAuth();
   const isChild = role === "child";
   const homePath = isChild ? "/child/home" : "/parent/home";
   const { activeChild, familyLoading } = useActiveChild();
@@ -207,7 +206,7 @@ export function RouteView() {
     const name = nextEvent.title || intl.formatMessage({ id: "shared.routeView.nextEventFallback" });
     // ① 일정에 좌표가 직접 저장돼 있으면 그대로(지도 피커/저장장소 칩으로 등록된 일정).
     if (typeof evLoc?.lat === "number" && typeof evLoc?.lng === "number") {
-      commit({ name, point: { lat: evLoc.lat, lng: evLoc.lng } });
+      commit({ name, point: { lat: evLoc.lat, lng: evLoc.lng }, ref: { kind: "event", eventId: nextEvent.id } });
       return;
     }
     const label = (evLoc?.address ?? "").trim();
@@ -224,44 +223,18 @@ export function RouteView() {
         typeof p.location?.lng === "number",
     );
     if (saved) {
-      commit({ name, point: { lat: saved.location.lat, lng: saved.location.lng } });
+      commit({ name, point: { lat: saved.location.lat, lng: saved.location.lng }, ref: { kind: "saved_place", savedPlaceId: saved.id } });
       return;
     }
-    // ③ Kakao 키워드 검색 → 주소 검색 순으로 좌표 해석(둘 다 실패 시 빈 상태).
+    // ③ 가족 국가 정책을 따르는 공통 장소 검색으로 좌표를 임시 해석한다.
     let cancelled = false;
-    loadKakaoMaps()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .then((maps: any) => {
-        if (cancelled) return;
-        if (!maps?.services) {
-          commit(null);
-          return;
-        }
-        const done = (lat: number, lng: number) => {
-          if (!cancelled) commit({ name, point: { lat, lng } });
-        };
-        const fallbackAddress = () => {
-          const geocoder = new maps.services.Geocoder();
-          geocoder.addressSearch(
-            label,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (res: any[], st: string) => {
-              if (cancelled) return;
-              if (st === "OK" && res[0]) done(Number(res[0].y), Number(res[0].x));
-              else commit(null);
-            },
-          );
-        };
-        const placesSvc = new maps.services.Places();
-        placesSvc.keywordSearch(
-          label,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (data: any[], status: string) => {
-            if (cancelled) return;
-            if (status === "OK" && data[0]) done(Number(data[0].y), Number(data[0].x));
-            else fallbackAddress();
-          },
-        );
+    if (!familyId) {
+      commit(null);
+      return;
+    }
+    searchMapPlace(familyId, label, intl.locale)
+      .then((selected) => {
+        if (!cancelled) commit(selected ? { name, point: selected.point, ref: null } : null);
       })
       .catch(() => {
         if (!cancelled) commit(null);
@@ -269,7 +242,7 @@ export function RouteView() {
     return () => {
       cancelled = true;
     };
-  }, [childMember?.id, events, intl, nextEvent, places]);
+  }, [childMember?.id, events, familyId, intl, nextEvent, places]);
 
   // 실 도보 경로(출발·도착 모두 있을 때만 활성).
   const {
@@ -277,7 +250,13 @@ export function RouteView() {
     isError: routeError,
     isFetching: routeFetching,
     refetch: routeRefetch,
-  } = useWalkingRoute(origin, destination?.point ?? null);
+  } = useWalkingRoute(
+    origin,
+    destination?.point ?? null,
+    childMember?.user_id && destination?.ref
+      ? { origin: { kind: "child_location", childUserId: childMember.user_id }, destination: destination.ref }
+      : null,
+  );
 
   const hasRoute = (routeData?.points?.length ?? 0) >= 2;
 
@@ -359,7 +338,12 @@ export function RouteView() {
   // 안내 시작 — 외부 지도 앱(네이티브: 시스템 브라우저 / 웹: 새 탭)에서 도보 길안내를 연다.
   const startNavigation = async () => {
     if (!origin || !destination) return;
-    const url = buildWalkDirectionsUrl(origin, destination.point);
+    const provider = family?.mapPolicy.provider ?? "unsupported";
+    const url = buildExternalMapUrl(provider, "directions", destination.point, destination.name);
+    if (!url) {
+      show(intl.formatMessage({ id: "shared.map.providerUnavailable" }), "🗺️");
+      return;
+    }
     try {
       if (isNativePlatform()) {
         await openExternal(url);
@@ -523,7 +507,7 @@ export function RouteView() {
                 폴리라인은 실 도보 경로가 도착하면 얹는다. 직선 경로선은 절대 그리지 않는다. */}
             {originChild && destMarker ? (
               <div className="rv-map-wrap">
-                <KakaoMap
+                <FamilyMap
                   className="rv-map"
                   tone={isChild ? "child" : "formal"}
                   child={originChild}
@@ -573,13 +557,18 @@ export function RouteView() {
                   type="button"
                   className="rv-fallback__kakao hy-press"
                   onClick={() =>
-                    openExternal(buildKakaoToUrl(
-                      destination.name,
-                      intl.formatMessage({ id: "shared.routeView.destinationFallback" }),
-                      destination.point,
-                    )).catch(() =>
-                      show(intl.formatMessage({ id: "shared.routeView.kakaoOpenFailed" }, { audience }), "🗺️"),
-                    )
+                    {
+                      const url = buildExternalMapUrl(
+                        family?.mapPolicy.provider ?? UNSUPPORTED_MAP_PROVIDER,
+                        DIRECTIONS_MAP_ACTION,
+                        destination.point,
+                        destination.name || intl.formatMessage({ id: "shared.routeView.destinationFallback" }),
+                      );
+                      if (!url) return;
+                      openExternal(url).catch(() =>
+                        show(intl.formatMessage({ id: "shared.routeView.kakaoOpenFailed" }, { audience }), "🗺️"),
+                      );
+                    }
                   }
                 >
                   <Map size={18} strokeWidth={2.2} aria-hidden="true" />

@@ -223,7 +223,7 @@ const router = createHashRouter([
           { path: "parent/calendar", element: routeElement(<ParentCalendar />, PARENT_NAMESPACES) },
           { path: "parent/location", element: routeElement(<ParentLocation />, PARENT_LOCATION_NAMESPACES) },
           { path: "parent/memo", element: routeElement(<MemoChat />, PARENT_NAMESPACES) },
-          { path: "parent/settings", element: routeElement(<ParentSettings />, PARENT_NAMESPACES) },
+          { path: "parent/settings", element: routeElement(<ParentSettings />, PARENT_STUDY_NAMESPACES) },
         ],
       },
     ],

@@ -21,7 +21,7 @@ const parentScreens = [
 ];
 
 const parentComponents = [
-  "src/components/KakaoMap.tsx",
+  "src/maps/providers/kakao/KakaoMapAdapter.tsx",
   "src/components/MapPickerSheet.tsx",
   "src/components/MessageSafetyDialog.tsx",
   "src/components/PremiumUpsell.tsx",

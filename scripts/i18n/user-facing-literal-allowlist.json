@@ -40,5 +40,12 @@
     "occurrences": 1,
     "status": "exempt",
     "reason": "protocol: 페어링 코드의 서버 형식 자체이며 번역하면 입력 형식을 오해시킨다"
+  },
+  {
+    "path": "src/maps/MapAttribution.tsx",
+    "pattern": "^Google Maps$",
+    "occurrences": 1,
+    "status": "exempt",
+    "reason": "legal: Google Maps attribution은 공급자 정책상 번역하거나 변형하지 않는 고정 표기다"
   }
 ]

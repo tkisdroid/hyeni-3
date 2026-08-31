@@ -1,12 +1,11 @@
 /**
  * 도보 경로 도메인 엔드포인트.
- * Worker `/api/kakao/walking-directions`(POST) 로 출발/도착 좌표를 보내면
- * Kakao 도보 길찾기 결과(경로 좌표배열 · 거리 · 소요시간)를 받는다.
+ * legacy Kakao 응답 parser. 신규 조회는 queries/useRoute가 `/api/maps/directions`와
+ * 가족 소유 object ref만 사용한다.
  *
  * 응답 파싱은 hyeni-1 routeParsers.parseKakaoWalkingRoute 규칙을 그대로 이관:
  *   routes[0].sections[].roads[].vertexes = [lng, lat, lng, lat, ...] 평면 배열.
  */
-import { apiPost } from "../client";
 
 export interface RoutePoint {
   lat: number;
@@ -134,16 +133,4 @@ export function parseWalkingDirections(data: KakaoDirectionsResponse): WalkingRo
   const durationSec = finiteNumber(route.summary?.duration);
 
   return { points, distanceM, durationSec, guides };
-}
-
-/** 도보 경로 조회 — Worker 경유. 출발/도착 좌표 → 경로/거리/시간. */
-export async function fetchWalkingDirections(args: {
-  origin: RoutePoint;
-  destination: RoutePoint;
-}): Promise<WalkingRoute> {
-  const data = await apiPost<KakaoDirectionsResponse>("/api/kakao/walking-directions", {
-    origin: { lat: args.origin.lat, lng: args.origin.lng },
-    destination: { lat: args.destination.lat, lng: args.destination.lng },
-  });
-  return parseWalkingDirections(data);
 }

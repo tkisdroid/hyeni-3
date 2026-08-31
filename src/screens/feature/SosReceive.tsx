@@ -4,7 +4,7 @@ import { useIntl } from "react-intl";
 import { ChevronLeft, Phone, Volume2, MapPin, Check, ShieldCheck, Siren, LifeBuoy } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useSafeBack } from "@/app/useSafeBack";
-import { KakaoMap } from "@/components/KakaoMap";
+import { FamilyMap } from "@/maps/FamilyMap";
 import { useMyFamily } from "@/queries/useFamily";
 import { useReceivedSos } from "@/queries/useSos";
 import { useMarkAlertRead } from "@/queries/useNotifications";
@@ -202,7 +202,7 @@ export function SosReceive() {
           <>
             <div className="sr-map">
               {childLoc ? (
-                <KakaoMap
+                <FamilyMap
                   className="sr-map__canvas"
                   child={{
                     lat: childLoc.lat,

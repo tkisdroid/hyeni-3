@@ -832,5 +832,19 @@
   "shared.supply.limit.prep.child": "持ち物は1日{max}個まで登録できるよ",
   "shared.supply.limit.prep.formal": "持ち物は1日{max}個まで登録できます",
   "shared.supply.limit.hw.child": "宿題は1日{max}個まで登録できるよ",
-  "shared.supply.limit.hw.formal": "宿題は1日{max}個まで登録できます"
+  "shared.supply.limit.hw.formal": "宿題は1日{max}個まで登録できます",
+  "shared.map.countryUnresolved": "ご家族の利用国を先に確認してください。",
+  "shared.map.countryUnsupported": "現在の利用国では地図に対応していません。",
+  "shared.map.providerUnavailable": "地図を読み込めません。",
+  "shared.map.googlePlayServicesUnavailable": "Google Play開発者サービスを利用できないため、地図を開けません。",
+  "shared.map.locationStale": "お子さまの最新位置が古いため、経路を作成できません。",
+  "shared.map.quotaExceeded": "地図のリクエスト上限を一時的に超えました。",
+  "shared.map.networkUnavailable": "ネットワークを確認して、もう一度お試しください。",
+  "shared.map.searchFailed": "場所を検索できませんでした。",
+  "shared.map.reverseFailed": "住所を確認できませんでした。",
+  "shared.map.directionsFailed": "徒歩経路を読み込めませんでした。",
+  "shared.map.walkingDataIncomplete": "地域によってはGoogleの徒歩経路データが不十分な場合があります。",
+  "shared.map.retry": "再試行",
+  "shared.map.openCountrySettings": "利用国の設定を開く",
+  "shared.map.reopenForLocale": "言語または国の変更を反映するには、地図画面を開き直してください。"
 }

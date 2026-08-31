@@ -2,11 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft, LocateFixed } from "lucide-react";
 import { useToast } from "@/app/toast";
-import { KakaoMap } from "@/components/KakaoMap";
+import { FamilyMap } from "@/maps/FamilyMap";
+import { MapSearchResults, type MapSearchResultsState } from "@/maps/MapSearchResults";
+import { buildPersistedMapLocation } from "@/maps/persistence";
 import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
-import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { hasKakaoKey } from "@/config/env";
+import { findMapPlaces, reverseRawMapLabel, selectMapPlace } from "@/lib/mapActions";
+import { confirmPinFromMapGesture, type EphemeralMapSearchCandidate, type UserConfirmedPin } from "@/lib/api/endpoints/maps";
+import { useAuth } from "@/auth/AuthContext";
 import { useChildLocations, useCreateSavedPlace, useSavedPlaces } from "@/queries/useLocation";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { resolveMapCenter } from "@/transform/mapCenter";
@@ -90,6 +94,7 @@ const IDLE_COLOR = "var(--fg-tertiary)";
 
 export function PlaceForm() {
   const intl = useIntl();
+  const { familyId } = useAuth();
   const navigate = useNavigate();
   const routeState = (useLocation().state ?? null) as { premiumReturnDraft?: unknown } | null;
   const { show } = useToast();
@@ -123,8 +128,11 @@ export function PlaceForm() {
     { value: 100, labelId: "notifications.placeForm.radius.wide" },
     { value: 150, labelId: "notifications.placeForm.radius.extraWide" },
   ] as const;
-  const [picked, setPicked] = useState<LatLng | null>(initialDraft?.picked ?? null);
+  const [picked, setPicked] = useState<UserConfirmedPin | null>(
+    initialDraft?.picked ? confirmPinFromMapGesture(initialDraft.picked) : null,
+  );
   const [center, setCenter] = useState<LatLng | null>(initialDraft?.center ?? null);
+  const [searchResults, setSearchResults] = useState<MapSearchResultsState | null>(null);
   const mapCenter = useMemo(
     () => resolveMapCenter({
       current: center,
@@ -154,7 +162,7 @@ export function PlaceForm() {
   };
 
   // 현재 위치 버튼 — 지도를 내 위치로 즉시 이동(선택 아님, 뷰 이동만).
-  // KakaoMap 은 같은 좌표 재설정을 무시하므로 recenterKey 로 강제 재이동한다.
+  // 지도 어댑터가 같은 좌표 재설정을 무시하지 않도록 recenterKey 로 강제 재이동한다.
   const [recenterKey, setRecenterKey] = useState(0);
   const [locating, setLocating] = useState(false);
   const locateMe = () => {
@@ -178,7 +186,7 @@ export function PlaceForm() {
   };
 
   // 기본 지도 중심 = 현재 위치(4초 제한) — 등록하려는 곳은 대개 지금 있는 곳 근처.
-  // 실패 시 KakaoMap 내장 폴백(자녀 위치→서울) 그대로. 검색/선택으로 center 가 잡히면 덮지 않는다.
+  // 실패 시 지도 어댑터 내장 폴백 그대로. 검색/선택으로 center 가 잡히면 덮지 않는다.
   useEffect(() => {
     if (!navigator.geolocation) return;
     let done = false;
@@ -201,63 +209,40 @@ export function PlaceForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Kakao services(Geocoder) — 주소↔좌표 변환용. 키 미설정으로 로드 실패해도 화면은 동작.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const geocoderRef = useRef<any>(null);
-  useEffect(() => {
-    let cancelled = false;
-    loadKakaoMaps()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .then((maps: any) => {
-        if (!cancelled && maps.services) geocoderRef.current = new maps.services.Geocoder();
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   // 지도 클릭 → 좌표 선택 + 역지오코딩으로 주소 자동 채움(모두 사용자 조작 기반).
   const handlePick = (lat: number, lng: number) => {
-    setPicked({ lat, lng });
-    const geocoder = geocoderRef.current;
-    if (!geocoder) return;
-    geocoder.coord2Address(
-      lng,
-      lat,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (results: any[], status: string) => {
-        if (status !== "OK" || !results[0]) return;
-        const road = results[0].road_address?.address_name;
-        const jibun = results[0].address?.address_name;
-        if (road || jibun) setAddress(road || jibun);
-      },
-    );
+    setPicked(confirmPinFromMapGesture({ lat, lng }));
+    setSearchResults(null);
+    if (familyId) void reverseRawMapLabel(familyId, { lat, lng }, intl.locale, "picker_pin").then(setAddress).catch(() => undefined);
   };
 
   // 주소 검색(Enter) → 좌표 변환해 지도 이동 + 마커 표시. 읽기 동작이라 사용자 조작 시 실행.
-  const searchAddress = () => {
-    const geocoder = geocoderRef.current;
+  const searchAddress = async () => {
     const query = address.trim();
     if (!query) return;
-    if (!geocoder) {
+    if (!familyId) {
       show(intl.formatMessage({ id: "notifications.placeForm.addressSearchUnavailable" }), "🔍");
       return;
     }
-    geocoder.addressSearch(
-      query,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (results: any[], status: string) => {
-        if (status === "OK" && results[0]) {
-          const lat = Number(results[0].y);
-          const lng = Number(results[0].x);
-          setPicked({ lat, lng });
-          setCenter({ lat, lng });
-        } else {
-          show(intl.formatMessage({ id: "notifications.placeForm.addressNotFound" }), "🔍");
-        }
-      },
-    );
+    try {
+      const result = await findMapPlaces(familyId, query, intl.locale);
+      if (result.candidates.length === 0) throw new Error("map_search_failed");
+      setSearchResults({ provider: result.session.provider, sessionHandle: result.session.sessionHandle, candidates: result.candidates });
+    } catch {
+      show(intl.formatMessage({ id: "notifications.placeForm.addressNotFound" }), "🔍");
+    }
+  };
+
+  const selectSearchResult = async (candidate: EphemeralMapSearchCandidate) => {
+    if (!familyId || !searchResults) return;
+    try {
+      const selected = await selectMapPlace(familyId, searchResults.sessionHandle, candidate);
+      setPicked(null);
+      setCenter(selected.point);
+      setSearchResults(null);
+    } catch {
+      show(intl.formatMessage({ id: "notifications.placeForm.addressNotFound" }), "🔍");
+    }
   };
 
   // 저장 — 사용자 onClick 에서만 실행. 이름·선택 위치 검증 후 useCreateSavedPlace 호출.
@@ -283,6 +268,7 @@ export function PlaceForm() {
       show(intl.formatMessage({ id: "notifications.placeForm.nameRequired" }), "✏️");
       return;
     }
+    const persisted = buildPersistedMapLocation({ label: name, pin: picked });
     if (places.length >= limit) {
       setUpsellOpen(true);
       return;
@@ -291,9 +277,9 @@ export function PlaceForm() {
       {
         name,
         location: {
-          lat: picked.lat,
-          lng: picked.lng,
-          address: address.trim() || undefined,
+          lat: persisted.lat,
+          lng: persisted.lng,
+          address: persisted.address,
           category: placeType,
           // 기본 30m 는 저장 생략(레거시 동일) — 넓힌 경우에만 기록.
           ...(alertRadius !== 30 ? { alertRadiusM: alertRadius } : {}),
@@ -360,7 +346,7 @@ export function PlaceForm() {
         )}
         {/* 지도 — 눌러서 위치 선택(선택 좌표에 마커) */}
         <div className="pf-map" style={{ height: mapH }}>
-          <KakaoMap
+          <FamilyMap
             className="pf-map__canvas"
             center={mapCenter}
             recenterKey={recenterKey}
@@ -428,6 +414,7 @@ export function PlaceForm() {
             }}
             placeholder={intl.formatMessage({ id: "notifications.placeForm.addressPlaceholder" })}
           />
+          <MapSearchResults result={searchResults} onSelect={selectSearchResult} />
         </div>
 
         {/* 종류 */}

@@ -83,6 +83,10 @@
             android:name="isMonitoringTool"
             android:value="child_monitoring" />
 
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
+
         <!-- bundletool 기반 출시 provenance 전용 값. 앱 UI·로그·네트워크에는 노출하지 않는다. -->
         <meta-data
             android:name="com.hyeni.calendar.RELEASE_SOURCE_SHA"

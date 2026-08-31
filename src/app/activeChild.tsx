@@ -6,10 +6,11 @@
  * localStorage 에 지속되어 재실행에도 유지된다. 알림/SOS 딥링크(?child=)는 화면 단위로
  * 이 선택을 일시 오버라이드할 수 있다(위급 아이 우선 — 안전 규칙).
  */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
+import type { MapPolicy } from "../../shared/mapPolicy";
 
 interface ActiveChildValue {
   /** 선택된 아이 family_members.id (아이 없으면 null). */
@@ -28,6 +29,9 @@ interface ActiveChildValue {
    * "아이 없음"을 미리 단정해 버린다(진행 표시자도 못 띄운다).
    */
   familyLoading: boolean;
+  familyError: boolean;
+  mapPolicy: MapPolicy | null;
+  retryFamily: () => Promise<void>;
 }
 
 const ActiveChildContext = createContext<ActiveChildValue | null>(null);
@@ -46,7 +50,8 @@ function readStored(familyId: string | null): string | null {
 
 export function ActiveChildProvider({ children }: { children: ReactNode }) {
   const { familyId } = useAuth();
-  const { data: family, isLoading: familyLoading } = useMyFamily();
+  const { data: family, isLoading: familyLoading, isError: familyError, refetch: refetchFamily } = useMyFamily();
+  const retryFamily = useCallback(async () => { await refetchFamily(); }, [refetchFamily]);
 
   const childMembers = useMemo(() => {
     const kids = (family?.members ?? []).filter((m) => m.role === "child");
@@ -86,10 +91,13 @@ export function ActiveChildProvider({ children }: { children: ReactNode }) {
       selectedActiveChild,
       childMembers,
       familyLoading,
+      familyError,
+      mapPolicy: family?.mapPolicy ?? null,
+      retryFamily,
     }),
     // setActiveChildId 는 familyId 클로저만 가진 안정 함수 취급(재생성 무해)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeChild, selectedActiveChild, childMembers, familyId, familyLoading],
+    [activeChild, selectedActiveChild, childMembers, familyId, familyLoading, familyError, family?.mapPolicy, retryFamily],
   );
 
   return <ActiveChildContext.Provider value={value}>{children}</ActiveChildContext.Provider>;

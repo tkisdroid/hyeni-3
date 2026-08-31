@@ -702,7 +702,7 @@ const NORMALIZED_SCHEMA_CTE = `WITH normalized_schema AS (
  * 그래서 계약을 청크로 나눠 각각 독립 문장으로 확인하고 JS에서 결합한다.
  * 청크 하나의 `AND` 개수를 넉넉히 낮춰 잡아 계약이 늘어도 한계에 닿지 않게 한다.
  */
-const READINESS_CHECK_CHUNK_SIZE = 12;
+const READINESS_CHECK_CHUNK_SIZE = 8;
 
 function chunk<T>(items: readonly T[], size: number): T[][] {
   const chunks: T[][] = [];

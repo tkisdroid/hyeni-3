@@ -4,8 +4,6 @@ import { lazy, Suspense, useMemo } from "react";
 import { useAccent } from "./accent";
 import { useAuth } from "@/auth/AuthContext";
 import { useScrolledShell } from "./useScrolledShell";
-import { useEffect } from "react";
-import { warmKakaoMaps } from "@/lib/kakaoMap";
 import { ChildDock } from "./ChildDock";
 import { TabBar, type TabItem } from "./TabBar";
 import { ToastHost } from "./toast";
@@ -66,22 +64,11 @@ function useTeacherTabs(): TabItem[] {
   ], [intl]);
 }
 
-/**
- * 앱이 한가할 때 Kakao 지도 SDK 를 미리 받아 둔다.
- * 위치·경로 화면에 들어가는 순간 스크립트를 받기 시작하면 그만큼 흰 화면이 길어진다.
- */
-function useWarmKakaoMaps(): void {
-  useEffect(() => {
-    warmKakaoMaps();
-  }, []);
-}
-
 /** 부모 모드 셸: 폰 프레임 + 스크롤 + 부모 탭바. */
 export function ParentShell() {
   const { accent } = useAccent();
   const tabs = useMemoDotTabs(useParentTabs(), "/parent/memo");
   const scrolledRef = useScrolledShell();
-  useWarmKakaoMaps();
   return (
     <div className="hy-app hy-adult" data-role="parent" data-accent={accent}>
       <main className="hy-screen" ref={scrolledRef}>
@@ -96,7 +83,6 @@ export function ParentShell() {
 /** 아이 모드 셸: 시안 2a 의 하단 독(홈·스티커·대화 + SOS). 색은 아이가 고른 강조색. */
 export function ChildShell() {
   const { accent } = useAccent();
-  useWarmKakaoMaps();
   return (
     <div className="hy-app" data-role="child" data-accent={accent}>
       <main className="hy-screen hy-screen--dock">

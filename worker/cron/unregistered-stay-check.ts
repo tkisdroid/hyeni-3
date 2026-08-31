@@ -11,7 +11,7 @@ import {
   haversineM,
   STAY_ALERT_DWELL_MIN_MS,
 } from "../shared/dwellCluster.js";
-import { reverseGeocodeAreaLabel } from "../shared/kakaoReverseGeocode.js";
+import { resolveFamilyMapLabel } from "../lib/maps/labelResolver";
 import { SERVER_GEOFENCE_CONFIG } from "../shared/registeredPlaceGeofence.js";
 import {
   buildUnregisteredStayLeftAlert,
@@ -536,7 +536,6 @@ async function maybeDeliverScheduleSuggestion(
 export async function run(env: Env): Promise<Record<string, unknown>> {
   const db = env.DB;
   const penv = env as PushEnv;
-  const kakaoKey = penv.KAKAO_REST_KEY || penv.KAKAO_REST_API_KEY || "";
 
   const loaded = await loadEligibleChildren(db);
   if (!loaded.children.length) return { checked: 0, families: 0, alerted: 0, tracked: 0, left: 0 };
@@ -614,10 +613,15 @@ export async function run(env: Env): Promise<Record<string, unknown>> {
       const sameEpisode = isSameOpenArrivalEpisode(prev?.lastEpisodeStartMs ?? null, dwell.startMs, EPISODE_BUCKET_MS);
       const inCooldown = prev?.lastAlertedAtMs != null && nowMs - prev.lastAlertedAtMs < STAY_COOLDOWN_MS;
 
-      let areaLabel = labelCache.get(gridKey);
+      const labelKey = `${child.familyId}:${gridKey}`;
+      let areaLabel = labelCache.get(labelKey);
       if (areaLabel === undefined) {
-        areaLabel = await reverseGeocodeAreaLabel(dwell.lat, dwell.lng, kakaoKey);
-        labelCache.set(gridKey, areaLabel);
+        areaLabel = await resolveFamilyMapLabel({
+          env,
+          familyId: child.familyId,
+          point: { lat: dwell.lat, lng: dwell.lng },
+        });
+        labelCache.set(labelKey, areaLabel);
       }
       await maybeDeliverScheduleSuggestion(penv, db, child, dwell, gridKey, areaLabel || "", nowMs).catch((e) =>
         console.error("[stay] schedule suggestion failed"),

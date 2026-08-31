@@ -4,34 +4,32 @@ import { readFileSync } from "node:fs";
 
 const read = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
 
-test("지도 호스트에 미리 연결한다(첫 진입 DNS+TLS 비용 제거)", () => {
+test("지도 SDK 호스트는 실제 지도 진입 전에는 연결하지 않는다", () => {
   const html = read("index.html");
-  for (const host of ["https://dapi.kakao.com", "https://t1.daumcdn.net", "https://mts.daumcdn.net"]) {
-    assert.ok(html.includes(`rel="preconnect" href="${host}"`), `${host} preconnect 누락`);
+  for (const host of ["dapi.kakao.com", "maps.googleapis.com", "maps.gstatic.com"]) {
+    assert.doesNotMatch(html, new RegExp(`rel=["']preconnect["'][^>]+${host.replaceAll(".", "\\.")}`));
   }
 });
 
-test("Kakao SDK 는 앱이 한가할 때 미리 받아 둔다", () => {
-  const loader = read("src/lib/kakaoMap.ts");
-  assert.match(loader, /export function warmKakaoMaps/);
-  assert.match(loader, /requestIdleCallback/);
-  // 이미 로드됐거나 로드 중이면 다시 받지 않는다.
-  assert.match(loader, /if \(window\.kakao\?\.maps \|\| loadPromise\) return/);
-
+test("지도 공급자 SDK는 FamilyMap 선택 뒤에만 동적 로드한다", () => {
   const shell = read("src/app/AppShell.tsx");
-  assert.match(shell, /function useWarmKakaoMaps/);
-  const parent = shell.slice(shell.indexOf("export function ParentShell"), shell.indexOf("export function ChildShell"));
-  assert.match(parent, /useWarmKakaoMaps\(\)/);
-  assert.match(shell.slice(shell.indexOf("export function ChildShell")), /useWarmKakaoMaps\(\)/);
+  const parentHome = read("src/screens/parent/ParentHome.tsx");
+  assert.doesNotMatch(shell, /warmKakaoMaps|loadKakaoMaps|loadGoogleMaps/);
+  assert.doesNotMatch(parentHome, /warmKakaoMaps|loadKakaoMaps|loadGoogleMaps/);
+
+  const familyMap = read("src/maps/FamilyMap.tsx");
+  assert.match(familyMap, /lazy\(\(\) => import\("\.\/providers\/kakao\/KakaoMapAdapter"\)/);
+  assert.match(familyMap, /lazy\(\(\) => import\("\.\/providers\/google\/GoogleMapAdapter"\)/);
+  assert.match(familyMap, /policy\.provider === "kakao"/);
 });
 
 test("Kakao SDK 초기화가 한 번 실패해도 다음 사용자 시도에서 다시 불러올 수 있다", () => {
-  const loader = read("src/lib/kakaoMap.ts");
+  const loader = read("src/maps/providers/kakao/loadKakaoMaps.ts");
   assert.match(loader, /retryKakaoMapLoad/);
   assert.match(loader, /\.catch\(\(error: unknown\) => \{/);
   assert.match(loader, /loadPromise = null;\s*throw error;/s);
 
-  const map = read("src/components/KakaoMap.tsx");
+  const map = read("src/maps/providers/kakao/KakaoMapAdapter.tsx");
   const koShared = JSON.parse(read("locales/ko/shared.json"));
   assert.match(map, /const \[retryKey, setRetryKey\] = useState\(0\)/);
   assert.match(map, /setRetryKey\(\(value\) => value \+ 1\)/);
@@ -42,7 +40,7 @@ test("Kakao SDK 초기화가 한 번 실패해도 다음 사용자 시도에서 
 });
 
 test("지도가 그려지기 전에는 흰 사각형 대신 자리표시자를 보여준다", () => {
-  const map = read("src/components/KakaoMap.tsx");
+  const map = read("src/maps/providers/kakao/KakaoMapAdapter.tsx");
   assert.match(map, /const \[ready, setReady\] = useState\(false\)/);
   assert.match(map, /setReady\(true\)/);
   assert.match(map, /\{!ready && \(/);
@@ -75,10 +73,10 @@ test("길찾기 화면은 경로 API 를 기다리지 않고 지도를 먼저 �
   assert.match(rv, /직선 \$\{distanceLabel\(straightM\)\}/);
 });
 
-test("KakaoMap 은 인라인 style 로 position 을 덮어쓰지 않는다(소비 화면 배치 파괴 금지)", () => {
+test("Kakao 지도 어댑터는 인라인 style 로 position 을 덮어쓰지 않는다(소비 화면 배치 파괴 금지)", () => {
   // 실기기 회귀: 래퍼에 인라인 position:relative 를 주자 .pl-map(absolute; inset:0)이 무력화돼
   // 부모 위치 화면의 지도가 크기 0 이 되어 아예 보이지 않았다.
-  const map = read("src/components/KakaoMap.tsx");
+  const map = read("src/maps/providers/kakao/KakaoMapAdapter.tsx");
   assert.ok(!/style=\{\{\s*position:/.test(map), "인라인 position 금지");
   assert.match(map, /className=\{`\$\{className\} km-host`\}/);
   assert.match(map, /<div ref=\{ref\} className="km-canvas" \/>/);

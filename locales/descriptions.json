@@ -26276,6 +26276,62 @@
     "variables": {},
     "description": "혜니캘린더 내장 Study child 화면 문구: study.result.selfCheck"
   },
+  "shared.map.countryUnresolved": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "가족 이용 국가가 확정되지 않은 지도 화면 안내"
+  },
+  "shared.map.countryUnsupported": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "현재 국가가 지도 출시 대상이 아닐 때의 안내"
+  },
+  "shared.map.providerUnavailable": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "지도 공급자 키 또는 SDK를 사용할 수 없을 때의 안내"
+  },
+  "shared.map.googlePlayServicesUnavailable": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "Android Google Play services를 사용할 수 없을 때의 안내"
+  },
+  "shared.map.locationStale": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "아이 위치가 오래되어 경로 생성을 거부할 때의 안내"
+  },
+  "shared.map.quotaExceeded": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "지도 요청 비용 한도를 초과했을 때의 안내"
+  },
+  "shared.map.networkUnavailable": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "지도 네트워크 연결 실패 안내"
+  },
+  "shared.map.searchFailed": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "장소 검색 실패 안내"
+  },
+  "shared.map.reverseFailed": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "역지오코딩 실패 안내"
+  },
+  "shared.map.directionsFailed": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "도보 경로 조회 실패 안내"
+  },
+  "shared.map.walkingDataIncomplete": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "Google 도보 경로 데이터가 불완전할 수 있다는 경고"
+  },
+  "shared.map.retry": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "지도 작업 다시 시도 버튼"
+  },
+  "shared.map.openCountrySettings": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "가족 이용 국가 설정 화면 이동 버튼"
+  },
+  "shared.map.reopenForLocale": {
+    "namespace": "shared", "audience": "formal", "qualityTier": "A", "variables": {},
+    "description": "Google loader 언어 또는 국가 변경 후 지도 다시 열기 안내"
+  },
   "study.result.tryAgain": {
     "namespace": "child",
     "audience": "child",

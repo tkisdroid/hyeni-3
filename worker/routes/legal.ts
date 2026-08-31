@@ -24,6 +24,7 @@ const EXTERNAL_PROCESSING = [
   "Kakao OAuth — 인가·토큰 교환과 provider ID, email·이메일 검증 여부, nickname, profile image를 로그인·계정 연결에 처리",
   "Naver OAuth — 인가·토큰 교환과 provider ID, email, name 또는 nickname, profile_image를 로그인에 처리",
   "Kakao Corp. (지도·모빌리티) — 지도 SDK 표시와 역지오코딩·도보 경로 요청에 지도 화면 및 조회 좌표, 주소, 출발·도착 좌표를 처리",
+  "Google LLC (Google Maps Platform) — 한국 외 출시 승인 국가의 지도 표시·장소 검색·주소 변환·경로 요청에 검색어, 조회 좌표, 출발·도착 좌표를 처리. Worker는 Google 원문 응답·검색어·좌표·Place ID를 D1이나 로그에 보존하지 않고 즉시 필요한 표시값으로 축소",
   "공개 OSRM(openstreetmap.de routed-foot) — 카카오 도보 경로가 제공되지 않을 때 출발·도착 좌표를 공개 라우팅 서버에 전송해 경로를 조회",
   "OpenAI — AI 친구 프롬프트·대화와 assistant 답변 생성, 일정 사진·텍스트 분석 및 AI 요약에 이용자가 제출한 콘텐츠를 처리",
   "Resend — 문제 신고·문의·기능 제안 이메일 발송 시 senderName, senderEmail, senderRole, senderUserId, familyId, content, appOrigin과 사용자가 포함을 선택한 currentScreen·deviceInfo·errorLogs를 처리",
@@ -91,6 +92,7 @@ const TERMS_SECTIONS: Section[] = [
     body: [
       "서비스는 안정성·보안·법령 또는 플랫폼 정책 준수를 위해 기능을 변경하거나 일시 중단할 수 있습니다. 이용자에게 중요한 영향을 주는 변경은 앱 또는 공개 페이지로 안내합니다.",
       "천재지변, 통신망·클라우드·지도·푸시 등 외부 서비스 장애처럼 합리적으로 통제하기 어려운 사유가 발생하면 일부 기능이 제한될 수 있습니다.",
+      "한국 외 출시 승인 국가의 지도 기능에는 Google Maps Platform이 적용되며 Google Maps Platform 이용약관이 함께 적용됩니다.",
     ],
   },
   {
@@ -331,6 +333,7 @@ function renderPage(title: string, subtitle: string, sections: Section[]): strin
 <h1>${esc(title)}</h1>
 <p class="sub">${esc(subtitle)} · 최종 업데이트 ${esc(META.lastUpdated)}</p>
 ${body}
+<p class="sub" style="margin-top:24px">지도 서비스: <a href="https://cloud.google.com/maps-platform/terms" rel="noopener noreferrer">Google Maps Platform 이용약관</a> · <a href="https://policies.google.com/privacy" rel="noopener noreferrer">Google 개인정보처리방침</a></p>
 <p class="sub" style="margin-top:32px">문의: <a href="mailto:${esc(META.contactEmail)}">${esc(META.contactEmail)}</a></p>
 </body></html>`;
 }

@@ -9,7 +9,7 @@ const read = (path) => readFileSync(resolve(rootDir, path), "utf8");
 
 const screen = read("src/screens/parent/ParentLocation.tsx");
 const css = read("src/screens/parent/ParentLocation.css");
-const map = read("src/components/KakaoMap.tsx");
+const map = read("src/maps/providers/kakao/KakaoMapAdapter.tsx");
 const queries = read("src/queries/useLocation.ts");
 const journey = read("src/screens/parent/LocationJourneyPanel.tsx");
 
@@ -48,7 +48,7 @@ test("등록 사진은 위치 칩과 상세 영역을 가득 채우고 네 액�
   assert.match(screen, /ui\/phone-lavender\.webp/);
 });
 
-test("KakaoMap 은 명시적 center 를 bounds 로 덮지 않고 자녀 마커를 실제 좌표에 그린다", () => {
+test("Kakao 지도 어댑터는 명시적 center 를 bounds 로 덮지 않고 자녀 마커를 실제 좌표에 그린다", () => {
   assert.match(map, /if \(!center && route && route\.length >= 2\)/);
   assert.match(map, /\} else if \(!center && stays && stays\.length > 0\)/);
   assert.match(map, /position: new maps\.LatLng\(child\.lat, child\.lng\)/);

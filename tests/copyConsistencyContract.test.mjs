@@ -55,7 +55,7 @@ test("공용 오류·권한·업데이트·피드백 UI는 아이 말투 분기�
     "src/screens/feature/PermDenied.tsx",
     "src/screens/feature/AppUpdate.tsx",
     "src/screens/feature/Feedback.tsx",
-    "src/components/KakaoMap.tsx",
+    "src/maps/providers/kakao/KakaoMapAdapter.tsx",
   ]) {
     const source = read(path);
     assert.match(source, /child/, `${path}에 아이 역할 문구 분기가 필요해요`);

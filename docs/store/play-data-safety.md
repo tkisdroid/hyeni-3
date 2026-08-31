@@ -9,7 +9,7 @@
 - 데이터를 수집하나요? **예**
 - 데이터를 제3자와 공유하나요? **미확정**
   - 가족 구성원에게 사용자가 의도한 범위로 보여 주는 행위와 데이터 판매는 현재 코드에서 확인되지 않는다.
-  - Cloudflare, Firebase/FCM, Google Play, Toss Payments, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, 공개 OSRM, Resend, NCP SENS 및 단말·브라우저의 음성 인식·합성 제공자가 기능 제공 과정에서 데이터를 처리할 수 있다.
+  - Cloudflare, Firebase/FCM, Google Play, Toss Payments, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, Google Maps Platform, 공개 OSRM, Resend, NCP SENS 및 단말·브라우저의 음성 인식·합성 제공자가 기능 제공 과정에서 데이터를 처리할 수 있다.
   - 각 업체가 개발자 지시에 따라서만 처리하는 서비스 제공자 예외에 해당하는지는 계약·DPA, 제품 설정, 보관·삭제 기간 및 2차 이용 조건의 서면 증거를 확인해 데이터 유형별로 판단한다.
 - 전송 중 암호화하나요? **예** — 공개 API와 실시간 채널은 HTTPS/WSS를 사용한다. 출시 빌드에서 평문 endpoint가 없는지 최종 확인한다.
 - 삭제 요청 수단을 제공하나요? **예, 공개 상태 재확인 필요** — 앱 내 회원 탈퇴와 `https://hyeni-calendar-api.tkisdroid.workers.dev/data-deletion`을 사용한다. 제출 직전 로그인 없이 안내를 읽을 수 있고 URL이 HTTPS 200인지 확인한다.
@@ -41,7 +41,7 @@
 | 개인 정보/사용자 콘텐츠 | 문제 신고·문의·기능 제안의 작성 내용과 서버 정본 계정·가족 정보 | 사용자가 피드백을 제출한 경우 | D1에 먼저 내구 저장하고 설정 시 Resend 이메일 본문·회신 주소로 전송. Resend 보관·2차 이용은 계약 증거 전 미확정 | 사용자 지원 | `user_feedback`, `routes/feedback.ts` |
 | 앱 정보·성능 | 사용자가 선택한 앱 버전·실행 환경·현재 화면·최근 24시간 정규화 오류 최대 12건 | 사용자가 피드백에서 `진단 정보 함께 보내기`를 켠 경우 | D1 `device_info/error_logs/current_screen`에 저장. 대화·좌표·사진·비밀번호·로그인/구매 토큰·원문 오류 제외 | 문제 해결, 앱 품질 개선 | `user_feedback`, `feedbackDiagnostics.ts` |
 | 개인 정보 | 전화번호와 6자리 OTP | 전화 가입 또는 OAuth 전화 계정 연결 인증을 요청한 경우 | OTP 원문은 NCP SENS 문자 내용으로 전송하고 서버에는 검증용 해시와 만료 정보를 저장 | 계정 관리, 보안 | `lib/ncpSens.ts`, `phone_otp` |
-| 위치 | 도보 경로의 출발·도착 좌표 | 사용자가 도보 경로를 요청했고 카카오 또는 폴백 경로 조회가 필요한 경우 | Kakao Mobility와 공개 OSRM을 동시에 조회하며 좌표를 5자리 반올림한 경로 캐시 키와 결과를 최대 7일 보관 | 앱 기능 | `routes/kakao.ts`, `edge_cache` |
+| 위치 | 지도 표시·장소 검색·역지오코딩·도보 경로의 좌표와 지역 힌트 | 사용자가 지도 기능을 열거나 검색·경로를 요청한 경우 | 가족 국가 정책에 따라 한국은 Kakao, 승인된 비한국 국가는 Google Maps Platform이 일시 처리한다. 검색 후보와 provider ID는 저장하지 않고 사용자가 별도로 확정한 핀·별칭만 기존 장소/일정에 저장한다 | 앱 기능 | `routes/maps.ts`, `lib/maps/*`, `src/maps/*` |
 
 ## 음성 인식·합성 외부 처리 주의
 
@@ -66,6 +66,7 @@ Android `SpeechRecognizer`와 브라우저 Web Speech Recognition은 사용 중�
 | Naver OAuth | 인가·토큰 교환, provider ID, email, name/nickname, profile_image | OAuth 동의항목, 프로필 보관·삭제, 2차 이용 |
 | OpenAI | AI 친구 프롬프트·대화, assistant 답변 생성, 일정 텍스트·선택 사진, AI 요약 | API 계약·DPA, 보관·삭제, 학습·안전 모니터링 등 2차 이용, 아동 데이터 조건 |
 | Kakao 지도 SDK·Local·Mobility | 지도 화면·조회 좌표, 역지오코딩 좌표·주소, 도보 출발·도착 좌표 | SDK/API 약관, 로그·보관·삭제, 2차 이용, 아동 대상 적격성 |
+| Google Maps Platform(Maps JavaScript/Android SDK, Places, Geocoding, Routes) | 지도 화면과 locale·region, 검색 문자열·bias object reference가 해석한 좌표, 역지오코딩 좌표, 경로 출발·도착 좌표 | 키 제한·OAuth scope·field mask, 계약·DPA, 로그·보관·삭제, 2차 이용, 아동 대상 적격성. 국가별 시간대/DST와 실기기 E2E 전에는 출시 차단 |
 | 공개 OSRM(openstreetmap.de routed-foot) | 도보 경로 출발·도착 좌표, 요청 IP·기술 로그 가능성 | 운영 주체·약관, 로그·보관·삭제, 2차 이용, DPA·아동 대상 적격성. 증거가 없으면 아이 경로에서 차단 |
 | Resend | 기능 제안의 `senderName`, `senderEmail`, `senderRole`, `senderUserId`, `familyId`, `content`, `appOrigin` | 이메일 본문·로그 보관·삭제, 2차 이용, DPA, 전송 지역 |
 | NAVER Cloud Platform NCP SENS | 수신 전화번호와 6자리 OTP 문자 내용 | SMS 계약, 로그·보관·삭제, 2차 이용, 국외 이전 여부 |

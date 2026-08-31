@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft } from "lucide-react";
 import { useToast } from "@/app/toast";
-import { KakaoMap } from "@/components/KakaoMap";
+import { FamilyMap } from "@/maps/FamilyMap";
+import { MapSearchResults, type MapSearchResultsState } from "@/maps/MapSearchResults";
+import { buildPersistedMapLocation } from "@/maps/persistence";
 import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
-import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { hasKakaoKey } from "@/config/env";
+import { findMapPlaces, reverseRawMapLabel, selectMapPlace } from "@/lib/mapActions";
+import { confirmPinFromMapGesture, type EphemeralMapSearchCandidate, type UserConfirmedPin } from "@/lib/api/endpoints/maps";
+import { useAuth } from "@/auth/AuthContext";
 import { useChildLocations, useCreateDangerZone, useDangerZones, useSavedPlaces, useUpdateDangerZone } from "@/queries/useLocation";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { resolveMapCenter } from "@/transform/mapCenter";
@@ -93,6 +97,7 @@ function restoredDangerZoneDraft(routeDraft: unknown): DangerZoneDraft | null {
 /** P-17 위험구역 추가·편집. 지도 핀으로 중심 선택 + 반경 슬라이더 + 진입/이탈 알림 토글. */
 export function DangerZoneForm() {
   const intl = useIntl();
+  const { familyId } = useAuth();
   const navigate = useNavigate();
   const { show } = useToast();
   const routeState = (useLocation().state ?? null) as DangerZoneRouteState | null;
@@ -122,12 +127,14 @@ export function DangerZoneForm() {
   const [name, setName] = useState(editing?.name ?? initialDraft?.name ?? "");
   const [address, setAddress] = useState(initialDraft?.address ?? "");
   const [radius, setRadius] = useState(editing?.radius_m ?? initialDraft?.radius ?? RADIUS_DEFAULT);
-  const [picked, setPicked] = useState<LatLng | null>(
-    editing ? { lat: editing.lat, lng: editing.lng } : initialDraft?.picked ?? null,
+  const initialPicked = editing ? { lat: editing.lat, lng: editing.lng } : initialDraft?.picked ?? null;
+  const [picked, setPicked] = useState<UserConfirmedPin | null>(
+    initialPicked ? confirmPinFromMapGesture(initialPicked) : null,
   );
   const [center, setCenter] = useState<LatLng | null>(
     editing ? { lat: editing.lat, lng: editing.lng } : initialDraft?.center ?? null,
   );
+  const [searchResults, setSearchResults] = useState<MapSearchResultsState | null>(null);
   // 지도 기본 중심: 편집 좌표 > 집 > 아이 마지막 위치 > 서울(서울 밖 가족 배려).
   const savedPlacesQuery = useSavedPlaces();
   const childLocationsQuery = useChildLocations();
@@ -142,63 +149,40 @@ export function DangerZoneForm() {
   const [entryAlert, setEntryAlert] = useState(editing?.alert_on_entry ?? initialDraft?.entryAlert ?? true);
   const [exitAlert, setExitAlert] = useState(editing?.alert_on_exit ?? initialDraft?.exitAlert ?? false);
 
-  // Kakao Geocoder(주소↔좌표) — 키 미설정이면 로드 실패해도 화면은 동작.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const geocoderRef = useRef<any>(null);
-  useEffect(() => {
-    let cancelled = false;
-    loadKakaoMaps()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .then((maps: any) => {
-        if (!cancelled && maps.services) geocoderRef.current = new maps.services.Geocoder();
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   // 지도 클릭 → 중심 좌표 선택 + 역지오코딩으로 주소 자동 채움.
   const handlePick = (lat: number, lng: number) => {
-    setPicked({ lat, lng });
-    const geocoder = geocoderRef.current;
-    if (!geocoder) return;
-    geocoder.coord2Address(
-      lng,
-      lat,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (results: any[], status: string) => {
-        if (status !== "OK" || !results[0]) return;
-        const road = results[0].road_address?.address_name;
-        const jibun = results[0].address?.address_name;
-        if (road || jibun) setAddress(road || jibun);
-      },
-    );
+    setPicked(confirmPinFromMapGesture({ lat, lng }));
+    setSearchResults(null);
+    if (familyId) void reverseRawMapLabel(familyId, { lat, lng }, intl.locale, "picker_pin").then(setAddress).catch(() => undefined);
   };
 
   // 주소 검색(Enter) → 좌표로 이동 + 마커.
-  const searchAddress = () => {
-    const geocoder = geocoderRef.current;
+  const searchAddress = async () => {
     const query = address.trim();
     if (!query) return;
-    if (!geocoder) {
+    if (!familyId) {
       show(intl.formatMessage({ id: "notifications.dangerZoneForm.addressSearchUnavailable" }), "🔍");
       return;
     }
-    geocoder.addressSearch(
-      query,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (results: any[], status: string) => {
-        if (status === "OK" && results[0]) {
-          const lat = Number(results[0].y);
-          const lng = Number(results[0].x);
-          setPicked({ lat, lng });
-          setCenter({ lat, lng });
-        } else {
-          show(intl.formatMessage({ id: "notifications.dangerZoneForm.addressNotFound" }), "🔍");
-        }
-      },
-    );
+    try {
+      const result = await findMapPlaces(familyId, query, intl.locale);
+      if (result.candidates.length === 0) throw new Error("map_search_failed");
+      setSearchResults({ provider: result.session.provider, sessionHandle: result.session.sessionHandle, candidates: result.candidates });
+    } catch {
+      show(intl.formatMessage({ id: "notifications.dangerZoneForm.addressNotFound" }), "🔍");
+    }
+  };
+
+  const selectSearchResult = async (candidate: EphemeralMapSearchCandidate) => {
+    if (!familyId || !searchResults) return;
+    try {
+      const selected = await selectMapPlace(familyId, searchResults.sessionHandle, candidate);
+      setPicked(null);
+      setCenter(selected.point);
+      setSearchResults(null);
+    } catch {
+      show(intl.formatMessage({ id: "notifications.dangerZoneForm.addressNotFound" }), "🔍");
+    }
   };
 
   const saving = createZone.isPending || updateZone.isPending;
@@ -226,6 +210,7 @@ export function DangerZoneForm() {
       show(intl.formatMessage({ id: "notifications.dangerZoneForm.nameRequired" }), "✏️");
       return;
     }
+    const persisted = buildPersistedMapLocation({ label: trimmed, pin: picked });
     const limit = dangerZoneLimitFor(tier);
     if (!editing && zones.length >= limit) {
       setUpsellOpen(true);
@@ -233,8 +218,8 @@ export function DangerZoneForm() {
     }
     const payload = {
       name: trimmed,
-      lat: picked.lat,
-      lng: picked.lng,
+      lat: persisted.lat,
+      lng: persisted.lng,
       radius_m: radius,
       zone_type: editing?.zone_type ?? "custom",
       alert_on_entry: entryAlert,
@@ -308,7 +293,7 @@ export function DangerZoneForm() {
         )}
         {/* 지도 — 눌러서 구역 중심 선택(반경 원 미리보기) */}
         <div className="dzf-map">
-          <KakaoMap
+          <FamilyMap
             className="dzf-map__canvas"
             center={mapCenter}
             picked={picked}
@@ -359,6 +344,7 @@ export function DangerZoneForm() {
             }}
             placeholder={intl.formatMessage({ id: "notifications.dangerZoneForm.addressPlaceholder" })}
           />
+          <MapSearchResults result={searchResults} onSelect={selectSearchResult} />
         </div>
 
         {/* 반경 */}

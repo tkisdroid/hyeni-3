@@ -16,7 +16,7 @@ test("직선 보간 채움점만 경로에서 제외하고 저정확도 실측�
 });
 
 test("오늘 경로 폴리라인은 전 구간 실선 하나로 그린다(점선 강등 없음)", () => {
-  const map = read("src/components/KakaoMap.tsx");
+  const map = read("src/maps/providers/kakao/KakaoMapAdapter.tsx");
   const routeBlock = map.slice(map.indexOf("// 경로 폴리라인"), map.indexOf("// 스테이포인트"));
 
   assert.match(routeBlock, /strokeStyle: "solid"/);

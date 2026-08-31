@@ -24,7 +24,7 @@ test("표시 버전은 package.json을 쓰고 원격 업데이트 정책은 Play
   assert.match(vite, /__APP_VERSION__:\s*JSON\.stringify\(packageMetadata\.version\)/);
   assert.match(gradle, /hyeniPackageVersion = new JsonSlurper\(\)\.parse\(file\('\.\.\/\.\.\/package\.json'\)\)\.version/);
   assert.match(gradle, /versionName hyeniPackageVersion/);
-  assert.match(gradle, /manifestPlaceholders = \[hyeniReleaseSourceSha: hyeniReleaseSourceSha\]/);
+  assert.match(gradle, /manifestPlaceholders = \[hyeniReleaseSourceSha: hyeniReleaseSourceSha, MAPS_API_KEY: hyeniMapsApiKey\]/);
   assert.match(gradle, /릴리즈 산출물은 clean 앱 worktree에서만 만들 수 있습니다/);
   assert.match(androidManifest, /com\.hyeni\.calendar\.RELEASE_SOURCE_SHA/);
   assert.match(androidManifest, /android:value="\$\{hyeniReleaseSourceSha\}"/);

@@ -832,5 +832,19 @@
   "shared.supply.limit.prep.child": "每天最多可以登记 {max} 件物品",
   "shared.supply.limit.prep.formal": "每天最多可登记 {max} 件物品",
   "shared.supply.limit.hw.child": "每天最多可以登记 {max} 项作业",
-  "shared.supply.limit.hw.formal": "每天最多可登记 {max} 项作业"
+  "shared.supply.limit.hw.formal": "每天最多可登记 {max} 项作业",
+  "shared.map.countryUnresolved": "请先确认家庭的使用国家或地区。",
+  "shared.map.countryUnsupported": "当前使用国家或地区暂不支持地图。",
+  "shared.map.providerUnavailable": "无法加载地图。",
+  "shared.map.googlePlayServicesUnavailable": "Google Play 服务不可用，无法打开地图。",
+  "shared.map.locationStale": "孩子的最新位置过旧，无法生成路线。",
+  "shared.map.quotaExceeded": "暂时超过地图请求限额。",
+  "shared.map.networkUnavailable": "请检查网络后重试。",
+  "shared.map.searchFailed": "地点搜索失败。",
+  "shared.map.reverseFailed": "无法确认地址。",
+  "shared.map.directionsFailed": "无法加载步行路线。",
+  "shared.map.walkingDataIncomplete": "部分地区的 Google 步行路线数据可能不完整。",
+  "shared.map.retry": "重试",
+  "shared.map.openCountrySettings": "打开使用国家或地区设置",
+  "shared.map.reopenForLocale": "要应用语言或国家地区更改，请重新打开地图页面。"
 }

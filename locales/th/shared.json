@@ -832,5 +832,19 @@
   "shared.supply.limit.prep.child": "เพิ่มของที่ต้องเตรียมได้วันละไม่เกิน {max} อย่าง",
   "shared.supply.limit.prep.formal": "เพิ่มของที่ต้องเตรียมได้วันละไม่เกิน {max} รายการ",
   "shared.supply.limit.hw.child": "เพิ่มการบ้านได้วันละไม่เกิน {max} อย่าง",
-  "shared.supply.limit.hw.formal": "เพิ่มการบ้านได้วันละไม่เกิน {max} รายการ"
+  "shared.supply.limit.hw.formal": "เพิ่มการบ้านได้วันละไม่เกิน {max} รายการ",
+  "shared.map.countryUnresolved": "โปรดยืนยันประเทศที่ครอบครัวใช้งานก่อน",
+  "shared.map.countryUnsupported": "ยังไม่รองรับแผนที่ในประเทศที่ใช้งานอยู่",
+  "shared.map.providerUnavailable": "โหลดแผนที่ไม่ได้",
+  "shared.map.googlePlayServicesUnavailable": "เปิดแผนที่ไม่ได้เพราะใช้บริการ Google Play ไม่ได้",
+  "shared.map.locationStale": "ตำแหน่งล่าสุดของเด็กเก่าเกินไป จึงสร้างเส้นทางไม่ได้",
+  "shared.map.quotaExceeded": "เกินขีดจำกัดคำขอแผนที่ชั่วคราว",
+  "shared.map.networkUnavailable": "ตรวจสอบเครือข่ายแล้วลองอีกครั้ง",
+  "shared.map.searchFailed": "ค้นหาสถานที่ไม่สำเร็จ",
+  "shared.map.reverseFailed": "ตรวจสอบที่อยู่ไม่ได้",
+  "shared.map.directionsFailed": "โหลดเส้นทางเดินไม่ได้",
+  "shared.map.walkingDataIncomplete": "ข้อมูลเส้นทางเดินของ Google อาจไม่สมบูรณ์ในบางพื้นที่",
+  "shared.map.retry": "ลองอีกครั้ง",
+  "shared.map.openCountrySettings": "เปิดการตั้งค่าประเทศที่ใช้งาน",
+  "shared.map.reopenForLocale": "เปิดหน้าจอแผนที่อีกครั้งเพื่อใช้การเปลี่ยนภาษาหรือประเทศ"
 }

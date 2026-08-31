@@ -832,5 +832,19 @@
   "shared.supply.limit.prep.child": "You can add up to {max} supplies a day",
   "shared.supply.limit.prep.formal": "You can add up to {max} supplies per day",
   "shared.supply.limit.hw.child": "You can add up to {max} homework items a day",
-  "shared.supply.limit.hw.formal": "You can add up to {max} homework items per day"
+  "shared.supply.limit.hw.formal": "You can add up to {max} homework items per day",
+  "shared.map.countryUnresolved": "Please confirm your family's country of use first.",
+  "shared.map.countryUnsupported": "Maps are not supported in your current country of use.",
+  "shared.map.providerUnavailable": "The map is unavailable.",
+  "shared.map.googlePlayServicesUnavailable": "The map cannot open because Google Play services are unavailable.",
+  "shared.map.locationStale": "The child's latest location is too old to create a route.",
+  "shared.map.quotaExceeded": "The map request limit was temporarily exceeded.",
+  "shared.map.networkUnavailable": "Check your network and try again.",
+  "shared.map.searchFailed": "Place search failed.",
+  "shared.map.reverseFailed": "The address could not be found.",
+  "shared.map.directionsFailed": "Walking directions could not be loaded.",
+  "shared.map.walkingDataIncomplete": "Google walking-route data may be incomplete in some areas.",
+  "shared.map.retry": "Try again",
+  "shared.map.openCountrySettings": "Open country settings",
+  "shared.map.reopenForLocale": "Reopen the map screen to apply language or country changes."
 }

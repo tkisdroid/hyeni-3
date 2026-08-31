@@ -28,6 +28,9 @@ v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로�
 - [x] 출시 운영 가이드 초안: `docs/release/혜니캘린더_Google_Play_출시_가이드북_2026-07-14.md`
 - [ ] Data Safety의 전체 데이터 유형과 외부 처리업체 서비스 제공자 예외를 계약·설정 기준으로 확정
 - [ ] 공개 이용약관·개인정보처리방침·데이터 삭제 문구를 Android Google Play 전용 신규 결제, iPhone·웹 무료 이용, 같은 계정의 기존 프리미엄 교차 기기 이용 정책으로 갱신했다. Worker 배포 뒤 HTTPS 200과 최종 업데이트 `2026-09-01`을 재확인
+- [x] 지도 화면·장소 검색·역지오코딩·길찾기를 `FamilyMap`/`/api/maps/*` 공통 경계로 이관하고 `KR=Kakao`, `CN/ZZ=미지원`, 승인 비한국 국가만 Google인 fail-closed 정책을 자동 검증
+- [x] Google 웹·Android SDK 버전 고정, CSP 최소 호스트, Android manifest key placeholder와 release key 누락 fail-closed, 검색 후보 비저장·사용자 확정 핀 저장 경계를 자동 검증
+- [ ] `docs/operations/google-maps-release-readiness.md`의 키 제한·D1 readback·공식 OAuth scope·국가별 time zone/DST·부모 PWA↔아이 Android E2E를 완료하고 Google 국가 allowlist를 한 국가씩 승인. 현재 allowlist는 비어 있고 글로벌 출시는 HOLD
 - [x] Play 그래픽 자산은 사용자 지정 원본으로 교체하고 중복 파일 `1000172579.png`=`1000172578.png`, `1000172581.png`=`1000172580.png`를 제외했다. 업로드 순서와 전체 SHA-256은 `docs/store/play-console-submission-v1.3.0.md` §2에 고정
 - [x] final app SHA `40a32e2c18e929877e7c92970d6898619d7feedd`에서 build→`cap sync`→승인 인증서 서명 release AAB를 새로 만들고 source dist·post-sync public·universal APK public, manifest 권한 24개 exact allowlist, `isMonitoringTool=child_monitoring`, legacy 저장소 `maxSdkVersion=28`, package/versionName/versionCode, `jarsigner`·승인 upload certificate, `PAGE_ALIGNMENT_16K`·`zipalign -P 16`·전체 ELF `LOAD >= 0x4000`를 검증. 증거=`artifacts/release-evidence/android-release-aab-evidence-20260815-184739-40a32e2.json`
 - [x] 최신 local debug schema v4 evidence GREEN: source 414/`21fd84…6c1e5`, Android/embedded projection 413/`4a6af8…18d15`, cap public 416/`821819…248fa`, embedded public 415/`0f291b…5cbc`; web `matched:true`, archive 961/2/955 safe, 시작/종료 integrity 모두 true, AAB manifest policy v1 권한 24개 exact allowlist·`isMonitoringTool=child_monitoring`·legacy 저장소 `maxSdkVersion=28`, ZIP·전체 ELF 16KB 정적 검사 통과. `artifacts/release-evidence/android-debug-aab-evidence-20260802-143008.json` SHA-256 `e552dd6655d4e6a0b467cac0d0acba73f5ae9f79a410b657926e1fcd242d0c18`, verification log SHA-256 `1bd78d88dfa4cb717bf4f73d1a8bf116cb653135d01560daa9c472816f0a483f`
@@ -170,7 +173,7 @@ try {
 - [ ] 앱 설치 ID, FCM 토큰, 세션 ID, 구매 내역·구독 상태를 신고
 - [ ] 주변 소리 음성 본문은 일시 처리, 감사 메타데이터는 저장된다는 차이를 표시
 - [ ] Android `SpeechRecognizer`와 Web Speech의 외부 처리 가능성을 개인정보처리방침에 반영
-- [ ] Cloudflare, Firebase/FCM, Google Play, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, 공개 OSRM, Resend, NCP SENS, 음성 인식 제공자의 실제 전송 필드를 Data Safety에 반영. 비활성 레거시 Toss 경로를 현재 운영 처리업체로 신고하지 않는다
+- [ ] Cloudflare, Firebase/FCM, Google Play, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, Google Maps Platform, 공개 OSRM, Resend, NCP SENS, 음성 인식 제공자의 실제 전송 필드를 Data Safety에 반영. 비활성 레거시 Toss 경로를 현재 운영 처리업체로 신고하지 않는다
 - [ ] Resend의 `senderName`·`senderEmail`·`senderRole`·`senderUserId`·`familyId`·`content`, NCP SENS의 전화번호·6자리 OTP, 공개 OSRM의 출발·도착 좌표 전송을 반영
 - [ ] 각 외부 흐름의 계약·DPA, 실제 설정, 보관·삭제 기간, 2차 이용 증거가 모두 확보되기 전에는 서비스 제공자 예외를 적용하지 않음
 - [ ] 개인정보처리방침에 AI 친구뿐 아니라 AI 일정 사진·텍스트, AI 요약, 음성 인식 처리를 모두 포함

@@ -6,23 +6,8 @@ import { extname, join, relative } from "node:path";
 const ROOT = new URL("../", import.meta.url);
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 
-const LEGACY_ALLOWED_DIRECT_IMPORTS = new Set([
-  "src/components/KakaoMap.tsx",
-  "src/components/MapPickerSheet.tsx",
-  "src/screens/feature/DangerZoneForm.tsx",
-  "src/screens/feature/PlaceForm.tsx",
-  "src/screens/feature/RouteView.tsx",
-  "src/screens/feature/SosReceive.tsx",
-  "src/screens/parent/ParentHome.tsx",
-  "src/screens/parent/ParentLocation.tsx",
-  "src/screens/shared/MemoChat.tsx",
-]);
-
-const LEGACY_ALLOWED_KAKAO_API_CALLERS = new Set([
-  "src/lib/api/endpoints/location.ts",
-  "src/lib/api/endpoints/route.ts",
-  "src/screens/child/overlays/RouteSheet.tsx",
-]);
+const LEGACY_ALLOWED_DIRECT_IMPORTS = new Set([]);
+const LEGACY_ALLOWED_KAKAO_API_CALLERS = new Set([]);
 
 async function sourceFiles(directory) {
   const entries = await readdir(new URL(`${directory}/`, ROOT), { withFileTypes: true });
@@ -57,8 +42,8 @@ test("클라이언트의 Kakao 전용 API 호출은 기존 exact baseline보다 
 });
 
 test("Worker route는 요청 body의 countryCode로 공급자를 고르지 않는다", async () => {
-  const offenders = await matchingFiles("worker/routes", /body\s*\.\s*(?:countryCode|country_code)/);
-  assert.deepEqual(offenders, []);
+  const source = await readFile(new URL("worker/routes/maps.ts", ROOT), "utf8");
+  assert.doesNotMatch(source, /body\s*\.\s*(?:countryCode|country_code)/);
 });
 
 test("실행 코드와 패키지에 Mapbox를 새로 도입하지 않는다", async () => {

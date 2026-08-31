@@ -23,7 +23,7 @@ const avatarSource = readFileSync(
   "utf8",
 );
 const kakaoMapSource = readFileSync(
-  new URL("../src/components/KakaoMap.tsx", import.meta.url),
+  new URL("../src/maps/providers/kakao/KakaoMapAdapter.tsx", import.meta.url),
   "utf8",
 );
 const profileEditSource = readFileSync(

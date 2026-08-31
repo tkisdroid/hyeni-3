@@ -832,5 +832,19 @@
   "shared.supply.limit.prep.child": "Mỗi ngày thêm được tối đa {max} món đồ",
   "shared.supply.limit.prep.formal": "Mỗi ngày có thể thêm tối đa {max} món đồ",
   "shared.supply.limit.hw.child": "Mỗi ngày thêm được tối đa {max} bài tập",
-  "shared.supply.limit.hw.formal": "Mỗi ngày có thể thêm tối đa {max} bài tập"
+  "shared.supply.limit.hw.formal": "Mỗi ngày có thể thêm tối đa {max} bài tập",
+  "shared.map.countryUnresolved": "Vui lòng xác nhận quốc gia sử dụng của gia đình trước.",
+  "shared.map.countryUnsupported": "Bản đồ chưa được hỗ trợ tại quốc gia sử dụng hiện tại.",
+  "shared.map.providerUnavailable": "Không thể tải bản đồ.",
+  "shared.map.googlePlayServicesUnavailable": "Không thể mở bản đồ vì Dịch vụ Google Play không khả dụng.",
+  "shared.map.locationStale": "Vị trí mới nhất của trẻ đã quá cũ để tạo tuyến đường.",
+  "shared.map.quotaExceeded": "Đã tạm thời vượt quá giới hạn yêu cầu bản đồ.",
+  "shared.map.networkUnavailable": "Hãy kiểm tra mạng rồi thử lại.",
+  "shared.map.searchFailed": "Không thể tìm kiếm địa điểm.",
+  "shared.map.reverseFailed": "Không thể xác định địa chỉ.",
+  "shared.map.directionsFailed": "Không thể tải tuyến đường đi bộ.",
+  "shared.map.walkingDataIncomplete": "Dữ liệu tuyến đường đi bộ của Google có thể chưa đầy đủ ở một số khu vực.",
+  "shared.map.retry": "Thử lại",
+  "shared.map.openCountrySettings": "Mở cài đặt quốc gia sử dụng",
+  "shared.map.reopenForLocale": "Hãy mở lại màn hình bản đồ để áp dụng thay đổi ngôn ngữ hoặc quốc gia."
 }
