@@ -6,18 +6,24 @@
 
 버전: `versionName 1.4.4` / `versionCode 16`
 
-현재 판정: **이전 후보 폐기, 최종 커밋에서 새 서명 AAB 생성 필요**
+현재 판정: **사용자 직접 Play 제출 완료 — production v1.4.4/code 16 검토 중**
 
-## 후보 교체 사유
+## 최종 제출 산출물
 
-- 2026-08-27에 만든 `eda3907d96e0046804c2d39eb4c2c310f4b1dfeb` 후보는 Android 15
-  microphone FGS 수정만 담고 있다. 이후 반영된 카카오·Google 복귀, 소셜 회원가입·계정 연결·취소 후 재시도,
-  아이 QR·수동 코드 연결, 온보딩 제목 줄바꿈, 부모 홈 단일 히어로 변경을 포함하지 않으므로 업로드하지 않는다.
-- 해당 폐기된 이전 후보의 파일 SHA-256은
-  `45e66db8d6a60cae1a9a4c33105f285c85886d92b4aea588425d0010a5343a91`이다. 이 값은 역사 식별용이며
-  현재 승인 후보가 아니다.
-- 최종 앱·Worker 회귀와 실기기 검증을 마친 커밋을 별도 clean worktree에서 다시 빌드하고, 새 source SHA·AAB
-  SHA-256·검증 증거를 이 문서에 기록한 뒤에만 Play에 올린다.
+- source commit: `eccef55d6b57bf8f8929ed9bc193c034355f7489`
+- 앱 버전: `versionName 1.4.4` / `versionCode 16`
+- 서명 AAB 크기: 13,065,652 bytes
+- 서명 AAB SHA-256: `b449ce0aaa7b381c24dada4ecc2125ab8bddbf6a70b2c6d235358a2df2ed1ac4`
+- 승인된 upload certificate SHA-256은 `32f729e8`로 시작하는 인증서와 일치했다. 전체 인증서 지문은
+  로컬 검증 증거에만 보관하며 이 문서에는 축약해 기록한다.
+- 2026-08-27의 `eda3907d96e0046804c2d39eb4c2c310f4b1dfeb` 기반 이전 후보
+  (`45e66db8d6a60cae1a9a4c33105f285c85886d92b4aea588425d0010a5343a91`)는 교체됐으며 이번 제출에 사용하지 않았다.
+
+## Play 제출 상태
+
+- 사용자가 Play Console에서 production의 `혜니캘린더 1.4.4 (16)`을 직접 제출했다.
+- 제출 직후 UI에서 `검토 중인 변경사항`과 `전체 출시 시작`을 확인했다.
+- 이는 Play 검토 요청이 접수된 상태라는 증거이며, 게시 완료나 사용자 배포 완료를 뜻하지 않는다.
 
 ## Play 확인 필요 문제
 
@@ -51,18 +57,15 @@ Play Console은 Android 15 이상에서 `BOOT_COMPLETED` 수신 뒤 제한된 fo
 
 - TDD RED에서 `LocationService.stopAmbientListenFromPending`의 `new Intent(...AmbientListenService)`와
   `startService` 호출을 재현했고 수정 뒤 GREEN으로 전환했다.
-- 원격청취·Play manifest 집중 회귀와 과거 Android 검증 결과는 유지하되, 최신 인증 수정 뒤 전체 앱·Worker·Android
-  회귀 수와 새 APK/AAB 해시는 최종 빌드에서 다시 기록한다.
+- 최신 인증 수정 뒤 전체 앱 테스트 2,036/2,036, Worker 테스트 1,314/1,314와 앱·Worker typecheck,
+  production build, `git diff --check`가 통과했다.
 - 정적 검색에서 `AmbientListenService` Intent 생성은 사용자에게 보이는 `RemoteListenActivity` 시작과 실행 중 알림의
   중지 `PendingIntent` 두 곳만 남고, 부팅으로 복구되는 `LocationService`에는 남지 않았다.
-- 폐기된 이전 후보는 사용자가 UTF-8 PowerShell 7 창에서 서명 비밀번호를 직접 입력해 만든 clean source commit
-  `eda3907d96e0046804c2d39eb4c2c310f4b1dfeb` 기반 파일
-  `artifacts/release-evidence/play-upload-v1.4.4-vc16-eda3907/hyeni-calendar-v1.4.4-vc16-eda3907.aab`,
-  13,060,516 bytes, SHA-256
-  `45e66db8d6a60cae1a9a4c33105f285c85886d92b4aea588425d0010a5343a91`이다. 이번 Play 업로드에는 사용하지 않는다.
-- 폐기된 이전 후보의 schema v4 증거 `artifacts/release-evidence/android-release-aab-evidence-20260827-135437-eda3907.json`에서
-  manifest 1.4.4/code 16·non-debuggable·source commit, 승인 업로드 인증서, dist/내장 web assets,
-  bundle/universal APK와 모든 ELF의 16KiB 조건이 모두 GREEN이다.
+- 최종 clean source commit `eccef55d6b57bf8f8929ed9bc193c034355f7489`에서 만든 서명 AAB는
+  13,065,652 bytes이고 SHA-256은
+  `b449ce0aaa7b381c24dada4ecc2125ab8bddbf6a70b2c6d235358a2df2ed1ac4`이다.
+- 최종 AAB 검증에서 manifest 1.4.4/code 16·non-debuggable·source commit, 승인 upload certificate,
+  dist/내장 web assets, bundle/universal APK와 모든 ELF의 16KiB 조건이 GREEN임을 확인했다.
 
 ## edge-to-edge 권장 조치 판정
 
@@ -80,27 +83,27 @@ edge-to-edge 강제 전환에 맞춰 인셋과 실기기 화면을 확인하라�
 
 ## 출시 경계
 
-- 2026-08-28 fresh Android Publisher readback에서 v1.4.3/code 15는 production `PUBLISHED`, 전체 bundle 최대
-  versionCode는 15다. code 16은 아직 사용되지 않았으므로 정책·인증 수정본은 v1.4.4/code 16으로 올린다.
-- 최신 후보는 `worker/db/oauth-exchange-recovery.sql`을 운영 D1에 먼저 적용하고 컬럼·인덱스를 readback한 뒤 Worker를
-  배포해야 한다. 새 앱을 올리기 전에 D1 → Worker → `/api/health` 순서로 확인한다.
-- 서명 AAB는 최종 clean source commit에서 사용자가 서명 비밀번호를 직접 입력해 새로 만든다. 폐기된 code 16 AAB와
-  기존 code 15 AAB를 재사용하지 않는다.
-- Play 업로드 직전 모든 트랙을 fresh readback해 최대 versionCode가 15인지 확인한다. code 16 사용 흔적이 있으면
-  v1.4.5/code 17로 올리고 다시 빌드한다.
+- Play 업로드 전 fresh Android Publisher readback에서 v1.4.3/code 15가 production `PUBLISHED`였고 전체 bundle 최대
+  versionCode가 15임을 확인한 뒤 code 16을 사용했다.
+- `worker/db/oauth-exchange-recovery.sql`을 운영 D1에 적용해 컬럼·인덱스를 readback하고 Worker를 배포한 뒤
+  `/api/health` 200/ready를 확인했다.
+- 서명 AAB는 최종 clean source commit에서 사용자가 서명 비밀번호를 직접 입력해 새로 만들었고, 폐기된 후보나
+  기존 code 15 AAB를 재사용하지 않았다.
+- 현재 Play 상태는 검토 중이다. Play가 게시 완료 상태를 반환하기 전에는 출시 완료로 기록하지 않는다.
 - 운영 계정의 refresh token은 출력·복사·외부 회전하지 않으며, A17 아이·S25 부모 역할과 가족 연결을 보존한다.
 
 ## 완료 조건
 
 - [x] 부팅 연계 microphone service start 호출 제거
 - [x] 세션 일치·중복 중지 Java 단위 회귀와 소스 계약 회귀 추가
-- [ ] 최신 앱·Worker 전체 테스트·typecheck·production build 통과
+- [x] 최신 앱·Worker 전체 테스트·typecheck·production build 통과
 - [ ] Android unit·lint·debug APK 통과
-- [ ] 운영 D1 OAuth recovery migration readback·Worker 배포·health 확인
+- [x] 운영 D1 OAuth recovery migration readback·Worker 배포·health 확인
 - [ ] A17 아이·S25 부모 사용자 0 보존 설치와 버전·역할 확인
-- [ ] clean source commit에서 승인 upload certificate 서명 AAB 생성·검증
-- [ ] 모든 Play 트랙 최대 versionCode 15 fresh 확인
-- [ ] Play production code 16 업로드·검증 후 draft readback(심사 전송은 별도 지시 전 보류)
+- [x] clean source commit에서 승인 upload certificate 서명 AAB 생성·검증
+- [x] 업로드 전 모든 Play 트랙 최대 versionCode 15 fresh 확인
+- [x] 사용자가 Play production `혜니캘린더 1.4.4 (16)` 직접 제출
+- [ ] Play 검토 승인·게시 완료 확인
 
 ## 출시 노트
 

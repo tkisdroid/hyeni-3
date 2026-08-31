@@ -10,18 +10,7 @@ function read(relativePath) {
   return readFileSync(resolve(rootDir, relativePath), "utf8");
 }
 
-test("1.4.4 정책 수정 빌드는 Android와 iOS 빌드 번호를 16으로 맞춘다", () => {
-  const packageJson = JSON.parse(read("package.json"));
-  const androidGradle = read("android/app/build.gradle");
-  const iosProject = read("ios/App/App.xcodeproj/project.pbxproj");
-
-  assert.equal(packageJson.version, "1.4.4");
-  assert.match(androidGradle, /^\s*versionCode 16$/m);
-  assert.equal((iosProject.match(/CURRENT_PROJECT_VERSION = 16;/g) ?? []).length, 2);
-  assert.equal((iosProject.match(/MARKETING_VERSION = 1\.4\.4;/g) ?? []).length, 2);
-});
-
-test("1.4.4 Play 문서는 이전 AAB를 폐기하고 최신 인증·QR·FGS 수정본 재빌드를 요구한다", () => {
+test("1.4.4 Play 문서는 최종 서명 AAB와 사용자 직접 제출 상태를 기록한다", () => {
   const releaseNotes = read("docs/store/play-release-notes-v1.4.4.md");
   const submission = read("docs/store/play-console-submission-v1.4.4.md");
 
@@ -33,11 +22,19 @@ test("1.4.4 Play 문서는 이전 AAB를 폐기하고 최신 인증·QR·FGS 수
   assert.match(submission, /BOOT_COMPLETED/);
   assert.match(submission, /AmbientListenService/);
   assert.match(submission, /versionCode 16/);
-  assert.match(submission, /이전 후보 폐기/);
-  assert.match(submission, /최종 커밋에서 새 서명 AAB 생성 필요/);
+  assert.match(submission, /eccef55d6b57bf8f8929ed9bc193c034355f7489/);
+  assert.match(submission, /13,065,652 bytes/);
+  assert.match(submission, /b449ce0aaa7b381c24dada4ecc2125ab8bddbf6a70b2c6d235358a2df2ed1ac4/);
+  assert.match(submission, /32f729e8/);
+  assert.match(submission, /사용자가 Play Console.*직접 제출/s);
+  assert.match(submission, /검토 중인 변경사항/);
+  assert.match(submission, /production/);
+  assert.match(submission, /혜니캘린더 1\.4\.4 \(16\)/);
+  assert.match(submission, /전체 출시 시작/);
+  assert.doesNotMatch(submission, /최종 커밋에서 새 서명 AAB 생성 필요/);
   assert.match(submission, /eda3907d96e0046804c2d39eb4c2c310f4b1dfeb/);
   assert.match(submission, /45e66db8d6a60cae1a9a4c33105f285c85886d92b4aea588425d0010a5343a91/);
-  assert.match(submission, /폐기된 이전 후보/);
+  assert.match(submission, /이전 후보/);
   assert.match(submission, /oauth-exchange-recovery\.sql/);
   assert.match(submission, /D1.*Worker/s);
   assert.match(submission, /A17.*아이/s);
