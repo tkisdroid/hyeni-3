@@ -3,6 +3,22 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**Worker 운영 보존·출시 게이트(2026-08-31, 구현·로컬 검증 완료/운영 미적용)**:
+만료 `pending_notifications`는 `expires_at` 뒤 24시간 grace를 둔 뒤 hourly 40분 slot에서 한 번에 최대 5,000행만
+멱등 삭제한다. 운영 D1의 ISO `T`/공백 timestamp 혼재를 같은 기준으로 비교하도록 expression index를 사용하며,
+정본 `worker/db/pending-notification-retention.sql`은 Worker 배포 전에 적용하고 인덱스를 readback해야 한다.
+계정 삭제 cleanup은 24시간 지난 completed tombstone뿐 아니라 owner `users` 행이 없는 24시간 초과 `claimed`
+job·scope도 같은 2-query batch로 회수한다. 살아 있는 owner의 claim과 24시간 이내 고아 claim은 보존한다.
+
+SOS route는 요청 body의 `receiver_user_ids`를 감사 정본으로 쓰지 않고 해당 가족의 활성 부모와 가족 주보호자 user id를
+서버에서 다시 결정한다. force-ring active/history/quota, subscriptions, SOS cooldown/events, send-sms는 실제 Hono route
+경계의 인증·가족 격리·오류 계약을 `worker/tests/operationalRouteCoverage.test.mjs`로 보호한다.
+출시 전 `npm run verify:production:worker-secrets`는 Wrangler inventory에서 필수 Secret 이름 12개와
+`secret_text` 설정 여부만 검사하고 값을 읽거나 출력하지 않는다. 하나라도 누락되면 Worker 배포는 `HOLD`이며,
+값은 운영자가 `wrangler secret put` 대화형 입력으로만 설정한다. 피드백 `status='queued'`는 D1 내구 접수를 뜻할 뿐
+자동 이메일 재시도 약속이 아니어서 `docs/feedback-operations.md` 절차대로 운영자가 직접 처리한다.
+이번 변경은 로컬 코드·migration·게이트 준비까지이며 운영 D1·Secret·Worker/Pages/Play·기기는 변경하지 않았다.
+
 **v1.4.5/code 17 통합 배포·Play 제출(2026-08-31, 검토 진행 중·게시 전)**:
 아이 정보 빈 전화번호 저장과 중복 오류 팝업, 전화번호 안내 문구, 등록장소 사건 시각·30분 TTL,
 학습 화면 상단 safe-area 여백, 부모 홈 두 번째 히어로 문구와 간결한 이동 버튼을 v1.4.5/code 17에 통합했다.

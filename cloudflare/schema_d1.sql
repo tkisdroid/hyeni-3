@@ -1022,6 +1022,9 @@ CREATE TABLE "pending_notifications" (
 CREATE INDEX IF NOT EXISTS "idx_pending_family_delivery_expiry_created"
   ON "pending_notifications" ("family_id", "delivered", "expires_at", "created_at");
 
+CREATE INDEX IF NOT EXISTS idx_pending_notifications_expiry
+  ON pending_notifications(replace(substr(expires_at, 1, 19), 'T', ' '), id);
+
 CREATE TABLE "point_transactions" (
   "id" TEXT NOT NULL,
   "wallet_id" TEXT NOT NULL,

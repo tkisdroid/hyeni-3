@@ -95,6 +95,7 @@ import { processMemoNotificationOutbox } from "./lib/memoNotificationOutbox";
 import { cleanupExpiredMemoInteractionLeases } from "./lib/memoInteractionLease";
 import { run as runPremiumFunnelRetention } from "./cron/premium-funnel-retention";
 import { run as runLocationHistoryRetention } from "./cron/location-history-retention";
+import { run as runPendingNotificationRetention } from "./cron/pending-notification-retention";
 import {
   REFERRAL_REWARD_CRON_MAX_D1_QUERIES,
   run as runReferralRewards,
@@ -490,6 +491,7 @@ const hourlyMaintenanceSlots: Readonly<Record<number, readonly HourlyMaintenance
   ],
   40: [
     { name: "location-confirmation-retention", run: runLocationConfirmationRetention, maxD1Queries: 1 },
+    { name: "pending-notification-retention", run: runPendingNotificationRetention, maxD1Queries: 1 },
     {
       name: "storage-upload-usage-cleanup",
       run: async (env) => ({ removed: await cleanupStorageUploadDailyUsage(env.DB) }),

@@ -52,9 +52,32 @@ sos.post("/events", requireAuth, async (c) => {
     return c.json({ error: "forbidden" }, 403);
   }
 
+  let receivers: string[];
+  try {
+    const { results } = await c.env.DB.prepare(
+      `SELECT user_id
+         FROM (
+           SELECT fm.user_id AS user_id
+             FROM family_members fm
+            WHERE fm.family_id = ?1
+              AND fm.role = 'parent'
+              AND fm.is_active = 1
+              AND fm.user_id IS NOT NULL
+           UNION
+           SELECT f.parent_id AS user_id
+             FROM families f
+            WHERE f.id = ?1 AND f.parent_id IS NOT NULL
+         )
+        WHERE user_id <> ''
+        ORDER BY user_id ASC`,
+    ).bind(familyId).all<{ user_id: string }>();
+    receivers = (results ?? []).map((row) => String(row.user_id));
+  } catch {
+    return c.json({ error: "sos_recipient_unavailable" }, 503);
+  }
+
   const id = crypto.randomUUID();
   const now = pgNow();
-  const receivers = Array.isArray(b.receiver_user_ids) ? b.receiver_user_ids : [];
   const delivery = b.delivery_status ? JSON.stringify(b.delivery_status) : "{}";
   await c.env.DB.prepare(
     `INSERT INTO sos_events

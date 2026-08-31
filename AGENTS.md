@@ -68,6 +68,18 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 아키텍처 핵심 (어기면 다자녀에서 데이터가 섞인다)
 
+- **Worker 운영 보존·출시 게이트(2026-08-31, 구현·로컬 검증 완료/운영 미적용)**:
+  만료 `pending_notifications`는 `expires_at` 뒤 24시간 grace를 둔 뒤 hourly 40분 slot에서 한 번에 최대 5,000행만
+  멱등 삭제한다. 혼재 timestamp(`T`/공백)를 같은 기준으로 비교하는 expression index 정본은
+  `worker/db/pending-notification-retention.sql`이며 **Worker 배포 전에 운영 D1에 적용·readback**해야 한다.
+  계정 삭제 cleanup은 24시간 지난 completed tombstone과 함께, owner `users` 행이 이미 없어진 24시간 초과
+  `claimed` job·scope만 회수하고 살아 있는 owner의 claim은 보존한다. SOS 감사의 `receiver_user_ids`는 요청 body를
+  신뢰하지 않고 서버가 해당 가족의 활성 부모와 가족 주보호자 목록으로 정본화한다. 출시 전
+  `npm run verify:production:worker-secrets`가 Wrangler inventory의 필수 Secret 이름 12개를 값 없이 검사하며 누락은
+  Worker 배포 `HOLD`다. 값 입력은 운영자가 `wrangler secret put` 대화형 입력으로만 수행한다. 피드백
+  `status='queued'`는 D1 내구 접수일 뿐 자동 이메일 재시도 약속이 아니므로 운영자가 직접 처리한다.
+  회귀=`worker/tests/pendingNotificationRetention.test.mjs`·`worker/tests/accountDeletionCompleteness.test.mjs`·
+  `worker/tests/operationalRouteCoverage.test.mjs`·`tests/productionWorkerSecretGate.test.mjs`.
 - **아이 정보 저장 계약(2026-08-31)**: `ProfileEdit`는 전화번호가 비면 공개 API에 `phone:null`을 보내
   "지움"을 표현하지만, D1 `family_members.phone`은 `TEXT NOT NULL DEFAULT ''`이다. Worker
   `POST /api/family/member/profile`는 이 `null`을 빈 문자열로 변환해 저장해야 하며 D1에 그대로 bind하면 이름·생일을

@@ -353,7 +353,10 @@ export function completeAccountDeletionClaimStmts(
   ];
 }
 
-/** access JWT(1h)와 비정상 종료 lease보다 충분히 긴 24시간 뒤 완료 tombstone을 회수한다. */
+/**
+ * access JWT(1h)와 비정상 종료 lease보다 충분히 긴 24시간 뒤 완료 tombstone을 회수한다.
+ * 최종 사용자 삭제 뒤 completed 갱신만 유실된 오래된 claimed 행도 owner 부재를 다시 확인해 회수한다.
+ */
 export async function cleanupCompletedAccountDeletionClaims(
   db: D1Database,
   now = new Date(),
@@ -364,12 +367,32 @@ export async function cleanupCompletedAccountDeletionClaims(
       `DELETE FROM account_deletion_scopes
         WHERE job_id IN (
           SELECT id FROM account_deletion_jobs
-           WHERE status='completed' AND updated_at<=?
+           WHERE updated_at<=?
+             AND (
+               status='completed'
+               OR (
+                 status='claimed'
+                 AND NOT EXISTS (
+                   SELECT 1 FROM users
+                    WHERE users.id=account_deletion_jobs.owner_user_id
+                 )
+               )
+             )
         )`,
     ).bind(cutoff),
     db.prepare(
       `DELETE FROM account_deletion_jobs
-        WHERE status='completed' AND updated_at<=?`,
+        WHERE updated_at<=?
+          AND (
+            status='completed'
+            OR (
+              status='claimed'
+              AND NOT EXISTS (
+                SELECT 1 FROM users
+                 WHERE users.id=account_deletion_jobs.owner_user_id
+              )
+            )
+          )`,
     ).bind(cutoff),
   ]);
   return {

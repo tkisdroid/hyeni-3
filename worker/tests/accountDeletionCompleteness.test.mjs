@@ -1389,6 +1389,47 @@ test("완료 deletion tombstone은 24시간 동안 새 mutation을 막고 만료
   );
 });
 
+test("삭제된 사용자 소유의 오래된 claimed deletion job만 scope와 함께 회수한다", async () => {
+  const { sqlite, db } = createDb();
+  addUser(sqlite, "live-claimed-owner");
+  addUser(sqlite, "completed-owner");
+  const insertJob = sqlite.prepare(
+    `INSERT INTO account_deletion_jobs
+       (id,owner_user_id,mode,status,attempts,last_error,created_at,updated_at)
+     VALUES (?,?,'self',?,0,NULL,?,?)`,
+  );
+  const insertScope = sqlite.prepare(
+    `INSERT INTO account_deletion_scopes(job_id,scope_type,scope_id,created_at)
+     VALUES (?,'user',?,?)`,
+  );
+  for (const [jobId, ownerUserId, status, updatedAt] of [
+    ["job-orphan-old", "orphan-old", "claimed", "2026-07-14T00:00:00.000Z"],
+    ["job-orphan-fresh", "orphan-fresh", "claimed", "2026-07-15T00:00:01.000Z"],
+    ["job-live-old", "live-claimed-owner", "claimed", "2026-07-14T00:00:00.000Z"],
+    ["job-completed-old", "completed-owner", "completed", "2026-07-14T00:00:00.000Z"],
+  ]) {
+    insertJob.run(jobId, ownerUserId, status, updatedAt, updatedAt);
+    insertScope.run(jobId, ownerUserId, updatedAt);
+  }
+
+  assert.deepEqual(
+    await cleanupCompletedAccountDeletionClaims(db, new Date("2026-07-16T00:00:00.000Z")),
+    { scopes: 2, jobs: 2 },
+  );
+  assert.deepEqual(
+    sqlite.prepare("SELECT id FROM account_deletion_jobs ORDER BY id").all().map((row) => row.id),
+    ["job-live-old", "job-orphan-fresh"],
+  );
+  assert.deepEqual(
+    sqlite.prepare("SELECT job_id FROM account_deletion_scopes ORDER BY job_id").all().map((row) => row.job_id),
+    ["job-live-old", "job-orphan-fresh"],
+  );
+  assert.deepEqual(
+    await cleanupCompletedAccountDeletionClaims(db, new Date("2026-07-16T00:00:00.000Z")),
+    { scopes: 0, jobs: 0 },
+  );
+});
+
 test("비정상 종료로 남은 mutation lease는 1시간 TTL 뒤 cron cleanup이 멱등 회수한다", async () => {
   const { sqlite, db } = createDb();
   addUser(sqlite, "user-expired-lease");

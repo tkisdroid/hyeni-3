@@ -111,6 +111,7 @@ v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로�
 | 7 | `db/google-play-rtdn-schema.sql` → `db/google-play-credit-debt-disclosure.sql` | 4단계의 `billing_provider_reservations` 준비 후 적용. 현재 운영의 RTDN/owner 컬럼·인덱스는 완전하므로 첫 파일은 없는 voided-purchase 정본만 `IF NOT EXISTS`로 추가한다. debt disclosure는 `debt_applied`가 없을 때만 정확히 1회 | `google_play_rtdn_events`, `google_play_billing_owners`, `google_play_voided_purchase_events`, migration이 정의한 인덱스 6개와 `google_play_purchase_events.debt_applied` 존재 |
 
 - [ ] 위 7단계를 적용 전 진단·적용 결과·적용 후 readback과 시각·운영자·Worker 배포 ID로 연결
+- [ ] Worker 배포 전 `worker/db/pending-notification-retention.sql`을 적용하고 `idx_pending_notifications_expiry` SQL을 readback. 적용 전에는 새 hourly retention을 배포하지 않음
 - [ ] 상용 출시 전 Cloudflare 계정이 **Workers Paid**인지 Dashboard에서 확인하고, D1 Free의 DB당 500MB·일 100,000 rows_written·invocation당 50 queries 한도에 의존하는 상태에서는 배포하지 않음
 - [ ] `LOCATION_AUDIT_CURSOR_SECRET`을 32바이트 이상 전용 HMAC secret으로 설정하고 값은 출력하지 않음. 누락·짧은 secret은 감사 API 503, payload·서명 변조와 scope 재사용은 400인지 확인
 - [ ] migration 직후와 트래픽 확대 전 `worker/ops/location-confirmation-capacity.sql`을 읽기 전용으로 실행하고 D1 Dashboard/GraphQL의 최근 24시간 `rows_written`·실제 DB byte와 함께 기록. 전체 DB 사용률 50%는 용량 설계, 70%는 분리 리허설, 85%는 신규 확대·출시 HOLD로 처리
@@ -120,8 +121,9 @@ v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로�
 - [ ] AI balance migration은 실제 production 사본/Time Travel 격리 clone에서 삭제 전후 잔액·원장 불변식과 전체 7단계 dress rehearsal을 다시 통과
 - [ ] 실제 적용은 AI 크레딧 쓰기를 멈추거나 최소화한 유지보수 창에서 직전 중복 재진단 → 보호된 행 단위 복구 자료와 Time Travel bookmark 확보 → unique migration → readback → 새 Worker 연속 배포 순서로 실행하고 구 Worker가 UNIQUE 위반을 만나는 간격을 최소화
 - [ ] 사용자 쓰기를 다시 연 뒤에는 Time Travel 전체 복원으로 정상 쓰기를 되감지 않음. 재오픈 전 실패일 때만 승인된 전체 복원을 사용하고, 재오픈 뒤 문제는 검토된 additive/행 단위 복구로 처리
-- [ ] 현재 누락된 secret 이름을 값 노출 없이 해소: `PREMIUM_FUNNEL_HASH_SECRET`, `LOCATION_AUDIT_CURSOR_SECRET`, `TOSS_PAYMENTS_CLIENT_KEY`, `TOSS_PAYMENTS_SECRET_KEY`, `WEB_BILLING_KEY_ENCRYPTION_SECRET`, 승인한 `TOSS_AI_CREDIT_30_AMOUNT_KRW`, `TOSS_AI_CREDIT_80_AMOUNT_KRW`, `TOSS_AI_CREDIT_200_AMOUNT_KRW`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `GOOGLE_PLAY_RTDN_AUDIENCE`, `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL`, 필요 시 `GOOGLE_PLAY_PACKAGE_NAME`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`
+- [ ] 현재 누락된 secret 이름을 값 노출 없이 해소: `PREMIUM_FUNNEL_HASH_SECRET`, `LOCATION_AUDIT_CURSOR_SECRET`, `TOSS_PAYMENTS_CLIENT_KEY`, `TOSS_PAYMENTS_SECRET_KEY`, `WEB_BILLING_KEY_ENCRYPTION_SECRET`, 승인한 `TOSS_AI_CREDIT_30_AMOUNT_KRW`, `TOSS_AI_CREDIT_80_AMOUNT_KRW`, `TOSS_AI_CREDIT_200_AMOUNT_KRW`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `GOOGLE_PLAY_RTDN_AUDIENCE`, `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL`, 필요 시 `GOOGLE_PLAY_PACKAGE_NAME`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `RESEND_API_KEY`, `FEEDBACK_FROM_EMAIL`
 - [ ] secret 값은 파일·명령 인자·셸 history·로그·보고서에 남기지 않고 `wrangler secret put`의 대화형 입력만 사용
+- [ ] 대화형 입력 후 저장소 루트에서 `npm run verify:production:worker-secrets`를 실행해 exit 0 확인. 이 게이트는 Wrangler inventory의 이름·설정 유형만 읽고 값은 출력하지 않으며, 하나라도 누락되면 Worker 배포 `HOLD`
 - [ ] migration과 secret readback이 모두 끝난 뒤 Worker를 먼저 배포하고 새 API 404·503·health·cron·환불 모니터를 확인한 다음 Pages를 배포
 
 ## 서명 자격정보 안전 정리

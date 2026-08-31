@@ -11,11 +11,14 @@
 
 ## 매일 확인
 
-PowerShell에서 Worker 디렉터리로 이동한다.
+PowerShell에서 현재 `hyeni-3` 저장소의 Worker 디렉터리로 이동한다.
 
 ```powershell
-Set-Location -LiteralPath 'C:\Users\TK\Desktop\hyeni-1\worker'
+Set-Location -LiteralPath '.\worker'
 ```
+
+`status='queued'`는 자동 재전송 예약이 아니라 D1에 안전하게 접수되었다는 뜻이다.
+운영자가 아래 목록에서 확인해 직접 처리해야 한다.
 
 최근 접수 50건을 본문 없이 확인한다. `request_id`는 상세 조회와 Worker 로그 상관관계에
 사용한다.
