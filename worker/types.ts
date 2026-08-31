@@ -22,6 +22,8 @@ export interface Env {
   // 지도 autocomplete handle과 user/family 비용 quota 가명화 전용 secret.
   // JWT/OAuth/결제 키로 폴백하지 않으며 미설정 시 지도 proxy만 fail-closed한다.
   MAPS_SESSION_HMAC_SECRET?: string;
+  // Google 지도 서버 API 전용 service account. FCM/Play/OAuth 계정과 공유하지 않는다.
+  GOOGLE_MAPS_SERVICE_ACCOUNT_JSON?: string;
   // M3 Realtime — 가족별 WebSocket 룸 (idFromName(familyId))
   FAMILY_ROOM: DurableObjectNamespace;
   // 선생님별 WebSocket 룸 (idFromName(teacherId)) — teacher_notification_batches realtime

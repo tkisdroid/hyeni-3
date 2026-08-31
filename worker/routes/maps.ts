@@ -7,6 +7,8 @@ import {
   type FamilyMapContext,
 } from "../lib/maps/familyContext.ts";
 import { createKakaoMapAdapter } from "../lib/maps/kakao.ts";
+import { createGoogleMapAdapter } from "../lib/maps/google.ts";
+import { createGoogleMapsTokenProvider } from "../lib/maps/googleOAuth.ts";
 import { MapService, MapServiceError } from "../lib/maps/service.ts";
 import { MapRequestControlError } from "../lib/maps/errors.ts";
 import type {
@@ -45,7 +47,15 @@ async function readBody(c: Parameters<typeof requireAuth>[0] extends never ? nev
 
 function adapterForPolicy(env: Env, context: FamilyMapContext): MapProviderAdapter {
   if (context.policy.provider === "kakao") return createKakaoMapAdapter(env);
-  if (context.policy.provider === "google") throw new MapServiceError("map_provider_not_configured", 503);
+  if (context.policy.provider === "google") {
+    const credentials = String(env.GOOGLE_MAPS_SERVICE_ACCOUNT_JSON ?? "").trim();
+    if (!credentials) throw new MapServiceError("map_provider_not_configured", 503);
+    return createGoogleMapAdapter({
+      countryCode: context.countryCode,
+      tokenProvider: createGoogleMapsTokenProvider(credentials),
+      routesOauthVerified: false,
+    });
+  }
   throw new MapServiceError(`map_${context.policy.reason}`, 409);
 }
 

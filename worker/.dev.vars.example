@@ -7,3 +7,6 @@ JWT_PUBLIC_KEY=
 
 # 지도 autocomplete handle·quota 가명화 전용 32바이트 이상 secret.
 MAPS_SESSION_HMAC_SECRET=
+
+# Google Places·Geocoding 서버 전용 service account JSON. 다른 Google 자격과 공유 금지.
+GOOGLE_MAPS_SERVICE_ACCOUNT_JSON=
