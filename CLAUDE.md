@@ -12,8 +12,10 @@
 S25(`R5CY521CFNZ`) 사용자 0에 `--user 0 -r`로 세션·앱 데이터를 보존 설치했다. 두 기기 모두 1.4.5/code 17과
 `MainActivity` 실행을 확인했고 razr(`ZY22H9VTQD`)는 연결되지 않아 미설치다.
 
-Pages 최신 배포는 `https://2a70ddef.hyeni-calendar.pages.dev`이며 배포별·고정·브랜드 도메인이 모두
-`assets/index-DFcjv1Iv.js`를 제공한다. Worker는 version `a55cdf44-937b-46fd-8541-0e57d72addf2`로 배포했고
+Pages 최신 배포는 `https://1d91cdae.hyeni-calendar.pages.dev`이며 배포별·고정·브랜드 도메인이 모두
+`assets/index-DokM43tX.js` 368,391 bytes, SHA-256
+`0F0EDD5172C18C750FC5251283363A41EFA2BDA2A257D3EE6FEDE4D182DF4B76`를 제공하고 OAuth callback은
+200·`no-store`다. Worker는 version `a55cdf44-937b-46fd-8541-0e57d72addf2`로 배포했고
 production health 200·`no-store`·`ready`를 확인했다. D1 migration은 없으며 운영 `family_members.phone` schema
 readback만 수행해 `changes=0`·`changed_db=false`를 확인했다.
 
