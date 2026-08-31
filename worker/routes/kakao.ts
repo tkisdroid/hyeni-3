@@ -42,7 +42,7 @@ const ORS_TIMEOUT_MS = 4000;
 const GEOCODE_CACHE_TTL_SEC = 60 * 60 * 24 * 30; // 30일
 
 /** 카카오 도보(제휴 전용) 호출. 실패·비제휴면 null. */
-async function fetchKakaoWalkingRoute(
+export async function fetchKakaoWalkingRoute(
   key: string,
   origin: { lat: number; lng: number },
   destination: { lat: number; lng: number },
@@ -145,7 +145,7 @@ function osrmToKakaoShape(osrm: {
 }
 
 // OSRM foot 도보 경로 조회. 실패 시 null(호출부가 최종 실패 처리).
-async function fetchOsrmFootRoute(
+export async function fetchOsrmFootRoute(
   origin: { lat: number; lng: number },
   destination: { lat: number; lng: number },
 ): Promise<Record<string, unknown> | null> {
@@ -252,7 +252,7 @@ function orsToKakaoShape(ors: {
 }
 
 /** ORS 도보 경로 조회. 키가 없거나 실패하면 null(호출부가 다음 폴백으로 넘어간다). */
-async function fetchOrsFootRoute(
+export async function fetchOrsFootRoute(
   apiKey: string,
   origin: { lat: number; lng: number },
   destination: { lat: number; lng: number },
@@ -356,7 +356,7 @@ function stripToNeighborhood(addressName: string): string {
   return idx >= 0 ? words.slice(idx).join(" ") : addressName;
 }
 
-function readableAddress(doc: KakaoAddressDoc | undefined): {
+export function readableAddress(doc: KakaoAddressDoc | undefined): {
   label: string;
   address: string;
   buildingName: string | null;

@@ -29,6 +29,7 @@ import teacherRoutes from "./routes/teacher";
 import teacherWriteRoutes from "./routes/teacher-write";
 import teacherNoticeRoutes from "./routes/teacher-notices";
 import kakaoRoutes from "./routes/kakao";
+import mapsRoutes from "./routes/maps";
 import feedbackRoutes from "./routes/feedback";
 import premiumFunnelRoutes from "./routes/premium-funnel";
 import accountRoutes from "./routes/account";
@@ -345,6 +346,7 @@ app.route("/api/teacher", teacherWriteRoutes);
 app.route("/api/teacher", teacherNoticeRoutes);
 // M4 Edge Functions → Worker
 app.route("/api/kakao", kakaoRoutes);
+app.route("/api/maps", mapsRoutes);
 app.route("/api/feedback", feedbackRoutes);
 app.route("/api/premium-funnel", premiumFunnelRoutes);
 app.route("/api/account", accountRoutes);
