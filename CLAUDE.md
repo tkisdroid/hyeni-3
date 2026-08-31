@@ -3,7 +3,7 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
-**Android Google Play 전용 신규 결제(2026-09-01, 로컬 검증·운영 D1 적용 완료/Worker·Pages 배포 전)**:
+**Android Google Play 전용 신규 결제(2026-09-01, 운영 배포 완료)**:
 신규 구독과 AI 크레딧 구매는 Android 네이티브 Google Play에서만 시작한다. iPhone·웹은 신규 결제 CTA와 Toss
 카탈로그 요청을 제거하고 무료 기능·무료 AI 제공량을 안내한다. Android에서 같은 계정으로 획득한 프리미엄은
 iPhone·웹에서도 그대로 사용하되 관리는 Android 앱의 Google Play에서 한다. 운영
@@ -12,7 +12,15 @@ Toss client/secret·팩 가격은 신규 설정하지 않고, 과거 주문의 �
 `WEB_BILLING_KEY_ENCRYPTION_SECRET`만 레거시 안전 경로로 보존한다. Play code 17 검토 트랙은 이 변경에서 건드리지 않는다.
 앱 2,096/2,096·Worker 1,457/1,457, 앱/Worker typecheck, i18n verify와 production build가 통과했다.
 운영 D1에는 `worker/db/android-only-payment-policy.sql`을 적용해 두 신규 웹 결제 스위치가 명시적으로 false임을
-별도 SELECT로 확인했다. Worker·Pages 배포와 운영 readback은 아직 남아 있다.
+별도 SELECT로 확인했다. 앱 배포 정본 커밋은 `15f7bf0`; Worker version은
+`e89215f0-6170-4d28-aa86-c2c1ade06d9b`이며 health `200`·`ready`·`no-store`, 약관·개인정보·삭제 문서의
+2026-09-01 반영을 확인했다. Pages는 `https://f5ae8f13.hyeni-calendar.pages.dev`에 배포했고 배포별·고정·브랜드
+도메인이 모두 `assets/index-C_BhGGB7.js` 368,294 bytes, SHA-256
+`853595F9D7D1D2F2F970EB44309CD727A5BF0C524FEA3E8932756CF386401BC3`와 한국어 billing 자산을 동일하게 제공한다.
+OAuth callback도 세 도메인 모두 `200`·`no-store`다. Play Console RTDN은
+`projects/hyeni-496213/topics/hyeni-google-play-rtdn`과 구독·무효화·모든 일회성 제품 알림으로 저장·새로고침
+readback했다. 테스트 알림은 Worker를 거쳐 운영 D1에 `event_kind=test`, `status=ignored`, `attempts=1`,
+`last_error=null`로 기록됐다. 검토 중인 Play code 17 release 트랙은 변경하지 않았다.
 
 **Worker 운영 보존·출시 게이트(2026-08-31, 구현·로컬 검증 완료/운영 미적용)**:
 만료 `pending_notifications`는 `expires_at` 뒤 24시간 grace를 둔 뒤 hourly 40분 slot에서 한 번에 최대 5,000행만

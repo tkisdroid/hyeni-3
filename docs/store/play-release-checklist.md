@@ -254,8 +254,8 @@ try {
 - [ ] App content 대시보드에 노출된 모든 필수·조건부 선언이 완료 상태인지 최종 AAB·SDK·상품·스토어 문구와 대조한 증거를 보존
 - [ ] IARC 설문에 AI 생성 콘텐츠, 가족 간 사용자 통신, 사진·위치 공유를 사실대로 답하고 Console이 반환한 등급 사용
 - [ ] Android Publisher API 활성화와 서비스 계정 최소 권한 부여
-- [ ] Pub/Sub topic을 Play Console RTDN에 연결하고 인증 push subscription 구성
-- [ ] Google Play 필수 secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `GOOGLE_PLAY_RTDN_AUDIENCE`, `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL` 3개를 설정하고 누락 상태에서 `503` fail-closed 확인. `GOOGLE_PLAY_PACKAGE_NAME`은 기본값 `com.hyeni.calendar`를 바꿀 때만 설정
+- [x] Pub/Sub topic을 Play Console RTDN에 연결하고 인증 push subscription 구성. 2026-09-01 테스트 알림이 운영 Worker→D1에서 `event_kind=test`, `status=ignored`, `attempts=1`, `last_error=null`로 처리됨을 readback
+- [x] Google Play 필수 secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `GOOGLE_PLAY_RTDN_AUDIENCE`, `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL` 3개를 포함한 운영 필수 secret 10개 설정을 값 노출 없이 inventory gate로 확인. `GOOGLE_PLAY_PACKAGE_NAME`은 기본값 `com.hyeni.calendar` 유지
 - [ ] 상품 `hyeni_premium`의 실제 월간·연간 base plan·한국 가격이 각각 4,900원·39,000원인지 Console과 앱 결제 화면에서 확인
 - [ ] Play가 현재 계정에 eligible로 반환한 정확한 7일 무료 pricing phase만 표시되는지 확인
 - [x] 코드 계약: 서버 `subscriptionsv2.get` 검증 후 `active|trial|grace`인 미승인 구독만 entitlement 저장 전에 acknowledge하고, 클라이언트는 서버가 `needsClientAcknowledge`를 지시할 때만 보조 acknowledge
