@@ -33,7 +33,10 @@ test("1.4.5 Play 문서는 code 17 제출과 실제 게시 전 상태를 분리�
   assert.match(releaseNotes, /아이 정보/);
   assert.match(releaseNotes, /사건 시각/);
   assert.match(releaseNotes, /학습 화면/);
-  assert.match(releaseNotes, /미니앱/);
+  assert.match(
+    releaseNotes,
+    /혜니스터디 미니앱이 출시되어 이제 학습도 함께 할 수 있어요\./,
+  );
   assert.match(submission, /versionName 1\.4\.5/);
   assert.match(submission, /versionCode 17/);
   assert.match(submission, /production 1\.4\.5 \(17\) 제출 완료/);
