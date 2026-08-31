@@ -3,7 +3,7 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
-**아이 정보 저장 실패·중복 팝업 수정(2026-08-31, 구현 완료·배포 전)**:
+**아이 정보 저장 실패·중복 팝업 수정(2026-08-31, Worker 배포·Android 보존 설치 완료)**:
 `ProfileEdit`는 빈 전화번호를 공개 API의 `phone:null`(지움)으로 보냈지만, 운영 D1을 읽기 전용
 `PRAGMA table_info(family_members)`로 확인한 결과 `phone`은 `TEXT NOT NULL DEFAULT ''`였다. Worker가 이 값을
 그대로 bind해 전화번호가 비어 있는 아이는 이름이나 생일만 바꿔도 UPDATE 전체가 제약조건 오류로 롤백되고 500을
@@ -13,9 +13,16 @@ route 회귀가 이름·생일·빈 전화번호의 원자 저장을 검증한�
 같은 실패를 `ProfileEdit`가 `localizeApiError`로 직접 안내하면서 프로필·사진 mutation이 전역 MutationCache에도
 잡혀 "방금 작업이 저장되지 않았어요"가 겹칠 수 있었다. 두 mutation에 `meta:{silentError:true}`를 두어 화면의
 구체적 안내 하나만 남겼다. 전화번호 아래 "아이 기기가 없어도 연락할 번호예요" 문구와 10개 locale key도 제거했다.
-회귀 정본은 `worker/tests/familyMemberProfile.test.mjs`와 `tests/profileEditFailureUx.test.mjs`다. 운영 D1 확인은
-schema read-only였고 사용자 행·계정·세션·refresh token은 조회하거나 변경하지 않았으며 Worker·Pages는 아직
-배포하지 않았다.
+회귀 정본은 `worker/tests/familyMemberProfile.test.mjs`와 `tests/profileEditFailureUx.test.mjs`다. 앱 전체
+`2,087/2,087`, Worker 전체 `1,441/1,441`, 앱·Worker typecheck, i18n verify, production build, Android
+`assembleDebug`가 통과했다. 운영 D1 확인은 schema·관련 알림 상태 read-only였고 rows_written=0이다.
+
+운영 Worker는 version `a315408e-a79f-4248-ab0a-5ad8b91d0c14`로 배포했으며 `/api/health` 200
+`{"ok":true,"status":"ready"}`·`Cache-Control:no-store`를 확인했다. 새 debug APK는 A17(`RFKL40DP73J`)과
+S25(`R5CY521CFNZ`)에 `npm run android:install:debug -- <serial>`로 기본 사용자(0)에만 보존 설치했다. 패키지
+assets에서 제거 대상 문구가 없음을 확인했지만 A17의 현재 WebView는 저장된 앱 세션이 없는 온보딩 상태여서 로그인·역할
+전환 없이 실계정 화면 검증을 중단했고, S25도 역할 의존 검증은 하지 않았다. Pages·Play는 배포하지 않았고 사용자 행·
+계정·페어링·refresh token을 조작하지 않았다.
 
 **학교 도착 알림 1시간 45분 지연 전달 진단(2026-08-31, 원인 확인·정책 변경 전)**:
 TK가 10:25에 "학교에 도착했어요" 알림을 받았지만 계속 학교에 있었다고 제보했다. 운영 D1을 읽기 전용으로
