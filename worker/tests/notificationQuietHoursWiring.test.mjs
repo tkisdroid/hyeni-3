@@ -371,6 +371,7 @@ function installMutableClock(initialMs) {
 function installPushCapture() {
   const originalFetch = globalThis.fetch;
   const fcmTokens = [];
+  const fcmPayloads = [];
   const webEndpoints = [];
   globalThis.fetch = async (input, init) => {
     const url = String(input);
@@ -380,6 +381,7 @@ function installPushCapture() {
     if (url.includes("/messages:send")) {
       const payload = JSON.parse(String(init?.body ?? "{}"));
       fcmTokens.push(String(payload.message?.token ?? ""));
+      fcmPayloads.push(payload);
       return Response.json({ name: `messages/${fcmTokens.length}` });
     }
     if (url.startsWith("https://push.example.test/")) {
@@ -390,12 +392,123 @@ function installPushCapture() {
   };
   return {
     fcmTokens,
+    fcmPayloads,
     webEndpoints,
     restore() {
       globalThis.fetch = originalFetch;
     },
   };
 }
+
+test("등록장소 pending·FCM·Web Push는 실제 episode 시각부터 30분만 유효하다", async () => {
+  const nowMs = Date.parse("2026-08-31T00:00:00.000Z");
+  const clock = installMutableClock(nowMs);
+  const { sqlite, db } = createDispatchDb();
+  sqlite.prepare(
+    "INSERT INTO family_members(id,family_id,user_id,role,name,is_active) VALUES (?,?,?,?,?,1)",
+  ).run("member-parent-a", "family-a", "parent-a", "parent", "주 보호자");
+  const { env } = await createDeliveryFixture(sqlite);
+  const capture = installPushCapture();
+  try {
+    const response = await pushModule.handleInstantNotification(
+      env,
+      db,
+      {
+        action: "parent_alert",
+        familyId: "family-a",
+        senderUserId: "child-a",
+        title: "학교 도착",
+        message: "오전 8:39에 민서가 학교에 도착했어요.",
+        alertType: "place_arrived",
+        occurredAt: "2026-08-30T23:39:05.000Z",
+        idempotency_key: "place-arrived-occurrence-runtime",
+      },
+      "child-a",
+      "service_role",
+      "place-arrived-occurrence-runtime",
+      { atMs: nowMs },
+    );
+
+    assert.equal(response.status, 200, await response.clone().text());
+    const pending = sqlite.prepare(
+      `SELECT body, expires_at,
+              json_extract(data,'$.occurredAt') AS occurred_at,
+              json_extract(data,'$.expiresAt') AS payload_expires_at
+         FROM pending_notifications
+        ORDER BY json_extract(data,'$.targetUserId')`,
+    ).all().map((row) => ({ ...row }));
+    assert.deepEqual(pending, [
+      {
+        body: "오전 8:39에 민서가 학교에 도착했어요.",
+        expires_at: "2026-08-31 00:09:05.000+00",
+        occurred_at: "2026-08-30T23:39:05.000Z",
+        payload_expires_at: "2026-08-31 00:09:05.000+00",
+      },
+      {
+        body: "오전 8:39에 민서가 학교에 도착했어요.",
+        expires_at: "2026-08-31 00:09:05.000+00",
+        occurred_at: "2026-08-30T23:39:05.000Z",
+        payload_expires_at: "2026-08-31 00:09:05.000+00",
+      },
+    ]);
+    assert.ok(capture.fcmPayloads.length >= 1);
+    assert.equal(capture.fcmPayloads[0].message.data.occurredAt, "2026-08-30T23:39:05.000Z");
+    assert.equal(capture.fcmPayloads[0].message.data.expiresAt, "2026-08-31 00:09:05.000+00");
+    assert.ok(capture.webEndpoints.length >= 1);
+  } finally {
+    capture.restore();
+    clock.restore();
+    sqlite.close();
+  }
+});
+
+test("등록장소 사건 뒤 30분이 지난 전달 재시도는 새 pending·FCM·Web Push를 만들지 않는다", async () => {
+  const nowMs = Date.parse("2026-08-31T00:09:06.000Z");
+  const clock = installMutableClock(nowMs);
+  const { sqlite, db } = createDispatchDb();
+  sqlite.prepare(
+    "INSERT INTO family_members(id,family_id,user_id,role,name,is_active) VALUES (?,?,?,?,?,1)",
+  ).run("member-parent-a", "family-a", "parent-a", "parent", "주 보호자");
+  const { env } = await createDeliveryFixture(sqlite);
+  const capture = installPushCapture();
+  try {
+    const response = await pushModule.handleInstantNotification(
+      env,
+      db,
+      {
+        action: "parent_alert",
+        familyId: "family-a",
+        senderUserId: "child-a",
+        title: "학교 출발",
+        message: "오전 8:39에 민서가 학교에서 출발했어요.",
+        alertType: "place_left",
+        occurredAt: "2026-08-30T23:39:05.000Z",
+        idempotency_key: "place-left-expired-runtime",
+      },
+      "child-a",
+      "service_role",
+      "place-left-expired-runtime",
+      { atMs: nowMs },
+    );
+
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.deepEqual(await response.json(), {
+      webSent: 0,
+      fcmSent: 0,
+      total: 0,
+      key: "place-left-expired-runtime",
+      expired: true,
+      suppressedQuietHours: [],
+    });
+    assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM pending_notifications").get().count, 0);
+    assert.deepEqual(capture.fcmTokens, []);
+    assert.deepEqual(capture.webEndpoints, []);
+  } finally {
+    capture.restore();
+    clock.restore();
+    sqlite.close();
+  }
+});
 
 function seedScheduleRuntime(sqlite, { eventId, quietUserIds }) {
   const insertUser = sqlite.prepare("INSERT OR IGNORE INTO users(id,is_anonymous) VALUES (?,0)");

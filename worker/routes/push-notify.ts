@@ -84,6 +84,7 @@ import {
 import { resolveParentAlertPushType } from "../lib/parentAlertPushPolicy";
 import { loadActiveFamilyNotificationRecipientIds } from "../lib/pendingNotificationDelivery";
 import { partitionNotificationRecipients } from "../lib/notificationQuietHours";
+import { resolveRegisteredPlaceAlertOccurrenceTiming } from "../lib/parentAlertOccurrence";
 import {
   claimTeacherNoticeTerminalSuppression,
   loadTeacherNoticeAudience,
@@ -1857,6 +1858,11 @@ async function handleInstantNotificationCore(
   const alertType = toStringValue(body.alertType || body.alert_type);
   const urgent = isEmergencyNotificationType(action, { severity, alertType, urgent: body.urgent });
   const quietHoursAtMs = options?.atMs ?? Date.now();
+  const registeredPlaceTiming = resolveRegisteredPlaceAlertOccurrenceTiming({
+    alertType,
+    occurredAt: body.occurredAt ?? body.occurred_at,
+    nowMs: quietHoursAtMs,
+  });
   const suppressedQuietHours = new Set<string>();
 
   const nativeRecipientIds = await getNativeRecipientIds(db, familyId);
@@ -1899,6 +1905,9 @@ async function handleInstantNotificationCore(
   const fcmExtraData: Record<string, string> = { pushId, urgent: urgent ? "true" : "false" };
   if (severity) fcmExtraData.severity = severity;
   if (alertType) fcmExtraData.alertType = alertType;
+  if (registeredPlaceTiming.occurredAt) {
+    fcmExtraData.occurredAt = registeredPlaceTiming.occurredAt;
+  }
   if (body.eventId != null) fcmExtraData.eventId = String(body.eventId);
   if (body.alertId != null) fcmExtraData.alertId = String(body.alertId);
   if (isChildNativeCommand || isChildSafety) {
@@ -2031,6 +2040,19 @@ async function handleInstantNotificationCore(
     return jsonResponse({ error: "parent_routing_failed" }, 503);
   }
 
+  // 등록장소 알림은 실제 사건 뒤 30분이 지나면 이력만 유지하고 새 표시 전달은 만들지 않는다.
+  // 이 판정을 pending·claim·FCM·Web Push보다 앞에 두어 늦은 foreground 복구도 차단한다.
+  if (registeredPlaceTiming.expired) {
+    return jsonResponse({
+      webSent: 0,
+      fcmSent: 0,
+      total: 0,
+      key: idempotencyKey || null,
+      expired: true,
+      suppressedQuietHours: [...suppressedQuietHours].sort(),
+    });
+  }
+
   let effectiveParentRecipientIds = parentRecipientIds == null
     ? null
     : new Set([...parentRecipientIds].filter((parentUserId) => parentUserId !== senderUserId));
@@ -2058,7 +2080,9 @@ async function handleInstantNotificationCore(
     genericPendingExpiresAt = pgFromMs(Date.now() + 2 * 60_000);
   }
   const parentPendingExpiresAt = effectiveParentRecipientIds
-    ? pgFromMs(Date.now() + parentAlertPendingTtlMs(alertType, action))
+    ? (registeredPlaceTiming.expiresAt
+      ? pgFromMs(Date.parse(registeredPlaceTiming.expiresAt))
+      : pgFromMs(quietHoursAtMs + parentAlertPendingTtlMs(alertType, action)))
     : null;
   const webPushExpiresAt = parentPendingExpiresAt ?? genericPendingExpiresAt;
   if (webPushExpiresAt) fcmExtraData.expiresAt = webPushExpiresAt;
@@ -2224,6 +2248,9 @@ async function handleInstantNotificationCore(
           ...(parentRoute ? { route: parentRoute } : {}),
           ...(severity ? { severity } : {}),
           ...(alertType ? { alertType } : {}),
+          ...(registeredPlaceTiming.occurredAt
+            ? { occurredAt: registeredPlaceTiming.occurredAt }
+            : {}),
           ...(parentPendingExpiresAt ? { expiresAt: parentPendingExpiresAt } : {}),
           ...(body.eventId != null ? { eventId: String(body.eventId) } : {}),
           ...(body.alertId != null ? { alertId: String(body.alertId) } : {}),
@@ -2346,6 +2373,9 @@ async function handleInstantNotificationCore(
       urgent,
       ...(severity ? { severity } : {}),
       ...(alertType ? { alertType } : {}),
+      ...(registeredPlaceTiming.occurredAt
+        ? { occurredAt: registeredPlaceTiming.occurredAt }
+        : {}),
       ...(webPushExpiresAt ? { expiresAt: webPushExpiresAt } : {}),
     },
   };
@@ -2586,6 +2616,9 @@ async function handleInstantNotificationCore(
     ...(isRemoteListen ? { durationSec: String(REMOTE_LISTEN_DURATION_SEC) } : {}),
     ...(severity ? { severity } : {}),
     ...(alertType ? { alertType } : {}),
+    ...(registeredPlaceTiming.occurredAt
+      ? { occurredAt: registeredPlaceTiming.occurredAt }
+      : {}),
     ...(body.eventId != null ? { eventId: String(body.eventId) } : {}),
     ...(typeof body.route === "string" && body.route ? { route: body.route } : {}),
   };

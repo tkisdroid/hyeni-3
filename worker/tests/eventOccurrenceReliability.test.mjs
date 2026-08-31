@@ -39,6 +39,11 @@ test("부모 일정 pending은 원본 eventId로 편집·삭제 cleanup에 연�
   assert.equal(parentAlertPendingTtlMs("arrived"), 2 * 60 * 60_000);
 });
 
+test("등록장소 도착·출발 pending은 사건 뒤 30분까지만 복구한다", () => {
+  assert.equal(parentAlertPendingTtlMs("place_arrived"), 30 * 60_000);
+  assert.equal(parentAlertPendingTtlMs("place_left"), 30 * 60_000);
+});
+
 test("위험구역·긴급 알림 pending은 오래된 사건을 현재 경보처럼 재생하지 않는다", () => {
   assert.equal(parentAlertPendingTtlMs("danger_zone"), 15 * 60_000);
   assert.equal(parentAlertPendingTtlMs("danger_enter"), 15 * 60_000);

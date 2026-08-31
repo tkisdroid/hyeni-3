@@ -36,6 +36,7 @@ import {
   recordLocationAlertProvisionToParents,
   resolveLocationAlertConfirmation,
 } from "../lib/locationConfirmationAudit";
+import { prepareRegisteredPlaceAlertOccurrence } from "../lib/parentAlertOccurrence";
 
 export { resolveParentAlertPushType } from "../lib/parentAlertPushPolicy";
 
@@ -60,6 +61,8 @@ async function queueParentAlertPending(
     alertId: string;
     childUserId: string | null;
     route: string;
+    occurredAt: string | null;
+    expiresAt: string | null;
     pushPolicy: {
       type: "sos" | "parent_alert";
       urgent: boolean;
@@ -69,8 +72,11 @@ async function queueParentAlertPending(
 ): Promise<void> {
   if (args.parentIds.size === 0) return;
   const now = pgNow();
-  const expiresAt = new Date(Date.now() + parentAlertPendingTtlMs(args.alertType))
-    .toISOString().replace("T", " ").replace("Z", "+00");
+  const requestedExpiresAtMs = Date.parse(String(args.expiresAt ?? ""));
+  const expiresAt = Number.isFinite(requestedExpiresAtMs)
+    ? new Date(requestedExpiresAtMs).toISOString().replace("T", " ").replace("Z", "+00")
+    : new Date(Date.now() + parentAlertPendingTtlMs(args.alertType))
+      .toISOString().replace("T", " ").replace("Z", "+00");
   const stmt = db.prepare(
     `INSERT OR IGNORE INTO pending_notifications
        (id, family_id, title, body, data, delivered, delivery_status, idempotency_key, expires_at, created_at)
@@ -94,6 +100,8 @@ async function queueParentAlertPending(
       ...(args.childUserId ? { childUserId: args.childUserId } : {}),
       targetRole: "parent",
       targetUserId: parentUserId,
+      ...(args.occurredAt ? { occurredAt: args.occurredAt } : {}),
+      expiresAt,
       ...(args.sourceEventId ? { eventId: args.sourceEventId } : {}),
     }),
     JSON.stringify({ queued: true, targetUserId: parentUserId }),
@@ -275,6 +283,24 @@ parentAlerts.post("/", requireAuth, async (c) => {
     // 기존 alert id 로 성공 응답 — 호출자(네이티브)는 상태를 진행하고 재시도하지 않는다.
     return c.json(presenceDedupe.duplicateAlertId);
   }
+  const notificationAtMs = Date.now();
+  const occurrence = prepareRegisteredPlaceAlertOccurrence({
+    alertType,
+    message,
+    occurredAt: b.occurred_at,
+    nowMs: notificationAtMs,
+  });
+  message = occurrence.message;
+  const baseMetadata = aiCreditRequestMetadata
+    ?? (presenceDedupe
+      ? registeredPlacePresenceMetadata(presenceDedupe.placeKey, presenceDedupe.kind)
+      : null);
+  const alertMetadata = baseMetadata || occurrence.occurredAt
+    ? {
+      ...(baseMetadata ?? {}),
+      ...(occurrence.occurredAt ? { occurredAt: occurrence.occurredAt } : {}),
+    }
+    : null;
   const alertId = await insertParentAlertV2(c.env as unknown as PushEnv, c.env.DB, {
     familyId,
     alertType,
@@ -283,10 +309,7 @@ parentAlerts.post("/", requireAuth, async (c) => {
     severity,
     eventId,
     childUserId: writeScope.childUserId,
-    metadata: aiCreditRequestMetadata
-      ?? (presenceDedupe
-        ? registeredPlacePresenceMetadata(presenceDedupe.placeKey, presenceDedupe.kind)
-        : null),
+    metadata: alertMetadata,
   });
   if (!alertId) return c.json({ error: "alert_insert_failed" }, 503);
   if (resolveLocationAlertConfirmation(alertType)) {
@@ -295,13 +318,14 @@ parentAlerts.post("/", requireAuth, async (c) => {
         familyId,
         childUserIds: writeScope.childUserId ? [writeScope.childUserId] : [],
         alertType,
+        ...(occurrence.occurredAt ? { occurredAt: occurrence.occurredAt } : {}),
       });
     } catch {
       return c.json({ error: "location_confirmation_unavailable" }, 503);
     }
   }
 
-  if (pushPolicy) {
+  if (pushPolicy && !occurrence.expired) {
     const pushId = parentAlertPushId(alertId, alertType, eventId);
     const targetRoute = parentAlertTargetRoute(
       pushPolicy.route,
@@ -309,7 +333,6 @@ parentAlerts.post("/", requireAuth, async (c) => {
       writeScope.childUserId,
     );
     try {
-      const notificationAtMs = Date.now();
       const { allowed, suppressed } = await loadParentAlertRecipients(
         c.env.DB,
         familyId,
@@ -331,6 +354,8 @@ parentAlerts.post("/", requireAuth, async (c) => {
         alertId,
         childUserId: writeScope.childUserId,
         route: targetRoute,
+        occurredAt: occurrence.occurredAt,
+        expiresAt: occurrence.expiresAt,
       });
       const delivery = await handleInstantNotification(
         c.env as unknown as PushEnv,
@@ -347,6 +372,7 @@ parentAlerts.post("/", requireAuth, async (c) => {
           route: targetRoute,
           alertId,
           ...(sourceEventId ? { eventId: sourceEventId } : {}),
+          ...(occurrence.occurredAt ? { occurredAt: occurrence.occurredAt } : {}),
           idempotency_key: pushId,
         },
         user.sub,

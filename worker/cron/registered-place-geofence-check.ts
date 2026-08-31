@@ -539,6 +539,7 @@ export async function run(env: Env): Promise<Record<string, unknown>> {
         alert,
         idempotencyKey,
         sourceEventId: step.scheduleAssociation?.eventId ?? null,
+        occurredAtMs: step.episodeMs,
         // 장소 단위 쿨다운 dedup 스코프 — 네이티브가 같은 방문을 이미 알렸으면 여기서 멈춘다.
         presencePlaceKey: step.place.placeKey,
       });

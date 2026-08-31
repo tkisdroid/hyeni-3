@@ -961,7 +961,7 @@ public class LocationService extends Service {
             try {
             runOnNetworkThread("place_alert", () -> {
                 try {
-                    if (sendPlaceAlert(alertType, title, msg, key, sourceEventId, fPlaceKey)) {
+                    if (sendPlaceAlert(alertType, title, msg, key, episodeMs, sourceEventId, fPlaceKey)) {
                         if (!occurrenceId.isEmpty()) {
                             shownEventNotifs.add(occurrenceId + "-arrived");
                             persistShownEventNotifs();
@@ -1064,18 +1064,21 @@ public class LocationService extends Service {
     // place_arrived/place_left 부모 알림 발송. 서버 단일 endpoint가 event_id+alert_type
     // 멱등 저장과 부모 FCM을 함께 처리한다. 실패 시 state를 진행하지 않아 다음 tick 재시도한다.
     private boolean sendPlaceAlert(String alertType, String title, String message, String idemUuid,
-                                   @Nullable String sourceEventId, @Nullable String placeKey) {
+                                   long occurredAtMs, @Nullable String sourceEventId, @Nullable String placeKey) {
         if (isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) return false;
         final String base = supabaseUrl.replaceAll("/+$", "");
         try {
-            JSONObject alertBody = new JSONObject()
-                .put("family_id", familyId).put("alert_type", alertType)
-                .put("title", title).put("message", message)
-                .put("severity", "info").put("event_id", idemUuid).put("child_user_id", userId);
-            if (!isBlank(sourceEventId)) alertBody.put("source_event_id", sourceEventId);
-            // 서버가 장소 단위 쿨다운으로 cron 발사와 중복을 합칠 수 있도록 평가한 장소를 함께
-            // 보낸다(없으면 서버가 event_id 로 역산하지만, 명시가 정확하고 저렴하다).
-            if (!isBlank(placeKey)) alertBody.put("place_key", placeKey);
+            JSONObject alertBody = RegisteredPlaceAlertPayload.build(
+                familyId,
+                alertType,
+                title,
+                message,
+                idemUuid,
+                userId,
+                occurredAtMs,
+                sourceEventId,
+                placeKey
+            );
             boolean delivered = postWithAuthRetry(base + "/api/parent-alerts", alertBody.toString());
             Log.i(TAG, "place alert " + alertType + " accepted=" + delivered);
             return delivered;

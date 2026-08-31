@@ -24,6 +24,7 @@ import {
   unregisteredStayMetadata,
 } from "../lib/unregisteredStayPresenceDedupe";
 import { recordLocationAlertProvisionToParents } from "../lib/locationConfirmationAudit";
+import { prepareRegisteredPlaceAlertOccurrence } from "../lib/parentAlertOccurrence";
 
 export interface AlertCopy {
   alertType: string;
@@ -53,6 +54,7 @@ export async function deliverParentAlert(
     idempotencyKey: string;
     sourceEventId?: string | null;
     metadata?: Record<string, unknown> | null;
+    occurredAtMs?: number;
     // 등록장소 출입 알림이면 평가한 장소 키 — 장소 단위 쿨다운 dedup 스코프.
     presencePlaceKey?: string | null;
     // 미등록 체류 알림이면 평가한 grid_key — 거친 지역 단위 쿨다운 dedup 스코프.
@@ -108,8 +110,18 @@ export async function deliverParentAlert(
   // ── 기록 절반: insert_parent_alert_v2 (event_id+alert_type 멱등) ──
   const baseMetadata = args.metadata ?? alert.metadata ?? null;
   const scopeMetadata = presenceMetadata ?? stayMetadata ?? null;
-  const mergedMetadata = baseMetadata || scopeMetadata
-    ? { ...(baseMetadata ?? {}), ...(scopeMetadata ?? {}) }
+  const occurrence = prepareRegisteredPlaceAlertOccurrence({
+    alertType: alert.alertType,
+    message: alert.message,
+    occurredAt: args.occurredAtMs,
+    nowMs: Date.now(),
+  });
+  const mergedMetadata = baseMetadata || scopeMetadata || occurrence.occurredAt
+    ? {
+      ...(baseMetadata ?? {}),
+      ...(scopeMetadata ?? {}),
+      ...(occurrence.occurredAt ? { occurredAt: occurrence.occurredAt } : {}),
+    }
     : null;
   let alertId: string | null = null;
   try {
@@ -117,7 +129,7 @@ export async function deliverParentAlert(
       familyId,
       alertType: alert.alertType,
       title: alert.title,
-      message: alert.message,
+      message: occurrence.message,
       severity: alert.severity,
       eventId: idempotencyKey,
       childUserId,
@@ -132,10 +144,16 @@ export async function deliverParentAlert(
       familyId,
       childUserIds: [childUserId],
       alertType: alert.alertType,
+      ...(occurrence.occurredAt ? { occurredAt: occurrence.occurredAt } : {}),
     });
   } catch (e) {
     console.error("[cron deliver] location confirmation failed");
     return { pushOk: false, alertId, suppressedQuietHours: [] };
+  }
+
+  // 오래된 episode는 알림 이력에는 남기되 새 pending/FCM/Web Push로 재생하지 않는다.
+  if (occurrence.expired) {
+    return { pushOk: true, alertId, suppressedQuietHours: [] };
   }
 
   // ── push 절반: 기록 확보 뒤 검증된 parent_alert/child_safety 경로 재사용 ──
@@ -159,11 +177,12 @@ export async function deliverParentAlert(
         severity: alert.severity,
         alertType: alert.alertType,
         title: alert.title,
-        message: alert.message,
+        message: occurrence.message,
         urgent: pushPolicy?.urgent ?? false,
         route: targetRoute,
         alertId,
         ...(args.sourceEventId ? { eventId: args.sourceEventId } : {}),
+        ...(occurrence.occurredAt ? { occurredAt: occurrence.occurredAt } : {}),
         idempotency_key: deliveryKey,
       },
       "", // callerUserId (service_role 이라 미사용)

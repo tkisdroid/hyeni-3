@@ -163,7 +163,8 @@ export function parentAlertPendingTtlMs(alertType: string, action = "parent_aler
   }
   if (normalizedAlertType === "danger_exit") return 2 * 60 * 60_000;
   if (normalizedAlertType === "not_arrived" || normalizedAlertType === "missed_arrival") return 30 * 60_000;
-  if (["arrived", "late_arrived", "place_arrived", "place_left"].includes(normalizedAlertType)) {
+  if (["place_arrived", "place_left"].includes(normalizedAlertType)) return 30 * 60_000;
+  if (["arrived", "late_arrived"].includes(normalizedAlertType)) {
     return 2 * 60 * 60_000;
   }
   if (normalizedAlertType === "low_battery") return 6 * 60 * 60_000;
