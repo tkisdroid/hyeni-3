@@ -61,9 +61,24 @@ class Db {
     this.failFinalFamilyBatch = options.failFinalFamilyBatch ?? false;
     this.failUnpairPrepare = options.failUnpairPrepare ?? false;
     this.failUnpairFinalize = options.failUnpairFinalize ?? false;
+    this.rejectCorrelatedPragma = options.rejectCorrelatedPragma ?? false;
+    this.maxPragmaCompoundTerms = options.maxPragmaCompoundTerms ?? null;
+    this.rejectD1InternalPragma = options.rejectD1InternalPragma ?? false;
     this.maxBatchLength = 0;
   }
-  prepare(sql) { return new Statement(this.sqlite, sql, [], this); }
+  prepare(sql) {
+    if (this.rejectCorrelatedPragma && sql.includes("pragma_table_info(m.name)")) {
+      throw new Error("no such column: m.name");
+    }
+    const pragmaTerms = sql.match(/FROM pragma_table_info\(/g)?.length ?? 0;
+    if (this.maxPragmaCompoundTerms !== null && pragmaTerms > this.maxPragmaCompoundTerms) {
+      throw new Error("too many terms in compound SELECT");
+    }
+    if (this.rejectD1InternalPragma && sql.includes("pragma_table_info('_cf_KV')")) {
+      throw new Error("not authorized");
+    }
+    return new Statement(this.sqlite, sql, [], this);
+  }
   async beforeRun() {}
   async beforeBatch() {}
   async batch(statements) {
@@ -929,6 +944,39 @@ test("아이 연결 해제는 멤버 행 삭제 전에 업로더 prefix와 해�
     "family-a/uploads/child-a/shared.jpg",
     "family-a/uploads/child-b/must-stay.jpg",
   ]);
+});
+
+test("운영 D1의 상관 PRAGMA·compound 상한 안에서 아이 연결 해제 정리를 완료한다", async () => {
+  const { sqlite, db } = createDb({
+    rejectCorrelatedPragma: true,
+    maxPragmaCompoundTerms: 5,
+    rejectD1InternalPragma: true,
+  });
+  sqlite.exec('CREATE TABLE "_cf_KV" (key TEXT PRIMARY KEY, value BLOB)');
+  for (const id of ["parent-a", "child-a", "child-b"]) addUser(sqlite, id);
+  addFamily(sqlite, "family-a", "parent-a", [
+    ["child-member-a", "child-a"],
+    ["child-member-b", "child-b"],
+  ]);
+  sqlite.prepare(
+    `INSERT INTO child_locations(user_id,family_id,lat,lng,updated_at)
+     VALUES ('child-a','family-a',1,1,'2026-08-31'),
+            ('child-b','family-a',2,2,'2026-08-31')`,
+  ).run();
+
+  const response = await unpairChild(
+    db,
+    new PhotosBucket(),
+    "parent-a",
+    "family-a",
+    "child-a",
+  );
+
+  assert.equal(response.status, 200, await response.clone().text());
+  assert.deepEqual(await response.json(), { ok: true, cleanup_pending: false });
+  assert.equal(count(sqlite, "family_unpair_cleanup_jobs", "child_user_id='child-a'"), 0);
+  assert.equal(count(sqlite, "child_locations", "user_id='child-a'"), 0);
+  assert.equal(count(sqlite, "child_locations", "user_id='child-b'"), 1);
 });
 
 test("아이 연결 해제 cleanup 실패는 inactive+job을 남기고 재페어링을 막은 뒤 멱등 재시도로 완료한다", async () => {

@@ -1,6 +1,7 @@
 import { pgArray, toPgArray } from "./serialize";
 
 const D1_DELETE_BATCH_SIZE = 40;
+const D1_SCHEMA_TABLES_PER_QUERY = 5;
 const R2_DELETE_BATCH_SIZE = 1_000;
 
 const USER_REFERENCE_COLUMNS = new Set([
@@ -52,6 +53,10 @@ export interface AccountMemberReference {
 interface SqliteColumnRow {
   table_name: string;
   column_name: string;
+}
+
+interface SqliteTableRow {
+  table_name: string;
 }
 
 type WebAiCreditDetachReason = "account_deleted" | "family_deleted" | "child_unpaired";
@@ -291,8 +296,37 @@ function quoteIdentifier(value: string): string {
   return `"${value.replaceAll('"', '""')}"`;
 }
 
+function quoteSqlString(value: string): string {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+
 function inClause(values: readonly string[]): string {
   return values.map(() => "?").join(",");
+}
+
+async function loadSqliteTableColumns(db: D1Database): Promise<SqliteColumnRow[]> {
+  const { results: tableRows } = await db
+    .prepare(
+      `SELECT name AS table_name
+         FROM sqlite_master
+        WHERE type='table'
+          AND name NOT LIKE 'sqlite_%'
+          AND name NOT GLOB '_cf_*'
+        ORDER BY name`,
+    )
+    .all<SqliteTableRow>();
+  const tables = uniqueNonEmpty((tableRows ?? []).map((row) => row.table_name));
+  if (tables.length === 0) return [];
+  const columns: SqliteColumnRow[] = [];
+  for (let index = 0; index < tables.length; index += D1_SCHEMA_TABLES_PER_QUERY) {
+    const sql = tables.slice(index, index + D1_SCHEMA_TABLES_PER_QUERY).map((table) => {
+      const literal = quoteSqlString(table);
+      return `SELECT ${literal} AS table_name, name AS column_name FROM pragma_table_info(${literal})`;
+    }).join(" UNION ALL ");
+    const { results } = await db.prepare(sql).all<SqliteColumnRow>();
+    columns.push(...(results ?? []));
+  }
+  return columns;
 }
 
 function safeChildPhotoKey(raw: string | null | undefined, familyIds: ReadonlySet<string>): string | null {
@@ -634,14 +668,7 @@ export async function buildUserReferenceDeleteStmts(
 ): Promise<D1PreparedStatement[]> {
   const ids = uniqueNonEmpty(userIds);
   if (ids.length === 0) return [];
-  const { results } = await db
-    .prepare(
-      `SELECT m.name AS table_name, p.name AS column_name
-         FROM sqlite_master m
-         JOIN pragma_table_info(m.name) p
-        WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%'`,
-    )
-    .all<SqliteColumnRow>();
+  const results = await loadSqliteTableColumns(db);
   const schema = columnsByTable(results ?? []);
   const byTable = new Map<string, string[]>();
   for (const row of results ?? []) {
@@ -714,18 +741,9 @@ export async function buildFamilyUserReferenceDeleteStmts(
   userId: string,
 ): Promise<D1PreparedStatement[]> {
   if (!familyId || !userId) return [];
-  const { results } = await db
-    .prepare(
-      `SELECT m.name AS table_name, p.name AS column_name
-         FROM sqlite_master m
-         JOIN pragma_table_info(m.name) p
-        WHERE m.type='table' AND m.name NOT LIKE 'sqlite_%'
-          AND EXISTS (
-            SELECT 1 FROM pragma_table_info(m.name) family_col
-             WHERE family_col.name='family_id'
-          )`,
-    )
-    .all<SqliteColumnRow>();
+  const allColumns = await loadSqliteTableColumns(db);
+  const schemaByTable = columnsByTable(allColumns);
+  const results = allColumns.filter((row) => schemaByTable.get(row.table_name)?.has("family_id"));
   const schema = columnsByTable(results ?? []);
   const byTable = new Map<string, string[]>();
   for (const row of results ?? []) {
@@ -858,15 +876,9 @@ export async function buildFamilyScopedDeleteStmts(
 ): Promise<D1PreparedStatement[]> {
   const ids = uniqueNonEmpty(familyIds);
   if (ids.length === 0) return [];
-  const { results } = await db
-    .prepare(
-      `SELECT m.name AS table_name, p.name AS column_name FROM sqlite_master m
-         JOIN pragma_table_info(m.name) p
-        WHERE m.type = 'table'
-          AND m.name NOT LIKE 'sqlite_%'
-          AND EXISTS (SELECT 1 FROM pragma_table_info(m.name) family_col WHERE family_col.name = 'family_id')`,
-    )
-    .all<SqliteColumnRow>();
+  const allColumns = await loadSqliteTableColumns(db);
+  const schemaByTable = columnsByTable(allColumns);
+  const results = allColumns.filter((row) => schemaByTable.get(row.table_name)?.has("family_id"));
   const schema = columnsByTable(results ?? []);
   const ph = inClause(ids);
   const excludedTables = new Set([
