@@ -3,6 +3,33 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**v1.4.5/code 17 통합 배포·Play 제출(2026-08-31, 검토 진행 중·게시 전)**:
+아이 정보 빈 전화번호 저장과 중복 오류 팝업, 전화번호 안내 문구, 등록장소 사건 시각·30분 TTL,
+학습 화면 상단 safe-area 여백, 부모 홈 두 번째 히어로 문구와 간결한 이동 버튼을 v1.4.5/code 17에 통합했다.
+앱 2,090/2,090·Worker 1,448/1,448, 앱/Worker typecheck, i18n verify, production build, Android unit
+186/186·lint·assembleDebug가 통과했다. 최신 debug APK는 16,045,570 bytes, SHA-256
+`0BBB88B5D7389A87D0058D55F132E00E0194FDD966584FAFC51B628D6E602693`이며 A17(`RFKL40DP73J`)·
+S25(`R5CY521CFNZ`) 사용자 0에 `--user 0 -r`로 세션·앱 데이터를 보존 설치했다. 두 기기 모두 1.4.5/code 17과
+`MainActivity` 실행을 확인했고 razr(`ZY22H9VTQD`)는 연결되지 않아 미설치다.
+
+Pages 최신 배포는 `https://2a70ddef.hyeni-calendar.pages.dev`이며 배포별·고정·브랜드 도메인이 모두
+`assets/index-DFcjv1Iv.js`를 제공한다. Worker는 version `a55cdf44-937b-46fd-8541-0e57d72addf2`로 배포했고
+production health 200·`no-store`·`ready`를 확인했다. D1 migration은 없으며 운영 `family_members.phone` schema
+readback만 수행해 `changes=0`·`changed_db=false`를 확인했다.
+
+clean source `35bb1b715efdb43472d9d2a5e354a7689424a6fb`에서 만든 서명 AAB는
+`android/app/build/outputs/bundle/release/app-release.aab`, 13,114,530 bytes, SHA-256
+`6a80f8f9209c90d380e6723ee40d359180ad957566539063d9ff87b1ac9c20c0`이다. package/version,
+non-debuggable, 승인 upload certificate, 웹 자산, 16KiB ELF 검증이 모두 GREEN이다. 한글 worktree 경로의 Gradle
+차단은 release 스크립트가 프로세스 범위 `ORG_GRADLE_PROJECT_android.overridePathCheck=true`를 설정하도록 TDD로
+수정했으며, 전역 설정이나 서명 자격정보는 변경·출력하지 않았다.
+
+이 AAB를 Google Play production에 업로드해 Console이 `17 (1.4.5)`·min API 24·target SDK 36·지원 기기 변동
+0대를 읽었고, 출시 이름·한국어 출시 노트·100% 국가/지역을 확인했다. 기존 code 16 검토를 최신 code 17로 대체해
+`검토 다시 시작`을 확정했다. fresh readback의 `검토 중인 변경사항`에는 code 17 `전체 출시 시작`만 남았고 빠른
+자동 검사가 진행 중이었다. 따라서 **Play 제출은 완료했지만 검토 통과·실제 게시는 미완료**다. 비차단 경고는
+R8 매핑 파일·네이티브 디버그 기호 누락 2건이다. 정본은 `docs/store/play-console-submission-v1.4.5.md`다.
+
 **학습 화면 상단 여백 정합화(2026-08-31, Pages 배포·Android 보존 설치 완료)**:
 부모 학습 화면만 상단을 고정 `16px`로 두어 Android 상태바 safe area를 반영하지 못했고, Study 접근 게이트의
 로딩·장애·이용 국가 확인 상태는 화면용 바깥 여백 자체가 없었다. 이제 부모 학습 화면과 Study 라우트의 게이트
