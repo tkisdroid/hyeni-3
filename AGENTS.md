@@ -75,12 +75,17 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `localizeApiError`로 직접 책임지므로 두 hook 모두 `meta:{silentError:true}`를 유지해 전역 MutationCache의
   "방금 작업이 저장되지 않았어요"와 중복시키지 않는다. 전화번호 아래 기기 유무 설명 문구는 표시하지 않는다.
   회귀=`worker/tests/familyMemberProfile.test.mjs`·`tests/profileEditFailureUx.test.mjs`.
-- **장소 알림 시각 진단(2026-08-31)**: 부모가 알림을 받은 시각을 새 geofence 전이 시각으로 단정하지 않는다.
+- **등록장소 알림 사건 시각·TTL 계약(2026-08-31)**: 부모가 알림을 받은 시각을 새 geofence 전이 시각으로 단정하지 않는다.
   `parent_alerts.created_at`(사건 생성)과 대상별 `pending_notifications.created_at`·`delivered_at`(기기 표시 ACK),
-  `child_place_presence` phase/이탈 시각을 함께 대조한다. 현재 `place_arrived|place_left` pending TTL은 2시간이라
-  FCM 표시 ACK가 없으면 잠금 해제·foreground 복구가 오래된 도착을 현재 알림처럼 다시 표시할 수 있다. 2026-08-31
+  `child_place_presence` phase/이탈 시각을 함께 대조한다. 과거 `place_arrived|place_left` pending TTL이 2시간이라
+  FCM 표시 ACK가 없으면 잠금 해제·foreground 복구가 오래된 도착을 현재 알림처럼 다시 표시할 수 있었다. 2026-08-31
   실측은 학교 진입 08:39·알림 생성 08:40, phase=`in`·추가 전이 0건인데 pending이 10:25에 ACK된 지연 전달이었다.
-  이는 재도착 판정이 아니라 별도 TTL/표시시각 UX 문제이며 정책 변경 전에는 둘을 분리해 보고한다.
+  이제 네이티브는 geofence `episodeMs`를 `occurred_at`으로 보내고 cron은 `step.episodeMs`를 전달한다. Worker는
+  `오전 8:39에 아이가 학교에 도착했어요.`처럼 실제 사건 시각을 문구에 넣고, pending `expires_at`과 FCM/Web Push
+  payload `expiresAt`을 그 사건부터 30분으로 맞춘다(FCM transport 120초는 유지). 30분 지난 재시도는 이력만 남기고 새 표시 단위를 만들지 않는다. 사건 시각이 없는
+  구버전 앱은 서버 접수 시각으로 보완한다. 이 계약은 `place_arrived|place_left`만 대상이며 일정 도착·위험구역·
+  미도착·SOS·긴급·리마인더 TTL은 유지한다. 회귀=`worker/tests/registeredPlaceAlertOccurrence.test.mjs`·
+  `worker/tests/notificationQuietHoursWiring.test.mjs`·Android `RegisteredPlaceAlertPayloadTest`.
 - **인증 진입점 정본(2026-08-21)**: 첫 부모 화면은 로그인/회원가입 탭을 명시 분리하며 전화 가입과 소셜 가입을
   같은 "로그인" 버튼으로 섞지 않는다. ID 확인 네트워크/응답 오류를 `중복 아이디`로 표시하지 않고, 잘못된 비밀번호는
   세션을 만들지 않은 채 ID·비밀번호를 유지하고 비밀번호 필드로 포커스를 돌려 즉시 재시도시킨다. ID는 Worker와 D1

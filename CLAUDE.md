@@ -24,18 +24,39 @@ assets에서 제거 대상 문구가 없음을 확인했지만 A17의 현재 Web
 전환 없이 실계정 화면 검증을 중단했고, S25도 역할 의존 검증은 하지 않았다. Pages·Play는 배포하지 않았고 사용자 행·
 계정·페어링·refresh token을 조작하지 않았다.
 
-**학교 도착 알림 1시간 45분 지연 전달 진단(2026-08-31, 원인 확인·정책 변경 전)**:
+**등록장소 알림 사건 시각·30분 TTL 수정(2026-08-31, Worker 배포·Android 보존 설치 완료)**:
 TK가 10:25에 "학교에 도착했어요" 알림을 받았지만 계속 학교에 있었다고 제보했다. 운영 D1을 읽기 전용으로
 교차 확인하니 geofence는 08:39:05 진입을 잡아 08:40:37에 `place_arrived`를 만들었고, 현재 presence는 계속
 `phase=in`·`departure_armed_at_ms=NULL`·`last_departed_at_ms=NULL`이며 이후 같은 장소 출입 알림도 0건이었다.
 따라서 10:25 재도착 오판은 아니다.
 
 실제 원인은 부모별 pending 두 행이 08:40:38에 생성된 뒤 한 행이 표시 ACK 없이 남았고, 현재
-`place_arrived|place_left` TTL 2시간 안인 10:25:49에 잠금 해제/foreground 복구 경로가 표시·ACK한 것이다
+당시 `place_arrived|place_left` TTL 2시간 안인 10:25:49에 잠금 해제/foreground 복구 경로가 표시·ACK한 것이다
 (`expires_at` 10:40:38). 즉 사건 시각과 수신 시각을 구분하지 않은 지연 전달 UX 문제다. 같은 제보는 먼저
 `parent_alerts.created_at` ↔ `pending_notifications.{created_at,delivered_at,expires_at}` ↔
-`child_place_presence`를 대조한다. 운영 좌표·계정·토큰은 조회하지 않았고 rows_written=0이다. TTL 단축이나
-원래 사건 시각 표시는 아직 사용자 승인 없는 별도 정책 변경으로 남긴다.
+`child_place_presence`를 대조한다. 운영 좌표·계정·토큰은 조회하지 않았고 진단 rows_written=0이다.
+
+이제 Android `LocationService`는 실제 geofence `episodeMs`를 `occurred_at`으로 보내고, 서버 cron도
+`step.episodeMs`를 공통 전달기에 넘긴다. Worker는 한국 시각을 문구 앞에 붙여
+`오전 8:39에 아이가 학교에 도착했어요.`처럼 저장·pending·FCM·Web Push에 같은 본문을 사용한다. 구버전 앱처럼
+사건 시각이 없거나 잘못됐으면 서버 접수 시각으로 안전하게 보완한다. `place_arrived|place_left`만 pending
+`expires_at`과 FCM/Web Push payload `expiresAt`을 실제 사건 시각부터 30분으로 맞춘다(FCM provider transport TTL
+120초는 더 엄격한 기존값 유지). 이미 30분 지난 재시도는 알림 이력은 남기되 새 pending·FCM·Web Push를 만들지 않는다.
+`arrived|late_arrived` 일정 도착, 위험구역, 미도착, SOS·긴급, 일정 리마인더 TTL은 변경하지 않았다.
+
+TDD에서 만료 뒤에도 `total:2`로 Web/FCM이 발송되는 RED를 확인한 뒤, 집중 회귀 35/35·등록장소/cron 19/19,
+앱 전체 2,087/2,087, Worker 전체 1,448/1,448, Android unit 186/186·`lintDebug`·`assembleDebug`, 앱·Worker
+typecheck, i18n verify, production build(2,327 modules·precache 484·중복 0)가 통과했다. 운영 Worker는 version
+`7652f097-e472-43d1-af3a-a82f25fddfa7`로 배포했고 `/api/health` 200
+`{"ok":true,"status":"ready"}`·`Cache-Control:no-store`를 확인했다. debug APK는 15,908,909 bytes,
+SHA-256 `9EF26C4B7F4EAF489892DDB8855C5BBECA163A89CE0715199A5ADDE18D6380AB`이다.
+
+격리 worktree에 `.env`가 없어 먼저 설치됐던 S25 debug APK에는 Kakao 키가 없었다. 이번 빌드는 주 체크아웃의
+`VITE_KAKAO_APP_KEY` 한 항목만 값 노출 없이 프로세스 환경에 주입했고 `dist`·Android assets의 정확한 키 포함을
+확인했다. 새 APK를 S25(`R5CY521CFNZ`)·A17(`RFKL40DP73J`) 기본 사용자(0)에 보존 설치했다. S25는 CDP로 부모
+세션·가족 ID 존재를 먼저 확인한 뒤 위치 화면에서 `window.kakao.maps`, SDK script 1개, 384×832 지도 호스트와
+canvas child 3개, 오류 화면 없음까지 확인했다. A17은 설치만 했고 역할 의존 화면은 열지 않았다. razr는 연결되지
+않아 미설치이며 Pages·Play·D1 schema·계정·역할·페어링·refresh token은 변경하지 않았다.
 
 **Android 15 BOOT_COMPLETED 제한 microphone FGS 수정·v1.4.4/code 16 서명 완료(2026-08-27)**:
 Play Console이 `BOOT_COMPLETED` 뒤 제한된 foreground service 유형을 시작하는 경로로
