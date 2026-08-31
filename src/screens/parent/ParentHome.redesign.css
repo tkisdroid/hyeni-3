@@ -1081,7 +1081,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 4px;
   margin-top: 8px;
 }
 
@@ -1093,11 +1093,9 @@
   height: 44px;
   border: 0;
   border-radius: 999px;
-  background: var(--ph-glass-fill-clear);
+  background: transparent;
   color: var(--ph-ink-3);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  backdrop-filter: blur(18px) saturate(180%);
-  box-shadow: var(--ph-panel-shadow);
+  box-shadow: none;
 }
 
 /* 슬라이드 상한(6장)에서도 44px 점이 잘리지 않게 줄바꿈한다 — 캐러셀은 overflow:hidden 이라 넘치면 사라진다. */
@@ -1137,18 +1135,6 @@
   width: 18px;
   opacity: 1;
   background: var(--ph-link);
-}
-
-@supports not (backdrop-filter: blur(1px)) {
-  .ph-hero-carousel__arrow { background: var(--bg-card); }
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .ph-hero-carousel__arrow {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: var(--bg-card);
-  }
 }
 
 /* 움직임 줄이기에서는 스냅 애니메이션도 끈다(자동 전환은 JS 가 이미 멈춘다). */

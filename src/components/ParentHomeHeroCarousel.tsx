@@ -188,7 +188,7 @@ export function ParentHomeHeroCarousel({
           onClick={() => goTo(nextHeroIndex(safeIndex, count, -1), { manual: true })}
           aria-label={intl.formatMessage({ id: "parent.home.heroCarousel.previous" as MessageId })}
         >
-          <ChevronLeft size={18} strokeWidth={2.4} aria-hidden="true" />
+          <ChevronLeft size={16} strokeWidth={2.2} aria-hidden="true" />
         </button>
         <div className="ph-hero-carousel__dots">
           {slides.map((slide, position) => (
@@ -212,7 +212,7 @@ export function ParentHomeHeroCarousel({
           onClick={() => goTo(nextHeroIndex(safeIndex, count), { manual: true })}
           aria-label={intl.formatMessage({ id: "parent.home.heroCarousel.next" as MessageId })}
         >
-          <ChevronRight size={18} strokeWidth={2.4} aria-hidden="true" />
+          <ChevronRight size={16} strokeWidth={2.2} aria-hidden="true" />
         </button>
       </div>
     </section>

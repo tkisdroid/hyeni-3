@@ -59,9 +59,9 @@ test("슬라이드 상한에서도 점 표시가 잘리지 않게 줄바꿈한�
   assert.match(dots, /flex-wrap:\s*wrap/);
   assert.match(dots, /min-width:\s*0/);
 
-  // 44px 점 6개가 최소 폭(320px - 좌우 16px 패딩 - 화살표 2×44px - 12px 간격 2개)에서
+  // 44px 점 6개가 최소 폭(320px - 좌우 16px 패딩 - 화살표 2×44px - 4px 간격 2개)에서
   // 한 줄에 들어가지 않는다는 사실을 계산으로 고정한다 → 그래서 wrap 이 필수다.
-  const available = 320 - 16 * 2 - 44 * 2 - 12 * 2;
+  const available = 320 - 16 * 2 - 44 * 2 - 4 * 2;
   const singleRow = 44 * 6 + 8 * 5;
   assert.ok(singleRow > available, "한 줄에 들어간다면 wrap 계약을 다시 검토해야 합니다");
 });
@@ -79,20 +79,16 @@ test("좌우 화살표와 점은 44px 터치 영역과 눌림 피드백을 갖�
   assert.equal(pressed.length, 3, "화살표 2개와 점 버튼 1개 모두 hy-press 를 써야 합니다");
 });
 
-test("유리 화살표는 backdrop-filter 미지원·투명도 줄이기 폴백을 함께 둔다", () => {
-  assert.match(css, /@supports not \(backdrop-filter: blur\(1px\)\) \{\s*\.ph-hero-carousel__arrow \{ background: var\(--bg-card\); \}/);
-
-  // 파일 안에 같은 media query 가 여러 개 있으므로 화살표 규칙이 든 블록만 골라 본다.
-  const reduced = [...css.matchAll(/@media \(prefers-reduced-transparency: reduce\) \{([\s\S]*?)\n\}/g)]
-    .map(([, body]) => body)
-    .filter((body) => body.includes(".ph-hero-carousel__arrow"));
-  assert.equal(reduced.length, 1, "화살표의 prefers-reduced-transparency 폴백이 정확히 1개여야 합니다");
-  assert.match(reduced[0], /backdrop-filter:\s*none/);
-  assert.match(reduced[0], /background:\s*var\(--bg-card\)/);
-
-  // iPhone 홈 화면 PWA 가 부모 정본 조합이라 -webkit- 접두사를 함께 둔다.
+test("좌우 화살표는 큰 원형 카드 없이 작은 아이콘만 보인다", () => {
+  const controls = block(".ph-hero-carousel__controls");
   const arrow = block(".ph-hero-carousel__arrow");
-  assert.match(arrow, /-webkit-backdrop-filter:\s*blur/);
+  assert.match(controls, /gap:\s*4px/);
+  assert.match(arrow, /background:\s*transparent/);
+  assert.match(arrow, /box-shadow:\s*none/);
+  assert.doesNotMatch(arrow, /backdrop-filter/);
+
+  const icons = component.match(/<Chevron(?:Left|Right) size=\{16\} strokeWidth=\{2\.2\}/g) ?? [];
+  assert.equal(icons.length, 2, "좌우 화살표가 모두 16px 저대비 아이콘이어야 합니다");
 });
 
 test("슬라이드가 한 장이면 캐러셀 껍데기와 컨트롤을 렌더하지 않는다", () => {
