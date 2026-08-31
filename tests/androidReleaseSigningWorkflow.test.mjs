@@ -102,6 +102,18 @@ test("release 서명 스크립트는 Android SDK를 빌드 전에 찾아 Gradle 
   assert.equal(source.match(/\$sdkRoot = Get-AndroidSdkRoot/g)?.length, 1);
 });
 
+test("한글 worktree에서도 release Gradle 경로 검사를 안전하게 통과시킨다", () => {
+  const overrideIndex = source.indexOf("ORG_GRADLE_PROJECT_android.overridePathCheck");
+  const releaseBuildIndex = source.indexOf("':app:bundleRelease'");
+
+  assert.ok(overrideIndex > 0, "한글 경로 허용 Gradle project property를 설정해야 합니다");
+  assert.ok(overrideIndex < releaseBuildIndex, "경로 허용 속성은 release 빌드 전에 설정해야 합니다");
+  assert.match(
+    source,
+    /\[Environment\]::SetEnvironmentVariable\(\s*'ORG_GRADLE_PROJECT_android\.overridePathCheck',\s*'true',\s*'Process'\s*\)/,
+  );
+});
+
 test("연결 worktree release 빌드는 정본 .env의 모든 VITE 공개 설정을 값 노출 없이 전달한다", () => {
   assert.match(source, /Get-ViteReleaseEnvironmentState/);
   assert.match(source, /Get-DotEnvVariables/);

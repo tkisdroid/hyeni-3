@@ -506,6 +506,13 @@ if (-not (Test-Path -LiteralPath $gradleWrapper -PathType Leaf)) {
 $sdkRoot = Get-AndroidSdkRoot
 $env:ANDROID_SDK_ROOT = $sdkRoot
 $env:ANDROID_HOME = $sdkRoot
+# 연결 worktree 이름에 한글이 있어도 Android Gradle Plugin이 빌드 자체를 막지 않게 한다.
+# 현재 PowerShell 프로세스와 자식 Gradle에만 전달하며 프로젝트·사용자 설정 파일은 건드리지 않는다.
+[Environment]::SetEnvironmentVariable(
+    'ORG_GRADLE_PROJECT_android.overridePathCheck',
+    'true',
+    'Process'
+)
 $zipalign = Find-LatestTool -Parent (Join-Path $sdkRoot 'build-tools') `
     -RelativeToolPath 'zipalign.exe' -Label 'zipalign'
 $readelf = Find-LatestTool -Parent (Join-Path $sdkRoot 'ndk') `
