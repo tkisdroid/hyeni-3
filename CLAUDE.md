@@ -3,6 +3,19 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**학습 화면 상단 여백 정합화(2026-08-31, 구현·검증 완료 / 미배포)**:
+부모 학습 화면만 상단을 고정 `16px`로 두어 Android 상태바 safe area를 반영하지 못했고, Study 접근 게이트의
+로딩·장애·이용 국가 확인 상태는 화면용 바깥 여백 자체가 없었다. 이제 부모 학습 화면과 Study 라우트의 게이트
+상태를 다른 상세 화면과 같은 `calc(env(safe-area-inset-top, 0px) + 16px)` 기준으로 맞췄다. 온보딩에서도 재사용되는
+`StudyCountryConfirmation` 카드 자체에는 여백을 넣지 않고 `StudyAccessGate`에서만 프레임을 씌워 온보딩 레이아웃은
+변경하지 않았다. 아이 학습 화면의 기존 `max(48px, safe-area + 28px)` 여백도 축소하지 않았다.
+
+TDD RED에서 부모 학습의 기존 `padding:16px`를 재현했고 집중 31/31, 앱 전체 2,088/2,088, typecheck,
+i18n verify, production build가 통과했다. 격리 브라우저 QA는 390×844에서 부모 44화면·아이 15화면·문제 0건이며
+부모/아이 Study와 국가 확인·장애·학년/주제 선택 흐름을 포함한다. 한글 worktree 경로 때문에 Android manifest
+테스트의 Gradle path check가 기본 실행에서만 막혀 `ORG_GRADLE_PROJECT_android.overridePathCheck=true`로 같은 검사를
+포함한 전체 테스트를 재실행했다. Pages·Worker·Play·APK 설치·운영 계정·세션·페어링은 변경하지 않았다.
+
 **아이 정보 저장 실패·중복 팝업 수정(2026-08-31, Worker 배포·Android 보존 설치 완료)**:
 `ProfileEdit`는 빈 전화번호를 공개 API의 `phone:null`(지움)으로 보냈지만, 운영 D1을 읽기 전용
 `PRAGMA table_info(family_members)`로 확인한 결과 `phone`은 `TEXT NOT NULL DEFAULT ''`였다. Worker가 이 값을

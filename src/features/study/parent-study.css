@@ -1,4 +1,9 @@
-.parent-study-screen { display: grid; gap: 16px; padding: 16px; color: var(--hy-text, #342c30); }
+.parent-study-screen {
+  display: grid;
+  gap: 16px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 16px;
+  color: var(--hy-text, #342c30);
+}
 .parent-study-header { display: flex; align-items: center; gap: 14px; }
 .parent-study-header h1,
 .parent-study-header p,

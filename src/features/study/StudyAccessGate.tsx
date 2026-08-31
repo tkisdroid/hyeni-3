@@ -19,7 +19,11 @@ export function StudyAccessGate({
   const view = resolveStudyAccessView(status.data);
 
   if (status.isPending || view.kind === "loading") {
-    return <div className="study-access-status" role="status">{intl.formatMessage({ id: "study.access.loading" })}</div>;
+    return (
+      <div className="study-access-screen">
+        <div className="study-access-status" role="status">{intl.formatMessage({ id: "study.access.loading" })}</div>
+      </div>
+    );
   }
   if (view.kind === "hidden") return <Navigate to={deniedPath} replace />;
   if (view.kind === "enabled") return <>{children}</>;
@@ -29,29 +33,33 @@ export function StudyAccessGate({
       return <Navigate to={deniedPath} replace />;
     }
     return (
-      <StudyCountryConfirmation
-        suggestedCountry={view.inferredCountry}
-        initialCountry={family.data.serviceCountry}
-        busy={confirm.isPending}
-        onConfirm={async (country) => {
-          await confirm.mutateAsync({ country, rowVersion, requestId: crypto.randomUUID() });
-        }}
-      />
+      <div className="study-access-screen">
+        <StudyCountryConfirmation
+          suggestedCountry={view.inferredCountry}
+          initialCountry={family.data.serviceCountry}
+          busy={confirm.isPending}
+          onConfirm={async (country) => {
+            await confirm.mutateAsync({ country, rowVersion, requestId: crypto.randomUUID() });
+          }}
+        />
+      </div>
     );
   }
   return (
-    <section className="study-access-status" role="alert">
-      <h2>{intl.formatMessage({ id: "study.unavailable.title" })}</h2>
-      <div className="study-access-actions">
-        <button type="button" className="study-access-action" onClick={() => void status.refetch()}>
-          {intl.formatMessage({ id: "study.unavailable.retry" })}
-        </button>
-        {onBack && (
-          <button type="button" className="study-access-action study-access-secondary" onClick={onBack}>
-            {intl.formatMessage({ id: "study.unavailable.back" })}
+    <div className="study-access-screen">
+      <section className="study-access-status" role="alert">
+        <h2>{intl.formatMessage({ id: "study.unavailable.title" })}</h2>
+        <div className="study-access-actions">
+          <button type="button" className="study-access-action" onClick={() => void status.refetch()}>
+            {intl.formatMessage({ id: "study.unavailable.retry" })}
           </button>
-        )}
-      </div>
-    </section>
+          {onBack && (
+            <button type="button" className="study-access-action study-access-secondary" onClick={onBack}>
+              {intl.formatMessage({ id: "study.unavailable.back" })}
+            </button>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }

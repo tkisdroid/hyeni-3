@@ -100,6 +100,20 @@ test("아이 화면은 TopBar 가 없으므로 각자 상단 안전영역을 챙
   assert.match(sos, /\.cs-result\s*\{[^}]*padding: calc\(24px \+ env\(safe-area-inset-top, 0px\)\)/s);
 });
 
+test("학습 화면은 일반 상세 화면과 같은 상단 안전 여백을 확보한다", () => {
+  const parentStudy = readCss("src/features/study/parent-study.css");
+  assert.match(
+    parentStudy,
+    /\.parent-study-screen\s*\{[^}]*padding:\s*calc\(env\(safe-area-inset-top, 0px\) \+ 16px\) 16px 16px/s,
+  );
+
+  const studyAccess = readCss("src/features/study/study-access.css");
+  assert.match(
+    studyAccess,
+    /\.study-access-screen\s*\{[^}]*padding:\s*calc\(env\(safe-area-inset-top, 0px\) \+ 16px\) 16px 24px/s,
+  );
+});
+
 test("아이 홈 구름 장식은 날짜 칩·제목 밴드(스테이지 0~92px)를 침범하지 않는다", () => {
   // 반투명 흰 알약이 제목 뒤에 깔리면 장식이 아니라 렌더 깨짐처럼 보인다(razr 실기기 제보).
   // 구름 덩이(::before)가 몸통 위로 약 20px 솟으므로 밴드보다 20px 넉넉히 내려야 한다.

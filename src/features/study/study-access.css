@@ -1,3 +1,9 @@
+.study-access-screen {
+  display: grid;
+  align-content: start;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 24px;
+}
+
 .study-access-status,
 .study-country-card {
   display: grid;
