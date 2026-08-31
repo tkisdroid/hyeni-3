@@ -21,6 +21,7 @@
   font-size: 1.4rem;
 }
 .child-study-start,
+.child-study-resume,
 .child-study-state,
 .study-mission-result,
 .study-retry-panel {
@@ -30,6 +31,30 @@
   border-radius: 20px;
   background: var(--hy-surface, #fff);
   border: 1px solid var(--hy-border-subtle, #e7dfe3);
+}
+.child-study-resume > div:first-child {
+  display: grid;
+  gap: 8px;
+}
+.child-study-resume h2,
+.child-study-resume p { margin: 0; }
+.child-study-resume-actions {
+  display: grid;
+  gap: 10px;
+}
+.child-study-resume-actions button {
+  min-height: 52px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--hy-primary, #ef5e9d);
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+}
+.child-study-resume-actions button.is-secondary {
+  border: 1px solid var(--hy-border-subtle, #e7dfe3);
+  background: var(--hy-surface-muted, #f4eef1);
+  color: var(--hy-text, #342c30);
 }
 .child-study-start > span {
   justify-self: start;

@@ -2,6 +2,10 @@ export type ChildStudyEntry =
   | Readonly<{ kind: "start" | "select_grade" | "unavailable" }>
   | Readonly<{ kind: "resume"; missionId: string }>;
 
+export type ChildStudyLaunch =
+  | Readonly<{ kind: "selection" }>
+  | Readonly<{ kind: "resume_choice" | "mission"; missionId: string }>;
+
 export const STUDY_GRADE_CHOICES = [3, 4, 5, 6] as const;
 
 export type StudyTopicSelection = StudyMissionDto["selection"];
@@ -41,13 +45,21 @@ export function isSelectedGradeLoading(
   return loading && selectedGrade === grade;
 }
 
-export function activeMissionToRestore(input: Readonly<{
+export function resolveChildStudyLaunch(
+  entry: ChildStudyEntry,
+  selectedMissionId: string | null,
+): ChildStudyLaunch {
+  if (selectedMissionId) return { kind: "mission", missionId: selectedMissionId };
+  if (entry.kind === "resume") return { kind: "resume_choice", missionId: entry.missionId };
+  return { kind: "selection" };
+}
+
+export function missionToAbandonBeforeSelection(input: Readonly<{
   localMissionId: string | null;
-  choosingGrade: boolean;
-  learnerFetchedAfterMount: boolean;
   activeMissionId: string | null | undefined;
+  localMissionCompleted: boolean;
 }>): string | null {
-  if (input.localMissionId || input.choosingGrade || !input.learnerFetchedAfterMount) return null;
+  if (input.localMissionId) return input.localMissionCompleted ? null : input.localMissionId;
   return input.activeMissionId ?? null;
 }
 
