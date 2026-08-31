@@ -17,7 +17,7 @@ test("구독과 체험 화면은 부모 role 가드 안에 있어 아이가 결�
   assert.ok(parentGuard < subscriptionRoute && parentGuard < trialRoute, "구독 라우트가 부모 role 가드 밖에 있습니다");
 });
 
-test("구독 UI는 채널별 공급자 가격만 쓰고 확인되지 않은 가격과 할인율을 약속하지 않는다", () => {
+test("Android 결제 UI는 Google Play 공급자 가격만 쓰고 확인되지 않은 가격과 할인율을 약속하지 않는다", () => {
   const subscription = read("src/screens/feature/Subscription.tsx");
   const pairing = read("src/screens/feature/PairingWizard.tsx");
   const credits = read("src/screens/feature/AiCredit.tsx");
@@ -29,17 +29,15 @@ test("구독 UI는 채널별 공급자 가격만 쓰고 확인되지 않은 가�
   assert.equal(koParent["parent.pairingWizard.firstFree"], "첫째 아이는 무료, 둘째부터는 프리미엄이에요.");
   assert.doesNotMatch(credits, /₩[0-9,]+/);
   assert.match(credits, /billing\.aiCredit\.native\.providerNotice/);
-  assert.match(credits, /billing\.aiCredit\.providerPrice/);
-  assert.match(credits, /billing\.aiCredit\.serverCatalogPrice/);
+  assert.match(credits, /billing\.aiCredit\.packs\.pricePending/);
+  assert.doesNotMatch(credits, /billing\.aiCredit\.serverCatalogPrice/);
   assert.equal(
     koBilling["billing.aiCredit.native.providerNotice"],
     "Android 앱에서는 Google Play가 실제 가격과 결제 가능 여부를 확인해요.",
   );
-  assert.equal(koBilling["billing.aiCredit.providerPrice"], "{formattedPrice}");
-  assert.equal(koBilling["billing.aiCredit.serverCatalogPrice"], "{catalogPrice}");
   assert.match(subscription, /fetchSubscriptionProductDetails/);
-  assert.match(subscription, /fetchWebBillingCatalog/);
-  assert.match(subscription, /validateWebBillingCatalog/);
+  assert.doesNotMatch(subscription, /fetchWebBillingCatalog/);
+  assert.doesNotMatch(subscription, /validateWebBillingCatalog/);
   assert.match(subscription, /selectedDisplayPrice/);
   assert.match(subscription, /selectedHasTrial/);
   assert.match(subscription, /hasExpectedLaunchSubscriptionPrice/);

@@ -6,7 +6,7 @@ const source = await readFile(new URL("../routes/legal.ts", import.meta.url), "u
 const indexSource = await readFile(new URL("../index.ts", import.meta.url), "utf8");
 
 test("공개 법적 문서는 자연스러운 서비스명 조사와 최신 갱신일을 사용한다", () => {
-  assert.match(source, /lastUpdated:\s*"2026-08-18"/);
+  assert.match(source, /lastUpdated:\s*"2026-09-01"/);
   assert.match(source, /\$\{META\.serviceName\}가 어떤 정보를/);
   assert.match(source, /\$\{META\.serviceName\}의 계정과 데이터를/);
   assert.doesNotMatch(source, /\$\{META\.serviceName\}이 어떤 정보를/);
@@ -104,7 +104,6 @@ test("처리방침은 실제 외부 전송업체·필드를 열거하고 증거 
     "Cloudflare",
     "Firebase Cloud Messaging",
     "Google Play",
-    "Toss Payments",
     "OpenAI",
     "Kakao",
     "Google OAuth",
@@ -141,29 +140,21 @@ test("처리방침은 실제 외부 전송업체·필드를 열거하고 증거 
   assert.doesNotMatch(source, /개인정보를 정보주체\(또는 법정대리인\)의 동의 없이 외부에 제공하지 않습니다/);
 });
 
-test("웹 자동결제는 가격·갱신·해지 예약과 최소 결제정보 처리를 provider별로 고지한다", () => {
-  assert.match(source, /월 4,900원 또는 연 39,000원/);
-  assert.match(source, /선택한 주기마다 자동 갱신/);
-  assert.match(source, /현재 이용기간의 마지막 날까지 프리미엄/);
-  assert.match(source, /이후 결제는 청구하지 않습니다/);
-  assert.match(source, /무작위 customerKey·암호화된 billingKey/);
-  assert.match(source, /authKey는 빌링키 발급 요청에만 일시 사용하며 저장하지 않고/);
+test("신규 결제는 Android Google Play 전용이고 iPhone·웹의 이용 범위를 정확히 고지한다", () => {
+  assert.match(source, /신규 구독과 AI 크레딧 구매는 Android 앱의 Google Play에서만 가능/);
+  assert.match(source, /iPhone과 웹에서는 무료 기능과 무료 AI 제공량/);
+  assert.match(source, /Android에서 같은 계정으로 구독한 프리미엄 권한은 iPhone과 웹에서도 이용/);
+  assert.match(source, /구독 변경·해지는 Android 앱의 Google Play/);
   assert.match(source, /카드번호·유효기간·CVC 원문을 수집하거나 저장하지 않습니다/);
-  assert.match(source, /billingKey는 AES-GCM으로 암호화/);
-  assert.match(source, /다음 청구를 먼저 중단/);
-  assert.match(source, /Toss Payments의 원격 폐기가 성공하거나 이미 없는 키로 확인된 뒤 암호문도 제거/);
-  assert.match(source, /실패하면 암호문을 유지한 채 재시도/);
-  assert.match(source, /환불과 청약철회는 관계 법령 및 결제 제공자/);
+  assert.match(source, /환불과 청약철회는 관계 법령 및 Google Play/);
+  assert.doesNotMatch(source, /Toss Payments|iPhone 홈 화면 웹 구독|웹 자동결제/);
 });
 
-test("Toss AI 크레딧은 일회성 결제·환불 회수·키 최소처리·보관기간을 실제 코드대로 고지한다", () => {
-  assert.match(source, /AI 크레딧은 구매 화면에 서버가 표시한 30회·80회·200회 팩/);
-  assert.match(source, /전액 환불 상태를 확인하면 해당 주문으로 지급한 크레딧을 한 번 회수/);
+test("Google Play AI 크레딧은 일회성 결제·환불 회수·토큰 최소처리를 고지한다", () => {
+  assert.match(source, /Android Google Play의 AI 크레딧 팩/);
+  assert.match(source, /전액 취소된 구매를 확인하면 지급분을 한 번 회수/);
   assert.match(source, /이미 사용한 수량은 다음 유료 크레딧 충전에서 먼저 상계/);
-  assert.match(source, /paymentKey는 중복 지급 방지용 비가역 해시만 저장/);
-  assert.match(source, /미승인·실패 주문은 30일 뒤 삭제/);
-  assert.match(source, /승인 또는 전액 환불이 확정된 주문 정본은 결제 대사·분쟁 대응을 위해 5년 보관/);
-  assert.match(source, /계정·가족 관계가 삭제되면 운영 잔액과 분리한 최소 금융 정본/);
+  assert.match(source, /구매 token은 비가역 해시만 저장/);
 });
 
 test("Google Play 환불 상계와 추천 보상 조건·최소 수집 항목을 정확히 고지한다", () => {

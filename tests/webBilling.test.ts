@@ -23,6 +23,7 @@ import {
   webBillingRequestFailureMessage,
   type WebBillingPendingStorage,
 } from "../src/transform/webBilling.ts";
+import * as webBillingPolicy from "../src/transform/webBilling.ts";
 
 // 결제 실패 문구는 locale catalog 가 정본이므로 한국어 카탈로그로 intl 을 만들어 검증한다.
 const koBilling = JSON.parse(
@@ -45,6 +46,53 @@ class MemoryStorage implements WebBillingPendingStorage {
     this.#data.delete(key);
   }
 }
+
+test("구독 구매 채널은 Android Google Play로만 열고 다른 플랫폼은 계정 상태에 맞는 안내를 고른다", () => {
+  const resolver = (webBillingPolicy as Record<string, unknown>).resolveSubscriptionPurchasePolicy;
+  assert.equal(typeof resolver, "function");
+  const resolvePolicy = resolver as (
+    platform: "android" | "ios" | "web",
+    isPremium: boolean,
+  ) => unknown;
+
+  assert.deepEqual(resolvePolicy("android", false), {
+    canPurchase: true,
+    provider: "google_play",
+    notice: null,
+  });
+  assert.deepEqual(resolvePolicy("web", false), {
+    canPurchase: false,
+    provider: null,
+    notice: "android_only_free",
+  });
+  assert.deepEqual(resolvePolicy("ios", true), {
+    canPurchase: false,
+    provider: null,
+    notice: "android_only_premium",
+  });
+});
+
+test("AI 크레딧 구매도 Android Google Play에서만 가능하다", () => {
+  const resolver = (webBillingPolicy as Record<string, unknown>).resolveAiCreditPurchasePolicy;
+  assert.equal(typeof resolver, "function");
+  const resolvePolicy = resolver as (platform: "android" | "ios" | "web") => unknown;
+
+  assert.deepEqual(resolvePolicy("android"), {
+    canPurchase: true,
+    provider: "google_play",
+    notice: null,
+  });
+  assert.deepEqual(resolvePolicy("web"), {
+    canPurchase: false,
+    provider: null,
+    notice: "android_only",
+  });
+  assert.deepEqual(resolvePolicy("ios"), {
+    canPurchase: false,
+    provider: null,
+    notice: "android_only",
+  });
+});
 
 test("웹 월간·연간 결제 금액은 출시 가격으로 고정한다", () => {
   assert.deepEqual(WEB_BILLING_AMOUNTS, { month: 4_900, year: 39_000 });
@@ -262,15 +310,15 @@ test("웹 결제 로컬 sentinel만 Error.message로 해석하고 임의 원문�
   assert.doesNotMatch(message, /4111|secret-token|DECLINED/);
 });
 
-test("웹 checkout·복구·해지 catch는 같은 안전 resolver를 사용한다", () => {
+test("중단 전 웹 결제의 복구·해지 catch는 같은 안전 resolver를 계속 사용한다", () => {
   const source = readFileSync(
     new URL("../src/screens/feature/Subscription.tsx", import.meta.url),
     "utf8",
   );
   assert.equal(
     source.match(/webBillingRequestFailureMessage\(error, intl\)/g)?.length,
-    3,
-    "checkout, redirect 복구, 해지 실패 경로를 모두 안전 resolver에 연결해야 한다",
+    2,
+    "새 checkout은 닫되 redirect 복구와 기존 구독 해지는 안전 resolver에 연결해야 한다",
   );
   // 문구는 catalog 가 정본이므로 resolver 는 intl 없이 호출될 수 없다.
   assert.doesNotMatch(source, /webBillingRequestFailureMessage\(error\)/);

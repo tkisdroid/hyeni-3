@@ -4,6 +4,37 @@ import type { MessageId } from "../i18n/generated/messageIds.ts";
 
 export type WebBillingPlan = "month" | "year";
 
+export type PurchaseChannelPolicy = Readonly<{
+  canPurchase: boolean;
+  provider: "google_play" | null;
+  notice: "android_only_free" | "android_only_premium" | "android_only" | null;
+}>;
+
+/**
+ * 신규 유료 결제의 정본 채널은 Android Google Play뿐이다.
+ * Android에서 얻은 프리미엄 권한은 같은 계정의 iPhone·웹에서도 그대로 사용한다.
+ */
+export function resolveSubscriptionPurchasePolicy(
+  platform: string,
+  isPremium: boolean,
+): PurchaseChannelPolicy {
+  if (platform === "android") {
+    return { canPurchase: true, provider: "google_play", notice: null };
+  }
+  return {
+    canPurchase: false,
+    provider: null,
+    notice: isPremium ? "android_only_premium" : "android_only_free",
+  };
+}
+
+/** AI 크레딧 신규 구매도 Android Google Play에서만 시작한다. */
+export function resolveAiCreditPurchasePolicy(platform: string): PurchaseChannelPolicy {
+  return platform === "android"
+    ? { canPurchase: true, provider: "google_play", notice: null }
+    : { canPurchase: false, provider: null, notice: "android_only" };
+}
+
 export const WEB_BILLING_AMOUNTS: Readonly<Record<WebBillingPlan, number>> = Object.freeze({
   month: 4_900,
   year: 39_000,

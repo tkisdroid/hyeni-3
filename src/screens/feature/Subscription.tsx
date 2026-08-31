@@ -28,28 +28,22 @@ import { getPlatform } from "@/lib/native/plugins";
 import {
   cancelWebBillingSubscription,
   completeWebBillingCheckout,
-  createWebBillingCheckoutSession,
-  fetchWebBillingCatalog,
   resolveWebBillingCheckoutSession,
 } from "@/lib/api/endpoints/webBilling";
-import { startTossBillingAuthorization } from "@/lib/webBilling";
 import { useIntl, type IntlShape } from "react-intl";
 import { BillingError } from "@/lib/native/billingError";
 import { resolveNativeBillingFailureMessage } from "@/transform/billingFailureMessage";
 import { isApiError } from "@/lib/api/errors";
 import {
-  buildWebBillingRedirectUrls,
   clearPendingWebBilling,
   clearWebBillingRedirectQuery,
   parseWebBillingRedirect,
   readPendingWebBilling,
+  resolveSubscriptionPurchasePolicy,
   savePendingWebBilling,
-  validateWebBillingCatalog,
-  validateWebBillingCheckoutSession,
   validateRecoveredWebBillingCheckoutSession,
   webBillingFailureMessage,
   webBillingRequestFailureMessage,
-  type WebBillingCatalog,
   type WebBillingPlan,
 } from "@/transform/webBilling";
 import { openExternal } from "@/lib/native/browser";
@@ -206,16 +200,12 @@ export function Subscription() {
   const { show } = useToast();
   const { familyId } = useAuth();
   const qc = useQueryClient();
-  const isWebBillingChannel = getPlatform() === "web";
+  const platform = getPlatform();
+  const isWebBillingChannel = platform === "web";
   const [plan, setPlan] = useState<Plan>("year");
   const planRefs = useRef<Record<Plan, HTMLButtonElement | null>>({ year: null, month: null });
   const [busy, setBusy] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
-  const [webCatalog, setWebCatalog] = useState<WebBillingCatalog | null>(null);
-  const [webCatalogUnavailable, setWebCatalogUnavailable] = useState(false);
-  const [webCatalogFetching, setWebCatalogFetching] = useState(false);
-  const [webCatalogRetryNonce, setWebCatalogRetryNonce] = useState(0);
-  const retryWebCatalog = () => setWebCatalogRetryNonce((value) => value + 1);
   const [billingRedirect] = useState(() => (
     typeof window === "undefined"
       ? { kind: "none" } as const
@@ -246,6 +236,7 @@ export function Subscription() {
     await entitlementQuery.refetch();
   };
   const premiumActive = ready && isPremium;
+  const purchasePolicy = resolveSubscriptionPurchasePolicy(platform, premiumActive);
   const webCancellationScheduled = view?.provider === "toss_web" && view?.status === "cancelled";
   const [productDetails, setProductDetails] = useState<BillingProductDetails | null>(null);
   const [playTrialEligible, setPlayTrialEligible] = useState<boolean | null>(null);
@@ -367,40 +358,6 @@ export function Subscription() {
   }, [subscriptionSource]);
 
   useEffect(() => {
-    if (!isWebBillingChannel || premiumActive || !familyId) return;
-    let cancelled = false;
-    setWebCatalogUnavailable(false);
-    setWebCatalogFetching(true);
-    void fetchWebBillingCatalog(familyId)
-      .then((raw) => {
-        const catalog = validateWebBillingCatalog(raw);
-        recordPremiumFunnelEvent({
-          event: "product_query_result",
-          provider: TOSS_FUNNEL_PROVIDER,
-          result: "success",
-        });
-        if (!cancelled) setWebCatalog(catalog);
-      })
-      .catch(() => {
-        recordPremiumFunnelEvent({
-          event: "product_query_result",
-          provider: TOSS_FUNNEL_PROVIDER,
-          result: "fail",
-        });
-        if (!cancelled) {
-          setWebCatalog(null);
-          setWebCatalogUnavailable(true);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setWebCatalogFetching(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [familyId, isWebBillingChannel, premiumActive, webCatalogRetryNonce]);
-
-  useEffect(() => {
     if (billingRedirect.kind === "none" || billingRedirectScrubbedRef.current) return;
     billingRedirectScrubbedRef.current = true;
     try {
@@ -500,7 +457,7 @@ export function Subscription() {
   ]);
 
   useEffect(() => {
-    if (premiumActive || !familyId || !isBillingAvailable()) return;
+    if (premiumActive || !purchasePolicy.canPurchase || !familyId || !isBillingAvailable()) return;
     let cancelled = false;
     setPlayTrialEligible(null);
     setProductDetails(null);
@@ -534,7 +491,7 @@ export function Subscription() {
     return () => {
       cancelled = true;
     };
-  }, [familyId, premiumActive]);
+  }, [familyId, premiumActive, purchasePolicy.canPurchase]);
 
   const annualOffer = selectSubscriptionOffer(productDetails, ANNUAL_BASE_PLAN_ID, {
     allowTrial: playTrialEligible === true,
@@ -545,34 +502,19 @@ export function Subscription() {
   const selectedOffer = plan === "year" ? annualOffer : monthlyOffer;
   const localizeDisplayPrice = (displayPrice: string): string => {
     const providerPrice = formatProviderPrice(displayPrice, locale);
-    return isWebBillingChannel
-      ? intl.formatMessage(
-          { id: "billing.subscription.serverCatalogPrice" },
-          { catalogPrice: providerPrice },
-        )
-      : intl.formatMessage(
-          { id: "billing.subscription.providerPrice" },
-          { formattedPrice: providerPrice },
-        );
+    return intl.formatMessage(
+      { id: "billing.subscription.providerPrice" },
+      { formattedPrice: providerPrice },
+    );
   };
-  const annualDisplayPrice = isWebBillingChannel
-    ? webCatalog?.plans.year.displayPrice
-      ? localizeDisplayPrice(webCatalog.plans.year.displayPrice)
-      : intl.formatMessage({ id: "billing.subscription.web.pending" })
-    : annualOffer?.displayPrice
-      ? localizeDisplayPrice(annualOffer.displayPrice)
-      : intl.formatMessage({ id: "billing.subscription.google.pending" });
-  const monthlyDisplayPrice = isWebBillingChannel
-    ? webCatalog?.plans.month.displayPrice
-      ? localizeDisplayPrice(webCatalog.plans.month.displayPrice)
-      : intl.formatMessage({ id: "billing.subscription.web.pending" })
-    : monthlyOffer?.displayPrice
-      ? localizeDisplayPrice(monthlyOffer.displayPrice)
-      : intl.formatMessage({ id: "billing.subscription.google.pending" });
+  const annualDisplayPrice = annualOffer?.displayPrice
+    ? localizeDisplayPrice(annualOffer.displayPrice)
+    : intl.formatMessage({ id: "billing.subscription.google.pending" });
+  const monthlyDisplayPrice = monthlyOffer?.displayPrice
+    ? localizeDisplayPrice(monthlyOffer.displayPrice)
+    : intl.formatMessage({ id: "billing.subscription.google.pending" });
   const selectedDisplayPrice = plan === "year" ? annualDisplayPrice : monthlyDisplayPrice;
-  const selectedHasTrial = isWebBillingChannel
-    ? webCatalog?.trialEligible === true && webCatalog.trialDays === 7
-    : playTrialEligible === true && selectedOffer?.hasSevenDayTrial === true;
+  const selectedHasTrial = playTrialEligible === true && selectedOffer?.hasSevenDayTrial === true;
 
   useEffect(() => {
     if (!premiumActive || !returnIntent) return;
@@ -589,24 +531,19 @@ export function Subscription() {
     });
   }, [navigate, premiumActive, returnIntent]);
 
-  // 결제 CTA — Android 네이티브는 Google Play, PWA는 Toss 자동결제 인증을 사용한다.
-  // 두 경로 모두 사용자 버튼 onClick에서만 시작하고 서로의 결제창으로 우회하지 않는다.
+  // 신규 결제 CTA는 Android 네이티브 Google Play에서만 연다.
   const purchase = async () => {
+    if (!purchasePolicy.canPurchase) {
+      show(intl.formatMessage({ id: "billing.subscription.web.androidOnlyFree" }), "👑");
+      return;
+    }
     if (!familyId) {
       show(intl.formatMessage({ id: "billing.subscription.purchase.familyRequired" }), "👑");
       return;
     }
     if (busy) return;
-    if (isWebBillingChannel && webReconciliationPending) {
-      if (webReconcileTimerRef.current !== null) {
-        window.clearTimeout(webReconcileTimerRef.current);
-        webReconcileTimerRef.current = null;
-      }
-      setWebReconcileNonce((value) => value + 1);
-      return;
-    }
     webReconcileAttemptRef.current = 0;
-    const provider = isWebBillingChannel ? TOSS_FUNNEL_PROVIDER : GOOGLE_PLAY_FUNNEL_PROVIDER;
+    const provider = GOOGLE_PLAY_FUNNEL_PROVIDER;
     recordPremiumFunnelEvent({
       event: "checkout_start",
       plan,
@@ -614,34 +551,7 @@ export function Subscription() {
     });
     setBusy(true);
     let checkoutSucceeded = false;
-    let pendingStorage: Storage | null = null;
     try {
-      if (isWebBillingChannel) {
-        if (!webCatalog) throw new Error("web_billing_not_configured");
-        pendingStorage = webBillingStorage();
-        if (!pendingStorage) throw new Error("web_billing_session_storage_unavailable");
-        const trialExpected = webCatalog.trialEligible === true && webCatalog.trialDays === 7;
-        const rawSession = await createWebBillingCheckoutSession({ familyId, plan, trialExpected });
-        const session = validateWebBillingCheckoutSession(rawSession, plan, trialExpected);
-        recordPremiumFunnelEvent({
-          event: "product_query_result",
-          provider: TOSS_FUNNEL_PROVIDER,
-          result: "success",
-        });
-        savePendingWebBilling(pendingStorage, {
-          sessionId: session.sessionId,
-          customerKey: session.customerKey,
-          expiresAt: session.expiresAt,
-        });
-        const redirects = buildWebBillingRedirectUrls(window.location.href);
-        await startTossBillingAuthorization({
-          clientKey: session.clientKey,
-          customerKey: session.customerKey,
-          ...redirects,
-        });
-        return;
-      }
-
       if (!isBillingAvailable()) {
         throw new BillingError("billing_unavailable");
       }
@@ -695,7 +605,6 @@ export function Subscription() {
       );
     } catch (error) {
       if (!checkoutSucceeded) {
-        if (pendingStorage) clearPendingWebBilling(pendingStorage);
         const failure = classifyPremiumCheckoutFailure(error);
         recordPremiumFunnelEvent({
           event: "checkout_result",
@@ -704,12 +613,7 @@ export function Subscription() {
           error_code: failure.error_code,
         });
       }
-      show(
-        isWebBillingChannel
-          ? webBillingRequestFailureMessage(error, intl)
-          : resolveNativeBillingFailureMessage(error, intl),
-        "👑",
-      );
+      show(resolveNativeBillingFailureMessage(error, intl), "👑");
     } finally {
       setBusy(false);
     }
@@ -866,8 +770,8 @@ export function Subscription() {
           </div>
         )}
 
-        {/* 플랜 선택 (미구독 시에만) */}
-        {!premiumActive && (
+        {/* 플랜 선택과 신규 결제는 Android Google Play에서만 제공한다. */}
+        {!premiumActive && purchasePolicy.canPurchase && (
           <div
             className="sub-plans"
             role="radiogroup"
@@ -892,19 +796,12 @@ export function Subscription() {
                   {intl.formatMessage({ id: "billing.subscription.plan.annual" })}
                 </div>
                 <div className="sub-plan__meta">
-                  {isWebBillingChannel
-                    ? webCatalog?.trialEligible === true && webCatalog.trialDays === 7
-                      ? intl.formatMessage(
-                          { id: "billing.subscription.eligibleTrial" },
-                          { trialDays: webCatalog.trialDays },
-                        )
-                      : intl.formatMessage({ id: "billing.subscription.plan.webManage" })
-                    : annualOffer?.hasSevenDayTrial
-                      ? intl.formatMessage(
-                          { id: "billing.subscription.eligibleTrial" },
-                          { trialDays: 7 },
-                        )
-                      : intl.formatMessage({ id: "billing.subscription.plan.googleManage" })}
+                  {annualOffer?.hasSevenDayTrial
+                    ? intl.formatMessage(
+                        { id: "billing.subscription.eligibleTrial" },
+                        { trialDays: 7 },
+                      )
+                    : intl.formatMessage({ id: "billing.subscription.plan.googleManage" })}
                 </div>
               </div>
               <div className="sub-plan__price">{annualDisplayPrice}</div>
@@ -926,19 +823,12 @@ export function Subscription() {
                   {intl.formatMessage({ id: "billing.subscription.plan.monthly" })}
                 </div>
                 <div className="sub-plan__meta">
-                  {isWebBillingChannel
-                    ? webCatalog?.trialEligible === true && webCatalog.trialDays === 7
-                      ? intl.formatMessage(
-                          { id: "billing.subscription.eligibleTrial" },
-                          { trialDays: webCatalog.trialDays },
-                        )
-                      : intl.formatMessage({ id: "billing.subscription.plan.webManage" })
-                    : monthlyOffer?.hasSevenDayTrial
-                      ? intl.formatMessage(
-                          { id: "billing.subscription.eligibleTrial" },
-                          { trialDays: 7 },
-                        )
-                      : intl.formatMessage({ id: "billing.subscription.plan.googleManage" })}
+                  {monthlyOffer?.hasSevenDayTrial
+                    ? intl.formatMessage(
+                        { id: "billing.subscription.eligibleTrial" },
+                        { trialDays: 7 },
+                      )
+                    : intl.formatMessage({ id: "billing.subscription.plan.googleManage" })}
                 </div>
               </div>
               <div className="sub-plan__price">{monthlyDisplayPrice}</div>
@@ -946,52 +836,32 @@ export function Subscription() {
           </div>
         )}
 
-        {!premiumActive && isWebBillingChannel && (
-          <div className="sub-note hy-explain">
+        {!purchasePolicy.canPurchase && (
+          <div className="sub-note hy-explain" role="note">
             <span className="hy-explain__lines">
               <span className="hy-explain__line">
-                {intl.formatMessage({ id: "billing.subscription.web.noGooglePlay" })}
-              </span>
-              <span className="hy-explain__line">
-                {intl.formatMessage({ id: "billing.subscription.web.domesticCardOnly" })}
-              </span>
-              {selectedHasTrial && (
-                <span className="hy-explain__line">
-                  {intl.formatMessage({ id: "billing.subscription.web.firstCharge" })}
-                </span>
-              )}
-              <span className="hy-explain__line">
-                {intl.formatMessage({ id: "billing.subscription.web.renewal" })}
+                {intl.formatMessage({
+                  id: premiumActive
+                    ? "billing.subscription.web.androidOnlyPremium"
+                    : "billing.subscription.web.androidOnlyFree",
+                })}
               </span>
             </span>
           </div>
         )}
 
-        {!premiumActive && selectedHasTrial && (
+        {!premiumActive && purchasePolicy.canPurchase && selectedHasTrial && (
           <div className="sub-note hy-explain">
             <span className="hy-explain__lines">
-              {isWebBillingChannel ? (
-                <>
-                  <span className="hy-explain__line">
-                    {intl.formatMessage({ id: "billing.subscription.trial.webFirst" })}
-                  </span>
-                  <span className="hy-explain__line">
-                    {intl.formatMessage({ id: "billing.subscription.trial.webNoCharge" })}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="hy-explain__line">
-                    {intl.formatMessage({ id: "billing.subscription.trial.googleFree" })}
-                  </span>
-                  <span className="hy-explain__line">
-                    {intl.formatMessage({ id: "billing.subscription.trial.googleRenewal" })}
-                  </span>
-                  <span className="hy-explain__line">
-                    {intl.formatMessage({ id: "billing.subscription.trial.googleCancel" })}
-                  </span>
-                </>
-              )}
+              <span className="hy-explain__line">
+                {intl.formatMessage({ id: "billing.subscription.trial.googleFree" })}
+              </span>
+              <span className="hy-explain__line">
+                {intl.formatMessage({ id: "billing.subscription.trial.googleRenewal" })}
+              </span>
+              <span className="hy-explain__line">
+                {intl.formatMessage({ id: "billing.subscription.trial.googleCancel" })}
+              </span>
             </span>
           </div>
         )}
@@ -1037,7 +907,11 @@ export function Subscription() {
                     >
                       <span className="sub-table__col-name">{getTierLabel(t, intl)}</span>
                       {t === TIERS.PREMIUM && (
-                        <span className="sub-table__col-price">{monthlyDisplayPrice}</span>
+                      <span className="sub-table__col-price">
+                        {purchasePolicy.canPurchase
+                          ? monthlyDisplayPrice
+                          : intl.formatMessage({ id: "billing.subscription.web.priceOnAndroid" })}
+                      </span>
                       )}
                       {t === comparisonTier && (
                         <span className="sub-table__col-badge">
@@ -1106,39 +980,20 @@ export function Subscription() {
               <span className="hy-explain__line">
                 {intl.formatMessage({ id: "billing.subscription.remoteAudioDisclosure" })}
               </span>
-              <span className="hy-explain__line">
-                {intl.formatMessage(
-                  { id: "billing.subscription.provider.terms" },
-                  {
-                    provider: intl.formatMessage({
-                      id: isWebBillingChannel
-                        ? "billing.subscription.provider.web"
-                        : "billing.subscription.provider.googlePlay",
-                    }),
-                  },
-                )}
-              </span>
+              {purchasePolicy.canPurchase && (
+                <span className="hy-explain__line">
+                  {intl.formatMessage(
+                    { id: "billing.subscription.provider.terms" },
+                    { provider: intl.formatMessage({ id: "billing.subscription.provider.googlePlay" }) },
+                  )}
+                </span>
+              )}
             </span>
           </div>
         )}
 
-        {!premiumActive && isWebBillingChannel && webCatalogUnavailable && (
-          <div className="sub-web-unavailable" role="status">
-            <span>{intl.formatMessage({ id: "billing.subscription.web.catalogUnavailable" })}</span>
-            <button
-              type="button"
-              className="sub-web-unavailable__retry hy-section-action hy-press"
-              onClick={retryWebCatalog}
-              disabled={webCatalogFetching}
-              aria-busy={webCatalogFetching}
-            >
-              {intl.formatMessage({ id: "core.action.retry" })}
-            </button>
-          </div>
-        )}
-
-        {/* CTA — provider별 관리 또는 결제 시작. Android 안에서 웹 결제를 열지 않는다. */}
-        {premiumActive ? (
+        {/* 신규 결제·Google Play 관리는 Android에서만 연다. 기존 웹 구독 해지는 계속 보존한다. */}
+        {premiumActive && (purchasePolicy.canPurchase || view?.provider === "toss_web") ? (
           <button
             type="button"
             className="sub-cta hy-press"
@@ -1151,17 +1006,17 @@ export function Subscription() {
               ? intl.formatMessage({ id: "billing.subscription.cancel.cancelScheduled" })
               : intl.formatMessage({ id: "billing.subscription.cta.manage" })}
           </button>
-        ) : (
+        ) : !premiumActive && purchasePolicy.canPurchase ? (
           <button
             type="button"
             className="sub-cta hy-press"
             onClick={purchase}
-            disabled={busy || (isWebBillingChannel && !webCatalog && !webReconciliationPending)} aria-busy={busy}
+            disabled={busy} aria-busy={busy}
           >
             <img src={asset("ui/crown.webp")} alt="" />
             {busy ? intl.formatMessage({ id: "billing.subscription.cta.busy" }) : purchaseLabel}
           </button>
-        )}
+        ) : null}
 
         {premiumActive && view?.provider === "toss_web" && cancelConfirmOpen && (
           <section className="sub-cancel" aria-labelledby="sub-cancel-title">

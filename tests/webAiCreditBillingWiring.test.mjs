@@ -7,17 +7,18 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFileSync(resolve(root, path), "utf8");
 
-test("PWA AI 크레딧은 서버 카탈로그에 있는 팩만 Toss 일회성 결제로 연다", () => {
+test("iPhone·웹 AI 크레딧 화면은 구매를 열지 않고 Android 전용 안내만 표시한다", () => {
   const screen = read("src/screens/feature/AiCredit.tsx");
-  const sdk = read("src/lib/webBilling.ts");
-  assert.match(screen, /useWebAiCreditCatalog/);
-  assert.match(screen, /createWebAiCreditCheckout/);
-  assert.match(screen, /validateWebAiCreditCheckout/);
-  assert.match(screen, /startTossOneTimePayment/);
-  assert.match(screen, /webCatalog\.packs/);
-  assert.match(sdk, /requestPayment/);
-  assert.match(sdk, /amount:\s*\{\s*currency:\s*"KRW",\s*value:/s);
-  assert.match(sdk, /windowTarget:\s*"self"/);
+  const koBilling = JSON.parse(read("locales/ko/billing.json"));
+  assert.match(screen, /resolveAiCreditPurchasePolicy/);
+  assert.match(screen, /billing\.aiCredit\.web\.androidOnly/);
+  assert.doesNotMatch(screen, /useWebAiCreditCatalog/);
+  assert.doesNotMatch(screen, /createWebAiCreditCheckout/);
+  assert.doesNotMatch(screen, /startTossOneTimePayment/);
+  assert.equal(
+    koBilling["billing.aiCredit.web.androidOnly"],
+    "AI 크레딧 구매는 Android 앱에서만 가능해요. iPhone·웹에서는 무료 제공량을 이용할 수 있어요.",
+  );
 });
 
 test("PWA 복귀는 paymentKey를 지우고 pending 유실 시 서버 주문 정본을 복구한 뒤에만 완료한다", () => {

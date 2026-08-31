@@ -751,6 +751,13 @@
     "variables": {},
     "description": "AI 크레딧 다국어 문구: topUpHint"
   },
+  "billing.aiCredit.web.androidOnly": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "Android 전용 AI 크레딧 구매와 iPhone·웹 무료 제공량 안내"
+  },
   "billing.aiCredit.web.noGooglePlay": {
     "namespace": "billing",
     "audience": "parent",
@@ -1667,12 +1674,33 @@
     "variables": {},
     "description": "구독·체험 다국어 문구: subscription.web.firstCharge"
   },
+  "billing.subscription.web.androidOnlyFree": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "iPhone·웹 무료 사용자를 위한 Android 전용 구독 안내"
+  },
+  "billing.subscription.web.androidOnlyPremium": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "Android 구독 권한의 교차 기기 이용과 Google Play 관리 안내"
+  },
   "billing.subscription.web.noGooglePlay": {
     "namespace": "billing",
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
     "description": "구독·체험 다국어 문구: subscription.web.noGooglePlay"
+  },
+  "billing.subscription.web.priceOnAndroid": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "비 Android 플랫폼의 Google Play 가격 확인 위치 안내"
   },
   "billing.subscription.web.pending": {
     "namespace": "billing",

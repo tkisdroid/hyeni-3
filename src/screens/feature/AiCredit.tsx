@@ -11,14 +11,12 @@ import {
   useAiCredits,
   useAiFriendSettings,
   useSaveAiFriendSettings,
-  useWebAiCreditCatalog,
 } from "@/queries/useAi";
 import { qk } from "@/queries/keys";
 import { isBillingAvailable, launchCreditPurchase } from "@/lib/native/billing";
 import { getPlatform } from "@/lib/native/plugins";
 import {
   completeWebAiCreditCheckout,
-  createWebAiCreditCheckout,
   reconcileWebAiCreditCheckout,
   resolveWebAiCreditCheckout,
   type WebAiCreditCompletionResponse,
@@ -27,7 +25,6 @@ import { isApiError } from "@/lib/api/errors";
 import { useIntl, type IntlShape } from "react-intl";
 import { BillingError } from "@/lib/native/billingError";
 import { resolveNativeBillingFailureMessage } from "@/transform/billingFailureMessage";
-import { startTossOneTimePayment } from "@/lib/webBilling";
 import { creditHeroAmount } from "@/transform/aiView";
 import {
   aiIncludedDailyLimitForExplicitTier,
@@ -42,7 +39,6 @@ import {
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import {
-  buildWebAiCreditRedirectUrls,
   clearPendingWebAiCreditCheckout,
   clearWebAiCreditRedirectQuery,
   parseWebAiCreditRedirect,
@@ -50,10 +46,9 @@ import {
   resolveWebAiCreditDebtImpact,
   savePendingWebAiCreditCheckout,
   validateRecoveredWebAiCreditCheckout,
-  validateWebAiCreditCheckout,
   type PendingWebAiCreditCheckout,
-  type WebAiCreditPack,
 } from "@/transform/webAiCreditBilling";
+import { resolveAiCreditPurchasePolicy } from "@/transform/webBilling";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import { PremiumUpsell } from "@/components/PremiumUpsell";
 import {
@@ -74,7 +69,6 @@ type CreditPack = {
   tagId?: string;
   descriptionId: string;
   ring: string;
-  webPack?: WebAiCreditPack;
 };
 
 type SettingsSaveAction = "ai-toggle" | "limit-decrease" | "limit-increase" | "advanced" | null;
@@ -101,23 +95,6 @@ const CREDIT_PACKS: CreditPack[] = [
     ring: "1px solid rgba(32,26,29,.06)",
   },
 ];
-
-const CREDIT_PACK_PRESENTATION: Readonly<Record<30 | 80 | 200, Pick<CreditPack, "tagId" | "descriptionId" | "ring">>> = {
-  30: {
-    descriptionId: "billing.aiCredit.pack.p30.description",
-    ring: "1px solid rgba(32,26,29,.06)",
-  },
-  80: {
-    tagId: "billing.aiCredit.pack.p80.tag",
-    descriptionId: "billing.aiCredit.pack.p80.description",
-    ring: "2px solid #B79DFB",
-  },
-  200: {
-    tagId: "billing.aiCredit.pack.p200.tag",
-    descriptionId: "billing.aiCredit.pack.p200.description",
-    ring: "1px solid rgba(32,26,29,.06)",
-  },
-};
 
 function webAiCreditStorage(): Storage | null {
   if (typeof window === "undefined") return null;
@@ -186,9 +163,9 @@ export function AiCredit() {
   const { show } = useToast();
   const { userId, familyId } = useAuth();
   const qc = useQueryClient();
-  const isWebBillingChannel = getPlatform() === "web";
-  const webCatalogQuery = useWebAiCreditCatalog(isWebBillingChannel);
-  const webCatalog = webCatalogQuery.data ?? null;
+  const platform = getPlatform();
+  const isWebBillingChannel = platform === "web";
+  const purchasePolicy = resolveAiCreditPurchasePolicy(platform);
   const [billingRedirect] = useState(() => (
     typeof window === "undefined"
       ? { kind: "none" } as const
@@ -385,27 +362,7 @@ export function AiCredit() {
     || saveSettings.isPending
     || advancedSettingsDirty,
   );
-  const availablePacks = useMemo<CreditPack[]>(() => {
-    if (!isWebBillingChannel) return CREDIT_PACKS;
-    return (webCatalog?.packs ?? []).map((pack) => ({
-      id: pack.productCode,
-      backendAmount: pack.credits,
-      ...CREDIT_PACK_PRESENTATION[pack.credits],
-      webPack: pack,
-    }));
-  }, [isWebBillingChannel, webCatalog]);
-  const localizeCreditPrice = (displayPrice: string): string => {
-    const providerPrice = displayPrice;
-    return isWebBillingChannel
-      ? intl.formatMessage(
-          { id: "billing.aiCredit.serverCatalogPrice" },
-          { catalogPrice: providerPrice },
-        )
-      : intl.formatMessage(
-          { id: "billing.aiCredit.providerPrice" },
-          { formattedPrice: providerPrice },
-        );
-  };
+  const availablePacks = CREDIT_PACKS;
   const lowCreditKey = useMemo(
     () => (childUserId ? `hyeni-low-credit-alert:${childUserId}` : ""),
     [childUserId],
@@ -674,9 +631,12 @@ export function AiCredit() {
     void finishWebAiCredit({ pending, storage });
   };
 
-  // 자동 실행 금지: 실제 새 결제는 팩 버튼 onClick에서만 시작한다.
-  // Android는 Google Play, PWA는 서버 확정 카탈로그의 Toss 일회성 결제를 사용한다.
+  // 자동 실행 금지: 실제 새 결제는 Android Google Play의 팩 버튼에서만 시작한다.
   const buy = async (p: CreditPack) => {
+    if (!purchasePolicy.canPurchase) {
+      show(intl.formatMessage({ id: "billing.aiCredit.web.androidOnly" }), "💜");
+      return;
+    }
     if (!aiCreditDataReady) {
       show(intl.formatMessage({ id: "billing.aiCredit.purchase.notReady" }), "⚠️");
       return;
@@ -685,48 +645,9 @@ export function AiCredit() {
       show(intl.formatMessage({ id: "billing.aiCredit.purchase.childRequired" }), "💜");
       return;
     }
-    if (isWebBillingChannel && webReconciliationPending) {
-      retryWebAiCreditReconciliation();
-      return;
-    }
     if (busyPack) return;
     setBusyPack(p.id);
     try {
-      if (isWebBillingChannel) {
-        if (!p.webPack) throw new Error("web_ai_credit_catalog_unavailable");
-        const storage = webAiCreditStorage();
-        if (!storage) throw new Error("web_billing_session_storage_unavailable");
-        const rawCheckout = await createWebAiCreditCheckout({
-          familyId,
-          childUserId,
-          productCode: p.webPack.productCode,
-        });
-        const checkout = validateWebAiCreditCheckout(rawCheckout, p.webPack);
-        savePendingWebAiCreditCheckout(storage, {
-          familyId,
-          childUserId,
-          orderId: checkout.orderId,
-          customerKey: checkout.customerKey,
-          productCode: checkout.productCode,
-          credits: checkout.credits,
-          amount: checkout.amount,
-          currency: checkout.currency,
-          expiresAt: checkout.expiresAt,
-        });
-        setWebReconciliationPending(true);
-        webAutoReconcileOrderRef.current = checkout.orderId;
-        const redirects = buildWebAiCreditRedirectUrls(window.location.href);
-        await startTossOneTimePayment({
-          clientKey: checkout.clientKey,
-          customerKey: checkout.customerKey,
-          orderId: checkout.orderId,
-          credits: checkout.credits,
-          amount: checkout.amount,
-          ...redirects,
-        });
-        return;
-      }
-
       if (!isBillingAvailable()) {
         throw new BillingError("billing_unavailable");
       }
@@ -754,12 +675,7 @@ export function AiCredit() {
         "💜",
       );
     } catch (error) {
-      show(
-        isWebBillingChannel
-          ? webAiCreditFailureMessage(error, intl)
-          : resolveNativeBillingFailureMessage(error, intl),
-        "💜",
-      );
+      show(resolveNativeBillingFailureMessage(error, intl), "💜");
     } finally {
       setBusyPack(null);
     }
@@ -874,29 +790,11 @@ export function AiCredit() {
           <div className="ac-packs__label">{intl.formatMessage({ id: "billing.aiCredit.packs.title" })}</div>
           <div className="sqs-inline-empty">
             {intl.formatMessage({
-              id: isWebBillingChannel
-                ? "billing.aiCredit.web.noGooglePlay"
-                : "billing.aiCredit.native.providerNotice",
+              id: purchasePolicy.canPurchase
+                ? "billing.aiCredit.native.providerNotice"
+                : "billing.aiCredit.web.androidOnly",
             })}
           </div>
-          {isWebBillingChannel && webCatalogQuery.isLoading && (
-            <div className="sqs-inline-empty" role="status">
-              {intl.formatMessage({ id: "billing.aiCredit.packs.catalogLoading" })}
-            </div>
-          )}
-          {isWebBillingChannel && webCatalogQuery.isError && (
-            <div className="sqs-inline-empty" role="status">
-              {intl.formatMessage({ id: "billing.aiCredit.packs.catalogError" })}
-            </div>
-          )}
-          {isWebBillingChannel
-            && !webCatalogQuery.isLoading
-            && !webCatalogQuery.isError
-            && (!webCatalog?.configured || webCatalog.packs.length === 0) && (
-            <div className="sqs-inline-empty" role="status">
-              {intl.formatMessage({ id: "billing.aiCredit.packs.catalogUnavailable" })}
-            </div>
-          )}
           {(creditStatus?.purchasedCreditDebt ?? 0) > 0 && (
             <div className="sqs-inline-empty" role="status">
               {intl.formatMessage(
@@ -905,7 +803,7 @@ export function AiCredit() {
               )}
             </div>
           )}
-          <div className="ac-packs__list">
+          {purchasePolicy.canPurchase && <div className="ac-packs__list">
             {availablePacks.map((p) => {
               const debtImpact = resolveWebAiCreditDebtImpact(
                 p.backendAmount,
@@ -950,39 +848,24 @@ export function AiCredit() {
                   onClick={() => buy(p)}
                   disabled={
                     busyPack !== null
-                    || (isWebBillingChannel && webReconciliationPending)
-                    || (!isWebBillingChannel && !isBillingAvailable())
+                    || !isBillingAvailable()
                   }
                   aria-busy={busyPack === p.id}
-                  aria-label={isWebBillingChannel
-                    ? intl.formatMessage(
-                        { id: "billing.aiCredit.packs.webAria" },
-                        {
-                          count: p.backendAmount,
-                          price: p.webPack?.displayPrice
-                            ? localizeCreditPrice(p.webPack.displayPrice)
-                            : intl.formatMessage({ id: "billing.aiCredit.packs.pricePending" }),
-                        },
-                      )
-                    : intl.formatMessage(
-                        { id: "billing.aiCredit.packs.nativeAria" },
-                        { count: p.backendAmount },
-                      )}
+                  aria-label={intl.formatMessage(
+                    { id: "billing.aiCredit.packs.nativeAria" },
+                    { count: p.backendAmount },
+                  )}
                 >
                   {busyPack === p.id
                     ? intl.formatMessage({ id: "billing.aiCredit.packs.checking" })
-                    : isWebBillingChannel
-                      ? p.webPack?.displayPrice
-                        ? localizeCreditPrice(p.webPack.displayPrice)
-                        : intl.formatMessage({ id: "billing.aiCredit.packs.pricePending" })
-                      : isBillingAvailable()
-                        ? intl.formatMessage({ id: "billing.aiCredit.packs.pricePending" })
-                        : intl.formatMessage({ id: "billing.aiCredit.packs.unavailable" })}
+                    : isBillingAvailable()
+                      ? intl.formatMessage({ id: "billing.aiCredit.packs.pricePending" })
+                      : intl.formatMessage({ id: "billing.aiCredit.packs.unavailable" })}
                 </button>
                 </div>
               );
             })}
-          </div>
+          </div>}
           {isWebBillingChannel && webReconciliationPending && (
             <div className="sqs-inline-empty" role="status">
               <span>{intl.formatMessage({ id: "billing.aiCredit.packs.previousPending" })}</span>{" "}

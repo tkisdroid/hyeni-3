@@ -42,11 +42,10 @@ test("AI 크레딧 화면은 사용자 문구를 billing Intl 경계로만 렌�
   );
 });
 
-test("AI 크레딧 가격은 Play 공급자와 웹 서버 catalog의 표시 문자열만 삽입한다", () => {
-  assert.match(source, /billing\.aiCredit\.providerPrice/);
-  assert.match(source, /\{ formattedPrice: providerPrice \}/);
-  assert.match(source, /billing\.aiCredit\.serverCatalogPrice/);
-  assert.match(source, /\{ catalogPrice: providerPrice \}/);
+test("AI 크레딧 가격은 Android Google Play 확인 화면만 정본으로 사용한다", () => {
+  assert.match(source, /launchCreditPurchase/);
+  assert.match(source, /billing\.aiCredit\.packs\.pricePending/);
+  assert.doesNotMatch(source, /serverCatalogPrice|catalogPrice|startTossOneTimePayment/);
   assert.doesNotMatch(source, /(?:₩|\bKRW\b|\d[\d,]*원)/);
   assert.doesNotMatch(
     Object.entries(koBilling)
@@ -57,12 +56,12 @@ test("AI 크레딧 가격은 Play 공급자와 웹 서버 catalog의 표시 문�
   );
 });
 
-test("웹과 네이티브 크레딧 구매 한계를 결제 채널별로 정직하게 안내한다", () => {
-  assert.match(source, /billing\.aiCredit\.web\.noGooglePlay/);
+test("iPhone·웹과 Android의 크레딧 구매 한계를 결제 채널별로 정직하게 안내한다", () => {
+  assert.match(source, /billing\.aiCredit\.web\.androidOnly/);
   assert.match(source, /billing\.aiCredit\.native\.providerNotice/);
   assert.equal(
-    koBilling["billing.aiCredit.web.noGooglePlay"],
-    "웹에서는 Google Play 결제 대신 카드 결제를 사용해요.",
+    koBilling["billing.aiCredit.web.androidOnly"],
+    "AI 크레딧 구매는 Android 앱에서만 가능해요. iPhone·웹에서는 무료 제공량을 이용할 수 있어요.",
   );
   assert.equal(
     koBilling["billing.aiCredit.native.providerNotice"],

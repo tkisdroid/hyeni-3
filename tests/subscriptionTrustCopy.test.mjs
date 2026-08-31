@@ -99,17 +99,17 @@ test("7일 무료 체험은 Google Play가 eligible offer를 준 경우에만 �
   assert.match(koBilling["billing.subscription.trial.googleRenewal"], /Google Play에 표시된 구독 금액으로 자동 갱신/);
 });
 
-test("웹 자동결제는 국내 발급 카드 제한과 자동 갱신·해지 조건을 결제 주기 아래에서 안내한다", () => {
-  assert.match(source, /!premiumActive && isWebBillingChannel/);
-  assert.match(source, /billing\.subscription\.web\.domesticCardOnly/);
-  assert.match(source, /billing\.subscription\.web\.renewal/);
-  assert.match(koBilling["billing.subscription.web.domesticCardOnly"], /대한민국에서 발급된 카드만 지원/);
-  assert.match(koBilling["billing.subscription.web.renewal"], /선택한 주기마다 자동 갱신/);
+test("iPhone·웹은 Android 전용 구독과 교차 기기 프리미엄 이용을 안내한다", () => {
+  assert.match(source, /!purchasePolicy\.canPurchase/);
+  assert.match(source, /billing\.subscription\.web\.androidOnlyFree/);
+  assert.match(source, /billing\.subscription\.web\.androidOnlyPremium/);
+  assert.match(koBilling["billing.subscription.web.androidOnlyFree"], /iPhone·웹에서는 무료 기능/);
+  assert.match(koBilling["billing.subscription.web.androidOnlyPremium"], /구독 관리는 Android 앱의 Google Play/);
 });
 
 test("연간 구독도 공급자 표시 가격만 보여주고 고정 월환산 금액을 만들지 않는다", () => {
   assert.match(source, /annualOffer\?\.displayPrice/);
-  assert.match(source, /webCatalog\?\.plans\.year\.displayPrice/);
+  assert.doesNotMatch(source, /webCatalog\?\.plans\.year\.displayPrice/);
   assert.doesNotMatch(source, /월 환산|\d[\d,]*원|formatNumber\(annualSavings/);
 });
 

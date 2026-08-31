@@ -244,6 +244,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `503` fail-closed가 정상이다. Qonversion은 비활성·비정본 보조 route이며 health는 secret이 없으면
   `configured:false, accepting:false, primaryProvider:false`를 반환한다. Billing 상품 조회 진단은 response code/debug message와
   미조회 product id/type/status만 다루고 purchase/order token을 로그나 응답 진단에 포함하지 않는다.
+- **신규 결제 채널 정본(2026-09-01)**: 신규 구독과 AI 크레딧 구매는 Android 네이티브 Google Play에서만 시작한다.
+  iPhone·웹은 결제 CTA·Toss 카탈로그를 열지 않고 무료 기능과 무료 AI 제공량을 안내한다. Android에서 같은 계정으로
+  획득한 프리미엄 권한은 iPhone·웹에서도 사용하지만 구독 관리는 Android 앱의 Google Play에서 한다. 운영 D1의
+  `commerce_runtime_controls_v1` 두 웹 checkout 값은 항상 false로 유지하고 Toss client/secret·가격 환경값을 신규 설정하지
+  않는다. 기존 웹 주문 완료·대사·해지·환불 코드는 레거시 안전 경로로 보존하며 `WEB_BILLING_KEY_ENCRYPTION_SECRET`도
+  예기치 않은 과거 암호문 보호를 위해 유지한다.
 - **프리미엄 퍼널 최소수집 계약(2026-08-01)**: 클라이언트는 고정 allowlist 이벤트에 UUID `event_id`·앱 버전·발생 시각만
   붙여 최대 20건씩 전송하고, 실패한 요청은 브라우저 저장소 없이 메모리 100건 큐에서 다음 기록 때만 재시도한다. 분석 실패가
   안전 기능·업셀·결제를 실패시키거나 세션 refresh를 일으키면 안 된다. Worker `/api/premium-funnel/events`는 현재 active parent의

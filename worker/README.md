@@ -233,21 +233,31 @@ D1 migration과 Worker 배포를 실행하지 않았다. 출시 전에는 사업
 
 ### 신규 결제 운영 제어 (fail-closed)
 
-신규 웹 결제의 운영 정본은 `app_global_settings`의 단일 행 `commerce_runtime_controls_v1`이다. 이 행의
+레거시 웹 결제의 운영 정본은 `app_global_settings`의 단일 행 `commerce_runtime_controls_v1`이다. 이 행의
 `webSubscriptionNewCheckoutsEnabled`와 `webAiCreditNewCheckoutsEnabled`를 운영자 숨은 화면
 `#/admin/ai-prompt`에서 함께 선택하고 한 번의 PUT으로 원자 저장한다. 행 누락·형식 오류·D1 조회 오류는 모두 두 신규 결제 경로를 OFF로 판정한다.
 조회 저장소 오류는 관리자 GET도 503으로 응답하며, 화면은 확인되지 않은 값을 ON으로 표시하지 않는다.
 
 이 제어는 신규 웹 구독·신규 웹 AI 크레딧의 카탈로그와 checkout 진입만 차단한다. 기존 주문의 완료·대사·해지·환불에는 영향을 주지 않으며 기존 cron·webhook 처리도 계속 실행한다.
-운영 기본은 둘 다 OFF이고, 관련 migration 적용과 D1 health/readback 및 결제 제공자 외부 E2E가 모두 성공한 뒤에만
-운영자가 명시적으로 연다. 배포 순서는 OFF 저장 → readback 확인 → 필요한 운영 검증 완료 → ON 저장 → readback 확인이다.
+2026-09-01부터 신규 유료 결제는 Android Google Play만 사용하므로 두 값은 운영에서 항상 OFF다. 관리자 화면에서도
+정책 변경 승인 없이 ON으로 바꾸지 않는다. iPhone·웹은 무료 기능을 제공하고, Android에서 얻은 프리미엄 권한은 같은
+계정으로 이용할 수 있지만 신규 구매·Google Play 관리는 Android 앱에서만 진행한다.
 사고가 발생하면 즉시 두 항목 모두 OFF로 원자 저장하고 readback으로 차단 상태를 확인한 뒤 원인을 조사한다.
 운영 문서·명령·로그에는 인증값, 결제 토큰, 주문 토큰 또는 실제 secret 값을 남기지 않는다.
 
-### iPhone 홈 화면 PWA Toss 자동결제 migration-first 배포
+운영에는 아래 멱등 SQL을 적용하고 같은 키를 별도 조회해 두 값이 모두 `false`인지 확인한다.
 
-웹 구독은 월 4,900원·연 39,000원만 허용한다. Toss Payments 자동결제 계약과 추가 위험 검토가 완료되고
-live client/secret key가 발급된 뒤에만 운영을 연다. 카드번호·유효기간·CVC는 Worker로 받지 않으며, 발급된
+```bash
+cd worker
+npx wrangler d1 execute hyeni-calendar --remote --file=db/android-only-payment-policy.sql
+npx wrangler d1 execute hyeni-calendar --remote --command "SELECT key,value,updated_by,updated_at FROM app_global_settings WHERE key='commerce_runtime_controls_v1';"
+```
+
+### 비활성 레거시: iPhone 홈 화면 PWA Toss 자동결제
+
+신규 웹 구독은 운영하지 않는다. 아래 구조는 과거 주문이 발견될 때 완료·대사·해지·환불을 안전하게 처리하기 위한
+레거시 보존 설명이며 활성화 절차가 아니다. `TOSS_PAYMENTS_CLIENT_KEY`·`TOSS_PAYMENTS_SECRET_KEY`를 신규로 연결하지 않고,
+런타임 제어 두 값은 OFF로 유지한다. 카드번호·유효기간·CVC는 Worker로 받지 않으며, 기존에 발급된
 `billingKey`만 AES-256-GCM으로 암호화한다. `WEB_BILLING_KEY_ENCRYPTION_SECRET`은 32바이트를 base64로
 인코딩한 별도 secret이다. 기존 구독의 billingKey를 다시 암호화하기 전에는 이 값을 회전하면 안 된다.
 `customerKey`는 사용자·가족·이메일·전화번호를 포함하지 않는 서버 난수이며 Toss가 후속 결제·조회에 같은 값을
@@ -255,8 +265,8 @@ live client/secret key가 발급된 뒤에만 운영을 연다. 카드번호·�
 Google Play purchase token은 비가역 해시만 저장한다. 이 식별자와 키는 로그·응답 진단에 넣지 않으며 계정 삭제 뒤
 분리 보존하는 최소 금융 정본에는 `customerKey`·`billingKey` 원문을 남기지 않는다.
 
-운영 순서는 아래와 같다. migration·secret·계약 중 하나라도 빠지면 catalog/checkout/complete는 503으로
-fail-closed하고 프리미엄 권리를 열지 않는다. secret 값은 저장소·셸 기록·로그에 남기지 않는다.
+아래 명령은 레거시 스키마의 구조를 설명하는 역사 기록이다. Android 전용 결제 정책에서는 실행하거나 Toss secret을
+추가하지 않는다. 실제 과거 주문이 발견되면 신규 결제를 계속 닫은 채 별도 승인된 복구 절차로만 처리한다.
 먼저 `PRAGMA table_info`로 현재 스키마를 확인한다. 테이블이 없으면 최신 base migration만 적용하고,
 기존 테이블이 존재하면 base를 다시 적용하지 않고, 누락 컬럼별 one-time 보강 migration만 적용한다.
 `billing_key_revocation_status`, `web_billing_trial_claims.provider`, `web_billing_charge_attempts.refund_status`·`customer_key`는
@@ -278,14 +288,10 @@ npx wrangler d1 execute hyeni-calendar --remote --file=db/google-play-family-tri
 npx wrangler d1 execute hyeni-calendar --remote --file=db/web-billing-refunds.sql -y
 npx wrangler d1 execute hyeni-calendar --remote --file=db/web-billing-financial-retention.sql -y
 npx wrangler d1 execute hyeni-calendar --remote --command "SELECT name FROM sqlite_master WHERE type IN ('table','index') AND name IN ('billing_provider_reservations','web_billing_checkout_sessions','web_billing_customers','web_billing_charge_attempts','web_billing_refund_records','idx_web_billing_customers_key_revocation','idx_web_billing_charge_refund_reconcile','idx_web_billing_refund_provider_checked','idx_web_billing_refund_retention') ORDER BY name" -y
-npx wrangler secret put TOSS_PAYMENTS_CLIENT_KEY
-npx wrangler secret put TOSS_PAYMENTS_SECRET_KEY
-npx wrangler secret put WEB_BILLING_KEY_ENCRYPTION_SECRET
-# 통합 출시에서는 여기서 배포하지 않는다. 7단계 전체 readback 뒤 Worker를 한 번만 배포한다.
+# 신규 적용 금지: Toss secret을 추가하거나 신규 checkout을 열지 않는다.
 ```
 
-배포 뒤에는 앱의 인증된 부모 구독 화면이 현재 가족 id로 호출한 `/api/billing/web/catalog` 응답이
-`provider=toss_payments`, `currency=KRW`, 월 4,900원·연 39,000원을 반환하는지 확인한다. checkout session은 15분이며,
+신규 앱은 `/api/billing/web/catalog`이나 checkout을 호출하지 않는다. 레거시 checkout session은 15분이며,
 완료 API는 결제 응답의 order/customer/금액/KRW/DONE/BILLING을 모두 대조한 뒤에만
 `family_subscription.provider=toss_web`을 활성화한다. 시간초과·5xx는 같은 order id 조회로 대조하기 전까지
 권리를 열지 않는다.
@@ -321,12 +327,10 @@ customerKey, billingKey, paymentKey, 카드정보는 로그로 출력하지 않�
 `ops/web-billing-refund-runbook.md`이며, 읽기 전용 운영 쿼리는
 `ops/web-billing-refund-monitor.sql`이다. 코드 롤백 때 D1 additive migration과 5년 금융 정본은 되돌리지 않는다.
 
-### iPhone 홈 화면 PWA Toss AI 크레딧 일회성 결제
+### 비활성 레거시: iPhone 홈 화면 PWA Toss AI 크레딧 일회성 결제
 
-보고서가 확정한 상품 단위는 30회·80회·200회이며 실제 팩 가격은 보고서에 없다. 따라서 코드에 가격을
-하드코딩하지 않고 `TOSS_AI_CREDIT_30_AMOUNT_KRW`, `TOSS_AI_CREDIT_80_AMOUNT_KRW`,
-`TOSS_AI_CREDIT_200_AMOUNT_KRW` 중 운영에서 승인한 양의 정수 KRW 값이 설정된 팩만 카탈로그에 노출한다.
-설정되지 않은 팩은 표시·주문·승인할 수 없다. Android Google Play 인앱 상품 경로는 이 설정과 독립적으로 유지한다.
+신규 AI 크레딧 구매는 Android Google Play만 사용한다. iPhone·웹은 무료 제공량만 사용하며 Toss 가격 환경값과
+결제 secret을 새로 설정하지 않는다. 아래 내용은 과거 주문 복구 코드의 데이터 안전 계약을 보존하기 위한 역사 기록이다.
 
 운영 적용은 AI balance 복합 unique를 먼저 보장한 다음 일회성 주문 정본을 만들고 Worker를 배포한다.
 `PRAGMA table_info` 결과가 비어 있으면 최신 base migration만 적용하고, 기존 주문 테이블은 있지만
@@ -344,16 +348,10 @@ npx wrangler d1 execute hyeni-calendar --remote --file=db/web-ai-credit-billing.
 # 기존 테이블은 있고 record_scope가 없을 때는 위 base 대신 정확히 한 번 실행
 npx wrangler d1 execute hyeni-calendar --remote --file=db/web-ai-credit-financial-retention.sql -y
 npx wrangler d1 execute hyeni-calendar --remote --command "SELECT name FROM sqlite_master WHERE type IN ('table','index') AND name IN ('web_ai_credit_orders','web_ai_credit_detached_balances','idx_web_ai_credit_payment_hash','idx_web_ai_credit_family_parent','idx_web_ai_credit_reconcile','idx_web_ai_credit_detached_reconcile','idx_web_ai_credit_detached_balance_retention') ORDER BY name" -y
-npx wrangler secret put TOSS_AI_CREDIT_30_AMOUNT_KRW
-npx wrangler secret put TOSS_AI_CREDIT_80_AMOUNT_KRW
-npx wrangler secret put TOSS_AI_CREDIT_200_AMOUNT_KRW
-# 통합 출시에서는 여기서 배포하지 않는다. 7단계 전체 readback 뒤 Worker를 한 번만 배포한다.
+# 신규 적용 금지: Toss 가격 환경값이나 secret을 추가하지 않는다.
 ```
 
-`TOSS_PAYMENTS_CLIENT_KEY`와 `TOSS_PAYMENTS_SECRET_KEY`도 유효한 같은 test/live 쌍이어야 한다. 일부 팩만
-승인한 경우 위 세 가격 명령 중 그 팩만 실행한다. 배포 뒤 인증된 현재 부모 앱이 현재 세션의 `familyId`로
-`GET /api/billing/web/ai-credits/catalog`을 호출했을 때 `currency=KRW`이고 승인한 팩만
-나오는지 확인한다. checkout 응답 금액은 주문 생성 시 스냅샷되므로 이후 환경 가격이 바뀌어도 기존 주문에는
+신규 앱은 `GET /api/billing/web/ai-credits/catalog`이나 checkout을 호출하지 않는다. 레거시 checkout 응답 금액은 주문 생성 시 스냅샷되므로 이후 환경 가격이 바뀌어도 기존 주문에는
 최초 금액이 유지된다. 클라이언트가 보낸 금액·통화는 정본으로 사용하지 않는다.
 
 Toss 개발자센터에는 `PAYMENT_STATUS_CHANGED` 웹훅 URL로

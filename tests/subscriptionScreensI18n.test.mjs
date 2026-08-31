@@ -27,11 +27,10 @@ test("구독·체험 화면은 billing Intl 문구를 사용하고 부모 존댓
 });
 
 test("표시 가격은 공급자 formattedPrice에서만 오고 고정 금액·통화·basePlan 숫자를 UI 정본으로 쓰지 않는다", () => {
-  assert.match(subscription, /webCatalog\?\.plans\.year\.displayPrice/);
-  assert.match(subscription, /webCatalog\?\.plans\.month\.displayPrice/);
   assert.match(subscription, /annualOffer\?\.displayPrice/);
   assert.match(subscription, /monthlyOffer\?\.displayPrice/);
   assert.match(subscription, /formatProviderPrice/);
+  assert.doesNotMatch(subscription, /webCatalog|serverCatalogPrice/);
   assert.doesNotMatch(subscription, /(?:₩|\bKRW\b|\d[\d,]*원|월 환산)/);
   assert.doesNotMatch(subscription, /billing\.subscription\.[^"\n]*(?:2900|27840|4900|39000)/);
 });
@@ -43,23 +42,17 @@ test("7일 체험은 현재 가족 자격과 정확한 공급자 7일 offer가 �
     subscription,
     /playTrialEligible === true && selectedOffer\?\.hasSevenDayTrial === true/,
   );
-  assert.match(
-    subscription,
-    /webCatalog\?\.trialEligible === true && webCatalog\.trialDays === 7/,
-  );
   assert.match(subscription, /selectedHasTrial[\s\S]*billing\.subscription\.cta\.trial/);
-  assert.match(subscription, /!premiumActive && selectedHasTrial/);
+  assert.match(subscription, /!premiumActive && purchasePolicy\.canPurchase && selectedHasTrial/);
 });
 
-test("PWA 웹 결제는 Google Play 결제·복원이 아니라는 한계를 숨기지 않는다", () => {
-  assert.match(subscription, /isWebBillingChannel[\s\S]*billing\.subscription\.web\.noGooglePlay/);
-  // 2026-08-17: 카드 발급국 제한은 바로 아래 domesticCardOnly 가 말하므로 중복 문장을 뺐다.
-  assert.match(koBilling["billing.subscription.web.noGooglePlay"], /웹에서는 Google Play 결제·복원을 쓸 수 없어요/);
-  assert.match(koBilling["billing.subscription.web.noGooglePlay"], /해외 카드는 Android 앱에서 결제/);
-  // 카드 발급국 제한은 같은 영역의 domesticCardOnly 가 그대로 말한다(중복 제거 후에도 화면에서는 함께 보인다).
-  assert.match(koBilling["billing.subscription.web.domesticCardOnly"], /대한민국에서 발급된 카드/);
-  assert.match(subscription, /startTossBillingAuthorization/);
-  assert.match(subscription, /billing\.subscription\.web\.domesticCardOnly/);
+test("iPhone·웹은 신규 결제를 열지 않고 무료 이용 또는 기존 프리미엄 이용을 안내한다", () => {
+  assert.match(subscription, /resolveSubscriptionPurchasePolicy/);
+  assert.match(subscription, /billing\.subscription\.web\.androidOnlyFree/);
+  assert.match(subscription, /billing\.subscription\.web\.androidOnlyPremium/);
+  assert.match(koBilling["billing.subscription.web.androidOnlyFree"], /Android 앱에서만 가능/);
+  assert.match(koBilling["billing.subscription.web.androidOnlyPremium"], /이 계정에서도 이용 중/);
+  assert.doesNotMatch(subscription, /startTossBillingAuthorization|createWebBillingCheckoutSession/);
 });
 
 test("trial·active·grace·cancelled 정본과 해지 뒤 기간 종료일까지 유지 의미를 보존한다", () => {

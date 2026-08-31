@@ -3,6 +3,17 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**Android Google Play 전용 신규 결제(2026-09-01, 로컬 검증·운영 D1 적용 완료/Worker·Pages 배포 전)**:
+신규 구독과 AI 크레딧 구매는 Android 네이티브 Google Play에서만 시작한다. iPhone·웹은 신규 결제 CTA와 Toss
+카탈로그 요청을 제거하고 무료 기능·무료 AI 제공량을 안내한다. Android에서 같은 계정으로 획득한 프리미엄은
+iPhone·웹에서도 그대로 사용하되 관리는 Android 앱의 Google Play에서 한다. 운영
+`commerce_runtime_controls_v1.webSubscriptionNewCheckoutsEnabled`와 `webAiCreditNewCheckoutsEnabled`는 항상 false다.
+Toss client/secret·팩 가격은 신규 설정하지 않고, 과거 주문의 완료·대사·해지·환불 코드와
+`WEB_BILLING_KEY_ENCRYPTION_SECRET`만 레거시 안전 경로로 보존한다. Play code 17 검토 트랙은 이 변경에서 건드리지 않는다.
+앱 2,096/2,096·Worker 1,457/1,457, 앱/Worker typecheck, i18n verify와 production build가 통과했다.
+운영 D1에는 `worker/db/android-only-payment-policy.sql`을 적용해 두 신규 웹 결제 스위치가 명시적으로 false임을
+별도 SELECT로 확인했다. Worker·Pages 배포와 운영 readback은 아직 남아 있다.
+
 **Worker 운영 보존·출시 게이트(2026-08-31, 구현·로컬 검증 완료/운영 미적용)**:
 만료 `pending_notifications`는 `expires_at` 뒤 24시간 grace를 둔 뒤 hourly 40분 slot에서 한 번에 최대 5,000행만
 멱등 삭제한다. 운영 D1의 ISO `T`/공백 timestamp 혼재를 같은 기준으로 비교하도록 expression index를 사용하며,
@@ -13,7 +24,7 @@ job·scope도 같은 2-query batch로 회수한다. 살아 있는 owner의 claim
 SOS route는 요청 body의 `receiver_user_ids`를 감사 정본으로 쓰지 않고 해당 가족의 활성 부모와 가족 주보호자 user id를
 서버에서 다시 결정한다. force-ring active/history/quota, subscriptions, SOS cooldown/events, send-sms는 실제 Hono route
 경계의 인증·가족 격리·오류 계약을 `worker/tests/operationalRouteCoverage.test.mjs`로 보호한다.
-출시 전 `npm run verify:production:worker-secrets`는 Wrangler inventory에서 필수 Secret 이름 12개와
+출시 전 `npm run verify:production:worker-secrets`는 Wrangler inventory에서 필수 Secret 이름 10개와
 `secret_text` 설정 여부만 검사하고 값을 읽거나 출력하지 않는다. 하나라도 누락되면 Worker 배포는 `HOLD`이며,
 값은 운영자가 `wrangler secret put` 대화형 입력으로만 설정한다. 피드백 `status='queued'`는 D1 내구 접수를 뜻할 뿐
 자동 이메일 재시도 약속이 아니어서 `docs/feedback-operations.md` 절차대로 운영자가 직접 처리한다.

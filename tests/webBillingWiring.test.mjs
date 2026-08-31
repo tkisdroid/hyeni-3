@@ -7,47 +7,33 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFileSync(resolve(root, path), "utf8");
 
-test("PWA 결제는 서버 checkout session과 Toss SDK 인증을 사용자 CTA에서만 시작한다", () => {
+test("iPhone·웹 구독 화면은 새 결제를 열지 않고 Android 전용 안내만 표시한다", () => {
   const screen = read("src/screens/feature/Subscription.tsx");
-  const sdk = read("src/lib/webBilling.ts");
-  assert.match(screen, /getPlatform\(\) === "web"/);
-  assert.match(screen, /await createWebBillingCheckoutSession\(\{ familyId, plan, trialExpected \}\)/);
-  assert.match(screen, /validateWebBillingCheckoutSession\(rawSession, plan, trialExpected\)/);
-  assert.match(screen, /savePendingWebBilling/);
-  assert.match(screen, /await startTossBillingAuthorization/);
-  assert.match(sdk, /https:\/\/js\.tosspayments\.com\/v2\/standard/);
-  assert.match(sdk, /requestBillingAuth/);
-  assert.match(sdk, /method:\s*"CARD"/);
-  assert.match(sdk, /windowTarget:\s*"self"/);
-  assert.doesNotMatch(sdk, /queueMicrotask\(finish\)/, "기존 SDK 태그가 로딩 중일 때 즉시 실패하면 안 됩니다");
+  assert.match(screen, /resolveSubscriptionPurchasePolicy/);
+  assert.match(screen, /billing\.subscription\.web\.androidOnlyFree/);
+  assert.match(screen, /billing\.subscription\.web\.androidOnlyPremium/);
+  assert.doesNotMatch(screen, /createWebBillingCheckoutSession/);
+  assert.doesNotMatch(screen, /startTossBillingAuthorization/);
+  assert.doesNotMatch(screen, /fetchWebBillingCatalog/);
 });
 
-test("PWA 7일 체험 문구는 서버 catalog이 true·7일을 동시에 확정한 경우에만 노출한다", () => {
+test("iPhone·웹 안내는 무료 이용과 Android 구독의 교차 기기 이용을 정확히 설명한다", () => {
   const screen = read("src/screens/feature/Subscription.tsx");
-  const transform = read("src/transform/webBilling.ts");
-  const endpoint = read("src/lib/api/endpoints/webBilling.ts");
-  assert.match(screen, /webCatalog\?\.trialEligible === true && webCatalog\.trialDays === 7/);
-  assert.match(endpoint, /trialExpected:\s*boolean/);
-  assert.match(transform, /record\.trialEligible \? record\.trialDays !== 7 : record\.trialDays !== 0/);
-  assert.match(screen, /billing\.subscription\.web\.firstCharge/);
   const koBilling = JSON.parse(read("locales/ko/billing.json"));
-  assert.match(koBilling["billing.subscription.web.firstCharge"], /지금은 청구하지 않고, 정확히 7일 후/);
+  assert.equal(
+    koBilling["billing.subscription.web.androidOnlyFree"],
+    "현재 구독은 Android 앱에서만 가능해요. iPhone·웹에서는 무료 기능을 이용할 수 있어요.",
+  );
+  assert.equal(
+    koBilling["billing.subscription.web.androidOnlyPremium"],
+    "Android에서 구독한 프리미엄을 이 계정에서도 이용 중이에요. 구독 관리는 Android 앱의 Google Play에서 해 주세요.",
+  );
 });
 
-test("PWA 결제 상품 조회 실패는 화면 안에서 다시 시도할 수 있다", () => {
+test("Android 구독 화면은 Google Play 구매 CTA를 유지한다", () => {
   const screen = read("src/screens/feature/Subscription.tsx");
-  const css = read("src/screens/feature/Subscription.css");
-  assert.match(screen, /const retryWebCatalog = \(\) => setWebCatalogRetryNonce\(\(value\) => value \+ 1\)/);
-  assert.match(screen, /webCatalogRetryNonce/);
-  assert.match(
-    screen,
-    /webCatalogUnavailable[\s\S]*?onClick=\{retryWebCatalog\}[\s\S]*?core\.action\.retry/,
-  );
-  assert.match(screen, /sub-web-unavailable__retry hy-section-action hy-press/);
-  assert.match(
-    css,
-    /\.sub-screen \.sub-web-unavailable \.sub-web-unavailable__retry\s*\{[^}]*min-width: var\(--control-min-size\)/s,
-  );
+  assert.match(screen, /launchSubscriptionPurchase/);
+  assert.match(screen, /purchasePolicy\.canPurchase/);
 });
 
 test("웹 결제 복귀는 authKey를 주소에서 지운 뒤 pending 또는 서버 세션을 대조해 완료한다", () => {
@@ -76,7 +62,7 @@ test("결제 응답 유실은 pending을 보존하고 authKey 없이 같은 주�
 
 test("Android 채널은 Google Play 가격을 재조회·검증하고 웹 결제 CTA로 우회하지 않는다", () => {
   const screen = read("src/screens/feature/Subscription.tsx");
-  assert.match(screen, /if \(isWebBillingChannel\)[\s\S]*?return;[\s\S]*?if \(!isBillingAvailable\(\)\)/);
+  assert.match(screen, /if \(!purchasePolicy\.canPurchase\)[\s\S]*?return;[\s\S]*?if \(!isBillingAvailable\(\)\)/);
   assert.match(screen, /freshProductDetails = await fetchSubscriptionProductDetails\(\)/);
   assert.match(screen, /hasExpectedLaunchSubscriptionPrice\(freshSelectedOffer\)/);
   assert.match(screen, /launchSubscriptionPurchase/);

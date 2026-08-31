@@ -307,7 +307,14 @@ test("허용 오차를 넘는 미래 recorded_at은 전체 payload를 거부하�
 
 test("KST 기록일별 7,200행 상한은 초과 batch 전체를 429로 거부한다", async () => {
   const { sqlite, db } = createDb(47);
-  const baseMs = Date.now() - 60 * 60_000;
+  // KST 자정 직후 실행돼도 201개 fixture가 서로 다른 기록일로 갈라지지 않게
+  // 가장 최근의 KST 정오를 기준으로 고정한다.
+  const nowMs = Date.now();
+  const kstDate = new Date(nowMs + 9 * 60 * 60_000).toISOString().slice(0, 10);
+  const currentKstNoonMs = Date.parse(`${kstDate}T03:00:00.000Z`);
+  const baseMs = currentKstNoonMs <= nowMs - 5 * 60_000
+    ? currentKstNoonMs
+    : currentKstNoonMs - 24 * 60 * 60_000;
   const dateKey = new Date(baseMs + 9 * 60 * 60_000).toISOString().slice(0, 10);
   sqlite.prepare(
     `INSERT INTO location_history_ingest_daily_usage

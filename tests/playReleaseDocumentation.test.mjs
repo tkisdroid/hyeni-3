@@ -125,8 +125,8 @@ test("모든 Play 트랙·결제·CALL_PHONE·증거 등급을 독립 출시 게
     assert.match(source, /준비물·숙제[^\n]*아이별 하루[^\n]*8개/);
     assert.doesNotMatch(source, /일정·준비물·메모·스티커[^\n]*무제한/);
   }
-  assert.match(checklist, /Toss Payments[^\n]*주문번호·금액·통화·결제 상태/);
-  assert.match(guide, /Toss Payments[^\n]*주문번호·금액·통화·상태/);
+  assert.match(checklist, /신규 구독·AI 크레딧 결제는 Android Google Play에서만 시작/);
+  assert.match(checklist, /Toss client\/secret·가격 환경값은 신규로 설정하지 않는다/);
 
   const manifestStart = checklist.indexOf("## 2026-08-01 Worker migration-first manifest");
   const manifestEnd = checklist.indexOf("## 서명 자격정보 안전 정리", manifestStart);

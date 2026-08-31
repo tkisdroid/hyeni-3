@@ -27,7 +27,7 @@ v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로�
 - [x] Data Safety 워크시트 초안: `docs/store/play-data-safety.md`
 - [x] 출시 운영 가이드 초안: `docs/release/혜니캘린더_Google_Play_출시_가이드북_2026-07-14.md`
 - [ ] Data Safety의 전체 데이터 유형과 외부 처리업체 서비스 제공자 예외를 계약·설정 기준으로 확정
-- [ ] 공개 이용약관·개인정보처리방침·데이터 삭제 URL은 현재 HTTPS 200·한글이지만 Toss Payments·자동결제·AI 크레딧·추천·5년 금융 보존·출시 가격 문구가 없는 구버전이므로 최신 문구로 배포하고 갱신일 재확인
+- [ ] 공개 이용약관·개인정보처리방침·데이터 삭제 문구를 Android Google Play 전용 신규 결제, iPhone·웹 무료 이용, 같은 계정의 기존 프리미엄 교차 기기 이용 정책으로 갱신했다. Worker 배포 뒤 HTTPS 200과 최종 업데이트 `2026-09-01`을 재확인
 - [x] Play 그래픽 자산은 사용자 지정 원본으로 교체하고 중복 파일 `1000172579.png`=`1000172578.png`, `1000172581.png`=`1000172580.png`를 제외했다. 업로드 순서와 전체 SHA-256은 `docs/store/play-console-submission-v1.3.0.md` §2에 고정
 - [x] final app SHA `40a32e2c18e929877e7c92970d6898619d7feedd`에서 build→`cap sync`→승인 인증서 서명 release AAB를 새로 만들고 source dist·post-sync public·universal APK public, manifest 권한 24개 exact allowlist, `isMonitoringTool=child_monitoring`, legacy 저장소 `maxSdkVersion=28`, package/versionName/versionCode, `jarsigner`·승인 upload certificate, `PAGE_ALIGNMENT_16K`·`zipalign -P 16`·전체 ELF `LOAD >= 0x4000`를 검증. 증거=`artifacts/release-evidence/android-release-aab-evidence-20260815-184739-40a32e2.json`
 - [x] 최신 local debug schema v4 evidence GREEN: source 414/`21fd84…6c1e5`, Android/embedded projection 413/`4a6af8…18d15`, cap public 416/`821819…248fa`, embedded public 415/`0f291b…5cbc`; web `matched:true`, archive 961/2/955 safe, 시작/종료 integrity 모두 true, AAB manifest policy v1 권한 24개 exact allowlist·`isMonitoringTool=child_monitoring`·legacy 저장소 `maxSdkVersion=28`, ZIP·전체 ELF 16KB 정적 검사 통과. `artifacts/release-evidence/android-debug-aab-evidence-20260802-143008.json` SHA-256 `e552dd6655d4e6a0b467cac0d0acba73f5ae9f79a410b657926e1fcd242d0c18`, verification log SHA-256 `1bd78d88dfa4cb717bf4f73d1a8bf116cb653135d01560daa9c472816f0a483f`
@@ -38,6 +38,7 @@ v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로�
 - [x] access JWT URL 노출을 제거하고 realtime은 45초·1회용 ticket과 live 8/user·64/room 상한, 만료·손상 socket 1008 종료, 초과 `429`·`Retry-After: 30`, ticket `no-store`로 닫음. legacy client payload는 raw socket send가 아니라 인증된 `/realtime/v1/api/broadcast`로 보내고 모든 호출이 Promise 실패를 처리함. 주변 소리는 비정본 WebView `audio/webm` fallback·child socket 준비 의존을 제거하고 Android native WAV+세션 검증만 허용하며 미지원은 `remote_listen_requires_android_native`로 닫음. 비공개 사진·첨부는 Authorization fetch→blob으로 전환한 코드·회귀 통과
 - [x] Toss 복귀 URL query가 React effect 정리 전에 Referer로 전파되지 않도록 최초 HTML meta·Pages `_headers`·동적 SDK script를 모두 `no-referrer`로 고정하고 자동 계약 회귀 통과
 - [x] 신규 웹 구독·AI 크레딧 결제는 D1 운영 제어가 명시적으로 허용할 때만 열고 행 누락·형식 오류·D1 장애는 두 판매 중지로 fail-closed한다. 기존 주문 완료·대사·해지·환불은 중지 스위치와 무관하게 계속 처리한다
+- [x] 2026-09-01 정책 변경으로 신규 구독·AI 크레딧 결제는 Android Google Play에서만 시작한다. iPhone·웹은 신규 구매 CTA와 카탈로그 요청을 노출하지 않고 무료 기능·무료 AI 제공량을 안내하며, Android에서 획득한 프리미엄은 같은 계정에서 계속 사용한다. 레거시 웹 결제 운영 제어는 둘 다 OFF로 유지한다
 - [x] Worker 런타임 로그는 정적 이벤트와 allowlist된 aggregate 필드만 남기고 오류 원문·ID·payload·provider body를 기록하지 않도록 AST 회귀로 고정했다. 첫 60분은 `5xx >= 5`이면서 오류율 `> 1%`일 때만 rollback 후보이며 요청 0건은 `INCONCLUSIVE`다
 - [x] 첫 60분 큐 추세는 DB 시각과 고정 11개 count만 저장하고, 최소 3개 checkpoint에서 같은 큐가 두 구간 연속 증가할 때만 `ROLLBACK_REQUIRED`로 판정한다. ID·PII·token·원문 행은 반환·저장하지 않는다
 - [ ] 신규 Worker+D1을 `docs/release/release-day-rollback-runbook.md`의 변경 창에서 선행 배포·readback해 A17/razr의 realtime ticket 404를 먼저 닫고, 부분 배포·단독 rollback 없이 9번째/65번째 live socket 429·client backoff, razr Android native WAV+세션 검증→요청 부모 전용 수신과 미지원 WebView fail-closed 증거 확보
@@ -121,7 +122,7 @@ v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로�
 - [ ] AI balance migration은 실제 production 사본/Time Travel 격리 clone에서 삭제 전후 잔액·원장 불변식과 전체 7단계 dress rehearsal을 다시 통과
 - [ ] 실제 적용은 AI 크레딧 쓰기를 멈추거나 최소화한 유지보수 창에서 직전 중복 재진단 → 보호된 행 단위 복구 자료와 Time Travel bookmark 확보 → unique migration → readback → 새 Worker 연속 배포 순서로 실행하고 구 Worker가 UNIQUE 위반을 만나는 간격을 최소화
 - [ ] 사용자 쓰기를 다시 연 뒤에는 Time Travel 전체 복원으로 정상 쓰기를 되감지 않음. 재오픈 전 실패일 때만 승인된 전체 복원을 사용하고, 재오픈 뒤 문제는 검토된 additive/행 단위 복구로 처리
-- [ ] 현재 누락된 secret 이름을 값 노출 없이 해소: `PREMIUM_FUNNEL_HASH_SECRET`, `LOCATION_AUDIT_CURSOR_SECRET`, `TOSS_PAYMENTS_CLIENT_KEY`, `TOSS_PAYMENTS_SECRET_KEY`, `WEB_BILLING_KEY_ENCRYPTION_SECRET`, 승인한 `TOSS_AI_CREDIT_30_AMOUNT_KRW`, `TOSS_AI_CREDIT_80_AMOUNT_KRW`, `TOSS_AI_CREDIT_200_AMOUNT_KRW`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `GOOGLE_PLAY_RTDN_AUDIENCE`, `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL`, 필요 시 `GOOGLE_PLAY_PACKAGE_NAME`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `RESEND_API_KEY`, `FEEDBACK_FROM_EMAIL`
+- [ ] Android 전용 결제 정책의 필수 Worker secret 10개를 값 노출 없이 확인: `PREMIUM_FUNNEL_HASH_SECRET`, `LOCATION_AUDIT_CURSOR_SECRET`, `WEB_BILLING_KEY_ENCRYPTION_SECRET`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `GOOGLE_PLAY_RTDN_AUDIENCE`, `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `RESEND_API_KEY`, `FEEDBACK_FROM_EMAIL`. Toss client/secret·가격 환경값은 신규로 설정하지 않는다
 - [ ] secret 값은 파일·명령 인자·셸 history·로그·보고서에 남기지 않고 `wrangler secret put`의 대화형 입력만 사용
 - [ ] 대화형 입력 후 저장소 루트에서 `npm run verify:production:worker-secrets`를 실행해 exit 0 확인. 이 게이트는 Wrangler inventory의 이름·설정 유형만 읽고 값은 출력하지 않으며, 하나라도 누락되면 Worker 배포 `HOLD`
 - [ ] migration과 secret readback이 모두 끝난 뒤 Worker를 먼저 배포하고 새 API 404·503·health·cron·환불 모니터를 확인한 다음 Pages를 배포
@@ -169,8 +170,7 @@ try {
 - [ ] 앱 설치 ID, FCM 토큰, 세션 ID, 구매 내역·구독 상태를 신고
 - [ ] 주변 소리 음성 본문은 일시 처리, 감사 메타데이터는 저장된다는 차이를 표시
 - [ ] Android `SpeechRecognizer`와 Web Speech의 외부 처리 가능성을 개인정보처리방침에 반영
-- [ ] Cloudflare, Firebase/FCM, Google Play, Toss Payments, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, 공개 OSRM, Resend, NCP SENS, 음성 인식 제공자의 실제 전송 필드를 Data Safety에 반영
-- [ ] Toss Payments에는 주문번호·금액·통화·결제 상태와 customer/billing/payment 식별자가 전달되며, 카드번호·유효기간·CVC는 Worker가 받지 않는다는 실제 경계를 계약·코드·로그로 확인해 신고
+- [ ] Cloudflare, Firebase/FCM, Google Play, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, 공개 OSRM, Resend, NCP SENS, 음성 인식 제공자의 실제 전송 필드를 Data Safety에 반영. 비활성 레거시 Toss 경로를 현재 운영 처리업체로 신고하지 않는다
 - [ ] Resend의 `senderName`·`senderEmail`·`senderRole`·`senderUserId`·`familyId`·`content`, NCP SENS의 전화번호·6자리 OTP, 공개 OSRM의 출발·도착 좌표 전송을 반영
 - [ ] 각 외부 흐름의 계약·DPA, 실제 설정, 보관·삭제 기간, 2차 이용 증거가 모두 확보되기 전에는 서비스 제공자 예외를 적용하지 않음
 - [ ] 개인정보처리방침에 AI 친구뿐 아니라 AI 일정 사진·텍스트, AI 요약, 음성 인식 처리를 모두 포함
@@ -266,16 +266,19 @@ try {
 - [ ] 내부 테스트 AAB의 Pre-launch report에서 crash·ANR·접근성·보안 결과를 검토하고, 로그인·페어링에 막히면 반복 가능한 테스트 계정으로 재실행. Android vitals와 지원 기기 카탈로그에서 Android 16·폴더블·저사양 대표군 및 의도하지 않은 제외가 없는지 확인해 단계적 rollout 확대 조건에 연결
 - [x] Qonversion은 앱의 활성 결제 경로가 아니며, 보조 webhook health도 설정 유무와 무관하게 `primaryProvider:false`를 반환하고 Google Play 직접 검증을 결제 정본으로 유지함을 자동 검증
 
-### iPhone 홈 화면 PWA Toss 자동결제
+### 비활성 레거시: iPhone 홈 화면 PWA Toss 자동결제
+
+> 2026-09-01 Android Google Play 전용 정책에 따라 아래 Toss 항목은 신규 출시 체크리스트가 아니라 과거 설계 기록이다.
+> 신규 키·가격·checkout을 설정하거나 열지 않으며, 기존 주문이 발견될 때 승인된 복구 절차에서만 참고한다.
 
 - [ ] 실제 iPhone Safari에서 홈 화면 PWA를 설치하고 standalone 실행·active Service Worker·오프라인 재진입을 확인
 - [ ] 기존 구버전 Service Worker/cache가 있는 iPhone 홈 화면 PWA의 열린 탭을 배포 전부터 유지하고, 배포 뒤 `registration.update()` 시 `registerType: prompt`의 안전 업데이트 큐가 유휴 상태에서는 수동 새로고침 없이 자동 활성화·reload하는지 확인. 결제·AI 크레딧 대사·주변소리·미저장 편집 중에는 reload가 보류되고 종료 직후 정확히 한 번 적용되어야 한다. 새 entry URL·새 Worker controlling·구/신 chunk 혼합 404 및 Console error 0건·새 Free/Premium/결제 UI·오프라인 재실행을 통과
 - [ ] `VAPID_PUBLIC_KEY`·`VAPID_PRIVATE_KEY` 설정 뒤 실제 iPhone 홈 화면 PWA에서 Web Push 권한·구독·수신·탭 라우팅을 확인하고, 일반 Safari 탭에는 홈 화면 추가 안내가 표시되는지 확인
 - [ ] 사용자 탭 안에서 AudioContext가 먼저 활성화되고 부모 iPhone PWA가 razr 아이의 승인된 native WAV를 재생·1분 종료·감사 기록까지 처리하는지 확인. 이번 읽기 검증에서는 마이크·원격청취를 실행하지 않음
 - [ ] 부모 iPhone PWA↔razr 아이에서 위치 즉시 요청·기기 상태·메시지·ACK·알림과 허용된 안전 제어를 검증. 실제 Android OS 권한이 아이 기기에서 1회 필요하다는 한계를 숨기지 않으며 이번 읽기 검증에서는 원격제어를 실행하지 않음
-- [ ] Toss Payments 자동결제 계약·추가 위험 검토·live client/secret key 발급을 완료
+- (역사 기록) Toss Payments 자동결제 계약·추가 위험 검토·live key 발급은 완료하지 않았고 신규 진행하지 않는다.
 - [ ] 운영 D1 스키마를 먼저 읽고, 웹 결제 테이블이 없으면 `web-billing.sql`만 적용. 기존 테이블이면 누락 컬럼을 확인한 뒤 `web-billing-key-revocation.sql` → `google-play-family-trial-claim.sql` → `web-billing-refunds.sql` → `web-billing-financial-retention.sql` 순서로 필요한 migration만 각각 한 번 적용하고 환불 테이블·컬럼·인덱스를 readback. 신규 base와 additive 동시 적용·one-time additive 재실행 금지. `refund_status`는 있는데 `customer_key`가 없으면 배포 중단
-- [ ] `TOSS_PAYMENTS_CLIENT_KEY`, `TOSS_PAYMENTS_SECRET_KEY`, `WEB_BILLING_KEY_ENCRYPTION_SECRET`을 안전하게 설정하고, 하나라도 없을 때 catalog·checkout·complete가 503 fail-closed인지 확인
+- [x] 신규 `TOSS_PAYMENTS_CLIENT_KEY`·`TOSS_PAYMENTS_SECRET_KEY`는 설정하지 않는다. `WEB_BILLING_KEY_ENCRYPTION_SECRET`만 과거 암호화 빌링키의 안전한 대사·해지·환불을 위해 유지한다.
 - [ ] catalog·checkout·결제사 조회가 KRW와 월 4,900원·연 39,000원, order/customer/상태를 모두 대조하며 불일치·timeout·5xx에서 권리를 열지 않는지 확인
 - [ ] Safari/PWA 복귀 중 `sessionStorage`가 유실된 구독 checkout을 인증된 Worker resolver가 현재 사용자 소유권·금액·통화·주문 상태까지 대조한 뒤에만 복구하는지 sandbox에서 확인
 - [ ] sandbox에서 최초 결제·정확한 7일 eligible 체험·갱신·해지 예약·기간 말 종료·실패 대사·환불·중복 요청·계정 삭제 시 원격 billing key 폐기를 E2E
@@ -288,7 +291,7 @@ try {
 - [ ] `ai-credit-balance-uniqueness.sql`과 `referral-rewards-v2.sql`을 운영 적용·readback하고 추천 cron을 검증
 - [ ] 친구 초대는 양쪽 가족에 각각 AI 대화 50회를 1회 지급하고 초대 가족 수 상한은 없음, 신규 가족 72시간·첫 실제 위치 후 48시간 유지, 자기/공동 보호자/기존 가족/중복 귀속·부정 이용 차단을 E2E
 - [x] 추천 지급 mutation은 서버 cron 경로에만 두고 클라이언트에는 조회·코드 발급만 노출하며, 추천 원장·응답 스키마에 위치 좌표·주소·자녀 이름이 없음을 자동 검증
-- [x] Toss AI 크레딧은 승인된 30·80·200팩 중 양의 정수 KRW 환경 가격이 있는 팩만 서버 catalog에 노출하고, 미설정·유효하지 않은 가격은 숨기며 클라이언트가 임의 가격을 만들지 못함을 자동 검증
+- [x] 레거시 Toss AI 크레딧 코드는 승인된 30·80·200팩 중 양의 정수 KRW 환경 가격이 있는 팩만 서버 catalog에 노출하지만, 현재는 가격을 설정하지 않고 신규 catalog·checkout을 닫는다.
 - [ ] Safari/PWA 복귀 중 `sessionStorage`가 유실된 AI 크레딧 주문을 인증된 Worker resolver가 소유권·팩 수량·금액·통화·주문 상태까지 대조한 뒤에만 복구하는지 sandbox에서 확인
 - [ ] 신규 웹 AI DB는 `web-ai-credit-billing.sql`, 기존 `web_ai_credit_orders`에 `record_scope`가 없을 때는 base 대신 `web-ai-credit-financial-retention.sql`을 정확히 한 번 적용하고, 미승인·실패 30일, 승인·전액 환불 5년, 미확정 자동 삭제 금지 정책을 readback
 - [ ] 웹 구독 금융 보존은 위 Worker migration manifest 4단계의 신규/기존 분기와 전체 순서를 그대로 따르고, 결제 완료·체험 이력의 PII 없는 최소 정본을 계정·가족 삭제 뒤 5년 분리 보존하며 결제사 대사 미완료 상태는 삭제를 fail-closed 하는지 검증
