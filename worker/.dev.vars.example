@@ -4,3 +4,6 @@
 #   node --input-type=module -e "import {generateKeyPair,exportJWK} from 'jose'; const {publicKey,privateKey}=await generateKeyPair('ES256',{extractable:true}); const fs=await import('fs'); fs.writeFileSync('.dev.vars','JWT_PRIVATE_KEY='+JSON.stringify(await exportJWK(privateKey))+'\nJWT_PUBLIC_KEY='+JSON.stringify(await exportJWK(publicKey))+'\n');"
 JWT_PRIVATE_KEY=
 JWT_PUBLIC_KEY=
+
+# 지도 autocomplete handle·quota 가명화 전용 32바이트 이상 secret.
+MAPS_SESSION_HMAC_SECRET=

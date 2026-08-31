@@ -19,6 +19,9 @@ export interface Env {
   PREMIUM_FUNNEL_HASH_SECRET?: string;
   // 위치 확인자료 감사 API의 keyset cursor HMAC 전용 secret. 32바이트 미만이면 fail-closed한다.
   LOCATION_AUDIT_CURSOR_SECRET?: string;
+  // 지도 autocomplete handle과 user/family 비용 quota 가명화 전용 secret.
+  // JWT/OAuth/결제 키로 폴백하지 않으며 미설정 시 지도 proxy만 fail-closed한다.
+  MAPS_SESSION_HMAC_SECRET?: string;
   // M3 Realtime — 가족별 WebSocket 룸 (idFromName(familyId))
   FAMILY_ROOM: DurableObjectNamespace;
   // 선생님별 WebSocket 룸 (idFromName(teacherId)) — teacher_notification_batches realtime

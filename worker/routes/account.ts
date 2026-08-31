@@ -24,6 +24,7 @@ import {
   buildUserReferenceNullingStmts,
   collectChildPhotoKeys,
   collectRetainedChildPhotoKeys,
+  cleanupMapRequestControlForAccountDeletion,
   deleteAccountPhotoObjects,
   listMembersForFamilies,
   listMembersForUsers,
@@ -276,6 +277,13 @@ account.post("/delete", requireAuth, async (c) => {
     }
     statements.push(...(await buildFamilyScopedDeleteStmts(db, ownedFamilyIds)));
     try {
+      await cleanupMapRequestControlForAccountDeletion({
+        db,
+        secret: c.env.MAPS_SESSION_HMAC_SECRET,
+        userIds: deletedUserIds,
+        familyIds: realtimeFamilyIds,
+        deleteFamilyIds: ownedFamilyIds,
+      });
       await runAccountDeletionBatches(db, statements);
       const ownedPh = ownedFamilyIds.map(() => "?").join(",");
       const userPh = deletedUserIds.map(() => "?").join(",");
@@ -353,6 +361,12 @@ account.post("/delete", requireAuth, async (c) => {
     ...deleteUserContentSafetyStateStmts(db, callerId),
   ];
   try {
+    await cleanupMapRequestControlForAccountDeletion({
+      db,
+      secret: c.env.MAPS_SESSION_HMAC_SECRET,
+      userIds: deletedUserIds,
+      familyIds: realtimeFamilyIds,
+    });
     await runAccountDeletionBatches(db, statements);
     await db.batch([
       db.prepare("DELETE FROM family_members WHERE user_id = ?").bind(callerId),

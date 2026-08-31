@@ -45,6 +45,8 @@ const REQUIRED_SCHEMA_OBJECTS: readonly RequiredSchemaObject[] = [
   { type: "table", name: "oauth_state_transactions" },
   { type: "table", name: "account_device_sessions" },
   { type: "table", name: "families" },
+  { type: "table", name: "map_autocomplete_sessions" },
+  { type: "table", name: "map_request_quota" },
   { type: "table", name: "family_members" },
   { type: "table", name: "events" },
   { type: "table", name: "events_children" },
@@ -142,6 +144,8 @@ const REQUIRED_SCHEMA_OBJECTS: readonly RequiredSchemaObject[] = [
   { type: "index", name: "idx_google_play_voided_purchase_hash" },
   { type: "index", name: "idx_google_play_billing_owners_family_parent" },
   { type: "index", name: "idx_google_play_billing_owners_token_hash" },
+  { type: "index", name: "map_autocomplete_sessions_expiry_idx" },
+  { type: "index", name: "map_request_quota_expiry_idx" },
   { type: "trigger", name: "trg_child_locations_confirmation_insert" },
   { type: "trigger", name: "trg_child_locations_confirmation_update" },
   { type: "trigger", name: "trg_location_history_confirmation_insert" },
@@ -151,6 +155,20 @@ const REQUIRED_SCHEMA_OBJECTS: readonly RequiredSchemaObject[] = [
 
 const REQUIRED_SCHEMA_COLUMNS: readonly RequiredSchemaColumn[] = [
   { table: "families", name: "country_code" },
+  ...requiredSchemaColumns("map_autocomplete_sessions", [
+    "handle_digest",
+    "expires_at_ms",
+    "consumed_at_ms",
+    "created_at_ms",
+  ]),
+  ...requiredSchemaColumns("map_request_quota", [
+    "family_scope_digest",
+    "action",
+    "bucket_start_ms",
+    "family_count",
+    "user_counts_json",
+    "expires_at_ms",
+  ]),
   ...requiredSchemaColumns("oauth_state_transactions", [
     "recovery_id_hash",
     "recovery_binding_hash",

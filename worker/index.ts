@@ -115,6 +115,7 @@ import { cleanupLocationHistoryIngestDailyUsage } from "./lib/locationHistoryIng
 import { isReleaseDatabaseReady } from "./lib/healthReadiness";
 import { logCronHeartbeat, logRequestOutcome } from "./lib/launchObservability";
 import { normalizeEdgeCountry } from "./lib/accessRegion";
+import { cleanupMapRequestControl } from "./lib/maps/requestControlCleanup.ts";
 
 export { CalendarProfileService } from "./entrypoints/CalendarProfileService";
 
@@ -492,6 +493,11 @@ const hourlyMaintenanceSlots: Readonly<Record<number, readonly HourlyMaintenance
   40: [
     { name: "location-confirmation-retention", run: runLocationConfirmationRetention, maxD1Queries: 1 },
     { name: "pending-notification-retention", run: runPendingNotificationRetention, maxD1Queries: 1 },
+    {
+      name: "maps-request-control-cleanup",
+      run: async (env) => cleanupMapRequestControl(env.DB),
+      maxD1Queries: 2,
+    },
     {
       name: "storage-upload-usage-cleanup",
       run: async (env) => ({ removed: await cleanupStorageUploadDailyUsage(env.DB) }),

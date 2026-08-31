@@ -1,4 +1,8 @@
 import { pgArray, toPgArray } from "./serialize";
+import {
+  removeMapQuotaForFamily,
+  removeMapQuotaForUser,
+} from "./maps/requestControlCleanup.ts";
 
 const D1_DELETE_BATCH_SIZE = 40;
 const D1_SCHEMA_TABLES_PER_QUERY = 5;
@@ -966,6 +970,27 @@ export async function buildPgArrayReferenceCleanupStmts(
     }
   }
   return statements;
+}
+
+export async function cleanupMapRequestControlForAccountDeletion(input: {
+  db: D1Database;
+  secret?: string;
+  userIds: readonly string[];
+  familyIds: readonly string[];
+  deleteFamilyIds?: readonly string[];
+}): Promise<void> {
+  const secret = String(input.secret ?? "").trim();
+  if (!secret) return;
+  const deletedFamilies = new Set(uniqueNonEmpty(input.deleteFamilyIds ?? []));
+  for (const familyId of deletedFamilies) {
+    await removeMapQuotaForFamily({ db: input.db, secret, familyId });
+  }
+  for (const familyId of uniqueNonEmpty(input.familyIds)) {
+    if (deletedFamilies.has(familyId)) continue;
+    for (const userId of uniqueNonEmpty(input.userIds)) {
+      await removeMapQuotaForUser({ db: input.db, secret, userId, familyId });
+    }
+  }
 }
 
 export async function runAccountDeletionBatches(
