@@ -636,6 +636,7 @@ export function mockApi(pathname, scenario, method = "GET", requestBody = null, 
     return studyMissionFixture(scenario);
   }
   if (/^\/api\/study\/learner\/missions\/[^/]+\/abandon$/u.test(pathname) && method === "POST") {
+    scenario.studyActiveMission = false;
     scenario.studyMissionStarted = false;
     scenario.studyMissionCompleted = false;
     return {
@@ -1060,6 +1061,16 @@ async function clickSelector(cdp, selector) {
   if (!point || point.disabled) throw new Error(`클릭할 수 없는 요소입니다: ${selector}`);
   await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x: point.x, y: point.y, button: "left", clickCount: 1 });
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: point.x, y: point.y, button: "left", clickCount: 1 });
+}
+
+async function waitForSelector(cdp, selector, timeoutMs = 5_000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt <= timeoutMs) {
+    const visible = await cdp.evaluate(`Boolean(document.querySelector(${JSON.stringify(selector)}))`);
+    if (visible) return true;
+    await wait(50);
+  }
+  return false;
 }
 
 async function setInputValue(cdp, selector, value) {
@@ -3153,7 +3164,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       topic: document.querySelector(".study-mission-context strong")?.textContent?.trim() ?? null,
       continuous: document.querySelector(".study-mission-context span")?.textContent?.trim() ?? null,
       changeTopicVisible: [...document.querySelectorAll(".study-mission-context button")]
-        .some((button) => button.textContent?.includes("주제 바꾸기")),
+        .some((button) => button.textContent?.includes("다른 내용 풀기")),
     }))()`);
     if (
       continuedFacts.problem !== "5 × 3은 얼마일까?"
@@ -3225,16 +3236,61 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       });
     }
 
-    const resumedStudy = await navigate({
+    const resumeChoiceScenario = {
       role: "child", tier: "free", catalogMode: "valid", overLimit: false,
       studyState: "enabled", studyActiveMission: true,
-    }, "study/learn", 1_500);
+    };
+    const resumedStudy = await navigate(resumeChoiceScenario, "study/learn", 1_500);
     const resumedFacts = await cdp.evaluate(`(() => ({
       problem: document.querySelector(".study-problem h2")?.textContent?.trim() ?? null,
-      startVisible: Boolean(document.querySelector(".child-study-start")),
+      choiceVisible: Boolean(document.querySelector(".child-study-resume")),
+      actions: [...document.querySelectorAll(".child-study-resume-actions button")]
+        .map((button) => button.textContent?.trim() ?? ""),
     }))()`);
-    if (resumedFacts.problem !== "3 × 4는 얼마일까?" || resumedFacts.startVisible || rowProblems(resumedStudy).length > 0) {
-      report.problems.push({ scope: "study-child-resume", facts: resumedFacts, routeProblems: rowProblems(resumedStudy) });
+    if (
+      resumedFacts.problem !== null
+      || !resumedFacts.choiceVisible
+      || !resumedFacts.actions.includes("학습 이어하기")
+      || !resumedFacts.actions.includes("다른 내용 학습하기")
+      || rowProblems(resumedStudy).length > 0
+    ) {
+      report.problems.push({ scope: "study-child-resume-choice", facts: resumedFacts, routeProblems: rowProblems(resumedStudy) });
+    }
+    if (resumedFacts.choiceVisible) {
+      await clickSelector(cdp, ".child-study-resume-actions button:first-child");
+      const problemVisible = await waitForSelector(cdp, ".study-problem h2");
+      const resumedProblemFacts = await cdp.evaluate(`({
+        problem: document.querySelector(".study-problem h2")?.textContent?.trim() ?? null,
+        choiceVisible: Boolean(document.querySelector(".child-study-resume")),
+      })`);
+      if (!problemVisible || resumedProblemFacts.problem !== "3 × 4는 얼마일까?" || resumedProblemFacts.choiceVisible) {
+        report.problems.push({ scope: "study-child-resume-confirmed", facts: { ...resumedProblemFacts, problemVisible } });
+      }
+    }
+
+    const differentStudyScenario = {
+      role: "child", tier: "free", catalogMode: "valid", overLimit: false,
+      studyState: "enabled", studyActiveMission: true,
+    };
+    const differentStudy = await navigate(differentStudyScenario, "study/learn", 1_500);
+    const differentChoiceVisible = await cdp.evaluate(`Boolean(document.querySelector(".child-study-resume"))`);
+    if (differentChoiceVisible) {
+      await clickSelector(cdp, ".child-study-resume-actions button:last-child");
+      const topicsVisible = await waitForSelector(cdp, "#study-topic-title");
+      const differentStudyFacts = await cdp.evaluate(`({
+        title: document.querySelector("#study-topic-title")?.textContent?.trim() ?? null,
+        problem: document.querySelector(".study-problem h2")?.textContent?.trim() ?? null,
+      })`);
+      if (
+        !topicsVisible
+        || differentStudyFacts.title !== "어떤 주제를 풀어볼까?"
+        || differentStudyFacts.problem !== null
+        || differentStudyScenario.studyMissionStarted !== false
+      ) {
+        report.problems.push({ scope: "study-child-different-topic", facts: { ...differentStudyFacts, topicsVisible, scenario: differentStudyScenario } });
+      }
+    } else {
+      report.problems.push({ scope: "study-child-different-topic-entry", routeProblems: rowProblems(differentStudy) });
     }
 
     const childGradeMissing = await navigate({

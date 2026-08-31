@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { StudyAccessGate } from "@/features/study/StudyAccessGate";
 import {
-  activeMissionToRestore,
   groupStudyConcepts,
   isSelectedGradeLoading,
+  missionToAbandonBeforeSelection,
+  resolveChildStudyLaunch,
   STUDY_GRADE_CHOICES,
   resolveChildStudyEntry,
   startInputForSelection,
@@ -45,16 +46,6 @@ export function ChildStudy() {
   };
 
   useEffect(() => {
-    const activeMissionId = activeMissionToRestore({
-      localMissionId: missionId,
-      choosingGrade,
-      learnerFetchedAfterMount: learner.isFetchedAfterMount,
-      activeMissionId: learner.data?.activeMissionId,
-    });
-    if (activeMissionId) setMissionId(activeMissionId);
-  }, [choosingGrade, learner.data?.activeMissionId, learner.isFetchedAfterMount, missionId]);
-
-  useEffect(() => {
     if (missionId || choosingGrade || catalogGrade !== null) return;
     const grade = learner.data?.profile.grade;
     if (grade && grade.source !== "learner_selected") setCatalogGrade(grade.grade);
@@ -80,7 +71,11 @@ export function ChildStudy() {
     }
   };
   const leaveMission = async (next: "topics" | "grades"): Promise<void> => {
-    const activeMissionId = mission.data?.status === "completed" ? null : missionId;
+    const activeMissionId = missionToAbandonBeforeSelection({
+      localMissionId: missionId,
+      activeMissionId: learner.data?.activeMissionId,
+      localMissionCompleted: mission.data?.status === "completed",
+    });
     if (activeMissionId) {
       try {
         await abandon.mutateAsync({ missionId: activeMissionId, idempotencyKey: crypto.randomUUID() });
@@ -93,8 +88,14 @@ export function ChildStudy() {
     if (next === "grades") {
       setCatalogGrade(null);
       setChoosingGrade(true);
+    } else if (mission.data?.grade) {
+      setCatalogGrade(mission.data.grade);
+      setChoosingGrade(false);
+    } else if (!learner.data?.profile.grade || learner.data.profile.grade.source === "learner_selected") {
+      setCatalogGrade(null);
+      setChoosingGrade(true);
     } else {
-      setCatalogGrade(mission.data?.grade ?? learner.data?.profile.grade?.grade ?? catalogGrade);
+      setCatalogGrade(learner.data.profile.grade.grade ?? catalogGrade);
       setChoosingGrade(false);
     }
   };
@@ -119,6 +120,7 @@ export function ChildStudy() {
             startBusy={start.isPending}
             startError={start.isError}
             startingTopic={startingTopic}
+            onResume={setMissionId}
             onSelectGrade={(grade) => {
               start.reset();
               setCatalogGrade(grade);
@@ -147,6 +149,7 @@ function ChildStudyContent({
   startBusy,
   startError,
   startingTopic,
+  onResume,
   onSelectGrade,
   onStart,
   canChooseGrade,
@@ -164,6 +167,7 @@ function ChildStudyContent({
   startBusy: boolean;
   startError: boolean;
   startingTopic: string | null;
+  onResume: (missionId: string) => void;
   onSelectGrade: (grade: StudyGrade) => void;
   onStart: (grade: StudyGrade, selection: StudyTopicSelection) => Promise<void>;
   canChooseGrade: boolean;
@@ -176,9 +180,20 @@ function ChildStudyContent({
   if (entry.kind === "unavailable") {
     return <section className="child-study-state"><p>{STUDY_TOPIC_COPY.learnerLoadError}</p><button type="button" onClick={onHome}>{STUDY_TOPIC_COPY.backHome}</button></section>;
   }
+  const launch = resolveChildStudyLaunch(entry, missionId);
+  if (launch.kind === "resume_choice") {
+    return (
+      <StudyResumeChoice
+        busy={abandonBusy}
+        error={abandonError}
+        onResume={() => onResume(launch.missionId)}
+        onChooseDifferent={onChooseTopic}
+      />
+    );
+  }
   const needsGradeChoice = entry.kind === "select_grade";
   const selectedGradePending = catalogGrade !== null && concepts.isPending;
-  if (!missionId && needsGradeChoice && (catalogGrade === null || selectedGradePending || concepts.isError)) {
+  if (launch.kind === "selection" && needsGradeChoice && (catalogGrade === null || selectedGradePending || concepts.isError)) {
     return (
       <section className="child-study-start">
         <h2>{STUDY_TOPIC_COPY.chooseGradeTitle}</h2>
@@ -204,7 +219,7 @@ function ChildStudyContent({
       </section>
     );
   }
-  if (!missionId && catalogGrade !== null && concepts.data) {
+  if (launch.kind === "selection" && catalogGrade !== null && concepts.data) {
     return (
       <StudyTopicPicker
         grade={catalogGrade}
@@ -218,7 +233,7 @@ function ChildStudyContent({
       />
     );
   }
-  if (!missionId && (entry.kind === "start" || catalogGrade !== null)) {
+  if (launch.kind === "selection" && (entry.kind === "start" || catalogGrade !== null)) {
     return <p role="status">{STUDY_TOPIC_COPY.topicLoading}</p>;
   }
   if (mission.isPending || !mission.data) {
@@ -236,6 +251,34 @@ function ChildStudyContent({
       onHome={onHome}
       onForbidden={onHome}
     />
+  );
+}
+
+function StudyResumeChoice({
+  busy,
+  error,
+  onResume,
+  onChooseDifferent,
+}: Readonly<{
+  busy: boolean;
+  error: boolean;
+  onResume: () => void;
+  onChooseDifferent: () => void;
+}>) {
+  return (
+    <section className="child-study-resume" aria-labelledby="study-resume-title">
+      <div>
+        <h2 id="study-resume-title">{STUDY_TOPIC_COPY.resumeTitle}</h2>
+        <p>{STUDY_TOPIC_COPY.resumeDescription}</p>
+      </div>
+      <div className="child-study-resume-actions">
+        <button type="button" disabled={busy} aria-busy={busy} onClick={onResume}>{STUDY_TOPIC_COPY.resumeAction}</button>
+        <button type="button" className="is-secondary" disabled={busy} aria-busy={busy} onClick={onChooseDifferent}>
+          {STUDY_TOPIC_COPY.differentAction}
+        </button>
+      </div>
+      {error && <p role="alert">{STUDY_TOPIC_COPY.abandonError}</p>}
+    </section>
   );
 }
 

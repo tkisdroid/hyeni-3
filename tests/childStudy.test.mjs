@@ -6,11 +6,22 @@ import test from "node:test";
 
 const childStudy = await import("../src/features/study/childStudyModel.ts");
 
-test("새로고침 뒤 서버의 활성 미션을 시작 호출 없이 이어서 푼다", () => {
-  assert.deepEqual(childStudy.resolveChildStudyEntry({
+test("재진입한 활성 미션은 이어하기를 누르기 전까지 문제 화면을 열지 않는다", () => {
+  const entry = childStudy.resolveChildStudyEntry({
     status: "available",
+    profile: { grade: { grade: 4, source: "learner_selected" } },
     activeMissionId: "mission-1",
-  }), { kind: "resume", missionId: "mission-1" });
+  });
+  assert.deepEqual(entry, { kind: "resume", missionId: "mission-1" });
+  assert.equal(typeof childStudy.resolveChildStudyLaunch, "function");
+  assert.deepEqual(childStudy.resolveChildStudyLaunch(entry, null), {
+    kind: "resume_choice",
+    missionId: "mission-1",
+  });
+  assert.deepEqual(childStudy.resolveChildStudyLaunch(entry, "mission-1"), {
+    kind: "mission",
+    missionId: "mission-1",
+  });
 });
 
 test("활성 미션이 없으면 학습자 선택 학년은 다시 고르게 하고 보호자 학년만 바로 시작한다", () => {
@@ -60,25 +71,28 @@ test("8문제 묶음 완료는 완료 화면을 노출하지 않고 같은 주�
   assert.doesNotMatch(source, /study\.child\.progress/);
 });
 
-test("완료된 캐시 미션은 새 화면의 learner 재조회 전에 복원하지 않는다", async () => {
-  assert.equal(typeof childStudy.activeMissionToRestore, "function");
-  assert.equal(childStudy.activeMissionToRestore({
-    localMissionId: null,
-    choosingGrade: false,
-    learnerFetchedAfterMount: false,
-    activeMissionId: "completed-cache-mission",
-  }), null);
-  assert.equal(childStudy.activeMissionToRestore({
-    localMissionId: null,
-    choosingGrade: false,
-    learnerFetchedAfterMount: true,
-    activeMissionId: "server-active-mission",
-  }), "server-active-mission");
-
+test("활성 미션 상태는 화면에 들어올 때 서버에서 다시 확인한다", async () => {
   const querySource = await readFile(new URL("../src/queries/useStudy.ts", import.meta.url), "utf8");
-  const screenSource = await readFile(new URL("../src/screens/study/ChildStudy.tsx", import.meta.url), "utf8");
   assert.match(querySource, /refetchOnMount:\s*["']always["']/);
-  assert.match(screenSource, /learner\.isFetchedAfterMount/);
+});
+
+test("다른 내용을 고르면 문제 화면과 재진입 선택 화면 모두 현재 활성 미션을 정리한다", () => {
+  assert.equal(typeof childStudy.missionToAbandonBeforeSelection, "function");
+  assert.equal(childStudy.missionToAbandonBeforeSelection({
+    localMissionId: null,
+    activeMissionId: "server-active-mission",
+    localMissionCompleted: false,
+  }), "server-active-mission");
+  assert.equal(childStudy.missionToAbandonBeforeSelection({
+    localMissionId: "open-mission",
+    activeMissionId: "open-mission",
+    localMissionCompleted: false,
+  }), "open-mission");
+  assert.equal(childStudy.missionToAbandonBeforeSelection({
+    localMissionId: "completed-mission",
+    activeMissionId: "completed-mission",
+    localMissionCompleted: true,
+  }), null);
 });
 
 test("세부 개념은 서버 순서를 유지하며 단원별로 묶고 골고루 풀기를 별도 선택한다", () => {

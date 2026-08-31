@@ -103,6 +103,25 @@ test("브라우저 QA는 완료 뒤 같은 세부 개념의 다음 학습을 새
   assert.equal(mockApi("/api/study/learner/me", scenario).activeMissionId, null);
 });
 
+test("브라우저 QA의 재진입 활성 미션도 다른 내용 선택 뒤에는 다시 살아나지 않는다", () => {
+  const scenario = {
+    role: "child",
+    tier: "free",
+    studyState: "enabled",
+    studyActiveMission: true,
+  };
+  const active = mockApi("/api/study/learner/me", scenario);
+  assert.ok(active.activeMissionId);
+
+  mockApi(
+    `/api/study/learner/missions/${active.activeMissionId}/abandon`,
+    scenario,
+    "POST",
+  );
+
+  assert.equal(mockApi("/api/study/learner/me", scenario).activeMissionId, null);
+});
+
 test("브라우저 QA는 국외·미확정·장애 상태를 서로 구분한다", () => {
   assert.deepEqual(mockApi("/api/study/status", { role: "parent", studyState: "outside_market" }), { state: "outside_market" });
   assert.deepEqual(mockApi("/api/study/status", { role: "parent", studyState: "unavailable" }), { state: "unavailable" });
