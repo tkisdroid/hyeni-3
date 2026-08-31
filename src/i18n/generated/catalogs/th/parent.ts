@@ -435,7 +435,7 @@ const messages = {
   "parent.home.heroCarousel.slidePosition": "{position} จาก {total}",
   "parent.home.heroSlide.study.body": "เรียนได้ด้วย",
   "parent.home.heroSlide.study.eyebrow": "Hyeni Study",
-  "parent.home.heroSlide.study.title": "มินิแอป Hyeni Calendar\nเปิดตัวแล้ว",
+  "parent.home.heroSlide.study.title": "มินิแอป ปฏิทิน Hyeni\nเปิดตัวแล้ว",
   "parent.home.heroSlide.world.body": "ดูบน YouTube",
   "parent.home.heroSlide.world.eyebrow": "Hyeni World",
   "parent.home.heroSlide.world.title": "พักด้วยวิดีโอ\nของเฮนิ",

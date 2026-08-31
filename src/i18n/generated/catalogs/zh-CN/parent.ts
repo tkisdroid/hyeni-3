@@ -435,7 +435,7 @@ const messages = {
   "parent.home.heroCarousel.slidePosition": "第 {position} 张，共 {total} 张",
   "parent.home.heroSlide.study.body": "也可以学习",
   "parent.home.heroSlide.study.eyebrow": "Hyeni Study",
-  "parent.home.heroSlide.study.title": "Hyeni Calendar 迷你应用\n上线了",
+  "parent.home.heroSlide.study.title": "Hyeni 日历迷你应用\n上线了",
   "parent.home.heroSlide.world.body": "在 YouTube 观看",
   "parent.home.heroSlide.world.eyebrow": "Hyeni World",
   "parent.home.heroSlide.world.title": "用惠妮的视频\n和孩子休息一下",

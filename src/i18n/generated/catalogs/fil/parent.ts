@@ -435,7 +435,7 @@ const messages = {
   "parent.home.heroCarousel.slidePosition": "{position} ng {total}",
   "parent.home.heroSlide.study.body": "Puwede ring matuto rito",
   "parent.home.heroSlide.study.eyebrow": "Hyeni Study",
-  "parent.home.heroSlide.study.title": "Inilunsad na ang mini apps\nng Hyeni Calendar",
+  "parent.home.heroSlide.study.title": "Inilunsad na ang mini apps\nng Kalendaryo Hyeni",
   "parent.home.heroSlide.world.body": "Panoorin sa YouTube",
   "parent.home.heroSlide.world.eyebrow": "Hyeni World",
   "parent.home.heroSlide.world.title": "Magpahinga kasama\nang mga video ni Hyeni",
