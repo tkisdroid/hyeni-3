@@ -150,6 +150,7 @@ const REQUIRED_SCHEMA_OBJECTS: readonly RequiredSchemaObject[] = [
 ] as const;
 
 const REQUIRED_SCHEMA_COLUMNS: readonly RequiredSchemaColumn[] = [
+  { table: "families", name: "country_code" },
   ...requiredSchemaColumns("oauth_state_transactions", [
     "recovery_id_hash",
     "recovery_binding_hash",

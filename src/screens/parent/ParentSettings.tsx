@@ -19,6 +19,9 @@ import { PRIVACY_POLICY_URL } from "@/lib/api/endpoints/account";
 import { getTierLabel, TIERS } from "@/transform/tierPolicy";
 import { REFERRAL_REWARD_CREDITS_DISPLAY } from "@/transform/referralReward";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import { useMyFamily, useUpdateFamilyRegion } from "@/queries/useFamily";
+import { formatFamilyCountryName } from "@/transform/familyCountryDisplay";
+import { localizeApiError } from "@/i18n/apiError";
 import "./ParentSettings.css";
 
 /* ── 행 정의 (결합 회피: 화면 자체 정의) ─────────────────────────────── */
@@ -86,18 +89,23 @@ export function ParentSettings() {
   const [referralOpen, setReferralOpen] = useState(false);
   // 언어는 계정 프로필 바로 아래 한 줄이고, 그 줄을 펼쳐서 고른다(2026-08-17 TK 지시).
   const [languageOpen, setLanguageOpen] = useState(false);
+  const [countryOpen, setCountryOpen] = useState(false);
   const { locale } = useLocale();
+  const familyQuery = useMyFamily();
+  const updateFamilyRegion = useUpdateFamilyRegion();
+  const [countryDraft, setCountryDraft] = useState("");
   // 티어 배지는 ready 일 때만 노출(미확정/조회실패 시 미표시 — R9: free 강등 금지).
   const entitlementQuery = useEntitlement();
   const { ready, tier } = entitlementQuery;
   const settingsQueryState = resolveQueryTruthState([
     { isLoading: accountQuery.isLoading, isError: accountQuery.isError },
     { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
   ]);
   const settingsDataEmpty = settingsQueryState === "ready" && (!account || !entitlementQuery.view);
-  const settingsRefetching = accountQuery.isFetching || entitlementQuery.isFetching;
+  const settingsRefetching = accountQuery.isFetching || entitlementQuery.isFetching || familyQuery.isFetching;
   const retryParentSettings = async (): Promise<void> => {
-    await Promise.all([accountQuery.refetch(), entitlementQuery.refetch()]);
+    await Promise.all([accountQuery.refetch(), entitlementQuery.refetch(), familyQuery.refetch()]);
   };
   const reviewRewardNotice = !ready
     ? null
@@ -123,6 +131,18 @@ export function ParentSettings() {
   const profileAvatarPath = parentAvatarPath(me?.photo_url, isDad ? "dad" : "mom");
   const hasProfilePhoto = profileAvatarPath.startsWith("http") || profileAvatarPath.startsWith("blob:");
   const profileAvatar = hasProfilePhoto ? profileAvatarPath : asset(profileAvatarPath);
+  const familyCountryCode = familyQuery.data?.countryCode ?? "ZZ";
+  const familyCountryName = formatFamilyCountryName(familyCountryCode, locale);
+
+  const saveFamilyCountry = async () => {
+    try {
+      await updateFamilyRegion.mutateAsync(countryDraft);
+      setCountryOpen(false);
+      show(intl.formatMessage({ id: "study.country.confirmed" }), "🌍");
+    } catch (error) {
+      show(localizeApiError(error, intl, "formal"), "⚠️");
+    }
+  };
 
   const logoutBusyRef = useRef(false);
   const handleLogout = async () => {
@@ -251,6 +271,53 @@ export function ParentSettings() {
           {languageOpen && (
             <div className="ps-language__panel">
               <LanguageSelector tone="formal" compact />
+            </div>
+          )}
+        </div>
+
+        {/* 지도·위치 공급자 선택에 쓰는 가족 국가. locale과 별개이며 주 보호자만 바꾼다. */}
+        <div className="ps-list ps-language">
+          <button
+            type="button"
+            className="ps-nav hy-press"
+            aria-expanded={countryOpen}
+            onClick={() => {
+              if (!familyQuery.data?.isPrimaryParent) return;
+              setCountryDraft(familyCountryCode === "ZZ" ? "" : familyCountryCode);
+              setCountryOpen((open) => !open);
+            }}
+          >
+            <SettingsIcon icon="ui/clay/location.webp" tone="mint" />
+            <span className="ps-nav__label">{intl.formatMessage({ id: "study.country.title" })}</span>
+            <span className="ps-nav__value">{familyCountryName}</span>
+            {familyQuery.data?.isPrimaryParent ? chevronIcon : null}
+          </button>
+          {countryOpen && familyQuery.data?.isPrimaryParent && (
+            <div className="ps-language__panel">
+              <label htmlFor="family-map-country">{intl.formatMessage({ id: "study.country.inputLabel" })}</label>
+              <input
+                id="family-map-country"
+                value={countryDraft}
+                inputMode="text"
+                autoCapitalize="characters"
+                maxLength={2}
+                pattern="[A-Za-z]{2}"
+                disabled={updateFamilyRegion.isPending}
+                onChange={(event) => setCountryDraft(
+                  event.target.value.replace(/[^A-Za-z]/gu, "").slice(0, 2).toUpperCase(),
+                )}
+              />
+              <small>{intl.formatMessage({ id: "study.country.inputHelp" })}</small>
+              <button
+                type="button"
+                className="hy-btn hy-btn--primary"
+                disabled={updateFamilyRegion.isPending || !/^[A-Z]{2}$/u.test(countryDraft)}
+                onClick={() => void saveFamilyCountry()}
+              >
+                {intl.formatMessage({
+                  id: updateFamilyRegion.isPending ? "study.country.confirming" : "study.country.confirm",
+                })}
+              </button>
             </div>
           )}
         </div>

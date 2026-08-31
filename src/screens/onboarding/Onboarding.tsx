@@ -1094,6 +1094,7 @@ export function Onboarding() {
               await setupFamily({
                 parentName: (signupName ?? "").trim() || parentNameFromUser(user),
                 referralCode: referralPrefill ?? undefined,
+                countryCode: selectedStudyCountry,
                 studyCountry: {
                   serviceCountry: selectedStudyCountry,
                   serviceCountrySource: selectedStudyCountry === suggestedStudyCountry

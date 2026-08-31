@@ -443,6 +443,7 @@ CREATE TABLE "families" (
   "service_country_confirmed_at" TEXT,
   "study_market" TEXT CHECK ("study_market" IS NULL OR "study_market" = 'KR'),
   "service_country_row_version" INTEGER NOT NULL DEFAULT 1,
+  "country_code" TEXT NOT NULL DEFAULT 'KR',
   PRIMARY KEY ("id")
 );
 

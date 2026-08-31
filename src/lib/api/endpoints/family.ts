@@ -18,6 +18,7 @@ import { reconcileApiUserWithFamilyMine } from "@/transform/sessionFamilySync";
 import { requestWithSessionOwnership } from "@/auth/sessionRequestOwnership";
 import { getPlatform, isNativePlatform } from "@/lib/native/plugins";
 import { getAuthDeviceDescriptor } from "@/lib/native/deviceIdentity";
+import type { MapPolicy } from "../../../../shared/mapPolicy.ts";
 
 /**
  * 아이 기기 상태(웹 수집 부분집합). 서버 family_members.device_health(jsonb)에 저장.
@@ -117,9 +118,12 @@ export interface FamilyInfo {
   /** Study 이용 국가 확인 snapshot. 국적이 아니며 대표 보호자만 변경한다. */
   serviceCountry: string | null;
   serviceCountryRowVersion: number | null;
+  /** 지도·위치 공급자 선택에 사용하는 서버 정본 가족 국가. */
+  countryCode: string;
+  mapPolicy: MapPolicy;
 }
 
-interface FamilyMineResponse {
+export interface FamilyMineResponse {
   familyId: string;
   pairCode?: string | null;
   pairCodeExpiresAt?: string | null;
@@ -132,6 +136,8 @@ interface FamilyMineResponse {
   isCoParent?: boolean;
   serviceCountry?: string | null;
   serviceCountryRowVersion?: number | null;
+  countryCode?: string;
+  mapPolicy?: MapPolicy;
 }
 
 interface SessionResponse {
@@ -168,6 +174,10 @@ export async function getMyFamily(): Promise<FamilyInfo | null> {
       }
     },
   );
+  return mapFamilyMineResponse(data);
+}
+
+export function mapFamilyMineResponse(data: FamilyMineResponse | null): FamilyInfo | null {
   if (!data) return null;
   return {
     familyId: data.familyId,
@@ -185,11 +195,19 @@ export async function getMyFamily(): Promise<FamilyInfo | null> {
     serviceCountryRowVersion: Number.isSafeInteger(data.serviceCountryRowVersion)
       ? (data.serviceCountryRowVersion as number)
       : null,
+    countryCode: typeof data.countryCode === "string" ? data.countryCode : "ZZ",
+    mapPolicy: data.mapPolicy ?? { provider: "unsupported", reason: "country_unresolved" },
   };
+}
+
+export interface FamilyRegion {
+  countryCode: string;
 }
 
 export interface SetupFamilyInput {
   parentName: string;
+  /** 신규 가족 생성에서는 필수. 기존 가족의 아이 추가 호출은 서버가 저장값을 유지한다. */
+  countryCode?: string;
   familyName?: string;
   plannedChildCount?: number;
   children?: Array<{ name: string; birthdate?: string; color_hex?: string; photo_url?: string }>;
@@ -232,6 +250,10 @@ export function buildSetupFamilyPayload(input: SetupFamilyInput): Record<string,
   if (serviceCountry !== undefined && !/^[A-Z]{2}$/u.test(serviceCountry)) {
     throw new ApiError("invalid_service_country", 400);
   }
+  const countryCode = input.countryCode?.trim().toUpperCase();
+  if (countryCode !== undefined && !/^[A-Z]{2}$/u.test(countryCode)) {
+    throw new ApiError("invalid_family_country", 400);
+  }
   return {
     parentName: input.parentName,
     familyName: input.familyName ?? "",
@@ -240,6 +262,7 @@ export function buildSetupFamilyPayload(input: SetupFamilyInput): Record<string,
     parentPhone,
     parentGender: input.parentGender ?? "",
     referralCode: input.referralCode?.trim() || undefined,
+    ...(countryCode === undefined ? {} : { countryCode }),
     ...(serviceCountry === undefined ? {} : {
       serviceCountry,
       serviceCountryMatchedEdge: input.studyCountry?.serviceCountrySource === "guardian_confirmed",
@@ -250,6 +273,14 @@ export function buildSetupFamilyPayload(input: SetupFamilyInput): Record<string,
 /** 로그인 후 새 가족 생성. { id, pair_code } 반환. */
 export async function setupFamily(input: SetupFamilyInput): Promise<{ id: string; pair_code: string }> {
   return apiPost("/api/family/setup", buildSetupFamilyPayload(input));
+}
+
+export async function updateFamilyRegion(
+  input: FamilyRegion,
+): Promise<FamilyRegion & { mapPolicy: MapPolicy }> {
+  const countryCode = input.countryCode.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/u.test(countryCode)) throw new ApiError("invalid_family_country", 400);
+  return apiPatch("/api/family/region", { countryCode });
 }
 
 export interface ConfirmServiceCountryInput {

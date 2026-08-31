@@ -41,6 +41,7 @@ import {
   confirmServiceCountry,
   resolveInitialServiceCountry,
 } from "../lib/studyMarket";
+import { normalizeFamilyCountry, readFamilyRegion } from "../lib/region.ts";
 import {
   ReferralAttributionError,
   buildReferralAttributionStatements,
@@ -485,6 +486,8 @@ family.post("/setup", requireAuth, async (c) => {
   );
   if (countryDecision.error) return c.json({ error: countryDecision.error }, 400);
   const initialServiceCountry = countryDecision.initial;
+  const hasRequestedCountryCode = Object.prototype.hasOwnProperty.call(body, "countryCode");
+  const requestedCountryCode = normalizeFamilyCountry(body.countryCode);
   const referralLikeKeys = Object.keys(body).filter((key) => key.toLowerCase().includes("referral"));
   if (referralLikeKeys.some((key) => key !== "referralCode")) {
     return c.json({ error: "referral_code_invalid" }, 400);
@@ -585,6 +588,12 @@ family.post("/setup", requireAuth, async (c) => {
         .bind(...binds, familyId, userId, userId, familyId),
     );
   } else {
+    if (hasRequestedCountryCode && !requestedCountryCode) {
+      return c.json({ error: "invalid_family_country" }, 400);
+    }
+    // countryCode를 모르는 배포 전 앱은 한국 전용 제품이었다. 신규 앱의 사용자 확정값,
+    // 기존 serviceCountry 확정값, legacy KR 순서로만 보완하며 IP/locale로 추정하지 않는다.
+    const initialCountryCode = requestedCountryCode ?? initialServiceCountry?.country ?? "KR";
     familyId = crypto.randomUUID();
     pairCode = genPairCode();
     const cap = await childCapForFamily(c.env.DB, familyId);
@@ -617,8 +626,8 @@ family.post("/setup", requireAuth, async (c) => {
     setupStatements.push(c.env.DB.prepare(
       `INSERT INTO families
          (id, parent_id, pair_code, planned_child_count, parent_name, name, created_at, referred_by_family_id,
-          service_country, service_country_source, service_country_confirmed_at, study_market)
-       SELECT ?,?,?,?,?,?,?,?,?,?,?,?
+          service_country, service_country_source, service_country_confirmed_at, study_market, country_code)
+       SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?
         WHERE EXISTS(SELECT 1 FROM users WHERE id=? AND is_anonymous=0)
           AND NOT EXISTS(SELECT 1 FROM families WHERE parent_id=?)
           AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
@@ -636,6 +645,7 @@ family.post("/setup", requireAuth, async (c) => {
         initialServiceCountry?.source ?? null,
         initialServiceCountry?.confirmedAt ?? null,
         initialServiceCountry?.studyMarket ?? null,
+        initialCountryCode,
         userId,
         userId,
         userId,
@@ -839,6 +849,36 @@ family.put("/service-country", requireAuth, async (c) => {
     source: result.source,
     rowVersion: result.rowVersion,
   });
+});
+
+// 지도·위치 공급자 선택용 가족 국가. 접속 IP/locale이 아니라 주 보호자가 확정한 값만 저장한다.
+family.patch("/region", requireAuth, async (c) => {
+  const user = c.get("user");
+  let body: { familyId?: unknown; countryCode?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+  const canonical = await resolveCanonicalFamilyMembership(c.env.DB, user.sub, user.family_id ?? null);
+  const familyId = typeof body.familyId === "string" && body.familyId.trim()
+    ? body.familyId.trim()
+    : canonical?.familyId ?? "";
+  if (!canonical || canonical.familyId !== familyId) {
+    return c.json({ error: "primary_parent_required" }, 403);
+  }
+  if (!(await assertPrimaryParent(c.env.DB, user.sub, familyId))) {
+    return c.json({ error: "primary_parent_required" }, 403);
+  }
+  const countryCode = normalizeFamilyCountry(body.countryCode);
+  if (!countryCode) return c.json({ error: "invalid_family_country" }, 400);
+  const result = await c.env.DB.prepare(
+    "UPDATE families SET country_code=? WHERE id=? AND parent_id=?",
+  ).bind(countryCode, familyId, user.sub).run();
+  if (Number(result.meta?.changes ?? 0) !== 1) {
+    return c.json({ error: "primary_parent_required" }, 403);
+  }
+  return c.json(await readFamilyRegion(c.env.DB, familyId));
 });
 
 // ── POST /join — joinFamily (child, pair code) + 익명 user 전환 + 세션 재발급 ──
@@ -1687,6 +1727,7 @@ family.get("/mine", requireAuth, async (c) => {
       .bind(pf.id)
       .all<Record<string, unknown>>();
     const studyCountry = await readFamilyStudyCountry(c.env.DB, String(pf.id));
+    const familyRegion = await readFamilyRegion(c.env.DB, String(pf.id));
     return c.json({
       familyId: pf.id,
       pairCode: finalPairCode,
@@ -1700,6 +1741,7 @@ family.get("/mine", requireAuth, async (c) => {
       isCoParent: false,
       registeredPlaceAlertsEnabled: Number(pf.registered_place_alerts_enabled) !== 0,
       ...studyCountry,
+      ...familyRegion,
     });
   }
 
@@ -1725,6 +1767,7 @@ family.get("/mine", requireAuth, async (c) => {
     .all<Record<string, unknown>>();
   const members = (results ?? []).map(hydrateMember);
   const studyCountry = await readFamilyStudyCountry(c.env.DB, membership.family_id);
+  const familyRegion = await readFamilyRegion(c.env.DB, membership.family_id);
 
   const parentMembers = members.filter((m) => m.role === "parent" && m.user_id);
   const explicitPrimary = String(fam?.parent_id ?? "");
@@ -1747,6 +1790,7 @@ family.get("/mine", requireAuth, async (c) => {
     isCoParent,
     registeredPlaceAlertsEnabled: Number(fam?.registered_place_alerts_enabled) !== 0,
     ...studyCountry,
+    ...familyRegion,
   });
 });
 

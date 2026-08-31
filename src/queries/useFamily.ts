@@ -16,6 +16,7 @@ import {
   reportDeviceStatus,
   sendChildSettingRequest,
   confirmServiceCountry,
+  updateFamilyRegion,
   type ConfirmServiceCountryInput,
   type SettingRequestMenu,
   type DeviceHealth,
@@ -71,6 +72,16 @@ export function useConfirmServiceCountry() {
         qc.invalidateQueries({ queryKey: qk.study.all }),
       ]);
     },
+  });
+}
+
+/** 주 보호자가 지도·위치 공급자 선택용 가족 국가를 변경한다. */
+export function useUpdateFamilyRegion() {
+  const qc = useQueryClient();
+  const { familyId } = useAuth();
+  return useMutation({
+    mutationFn: (countryCode: string) => updateFamilyRegion({ countryCode }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.family(familyId), exact: true }),
   });
 }
 
