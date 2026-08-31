@@ -6,7 +6,7 @@
 
 버전: `versionName 1.4.5` / `versionCode 17`
 
-현재 판정: **production 1.4.5 (17) 제출 완료 — 자동 검사·Google Play 검토 진행 중, 게시 전**
+현재 판정: **production 1.4.5 (17) 제출 완료 — Google Play 검토 진행 중, 게시 전**
 
 ## 출시 범위
 
@@ -23,8 +23,9 @@
   `17 (1.4.5)`·min API 24·target SDK 36과 지원 기기 변동 0대를 읽었다.
 - 출시 이름은 `혜니캘린더 1.4.5 (17)`이며, `docs/store/play-release-notes-v1.4.5.md`의 한국어 출시 노트를
   입력했다. 국가/지역 출시는 100%를 유지했다.
-- 기존 code 16 심사를 취소하고 최신 code 17로 검토를 다시 시작한다는 확인을 거쳐 제출했다. fresh readback에서
-  `검토 중인 변경사항`에는 code 17의 `전체 출시 시작`만 남고, 빠른 자동 검사가 진행 중이었다.
+- 기존 code 16 심사를 취소하고 최신 code 17로 검토를 다시 시작한다는 확인을 거쳐 제출했다. 빠른 자동 검사가
+  완료된 fresh readback에서 `검토 중인 변경사항`에는 code 17의 `전체 출시 시작`만 남고,
+  `변경사항을 검토 중입니다`로 표시됐다. 최근 실제 게시일은 2026-08-28로 유지돼 아직 production 게시 전이다.
 - 비차단 경고는 R8 매핑 파일과 네이티브 디버그 기호가 없다는 2건이었다. 이 경고를 게시 완료로 간주하지 않는다.
 
 ## 서명 AAB 증거
@@ -51,7 +52,7 @@
 
 ## 완료 조건
 
-- [x] 앱 2,090/2,090·Worker 1,448/1,448, typecheck, i18n verify, production build 통과
+- [x] 앱 2,091/2,091·Worker 1,448/1,448, typecheck, i18n verify, production build 통과
 - [x] Android unit 186/186·lint·debug APK 통과
 - [x] 운영 D1 read-only `changes=0`·`changed_db=false`, Worker 배포·health 확인
 - [x] Pages 배포와 고정·브랜드 도메인 최신 자산 확인
@@ -59,6 +60,10 @@
 - [x] clean source commit에서 승인 upload certificate 서명 AAB 생성·검증
 - [x] Play production code 17 업로드·제출 후 fresh lifecycle readback
 - [ ] Google Play 검토 통과와 실제 production 게시 확인
+
+최종 마감 readback 시 A17은 계속 연결되어 1.4.5/code 17·기존 `firstInstallTime`·`MainActivity`를 다시
+확인했다. S25는 앞선 보존 설치·버전 확인 뒤 연결이 끊겨 마감 시점 재조회는 하지 못했고, razr는 이번 설치 기간
+내내 연결되지 않았다.
 
 ## 출시 노트
 

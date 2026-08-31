@@ -6,11 +6,12 @@
 **v1.4.5/code 17 통합 배포·Play 제출(2026-08-31, 검토 진행 중·게시 전)**:
 아이 정보 빈 전화번호 저장과 중복 오류 팝업, 전화번호 안내 문구, 등록장소 사건 시각·30분 TTL,
 학습 화면 상단 safe-area 여백, 부모 홈 두 번째 히어로 문구와 간결한 이동 버튼을 v1.4.5/code 17에 통합했다.
-앱 2,090/2,090·Worker 1,448/1,448, 앱/Worker typecheck, i18n verify, production build, Android unit
+앱 2,091/2,091·Worker 1,448/1,448, 앱/Worker typecheck, i18n verify, production build, Android unit
 186/186·lint·assembleDebug가 통과했다. 최신 debug APK는 16,045,570 bytes, SHA-256
 `0BBB88B5D7389A87D0058D55F132E00E0194FDD966584FAFC51B628D6E602693`이며 A17(`RFKL40DP73J`)·
 S25(`R5CY521CFNZ`) 사용자 0에 `--user 0 -r`로 세션·앱 데이터를 보존 설치했다. 두 기기 모두 1.4.5/code 17과
-`MainActivity` 실행을 확인했고 razr(`ZY22H9VTQD`)는 연결되지 않아 미설치다.
+`MainActivity` 실행을 확인했다. 최종 마감 readback에는 A17만 연결되어 버전·기존 `firstInstallTime`·
+`MainActivity`를 재확인했고, S25는 앞선 설치 확인 뒤 연결이 끊겼다. razr(`ZY22H9VTQD`)는 연결되지 않아 미설치다.
 
 Pages 최신 배포는 `https://1d91cdae.hyeni-calendar.pages.dev`이며 배포별·고정·브랜드 도메인이 모두
 `assets/index-DokM43tX.js` 368,391 bytes, SHA-256
@@ -28,9 +29,10 @@ non-debuggable, 승인 upload certificate, 웹 자산, 16KiB ELF 검증이 모�
 
 이 AAB를 Google Play production에 업로드해 Console이 `17 (1.4.5)`·min API 24·target SDK 36·지원 기기 변동
 0대를 읽었고, 출시 이름·한국어 출시 노트·100% 국가/지역을 확인했다. 기존 code 16 검토를 최신 code 17로 대체해
-`검토 다시 시작`을 확정했다. fresh readback의 `검토 중인 변경사항`에는 code 17 `전체 출시 시작`만 남았고 빠른
-자동 검사가 진행 중이었다. 따라서 **Play 제출은 완료했지만 검토 통과·실제 게시는 미완료**다. 비차단 경고는
-R8 매핑 파일·네이티브 디버그 기호 누락 2건이다. 정본은 `docs/store/play-console-submission-v1.4.5.md`다.
+`검토 다시 시작`을 확정했다. 빠른 자동 검사가 완료된 fresh readback의 `검토 중인 변경사항`에는 code 17
+`전체 출시 시작`만 남았고 `변경사항을 검토 중입니다`로 표시됐다. 최근 실제 게시일은 2026-08-28로 유지돼
+**Play 제출은 완료했지만 검토 통과·실제 게시는 미완료**다. 비차단 경고는 R8 매핑 파일·네이티브 디버그 기호
+누락 2건이다. 정본은 `docs/store/play-console-submission-v1.4.5.md`다.
 
 **학습 화면 상단 여백 정합화(2026-08-31, Pages 배포·Android 보존 설치 완료)**:
 부모 학습 화면만 상단을 고정 `16px`로 두어 Android 상태바 safe area를 반영하지 못했고, Study 접근 게이트의

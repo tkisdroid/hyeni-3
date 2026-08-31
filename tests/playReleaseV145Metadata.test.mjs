@@ -21,7 +21,7 @@ test("1.4.5 출시 후보는 이미 사용된 code 16 다음 빌드 번호 17을
   assert.equal((iosProject.match(/MARKETING_VERSION = 1\.4\.5;/g) ?? []).length, 2);
 });
 
-test("1.4.5 Play 문서는 이번 안정화 범위와 code 16 검토 상태를 분리한다", () => {
+test("1.4.5 Play 문서는 code 17 제출과 실제 게시 전 상태를 분리한다", () => {
   const notesPath = resolve(rootDir, "docs/store/play-release-notes-v1.4.5.md");
   const submissionPath = resolve(rootDir, "docs/store/play-console-submission-v1.4.5.md");
 
@@ -36,6 +36,9 @@ test("1.4.5 Play 문서는 이번 안정화 범위와 code 16 검토 상태를 �
   assert.match(releaseNotes, /미니앱/);
   assert.match(submission, /versionName 1\.4\.5/);
   assert.match(submission, /versionCode 17/);
-  assert.match(submission, /1\.4\.4 \(16\).*검토 중/s);
+  assert.match(submission, /production 1\.4\.5 \(17\) 제출 완료/);
+  assert.match(submission, /Google Play 검토 진행 중, 게시 전/);
+  assert.match(submission, /기존 code 16 심사를 취소하고 최신 code 17로 검토를 다시 시작/);
+  assert.match(submission, /\- \[ \] Google Play 검토 통과와 실제 production 게시 확인/);
   assert.match(submission, /D1.*migration.*없/s);
 });
