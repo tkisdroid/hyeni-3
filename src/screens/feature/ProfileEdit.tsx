@@ -376,9 +376,6 @@ export function ProfileEdit() {
                 maxLength={13}
                 disabled={!profileFormReady || !isPrimary}
               />
-              <p className="pe-hint hy-explain">
-                {intl.formatMessage({ id: "parent.profileEdit.phone.hint" })}
-              </p>
             </div>
 
             {!isPrimary && (

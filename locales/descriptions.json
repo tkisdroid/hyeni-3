@@ -15221,13 +15221,6 @@
     "variables": {},
     "description": "아이 프로필 편집 다국어 문구: name.placeholder"
   },
-  "parent.profileEdit.phone.hint": {
-    "namespace": "parent",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이 프로필 편집 다국어 문구: phone.hint"
-  },
   "parent.profileEdit.phone.label": {
     "namespace": "parent",
     "audience": "parent",

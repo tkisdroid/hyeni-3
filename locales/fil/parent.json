@@ -838,7 +838,6 @@
   "parent.profileEdit.loading.heading": "Nilo-load ang impormasyon ng bata",
   "parent.profileEdit.name.label": "Pangalan",
   "parent.profileEdit.name.placeholder": "Ilagay ang pangalan",
-  "parent.profileEdit.phone.hint": "Numero ito na maaaring tawagan kahit wala ang device ng bata.",
   "parent.profileEdit.phone.label": "Numero ng telepono",
   "parent.profileEdit.phone.placeholder": "Halimbawa: 010-0000-0000",
   "parent.profileEdit.photo.add": "Magdagdag ng larawan",

@@ -135,6 +135,8 @@ export function useSetChildProfile() {
   const qc = useQueryClient();
   const { familyId } = useAuth();
   return useMutation({
+    // ProfileEdit가 구체적인 실패 문구를 직접 표시한다. 전역 폴백 토스트와 중복 금지.
+    meta: { silentError: true },
     mutationFn: (input: {
       memberId: string;
       name: string;
@@ -161,6 +163,8 @@ export function useUploadChildPhoto() {
   const qc = useQueryClient();
   const { familyId } = useAuth();
   return useMutation({
+    // ProfileEdit가 구체적인 실패 문구를 직접 표시한다. 전역 폴백 토스트와 중복 금지.
+    meta: { silentError: true },
     mutationFn: (input: { memberId: string; dataUrl: string }) => {
       if (!familyId) throw new Error("가족 정보가 없어요");
       return uploadChildPhoto(familyId, input.memberId, input.dataUrl);

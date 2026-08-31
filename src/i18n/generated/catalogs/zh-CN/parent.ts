@@ -897,7 +897,6 @@ const messages = {
   "parent.profileEdit.loading.heading": "正在加载孩子的信息",
   "parent.profileEdit.name.label": "姓名",
   "parent.profileEdit.name.placeholder": "请输入姓名",
-  "parent.profileEdit.phone.hint": "即使孩子的设备不在身边，也可以通过这个号码联系。",
   "parent.profileEdit.phone.label": "电话号码",
   "parent.profileEdit.phone.placeholder": "例如：010-0000-0000",
   "parent.profileEdit.photo.add": "添加照片",

@@ -897,7 +897,6 @@ const messages = {
   "parent.profileEdit.loading.heading": "Đang tải thông tin của trẻ",
   "parent.profileEdit.name.label": "Tên",
   "parent.profileEdit.name.placeholder": "Nhập tên",
-  "parent.profileEdit.phone.hint": "Đây là số để liên hệ ngay cả khi không có thiết bị của trẻ.",
   "parent.profileEdit.phone.label": "Số điện thoại",
   "parent.profileEdit.phone.placeholder": "Ví dụ: 010-0000-0000",
   "parent.profileEdit.photo.add": "Thêm ảnh",

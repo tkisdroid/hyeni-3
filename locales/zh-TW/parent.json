@@ -838,7 +838,6 @@
   "parent.profileEdit.loading.heading": "正在載入孩子的資訊",
   "parent.profileEdit.name.label": "姓名",
   "parent.profileEdit.name.placeholder": "請輸入姓名",
-  "parent.profileEdit.phone.hint": "即使孩子的裝置不在身邊，也可以透過這個號碼聯絡。",
   "parent.profileEdit.phone.label": "電話號碼",
   "parent.profileEdit.phone.placeholder": "例如：010-0000-0000",
   "parent.profileEdit.photo.add": "新增照片",

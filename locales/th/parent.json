@@ -838,7 +838,6 @@
   "parent.profileEdit.loading.heading": "กำลังโหลดข้อมูลของเด็ก",
   "parent.profileEdit.name.label": "ชื่อ",
   "parent.profileEdit.name.placeholder": "ใส่ชื่อ",
-  "parent.profileEdit.phone.hint": "หมายเลขสำหรับติดต่อแม้ไม่มีอุปกรณ์ของเด็กอยู่ด้วย",
   "parent.profileEdit.phone.label": "หมายเลขโทรศัพท์",
   "parent.profileEdit.phone.placeholder": "ตัวอย่าง: 010-0000-0000",
   "parent.profileEdit.photo.add": "เพิ่มรูป",

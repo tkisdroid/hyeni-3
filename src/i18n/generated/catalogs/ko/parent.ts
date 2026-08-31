@@ -897,7 +897,6 @@ const messages = {
   "parent.profileEdit.loading.heading": "아이 정보를 불러오고 있어요",
   "parent.profileEdit.name.label": "이름",
   "parent.profileEdit.name.placeholder": "이름",
-  "parent.profileEdit.phone.hint": "아이 기기가 없어도 연락할 번호예요.",
   "parent.profileEdit.phone.label": "전화번호",
   "parent.profileEdit.phone.placeholder": "예: 010-0000-0000",
   "parent.profileEdit.photo.add": "사진 추가",

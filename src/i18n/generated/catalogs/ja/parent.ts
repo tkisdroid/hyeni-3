@@ -897,7 +897,6 @@ const messages = {
   "parent.profileEdit.loading.heading": "お子さまの情報を読み込み中です",
   "parent.profileEdit.name.label": "名前",
   "parent.profileEdit.name.placeholder": "名前を入力",
-  "parent.profileEdit.phone.hint": "お子さまの端末が使えないときにも連絡できる番号です。",
   "parent.profileEdit.phone.label": "電話番号",
   "parent.profileEdit.phone.placeholder": "例：010-0000-0000",
   "parent.profileEdit.photo.add": "写真を追加",

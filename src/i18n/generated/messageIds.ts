@@ -2295,7 +2295,6 @@ export const messageIds = [
   "parent.profileEdit.loading.heading",
   "parent.profileEdit.name.label",
   "parent.profileEdit.name.placeholder",
-  "parent.profileEdit.phone.hint",
   "parent.profileEdit.phone.label",
   "parent.profileEdit.phone.placeholder",
   "parent.profileEdit.photo.add",

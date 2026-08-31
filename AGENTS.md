@@ -68,6 +68,19 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 아키텍처 핵심 (어기면 다자녀에서 데이터가 섞인다)
 
+- **아이 정보 저장 계약(2026-08-31)**: `ProfileEdit`는 전화번호가 비면 공개 API에 `phone:null`을 보내
+  "지움"을 표현하지만, D1 `family_members.phone`은 `TEXT NOT NULL DEFAULT ''`이다. Worker
+  `POST /api/family/member/profile`는 이 `null`을 빈 문자열로 변환해 저장해야 하며 D1에 그대로 bind하면 이름·생일을
+  포함한 UPDATE 전체가 제약조건 오류로 롤백되어 500이 난다. 프로필과 사진 mutation의 오류 안내는 화면이
+  `localizeApiError`로 직접 책임지므로 두 hook 모두 `meta:{silentError:true}`를 유지해 전역 MutationCache의
+  "방금 작업이 저장되지 않았어요"와 중복시키지 않는다. 전화번호 아래 기기 유무 설명 문구는 표시하지 않는다.
+  회귀=`worker/tests/familyMemberProfile.test.mjs`·`tests/profileEditFailureUx.test.mjs`.
+- **장소 알림 시각 진단(2026-08-31)**: 부모가 알림을 받은 시각을 새 geofence 전이 시각으로 단정하지 않는다.
+  `parent_alerts.created_at`(사건 생성)과 대상별 `pending_notifications.created_at`·`delivered_at`(기기 표시 ACK),
+  `child_place_presence` phase/이탈 시각을 함께 대조한다. 현재 `place_arrived|place_left` pending TTL은 2시간이라
+  FCM 표시 ACK가 없으면 잠금 해제·foreground 복구가 오래된 도착을 현재 알림처럼 다시 표시할 수 있다. 2026-08-31
+  실측은 학교 진입 08:39·알림 생성 08:40, phase=`in`·추가 전이 0건인데 pending이 10:25에 ACK된 지연 전달이었다.
+  이는 재도착 판정이 아니라 별도 TTL/표시시각 UX 문제이며 정책 변경 전에는 둘을 분리해 보고한다.
 - **인증 진입점 정본(2026-08-21)**: 첫 부모 화면은 로그인/회원가입 탭을 명시 분리하며 전화 가입과 소셜 가입을
   같은 "로그인" 버튼으로 섞지 않는다. ID 확인 네트워크/응답 오류를 `중복 아이디`로 표시하지 않고, 잘못된 비밀번호는
   세션을 만들지 않은 채 ID·비밀번호를 유지하고 비밀번호 필드로 포커스를 돌려 즉시 재시도시킨다. ID는 Worker와 D1

@@ -838,7 +838,6 @@
   "parent.profileEdit.loading.heading": "Loading the child's information",
   "parent.profileEdit.name.label": "Name",
   "parent.profileEdit.name.placeholder": "Enter a name",
-  "parent.profileEdit.phone.hint": "This is a contact number to use even when the child's device is unavailable.",
   "parent.profileEdit.phone.label": "Phone number",
   "parent.profileEdit.phone.placeholder": "Example: 010-0000-0000",
   "parent.profileEdit.photo.add": "Add photo",

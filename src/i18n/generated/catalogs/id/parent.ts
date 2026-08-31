@@ -897,7 +897,6 @@ const messages = {
   "parent.profileEdit.loading.heading": "Memuat informasi anak",
   "parent.profileEdit.name.label": "Nama",
   "parent.profileEdit.name.placeholder": "Masukkan nama",
-  "parent.profileEdit.phone.hint": "Nomor yang dapat dihubungi meskipun perangkat anak tidak tersedia.",
   "parent.profileEdit.phone.label": "Nomor telepon",
   "parent.profileEdit.phone.placeholder": "Contoh: 010-0000-0000",
   "parent.profileEdit.photo.add": "Tambah foto",

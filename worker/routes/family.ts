@@ -2085,9 +2085,10 @@ family.post("/member/profile", requireAuth, async (c) => {
     sets.push("birthdate=?");
     binds.push(bd);
   }
-  // phone: 숫자/하이픈 텍스트 또는 null. 키가 있을 때만 수정.
+  // phone: 숫자/하이픈 텍스트 또는 null. 공개 API의 null(지움)은
+  // D1 family_members.phone NOT NULL 계약에 맞춰 빈 문자열로 저장한다.
   if ("phone" in body) {
-    const ph = body.phone == null ? null : String(body.phone).trim() || null;
+    const ph = body.phone == null ? "" : String(body.phone).trim();
     sets.push("phone=?");
     binds.push(ph);
   }
