@@ -279,6 +279,14 @@ upstream 전에 401이다. D1 readback은 비한국 가족·지도 session·quot
 chunk를 200으로 제공한다. release 검사는 시간대/DST·Routes OAuth 실호출·비한국 실제 가족/기기 E2E 때문에
 `HOLD`이며 Android AAB·Play 트랙·실사용 가족/계정/세션은 변경하지 않았다.
 
+ISO 248개국 확대 커밋 `1b4b0ec0f9fda4fa0f3c0fafe302ec5b4af17990`은 원격 브랜치와 일치하며 Worker version
+`c30ca733-6ff6-4bf3-8d20-16baf72d296f`로 운영 배포했다. 공식 커버리지와 저장 가능 ISO 목록을 대조해 `KR`만
+Kakao로 유지하고 `CN`을 포함한 비한국 248개국을 Google로 열었다. `ZZ`·형식 오류·비표준 코드는 미지원이다.
+앱 2,121/2,121·Worker 1,486/1,486·지도/국가 집중 회귀 59/59, 앱/Worker typecheck·i18n verify·production
+build가 통과했다. 운영 health 200·`ready`·`no-store`, access-region 200·`KR`·`private, no-store`, 무인증
+지도 route 401과 배포 version을 readback했다. D1은 비한국 가족·지도 session·quota 각 0, `rows_written=0`이다.
+Pages·Android AAB·Play 트랙·실사용 계정/세션은 변경하지 않았고 전체 출시 `HOLD` 게이트도 유지한다.
+
 **부모 홈 히어로 캐러셀·브랜드 locale 현지화 배포 완료(2026-08-26)**:
 부모 홈 히어로를 「오늘」 한 장에서 좌우로 넘기고 자동 전환되는 캐러셀로 넓혔다. **첫 장은 항상 `today`** 이고
 뒤에 자사 소식 슬라이드(`hyenistudy.com`·`@hyeniworld`)가 붙는다. 광고 성격 `ad` 종류만 구독 가족에게서 숨기고

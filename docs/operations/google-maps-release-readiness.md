@@ -52,6 +52,23 @@
   시간대/DST·Routes OAuth 실호출·비한국 실제 가족/기기 E2E가 남아 `HOLD`다. 새 Android AAB 생성·서명·Play
   업로드는 수행하지 않았다.
 
+## 2026-09-01 ISO 248개국 운영 배포 증거
+
+- 기능 커밋 `1b4b0ec0f9fda4fa0f3c0fafe302ec5b4af17990`에서 공식 Google Maps 핵심 커버리지와
+  저장 가능 ISO 249개국을 대조해 `KR`만 제외한 248개국을 Google 공급자로 활성화했다. `CN`도 Google이며,
+  `ZZ`·형식 오류·비표준 코드는 외부 호출 없이 미지원으로 닫힌다. 앱·Worker는 `shared/serviceCountries.ts`의
+  동일 국가 정본을 사용한다.
+- 원격 브랜치 해시가 기능 커밋과 일치한다. 앱 전체 2,121/2,121, Worker 전체 1,486/1,486,
+  지도·국가 집중 회귀 59/59, 앱·Worker typecheck, 10개 locale 검증과 production build가 통과했다.
+  정적 준비 검사 9/9는 `READY_FOR_EXTERNAL_VALIDATION`, 전체 출시 검사는 기존 외부 게이트 때문에 `HOLD`다.
+- Worker version `c30ca733-6ff6-4bf3-8d20-16baf72d296f`를 운영 배포했다. `/api/health`는
+  200·`ready`·`no-store`, `/api/access-region`은 200·`KR`·`private, no-store`, 정식 무인증
+  `/api/maps/search`는 upstream 전에 401로 닫혔다. 배포 목록에서 같은 version을 readback했다.
+- 운영 D1은 집계 SELECT만 수행했다. 비한국 기존 가족, autocomplete session, quota 행은 각각 0이고
+  `rows_written=0`이다. migration·가족 국가·계정·역할·세션·페어링·refresh token은 변경하지 않았다.
+- 이번 변경의 공급자 판정은 Worker 응답의 `mapPolicy`이므로 Pages를 다시 배포하지 않았다. 기존 운영 Pages의
+  제한된 Google 웹 키와 lazy Google 지도 chunk를 그대로 사용한다. Android AAB 생성·서명·Play 업로드도 수행하지 않았다.
+
 ## 자격 증명 없이 확인할 수 있는 게이트
 
 ```powershell
