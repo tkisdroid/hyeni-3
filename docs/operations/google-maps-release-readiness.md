@@ -32,6 +32,25 @@
   Worker `/api/health`는 200·`ready`·`no-store`다.
 - Play Console은 App Signing 인증서 조회만 했고 출시 트랙·계정·실기기 세션은 변경하지 않았다.
 
+## 2026-09-01 9개국 allowlist 운영 배포 증거
+
+- 기능 커밋 `7b8cf8c07078106f43655b086b39801b3447024e`에서
+  `JP/TW/HK/SG/VN/TH/ID/MY/PH` exact 목록을 앱·Worker 공유 정책에 활성화하고 원격 브랜치 해시 일치를 확인했다.
+- 앱 전체 2,121/2,121, Worker 전체 1,485/1,485, 지도·국가 집중 회귀 58/58, quota 반복 12/12,
+  앱·Worker typecheck와 10개 locale 검증이 통과했다.
+- Worker version `947fa00d-eb1f-4c57-9eb0-cf06884eeccc`를 운영 배포했다. `/api/health`는
+  200·`ready`·`no-store`, `/api/access-region`은 200·`KR`·`private, no-store`, 무인증 `/api/maps/search`는
+  upstream 전에 401로 닫혔다.
+- 운영 D1은 읽기만 수행했다. 비한국 기존 가족, autocomplete session, quota 행은 각각 0이고 모든 query의
+  `rows_written=0`이었다. 가족 국가·계정·역할·세션·페어링·refresh token은 변경하지 않았다.
+- Pages는 국가 정책을 번들에 중복하지 않고 Worker의 정본 `mapPolicy`를 소비하므로 재배포하지 않았다.
+  브랜드 apex·`www`·Pages 도메인은 모두 기존 키 포함 `assets/index-BLmkW66k.js`와 Google lazy chunk를 200으로
+  제공한다. 로컬 production build도 같은 main asset·SHA-256
+  `8D939175A4724C3160F2B0C3843F94ED7F03964B118A409132D7AA2E2BCEAA94`를 재현했다.
+- `verify:google-maps:readiness`는 `READY_FOR_EXTERNAL_VALIDATION`이다. `verify:google-maps:release`는
+  시간대/DST·Routes OAuth 실호출·비한국 실제 가족/기기 E2E가 남아 `HOLD`다. 새 Android AAB 생성·서명·Play
+  업로드는 수행하지 않았다.
+
 ## 자격 증명 없이 확인할 수 있는 게이트
 
 ```powershell

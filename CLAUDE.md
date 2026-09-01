@@ -268,6 +268,15 @@ Maps JavaScript API·Maps SDK for Android·Places API (New)·Geocoding API·Rout
 Routes API 사용 설정은 사용자 경로 활성화가 아니며 `routesOauthVerified:false`를 유지한다. Play Console은 App
 Signing SHA-1 readback만 수행했고 출시 트랙은 변경하지 않았다.
 
+9개국 allowlist 기능 커밋 `7b8cf8c07078106f43655b086b39801b3447024e`은 원격 브랜치와 일치하며 Worker version
+`947fa00d-eb1f-4c57-9eb0-cf06884eeccc`로 운영 배포했다. 앱 2,121/2,121·Worker 1,485/1,485·지도/국가
+집중 회귀 58/58·quota 반복 12/12, 앱/Worker typecheck·i18n verify·Google 웹 키 포함 production build가 통과했다.
+운영 health는 200·`ready`·`no-store`, access-region은 200·`KR`·`private, no-store`, 무인증 지도 route는
+upstream 전에 401이다. D1 readback은 비한국 가족·지도 session·quota 각 0이고 쓰기 0이었다. Pages는 Worker 응답의
+정본 `mapPolicy`를 소비해 재배포하지 않았고 apex·www·Pages 모두 기존 `assets/index-BLmkW66k.js`와 Google lazy
+chunk를 200으로 제공한다. release 검사는 시간대/DST·Routes OAuth 실호출·비한국 실제 가족/기기 E2E 때문에
+`HOLD`이며 Android AAB·Play 트랙·실사용 가족/계정/세션은 변경하지 않았다.
+
 **부모 홈 히어로 캐러셀·브랜드 locale 현지화 배포 완료(2026-08-26)**:
 부모 홈 히어로를 「오늘」 한 장에서 좌우로 넘기고 자동 전환되는 캐러셀로 넓혔다. **첫 장은 항상 `today`** 이고
 뒤에 자사 소식 슬라이드(`hyenistudy.com`·`@hyeniworld`)가 붙는다. 광고 성격 `ad` 종류만 구독 가족에게서 숨기고
