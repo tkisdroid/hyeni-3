@@ -6,7 +6,7 @@
 
 버전: `versionName 1.4.6` / `versionCode 18`
 
-현재 판정: **production 1.4.6 (18)와 해외 9개 언어 등록정보 제출 완료 — Google Play 검토 중, 게시 전**
+현재 판정: **production 1.4.6 (18), 해외 9개 언어 등록정보와 KR+해외 9개국 배포 대상 제출 완료 — Google Play 검토 중, 게시 전**
 
 ## 출시 범위
 
@@ -30,6 +30,11 @@
   `검토를 위해 변경사항 전송`을 확정했다. fresh readback은 `검토 중인 변경사항`과
   production `혜니캘린더 1.4.6 (18) 검토 중`이다. 제출 직후 실행된 Play 빠른 자동 검사가 끝난 뒤에도
   `변경사항을 검토 중입니다`로 유지됨을 다시 확인했다.
+- 사용자 지시에 따라 production 국가/지역에 해외 9개국을 추가하고 저장했다. Console 트랙 요약은
+  `국가/지역 10개`, 게시 개요는 `9개 국가/지역 추가: 대만, 말레이시아 외 7개`로 읽었다.
+  기존 2026-09-01 검토가 취소 후 다시 시작되어 대기 시간이 늘어날 수 있다는 경고를 확인한 뒤
+  `검토 다시 시작`을 확정했다. Play 빠른 검사가 끝난 fresh readback은 국가 변경을 포함해
+  `변경사항을 검토 중입니다`다.
 - 관리형 게시는 사용 중지 상태다. 검토 통과 후 자동 게시될 수 있으므로 현재 상태를 실제 공개·게시 완료로
   간주하지 않는다.
 - 비차단 경고는 3건이다. Google Maps의 OpenGL ES 요구사항을 지원하지 않는 `CHAINWAY C66` 1종이
@@ -37,11 +42,15 @@
 
 ## 국가/지역 배포 경계
 
-- Play production 국가/지역 fresh readback은 **대한민국 1개만 타겟팅됨**이다.
-- 이번 제출은 모든 기존 대상 국가에 100% 출시하도록 저장됐으므로 현재는 대한민국에만 적용된다.
-- 해외 9개 언어 스토어 등록정보는 검토에 함께 제출했지만, 해외 국가/지역 배포 대상은 추가하지 않았다.
-- 해외 배포는 `BLOCKED_BY_TIMEZONE_GATE`, `BLOCKED_BY_GOOGLE_ROUTES_OAUTH_SCOPE_PROOF`,
-  `BLOCKED_BY_LIVE_NON_KR_DEVICE_E2E` 세 게이트가 남아 있다. 이 검증 없이 국가 범위를 넓히지 않는다.
+- Play production 국가/지역은 **대한민국과 해외 9개국, 총 10개**다.
+- 대상은 대한민국, 일본, 대만, 홍콩, 싱가포르, 베트남, 태국, 인도네시아, 말레이시아, 필리핀이다.
+  Google 지도 Worker allowlist `KR + JP/TW/HK/SG/VN/TH/ID/MY/PH`와 정확히 일치하며 중국과 그 밖의
+  국가는 추가하지 않았다.
+- 국가 추가는 기존 code 18·해외 9개 언어 등록정보와 함께 다시 검토 중이다. 관리형 게시가 꺼져 있어
+  승인 뒤 자동 게시될 수 있지만, 검토 통과 전에는 실제 해외 공개로 간주하지 않는다.
+- `BLOCKED_BY_TIMEZONE_GATE`, `BLOCKED_BY_GOOGLE_ROUTES_OAUTH_SCOPE_PROOF`,
+  `BLOCKED_BY_LIVE_NON_KR_DEVICE_E2E` 세 운영 검증 게이트는 여전히 남아 있다. 사용자가 이 위험을 감수하고
+  국가 범위를 확대하도록 명시 지시했으므로 Play 타기팅은 진행했지만, 해당 기능 검증이 끝났다고 판정하지 않는다.
 
 ## 서명 AAB 증거
 
@@ -77,7 +86,7 @@
 - [x] clean source commit에서 승인 upload certificate 서명 AAB 생성·검증
 - [x] Play production code 18 업로드와 10개 변경사항 검토 요청 후 fresh status readback
 - [ ] 해외 시간대/DST·Routes OAuth scope 실호출·비한국 부모 PWA↔아이 Android E2E
-- [ ] Play 국가/지역을 해외 9개국으로 확대
+- [x] Play 국가/지역을 해외 9개국으로 확대하고 검토 다시 시작
 - [ ] Google Play 검토 통과와 실제 production 게시 확인
 
 ## 출시 노트
