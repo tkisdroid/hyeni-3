@@ -320,12 +320,13 @@ Push-Location android; .\gradlew.bat test lint assembleDebug; Pop-Location
 
 - 사용자 행에 `country_code` + IANA `time_zone` 추가. **기존 사용자는 migration 후 정확히 `KR`/`Asia/Seoul` 유지.**
   **locale·IP·전화번호로 시간대를 추정하지 않는다**(신규는 사용자가 명시 선택).
-- 초기 QA 국가 = `KR JP TW HK SG VN TH ID MY PH` (**중국 본토 `CN` 제외**).
-- 지도 = `KR→Kakao`, 승인된 비중국 국가 `Google Maps`, `CN/ZZ→미지원`. 런타임 오류로 다른 provider·다른
+- 초기 심층 QA 국가 = `KR JP TW HK SG VN TH ID MY PH`이며, 공급자 활성 범위와 별개로 이 10개국을 우선 검증한다.
+- 지도 = `KR→Kakao`, 공식 Google Maps 핵심 커버리지에 포함된 저장 가능 ISO 국가 248개국 `Google Maps`,
+  `ZZ`·형식 오류·비표준 지역 코드→미지원. 런타임 오류로 다른 provider·다른
   장소 ID로 자동 전환하지 않는다. 웹은 origin 제한 키, Android는 package+SHA-1 제한 키, Worker는 지도 전용
   서비스 계정 OAuth를 분리한다. 정본=`docs/superpowers/specs/2026-08-26-global-google-maps-location-design.md`.
-- 비한국 국가는 지도만으로 활성화하지 않는다. 가족 현지 오전 8시 위치 이력, retention·quota, 일정/도착 cron,
-  quiet hours와 DST matrix가 모두 통과할 때까지 allowlist를 닫는다.
+- 비한국 국가의 지도 공급자는 열되 전체 서비스 출시는 지도만으로 승인하지 않는다. 가족 현지 오전 8시 위치 이력,
+  retention·quota, 일정/도착 cron, quiet hours와 DST matrix가 모두 통과할 때까지 해외 전체 출시를 HOLD한다.
 - 로그인 = **Google은 전 지역**, 전화 OTP·Kakao·Naver는 **`KR`만**. 아이 페어링 동선은 동일.
 - 보존 불변식: UTC timestamp, 0-index 비패딩 `date_key`, quiet hours `[start,end)`, 위치 티어, 10분 dedupe.
 

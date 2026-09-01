@@ -203,8 +203,10 @@ TDD RED에서 자동완성 판정·1회 latch·브라우저 selector 폴백·수
 Chrome/Playwright Chromium, 연결된 ADB 기기가 없어 실제 비밀번호 관리자 autofill·실 OAuth 동의·실기기 이벤트 전달은
 미검증으로 남겼다. 운영 계정·세션·refresh token·Worker·D1은 건드리지 않았고 Pages/Worker/스토어에 배포하지 않았다.
 
-**글로벌 locale·Google 지도 구현(2026-09-01, 9개국 지도 공급자 활성화·해외 전체 출시 HOLD)**:
-TK가 `KR=Kakao`, 승인된 비중국 국가=`Google Maps`, `CN/ZZ=미지원`을 확정했다. 해외 웹 PWA는 Maps
+**글로벌 locale·Google 지도 구현(2026-09-01, ISO 248개국 지도 공급자 활성화·해외 전체 출시 HOLD)**:
+TK가 `KR=Kakao`, 공식 Google Maps 핵심 커버리지에 포함된 저장 가능 ISO 국가=`Google Maps`,
+`ZZ`·비표준 지역 코드=미지원을 확정했다. 2026-09-01 공식 커버리지 표에는 앱이 저장하는 ISO 249개국이 모두
+포함되므로 한국을 제외한 248개국을 Google로 연다. 해외 웹 PWA는 Maps
 JavaScript API, Capacitor Android는 공식 `@capacitor/google-maps`의 네이티브 Maps SDK를 사용하고,
 Places·Geocoding·Routes는 인증·가족 국가·권한·quota를 다시 확인하는 Worker 공통 API로 제한한다. 기존
 Mapbox 설계·계획의 지도 부분은 실행하지 않는다. 정본은
@@ -225,7 +227,7 @@ Google Cloud 프로젝트 `hyeni-496213`에는 2026-09-01 웹/Android 제한 키
 `com.hyeni.calendar` 및 Play App Signing SHA-1만 허용한다. Worker Secret inventory에서
 `GOOGLE_MAPS_SERVICE_ACCOUNT_JSON`·`MAPS_SESSION_HMAC_SECRET` 이름을 값 없이 readback했고, 서비스 계정 JSON
 다운로드 파일은 Secret 업로드 직후 로컬에서 삭제했다. 기존 Google Play 서비스 계정은 재사용하지 않았다.
-지도 공급자 allowlist는 TK의 해외 오픈 지시에 따라 `JP/TW/HK/SG/VN/TH/ID/MY/PH` 9개국만 명시 활성화했다.
+지도 공급자 allowlist는 TK의 해외 오픈 지시에 따라 저장 가능 ISO 249개국에서 `KR`만 제외한 248개국을 활성화했다.
 해외 위치·알림 전체 출시는 시간대/DST·Routes OAuth scope 실호출·비한국 실제 가족 E2E까지 계속 HOLD다.
 Android 공식 plugin `8.0.1`은 JS `apiKey`가 아니라 Manifest metadata를 정본으로 읽으므로 별도 key bridge를 만들지
 않는다. family-local 오전 8시 경계·retention·quota·일정/도착 cron·quiet hours의 DST 시간대 작업이 끝나기 전에는
@@ -236,7 +238,7 @@ Android 공식 plugin `8.0.1`은 JS `apiKey`가 아니라 Manifest metadata를 �
 가족 `country_code` 정본, 검색 session HMAC·quota, background 장소 label 공급자 분기, provider-neutral 외부 링크,
 10개 locale 오류 문구, CSP·법적 공개·Android preflight까지 완료했다. Google 검색 후보와 provider ID는 저장하지 않고
 사용자가 지도 제스처로 확정한 핀만 기존 장소 schema에 저장한다. `GOOGLE_MAP_RELEASE_COUNTRIES`는
-`JP/TW/HK/SG/VN/TH/ID/MY/PH` exact 목록이며 `KR/CN/ZZ`와 그 밖의 국가는 Google로 열지 않는다. 준비 검사는
+저장 가능 ISO 249개국에서 `KR`만 제외한 exact 목록이며 `ZZ`·형식 오류·비표준 지역 코드는 Google로 열지 않는다. 준비 검사는
 `npm run verify:google-maps:readiness`, 운영 HOLD 검사는 `npm run verify:google-maps:release`, 절차 정본은
 `docs/operations/google-maps-release-readiness.md`다.
 
@@ -268,7 +270,7 @@ Maps JavaScript API·Maps SDK for Android·Places API (New)·Geocoding API·Rout
 Routes API 사용 설정은 사용자 경로 활성화가 아니며 `routesOauthVerified:false`를 유지한다. Play Console은 App
 Signing SHA-1 readback만 수행했고 출시 트랙은 변경하지 않았다.
 
-9개국 allowlist 기능 커밋 `7b8cf8c07078106f43655b086b39801b3447024e`은 원격 브랜치와 일치하며 Worker version
+중간 9개국 allowlist 기능 커밋 `7b8cf8c07078106f43655b086b39801b3447024e`은 원격 브랜치와 일치하며 Worker version
 `947fa00d-eb1f-4c57-9eb0-cf06884eeccc`로 운영 배포했다. 앱 2,121/2,121·Worker 1,485/1,485·지도/국가
 집중 회귀 58/58·quota 반복 12/12, 앱/Worker typecheck·i18n verify·Google 웹 키 포함 production build가 통과했다.
 운영 health는 200·`ready`·`no-store`, access-region은 200·`KR`·`private, no-store`, 무인증 지도 route는

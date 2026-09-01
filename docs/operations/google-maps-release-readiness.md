@@ -1,10 +1,11 @@
 # Google Maps 글로벌 출시 준비 상태
 
-현재 상태는 **Google 지도 공급자 9개국 활성화, 해외 위치·알림 전체 출시 HOLD**다.
-`shared/mapPolicy.ts`의 `GOOGLE_MAP_RELEASE_COUNTRIES`에는 `JP`, `TW`, `HK`, `SG`, `VN`, `TH`, `ID`,
-`MY`, `PH`만 명시돼 있다. 이 국가의 가족은 Google 지도 렌더링·장소 검색·역지오코딩 경로를 사용하고,
-한국은 Kakao를 유지한다. 중국(`CN`)·국가 미확정(`ZZ`)·목록 밖 국가는 좌표와 측정 시각을 보이는
-안전 폴백으로 닫힌다. 전 세계 wildcard는 사용하지 않는다.
+현재 상태는 **Google 지도 공급자 ISO 248개국 활성화, 해외 위치·알림 전체 출시 HOLD**다.
+2026-09-01 기준 공식 [Google Maps Platform Coverage Details](https://developers.google.com/maps/coverage)의
+지도 타일·지오코딩 지원 범위는 앱이 저장할 수 있는 ISO 3166-1 alpha-2 249개국을 모두 포함한다.
+`shared/mapPolicy.ts`의 `GOOGLE_MAP_RELEASE_COUNTRIES`는 이 저장 가능 국가 집합에서 한국(`KR`)만 제외한
+248개국이다. 한국은 Kakao를 유지하고, `ZZ`·형식 오류·앱이 저장하지 않는 비표준 지역 코드는 좌표와 측정 시각을
+보이는 안전 폴백으로 닫힌다. 전 세계 wildcard는 사용하지 않는다.
 
 이 allowlist는 지도 공급자 선택만 연다. 가족 현지 시간대/DST, Google Routes OAuth 실호출,
 비한국 부모 PWA↔아이 Android 실기기 E2E와 새 Android AAB Play 배포가 완료됐다는 의미가 아니다.
@@ -32,7 +33,7 @@
   Worker `/api/health`는 200·`ready`·`no-store`다.
 - Play Console은 App Signing 인증서 조회만 했고 출시 트랙·계정·실기기 세션은 변경하지 않았다.
 
-## 2026-09-01 9개국 allowlist 운영 배포 증거
+## 2026-09-01 중간 9개국 allowlist 운영 배포 증거
 
 - 기능 커밋 `7b8cf8c07078106f43655b086b39801b3447024e`에서
   `JP/TW/HK/SG/VN/TH/ID/MY/PH` exact 목록을 앱·Worker 공유 정책에 활성화하고 원격 브랜치 해시 일치를 확인했다.
@@ -58,7 +59,7 @@ npm run verify:google-maps:readiness
 ```
 
 이 명령은 키 값을 읽거나 출력하지 않는다. SDK 버전 고정, D1 migration, Android manifest placeholder,
-release fail-closed, CSP와 정확한 9개국 allowlist 및 `KR/CN/ZZ` 제외를 확인한다.
+release fail-closed, CSP와 정확한 ISO 248개국 집합 및 `KR/ZZ/비표준 지역 코드` 제외를 확인한다.
 `READY_FOR_EXTERNAL_VALIDATION`은 지도 공급자 정적 준비 상태이며 해외 위치·알림 전체 출시 승인이 아니다.
 
 ## 운영자가 제공해야 하는 출시 증거

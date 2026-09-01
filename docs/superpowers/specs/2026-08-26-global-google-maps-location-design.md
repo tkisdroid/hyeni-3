@@ -3,8 +3,13 @@
 - 작성일: 2026-08-26
 - 상태: 대화 설계 승인, 구현 계획 작성 완료
 - 대상: PWA, Capacitor Android, Cloudflare Worker, D1
-- 확정 정책: `KR → Kakao`, 승인된 비중국 국가 → Google Maps, `CN/ZZ → 미지원`
+- 확정 정책: `KR → Kakao`, 공식 커버리지의 저장 가능 ISO 국가 248개국 → Google Maps, `ZZ`·비표준 코드 → 미지원
 - 자격 상태: Google Maps Platform 결제 프로젝트·API 키·서비스 계정 미발급
+
+> **2026-09-01 정책 개정:** TK의 최신 해외 오픈 지시가 아래의 과거 `CN 미지원`·점진적 국가 allowlist
+> 문구보다 우선한다. 공식 커버리지 표의 지도 타일·지오코딩 지원 범위가 앱이 저장하는 ISO 249개국을 모두
+> 포함하므로 `KR`만 Kakao로 유지하고 나머지 248개국은 Google로 연다. `ZZ`·형식 오류·비표준 코드는 계속
+> 미지원이다. 시간대/DST·Routes OAuth 실호출·비한국 실제 가족 E2E 출시 게이트는 그대로 유지한다.
 
 > 이 문서는 `docs/superpowers/specs/2026-08-15-global-version-design.md`와
 > `docs/superpowers/plans/2026-08-15-global-timezone-maps-auth.md`의 **지도 공급자 부분만** 대체한다.
@@ -74,13 +79,11 @@ type MapPolicy =
 ```
 
 - `KR`은 Kakao다.
-- `CN`은 `china_unsupported`, `ZZ`·누락·형식 오류는 `country_unresolved`이다.
-- 그 밖의 ISO 국가 중 운영 allowlist에 활성화된 국가만 Google이다.
-- 제품 목표는 중국을 제외한 국가를 순차 지원하는 것이지만, 실제 스토어 국가는 지도 타일·Geocoding·Walking
-  coverage와 실기기 검증을 통과한 순서대로 활성화한다.
-- 비한국 allowlist는 별도 글로벌 시간대 계획의 `family_day`, 수신자 quiet hours, 위치 이력 오전 8시 경계,
-  위치 보존·quota, 일정·도착 겹침과 cron의 DST 회귀가 모두 완료되기 전까지 비활성 상태로 둔다. 지도만 통과했다고
-  비한국 국가를 열지 않는다. 기존 `date_key` 인코딩과 모든 시간 판정은 이번 작업에서 변경하지 않는다.
+- 저장 가능 ISO 비한국 248개국은 Google이다. `ZZ`·누락·형식 오류·비표준 코드는 `country_unresolved` 또는
+  `country_not_enabled`다. `china_unsupported`는 과거 축소 allowlist를 주입하는 테스트·호환 경로에만 남긴다.
+- 공급자 활성과 해외 전체 출시는 분리한다. 별도 글로벌 시간대 계획의 `family_day`, 수신자 quiet hours,
+  위치 이력 오전 8시 경계, 위치 보존·quota, 일정·도착 겹침과 cron의 DST 회귀가 완료되기 전까지 해외 전체
+  출시는 `HOLD`다. 기존 `date_key` 인코딩과 모든 시간 판정은 이번 작업에서 변경하지 않는다.
 - 공급자 정책은 클라이언트와 Worker가 같은 table-driven fixture를 공유해 드리프트를 막는다.
 - 가족 국가를 벗어난 여행·국경 횡단 경로의 자동 공급자 전환은 1차 범위에 넣지 않는다.
 
@@ -392,7 +395,7 @@ type MapErrorCode =
 
 ### 순수 함수·프런트 회귀
 
-- 국가 matrix: `KR=kakao`, `CN/ZZ=unsupported`, enabled non-CN=`google`, disabled non-CN=`unsupported`.
+- 국가 matrix: `KR=kakao`, 저장 가능 ISO 비한국 국가=`google`, `ZZ`·비표준 코드=`unsupported`.
 - policy `pending/unresolved/CN/disabled`에서 SDK import·script injection·preconnect·upstream API 호출 0회, 다른
   공급자 SDK 자동 fallback 0회.
 - `FamilyMap` adapter parity: child/place/destination marker, danger circle, route/stay line, click picker,
@@ -415,7 +418,7 @@ type MapErrorCode =
 ### Worker·DB 회귀
 
 - 무인증, 타 가족, 교사, 타 아이, 잘못된 객체 ref가 provider fetch 전에 401/403/404.
-- `CN/ZZ/disabled`, secret 누락, OAuth 실패, quota DB 실패가 provider fetch 전에 fail-closed.
+- `ZZ`·비표준 코드, secret 누락, OAuth 실패, quota DB 실패가 provider fetch 전에 fail-closed.
 - raw pin 좌표의 범위·정밀도·목적·rate limit 검증.
 - autocomplete handle의 사용자·가족 binding, 5분 TTL, isolate 간 결정적 provider UUID, Details 원자 1회 consume,
   raw token 비노출과 최소 field mask.
@@ -492,7 +495,7 @@ Google 자격 발급 뒤에만 실제 API QA를 수행한다.
 - 모든 지도 소비 화면이 `FamilyMap`과 공통 map API를 사용한다.
 - 한국 회귀와 기존 위치·SOS·지오펜스 불변식이 통과한다.
 - 승인 해외 국가의 웹·Android 실지도·검색·역지오코딩·도보경로가 통과한다.
-- `CN/ZZ/disabled`에서 외부 지도 호출이 없다.
+- `ZZ`·비표준 코드에서 외부 지도 호출이 없다.
 - 기존 장소·이벤트·메모·친구놀이 schema/참조와 위치 기록이 보존되고 Google provider metadata가 추가되지 않는다.
 - 별도 gate에서 non-KR 가족의 날짜·오전 8시 위치 이력·retention·quota·일정/도착 cron·quiet hours가 가족 시간대와
   DST로 검증된다. 이 문서는 해당 로직을 변경하지 않는다.

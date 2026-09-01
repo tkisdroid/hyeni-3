@@ -6,16 +6,10 @@ import {
   resolveMapPolicy,
 } from "../shared/mapPolicy.ts";
 
-const GOOGLE_TARGET_COUNTRIES = ["JP", "TW", "HK", "SG", "VN", "TH", "ID", "MY", "PH"];
-
-test("한국·중국·미확정 국가는 allowlist보다 우선해 공급자를 결정한다", () => {
-  const enabled = new Set(["KR", "CN", "ZZ", "JP"]);
+test("한국·미확정 국가는 allowlist보다 우선해 공급자를 결정한다", () => {
+  const enabled = new Set(["KR", "ZZ", "JP"]);
 
   assert.deepEqual(resolveMapPolicy("KR", enabled), { provider: "kakao", countryCode: "KR" });
-  assert.deepEqual(resolveMapPolicy("CN", enabled), {
-    provider: "unsupported",
-    reason: "china_unsupported",
-  });
   assert.deepEqual(resolveMapPolicy("ZZ", enabled), {
     provider: "unsupported",
     reason: "country_unresolved",
@@ -43,17 +37,22 @@ test("누락되거나 형식이 잘못된 국가는 외부 지도 호출을 열�
   }
 });
 
-test("운영 allowlist는 검증 대상 9개국만 Google 지도로 연다", () => {
-  assert.deepEqual(GOOGLE_MAP_RELEASE_COUNTRIES, GOOGLE_TARGET_COUNTRIES);
+test("운영 allowlist는 Google이 지원하는 ISO 국가 중 한국을 제외한 248개국을 연다", () => {
+  assert.equal(GOOGLE_MAP_RELEASE_COUNTRIES.length, 248);
+  assert.equal(new Set(GOOGLE_MAP_RELEASE_COUNTRIES).size, 248);
 
-  for (const countryCode of GOOGLE_TARGET_COUNTRIES) {
+  for (const countryCode of ["JP", "US", "CN", "MO", "DE", "BR", "ZA"]) {
+    assert.ok(GOOGLE_MAP_RELEASE_COUNTRIES.includes(countryCode), countryCode);
     assert.deepEqual(resolveMapPolicy(countryCode), {
       provider: "google",
       countryCode,
     });
   }
 
-  assert.deepEqual(resolveMapPolicy("US"), {
+  assert.equal(GOOGLE_MAP_RELEASE_COUNTRIES.includes("KR"), false);
+  assert.equal(GOOGLE_MAP_RELEASE_COUNTRIES.includes("ZZ"), false);
+  assert.equal(GOOGLE_MAP_RELEASE_COUNTRIES.includes("AC"), false);
+  assert.deepEqual(resolveMapPolicy("AC"), {
     provider: "unsupported",
     reason: "country_not_enabled",
   });

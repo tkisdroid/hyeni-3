@@ -4,11 +4,16 @@
 
 **Goal:** 이미 구축된 10개 locale 번역 체계를 유지한 채 잔여 품질 검증을 끝내고, 지도 관련 기능만 한국은 Kakao·승인된 중국 외 국가는 Google Maps로 전환하되 기존 GPS 수집·가족 위치 공유·SOS·지오펜스 동작을 보존한다.
 
-**Architecture:** 지도와 무관한 화면은 현재 locale catalog와 formatter를 그대로 사용한다. 지도 렌더링·장소 검색·역지오코딩·도보 경로·외부 지도 링크만 `FamilyMap`과 인증된 `/api/maps/*` 경계로 모으고, 서버 정본 가족 국가로 `KR=kakao`, `CN/ZZ=unsupported`, 운영 allowlist의 비중국 국가=`google`을 선택한다. 가족 현지 시간·DST 보정은 지도 교체와 섞지 않고 기존 글로벌 시간대 계획의 별도 출시 선행 gate로 유지한다.
+**Architecture:** 지도와 무관한 화면은 현재 locale catalog와 formatter를 그대로 사용한다. 지도 렌더링·장소 검색·역지오코딩·도보 경로·외부 지도 링크만 `FamilyMap`과 인증된 `/api/maps/*` 경계로 모으고, 서버 정본 가족 국가로 `KR=kakao`, 저장 가능 ISO 비한국 국가=`google`, `ZZ`·비표준 코드=`unsupported`를 선택한다. 가족 현지 시간·DST 보정은 지도 교체와 섞지 않고 기존 글로벌 시간대 계획의 별도 출시 선행 gate로 유지한다.
 
 **Tech Stack:** Vite 7 · React 19 · TypeScript strict · React Intl · Cloudflare Worker/D1 · Google Maps JavaScript API · Places API (New) · Geocoding API v4 · Routes API v2 · `@capacitor/google-maps@8.0.1` · Capacitor 8 Android
 
 **Spec:** `docs/superpowers/specs/2026-08-26-global-google-maps-location-design.md`
+
+> **2026-09-01 정책 개정:** TK의 최신 해외 오픈 지시에 따라 과거 `CN 미지원`·점진적 allowlist 문구를
+> 대체한다. 공식 Google Maps 핵심 커버리지에 포함된 앱 저장 가능 ISO 249개국 중 `KR`만 Kakao로 유지하고
+> 나머지 248개국은 Google로 연다. `ZZ`·형식 오류·비표준 코드는 미지원이며, 시간대/DST·Routes OAuth·실기기
+> E2E의 해외 전체 출시 HOLD는 유지한다.
 
 ## Global Constraints
 
@@ -16,7 +21,7 @@
 - 2026-08-26 기준 `npm run i18n:verify`는 10개 catalog, PWA manifest, Android locale, 사용자 노출 literal 잔여 0건으로 통과했다. 기존 locale runtime을 다시 만들거나 번역 파일을 일괄 재생성하지 않는다.
 - 지도 변경 범위는 지도 렌더링, 장소 검색, 역지오코딩, 도보 경로, 외부 지도 링크와 이를 안전하게 선택하기 위한 가족 국가·자격·quota 경계다.
 - 위치 GPS 수집, 위치 저장, FGS, SOS, 긴급 알림, 20m 장소 중복 정규화, dwell/leave timer, 10분 presence dedupe는 공급자와 독립된 기존 정본을 유지한다.
-- 정책은 `KR → Kakao`, `CN → china_unsupported`, `ZZ/누락 → country_unresolved`, 운영 allowlist에 든 나머지 국가만 `Google`이다. Google 실패를 Kakao·ORS·OSRM으로 우회하지 않는다.
+- 정책은 `KR → Kakao`, 저장 가능 ISO 비한국 국가 → `Google`, `ZZ/누락/비표준 코드 → country_unresolved`다. Google 실패를 Kakao·ORS·OSRM으로 우회하지 않는다.
 - Google 자격이 아직 없으므로 Task 1~10은 키 미설정 fail-closed 상태로 완료한다. 자격 생성·결제 연결·secret 변경·운영 D1 migration·Pages/Worker/Play 배포는 이 계획 작성이나 자격 없는 구현 단계에서 수행하지 않는다.
 - Google 로그인 OAuth, FCM, Google Play 결제 service account를 지도 service account나 지도 API key로 재사용하지 않는다.
 - 기존 가족은 country migration 후에도 정확히 `KR`이다. IP·GPS·locale로 기존 가족 국가를 추정해 덮어쓰지 않는다.
@@ -351,7 +356,7 @@ docs/operations/google-maps-release-readiness.md
 
 - [ ] **Step 1: authz·policy·입력 union RED를 작성한다**
 
-  무인증 401, 교사 403, 타 가족/아이/object ref 403/404, body country 위조 무시, `CN/ZZ/disabled` no-fetch, secret/quota DB 없음 503을 provider fetch보다 먼저 검증한다. 모든 응답은 `Cache-Control: private, no-store`다.
+  무인증 401, 교사 403, 타 가족/아이/object ref 403/404, body country 위조 무시, `ZZ`·비표준 코드 no-fetch, secret/quota DB 없음 503을 provider fetch보다 먼저 검증한다. 모든 응답은 `Cache-Control: private, no-store`다.
 
 - [ ] **Step 2: 검색 request/response 계약을 고정한다**
 
@@ -608,7 +613,7 @@ docs/operations/google-maps-release-readiness.md
   }
   ```
 
-  `destroy()` 중복 호출, 늦은 mount/update abort, provider 전환 generation, typed `MapErrorCode`를 고정한다. `pending/CN/ZZ/disabled`에서는 dynamic import·script·preconnect·Worker map call이 모두 0회여야 한다.
+  `destroy()` 중복 호출, 늦은 mount/update abort, provider 전환 generation, typed `MapErrorCode`를 고정한다. `pending/ZZ/비표준 코드`에서는 dynamic import·script·preconnect·Worker map call이 모두 0회여야 한다.
 
 - [ ] **Step 2: RED를 확인한다**
 
@@ -761,7 +766,7 @@ docs/operations/google-maps-release-readiness.md
 
 - [ ] **Step 9: 외부 URL helper를 구현한다**
 
-  `buildExternalMapUrl(provider, kind, point, label)`만 사용하며 Kakao는 KR, Google은 현재 Google policy에서만 URL을 만든다. provider mismatch, CN/ZZ/disabled는 `null`을 반환한다.
+  `buildExternalMapUrl(provider, kind, point, label)`만 사용하며 Kakao는 KR, Google은 현재 Google policy에서만 URL을 만든다. provider mismatch, `ZZ`·비표준 코드는 `null`을 반환한다.
 
 - [ ] **Step 10: GREEN과 bundle lazy-load를 확인한다**
 
@@ -1044,7 +1049,7 @@ docs/operations/google-maps-release-readiness.md
 
 - [ ] **Step 7: QA/회귀 스크립트의 Kakao 고정 계약을 공통 지도 계약으로 바꾼다**
 
-  `final-browser-qa`, `regression-safety`, `wf-childinfo-location.workflow`, `wf-error-audit.workflow`, `wf-build-wave1.workflow`의 `/api/kakao/*`, `KakaoMap`, direct link 고정을 provider-neutral assertion으로 교체한다. KR fixture는 Kakao, enabled non-KR fixture는 Google, CN/ZZ는 no-call을 기대하게 한다.
+  `final-browser-qa`, `regression-safety`, `wf-childinfo-location.workflow`, `wf-error-audit.workflow`, `wf-build-wave1.workflow`의 `/api/kakao/*`, `KakaoMap`, direct link 고정을 provider-neutral assertion으로 교체한다. KR fixture는 Kakao, 저장 가능 ISO 비한국 fixture는 Google, `ZZ`·비표준 코드는 no-call을 기대하게 한다.
 
 - [ ] **Step 8: locale와 자격 없는 전체 자동 검증을 실행한다**
 
@@ -1135,7 +1140,7 @@ docs/operations/google-maps-release-readiness.md
 
 - [ ] `npm run i18n:verify`가 계속 통과하고 비지도 기능은 번역/formatter 외 동작 변경이 없다.
 - [ ] 화면과 공통 client에서 Kakao 직접 의존과 `/api/kakao/*` 호출이 사라지고 한국 adapter/legacy Worker shim에만 남는다.
-- [ ] KR은 기존 Kakao 동작, 통과한 non-CN 국가는 Google web/native, CN/ZZ/disabled는 외부 호출 없는 미지원 UI다.
+- [ ] KR은 기존 Kakao 동작, 저장 가능 ISO 비한국 국가는 Google web/native, `ZZ`·비표준 코드는 외부 호출 없는 미지원 UI다.
 - [ ] 검색·역지오코딩·도보 경로·외부 링크까지 같은 정책을 사용하며 지도 renderer만 Google인 혼합 상태가 없다.
 - [ ] 지도 장애에서도 GPS·SOS·위치 이력·등록장소 상태머신이 계속 동작한다.
 - [ ] 기존 장소/이벤트/메모/친구놀이 ID와 legacy bytes가 보존된다.

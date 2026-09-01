@@ -113,13 +113,13 @@ test("지도 API는 인증·교사·가족 권한을 upstream보다 먼저 막�
   }
 });
 
-test("body country 위조를 무시하고 CN·ZZ·비활성 국가는 upstream을 호출하지 않는다", async () => {
+test("body country 위조를 무시하고 ZZ·저장 불가 지역은 upstream을 호출하지 않는다", async () => {
   const { sqlite, db } = fixture();
   let fetchCount = 0;
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => { fetchCount += 1; throw new Error("호출되면 안 됨"); };
   try {
-    for (const country of ["CN", "ZZ", "US"]) {
+    for (const country of ["ZZ", "AC"]) {
       sqlite.prepare("UPDATE families SET country_code=? WHERE id='family-a'").run(country);
       const response = await post(
         db,
