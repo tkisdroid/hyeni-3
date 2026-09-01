@@ -11,6 +11,22 @@ test("release 서명 스크립트는 비밀번호를 명령행 인자로 받지 
   assert.match(source, /Read-Host '키 비밀번호' -AsSecureString/);
 });
 
+test("Google Maps Android 키도 대화형 보안 입력으로만 Gradle에 전달하고 항상 제거한다", () => {
+  assert.match(source, /Read-Host 'Google Maps Android API 키' -AsSecureString/);
+  assert.match(source, /ORG_GRADLE_PROJECT_MAPS_API_KEY/);
+  assert.match(source, /빈 Google Maps Android API 키는 허용하지 않습니다/);
+  assert.doesNotMatch(source, /\[string\]\$MapsApiKey/);
+
+  const promptIndex = source.indexOf("Read-Host 'Google Maps Android API 키' -AsSecureString");
+  const releaseBuildIndex = source.indexOf("':app:bundleRelease'");
+  assert.ok(promptIndex > 0);
+  assert.ok(promptIndex < releaseBuildIndex);
+  assert.match(
+    source,
+    /finally \{[\s\S]*Remove-Item -LiteralPath 'Env:ORG_GRADLE_PROJECT_MAPS_API_KEY' -ErrorAction SilentlyContinue/,
+  );
+});
+
 test("키스토어 비밀번호를 먼저 확인하고 단일 PrivateKeyEntry 별칭을 자동 선택한다", () => {
   assert.match(source, /'-list' '-v'/);
   assert.match(source, /Entry type:\\s\*PrivateKeyEntry/);

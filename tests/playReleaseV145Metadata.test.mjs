@@ -10,18 +10,7 @@ function read(relativePath) {
   return readFileSync(resolve(rootDir, relativePath), "utf8");
 }
 
-test("1.4.5 출시 후보는 이미 사용된 code 16 다음 빌드 번호 17을 쓴다", () => {
-  const packageJson = JSON.parse(read("package.json"));
-  const androidGradle = read("android/app/build.gradle");
-  const iosProject = read("ios/App/App.xcodeproj/project.pbxproj");
-
-  assert.equal(packageJson.version, "1.4.5");
-  assert.match(androidGradle, /^\s*versionCode 17$/m);
-  assert.equal((iosProject.match(/CURRENT_PROJECT_VERSION = 17;/g) ?? []).length, 2);
-  assert.equal((iosProject.match(/MARKETING_VERSION = 1\.4\.5;/g) ?? []).length, 2);
-});
-
-test("1.4.5 Play 문서는 code 17 제출과 실제 게시 전 상태를 분리한다", () => {
+test("1.4.5 Play 문서는 code 17 제출 당시 상태를 역사 기록으로 보존한다", () => {
   const notesPath = resolve(rootDir, "docs/store/play-release-notes-v1.4.5.md");
   const submissionPath = resolve(rootDir, "docs/store/play-console-submission-v1.4.5.md");
 
@@ -46,4 +35,24 @@ test("1.4.5 Play 문서는 code 17 제출과 실제 게시 전 상태를 분리�
   assert.match(submission, /6a80f8f9209c90d380e6723ee40d359180ad957566539063d9ff87b1ac9c20c0/);
   assert.match(submission, /32f729e8cc1df82d94eacd0d264439fcd7102b15fcdc269660254a87f25a81db/);
   assert.match(submission, /D1.*migration.*없/s);
+});
+
+test("1.4.6 Google 지도 출시 후보는 code 18과 10개 locale 출시 노트를 쓴다", () => {
+  const packageJson = JSON.parse(read("package.json"));
+  const androidGradle = read("android/app/build.gradle");
+  const iosProject = read("ios/App/App.xcodeproj/project.pbxproj");
+  const notesPath = resolve(rootDir, "docs/store/play-release-notes-v1.4.6.md");
+
+  assert.equal(packageJson.version, "1.4.6");
+  assert.match(androidGradle, /^\s*versionCode 18$/m);
+  assert.equal((iosProject.match(/CURRENT_PROJECT_VERSION = 18;/g) ?? []).length, 2);
+  assert.equal((iosProject.match(/MARKETING_VERSION = 1\.4\.6;/g) ?? []).length, 2);
+  assert.ok(existsSync(notesPath), "1.4.6 출시 노트가 필요합니다");
+
+  const releaseNotes = read("docs/store/play-release-notes-v1.4.6.md");
+  for (const locale of ["ko-KR", "en-US", "ja-JP", "zh-CN", "zh-TW", "vi", "th", "id", "ms-MY", "fil"]) {
+    assert.match(releaseNotes, new RegExp(`<${locale.replace("-", "\\-")}>[\\s\\S]+</${locale.replace("-", "\\-")}>`));
+  }
+  assert.match(releaseNotes, /Google 지도/);
+  assert.match(releaseNotes, /지원 지역/);
 });
