@@ -203,7 +203,7 @@ TDD RED에서 자동완성 판정·1회 latch·브라우저 selector 폴백·수
 Chrome/Playwright Chromium, 연결된 ADB 기기가 없어 실제 비밀번호 관리자 autofill·실 OAuth 동의·실기기 이벤트 전달은
 미검증으로 남겼다. 운영 계정·세션·refresh token·Worker·D1은 건드리지 않았고 Pages/Worker/스토어에 배포하지 않았다.
 
-**글로벌 locale·Google 지도 구현(2026-09-01, 로컬 코드 완료·운영 HOLD)**:
+**글로벌 locale·Google 지도 구현(2026-09-01, D1·Worker·Pages 배포 완료·글로벌 활성화 HOLD)**:
 TK가 `KR=Kakao`, 승인된 비중국 국가=`Google Maps`, `CN/ZZ=미지원`을 확정했다. 해외 웹 PWA는 Maps
 JavaScript API, Capacitor Android는 공식 `@capacitor/google-maps`의 네이티브 Maps SDK를 사용하고,
 Places·Geocoding·Routes는 인증·가족 국가·권한·quota를 다시 확인하는 Worker 공통 API로 제한한다. 기존
@@ -220,8 +220,8 @@ Mapbox 설계·계획의 지도 부분은 실행하지 않는다. 정본은
 잔여 0건으로 통과했다. 따라서 locale runtime이나 기존 번역을 다시 구축하지 않고 새 지도 오류/경고 문구와 실제
 화면 품질 검증만 추가한다.
 
-Google Cloud 결제 프로젝트·웹/Android 키·Worker 서비스 계정은 아직 없다. 따라서 코드·migration·자동 테스트는
-키 미설정 fail-closed로 만들 수 있지만, 실API 국가 matrix·배포·글로벌 국가 활성화는 자격 발급 뒤까지 HOLD다.
+Google Cloud 웹/Android 키와 Worker 지도 서비스 계정 Secret은 아직 입력 완료 전이다. 따라서 운영 배포는
+키 미설정 fail-closed와 빈 국가 allowlist를 유지하며, 실API 국가 matrix·글로벌 국가 활성화는 자격 발급 뒤까지 HOLD다.
 Android 공식 plugin `8.0.1`은 JS `apiKey`가 아니라 Manifest metadata를 정본으로 읽으므로 별도 key bridge를 만들지
 않는다. 또한 family-local 오전 8시 경계·retention·quota·일정/도착 cron·quiet hours의 DST 시간대 작업이 끝나기
 전에는 지도 구현 여부와 무관하게 비한국 allowlist를 열지 않는다.
@@ -233,7 +233,26 @@ Android 공식 plugin `8.0.1`은 JS `apiKey`가 아니라 Manifest metadata를 �
 사용자가 지도 제스처로 확정한 핀만 기존 장소 schema에 저장한다. `GOOGLE_MAP_RELEASE_COUNTRIES`는 자격 증명·공식
 Routes OAuth scope·D1·국가별 time zone/DST·실기기 E2E 증거가 없으므로 빈 배열이다. 준비 검사는
 `npm run verify:google-maps:readiness`, 운영 HOLD 검사는 `npm run verify:google-maps:release`, 절차 정본은
-`docs/operations/google-maps-release-readiness.md`다. Pages·Worker·Play 배포와 운영 secret 변경은 수행하지 않았다.
+`docs/operations/google-maps-release-readiness.md`다.
+
+배포 직전 앱 2,121/2,121·Worker 1,485/1,485, 앱/Worker typecheck, i18n verify, production build가 통과했다.
+UTC 자정 경계에서 드러난 결제 공급자 예약·위치 이력 보존의 기준 시각 불일치는 호출자가 전달한 `now`를 SQL에도
+동일하게 사용하도록 보정했고 관련 집중 회귀 116/116으로 고정했다. 소스 정본은 기능 브랜치
+`tkisdroid/구글맵구현`의 `7b37d1d5bb4695cd4a0b8b39b61b67e989bb44f5`이며 원격 해시 readback이 일치한다.
+
+운영 D1 `hyeni-calendar`에는 Worker보다 먼저 `global-family-country.sql`과 `maps-request-control.sql`을 적용했다.
+`families.country_code`는 `TEXT NOT NULL DEFAULT 'KR'`, 지도 세션·쿼터 테이블 2개와 만료 인덱스 2개가 readback됐고
+초기 세션/쿼터 행과 KR 외 기존 가족 행은 모두 0이다. `wrangler d1 execute --file` import API는 OAuth 인증 오류
+10000으로 변경 없이 실패해, 부재를 다시 확인한 뒤 같은 additive SQL을 원격 query API로 실행했다.
+
+Worker는 version `f4fb2c92-b248-488a-9e47-5a3db3fc9500`으로 배포했고 `/api/health` 200·`ready`·`no-store`,
+`/api/access-region` 200·`KR`·`private, no-store`를 확인했다. Pages 배포는
+`https://f53296ee.hyeni-calendar.pages.dev`이며 배포별·고정·브랜드 도메인이 모두
+`assets/index-CsqTdWRf.js` 368,210 bytes, SHA-256
+`64E0543C45E83C3ECE77F529C266795F33F3799F064914192199D6973D60D829`, CSS와 Service Worker도 로컬 해시와
+일치한다. 세 도메인의 Google CSP와 OAuth callback 200·`no-store`를 확인했다. Play·실기기·계정·역할·세션·
+페어링·refresh token은 변경하지 않았다. `GOOGLE_MAP_RELEASE_COUNTRIES`는 계속 빈 배열이므로 한국은 Kakao,
+그 밖의 국가는 좌표·측정시각 안전 폴백이며 글로벌 Google 지도 출시는 여전히 HOLD다.
 
 **부모 홈 히어로 캐러셀·브랜드 locale 현지화 배포 완료(2026-08-26)**:
 부모 홈 히어로를 「오늘」 한 장에서 좌우로 넘기고 자동 전환되는 캐러셀로 넓혔다. **첫 장은 항상 `today`** 이고
