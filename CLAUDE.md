@@ -220,8 +220,12 @@ Mapbox 설계·계획의 지도 부분은 실행하지 않는다. 정본은
 잔여 0건으로 통과했다. 따라서 locale runtime이나 기존 번역을 다시 구축하지 않고 새 지도 오류/경고 문구와 실제
 화면 품질 검증만 추가한다.
 
-Google Cloud 웹/Android 키와 Worker 지도 서비스 계정 Secret은 아직 입력 완료 전이다. 따라서 운영 배포는
-키 미설정 fail-closed와 빈 국가 allowlist를 유지하며, 실API 국가 matrix·글로벌 국가 활성화는 자격 발급 뒤까지 HOLD다.
+Google Cloud 프로젝트 `hyeni-496213`에는 2026-09-01 웹/Android 제한 키와 지도 전용 Worker 서비스 계정을
+운영 반영했다. 웹 키는 Maps JavaScript API와 운영 HTTP referrer 3개만, Android 키는 Maps SDK for Android와
+`com.hyeni.calendar` 및 Play App Signing SHA-1만 허용한다. Worker Secret inventory에서
+`GOOGLE_MAPS_SERVICE_ACCOUNT_JSON`·`MAPS_SESSION_HMAC_SECRET` 이름을 값 없이 readback했고, 서비스 계정 JSON
+다운로드 파일은 Secret 업로드 직후 로컬에서 삭제했다. 기존 Google Play 서비스 계정은 재사용하지 않았다.
+실API 국가 matrix·글로벌 국가 활성화는 시간대/DST·Routes OAuth scope 실호출·비한국 실제 가족 E2E까지 계속 HOLD다.
 Android 공식 plugin `8.0.1`은 JS `apiKey`가 아니라 Manifest metadata를 정본으로 읽으므로 별도 key bridge를 만들지
 않는다. 또한 family-local 오전 8시 경계·retention·quota·일정/도착 cron·quiet hours의 DST 시간대 작업이 끝나기
 전에는 지도 구현 여부와 무관하게 비한국 allowlist를 열지 않는다.
@@ -253,6 +257,15 @@ Worker는 version `f4fb2c92-b248-488a-9e47-5a3db3fc9500`으로 배포했고 `/ap
 일치한다. 세 도메인의 Google CSP와 OAuth callback 200·`no-store`를 확인했다. Play·실기기·계정·역할·세션·
 페어링·refresh token은 변경하지 않았다. `GOOGLE_MAP_RELEASE_COUNTRIES`는 계속 빈 배열이므로 한국은 Kakao,
 그 밖의 국가는 좌표·측정시각 안전 폴백이며 글로벌 Google 지도 출시는 여전히 HOLD다.
+
+Google 자격 증명 반영 뒤 Worker를 version `ddfd0411-85cb-4444-8e7b-287a63412b18`으로 재배포했고
+`/api/health` 200·`ready`·`no-store`를 다시 확인했다. 웹 키를 build-time 환경으로만 주입한 Pages 배포는
+`https://d317868a.hyeni-calendar.pages.dev`이며 배포별·고정·브랜드 도메인이 모두
+`assets/index-BLmkW66k.js`를 반환한다. 로컬 번들 SHA-256은
+`8D939175A4724C3160F2B0C3843F94ED7F03964B118A409132D7AA2E2BCEAA94`다. Google Cloud에서는
+Maps JavaScript API·Maps SDK for Android·Places API (New)·Geocoding API·Routes API를 사용 설정했다.
+Routes API 사용 설정은 사용자 경로 활성화가 아니며 `routesOauthVerified:false`를 유지한다. Play Console은 App
+Signing SHA-1 readback만 수행했고 출시 트랙은 변경하지 않았다.
 
 **부모 홈 히어로 캐러셀·브랜드 locale 현지화 배포 완료(2026-08-26)**:
 부모 홈 히어로를 「오늘」 한 장에서 좌우로 넘기고 자동 전환되는 캐러셀로 넓혔다. **첫 장은 항상 `today`** 이고
