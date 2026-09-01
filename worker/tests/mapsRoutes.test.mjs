@@ -119,7 +119,7 @@ test("body country 위조를 무시하고 CN·ZZ·비활성 국가는 upstream�
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => { fetchCount += 1; throw new Error("호출되면 안 됨"); };
   try {
-    for (const country of ["CN", "ZZ", "JP"]) {
+    for (const country of ["CN", "ZZ", "US"]) {
       sqlite.prepare("UPDATE families SET country_code=? WHERE id='family-a'").run(country);
       const response = await post(
         db,

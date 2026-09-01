@@ -98,7 +98,7 @@ test("주 보호자만 정본 가족 국가를 바꾸며 정규화한 값을 반
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.countryCode, "JP");
-  assert.deepEqual(body.mapPolicy, { provider: "unsupported", reason: "country_not_enabled" });
+  assert.deepEqual(body.mapPolicy, { provider: "google", countryCode: "JP" });
   assert.equal(sqlite.prepare("SELECT country_code FROM families WHERE id='family-a'").get().country_code, "JP");
   sqlite.close();
 });
@@ -127,6 +127,6 @@ test("가족 조회는 서버 정본 countryCode와 같은 정책의 mapPolicy�
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.countryCode, "JP");
-  assert.deepEqual(body.mapPolicy, { provider: "unsupported", reason: "country_not_enabled" });
+  assert.deepEqual(body.mapPolicy, { provider: "google", countryCode: "JP" });
   sqlite.close();
 });

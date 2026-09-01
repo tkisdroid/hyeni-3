@@ -9,10 +9,20 @@ export type MapPolicy =
     };
 
 /**
- * 운영 출시 gate를 통과한 비한국 국가만 여기에 추가한다.
- * Google 자격과 시간대/DST 검증 전에는 빈 목록이 정본이다.
+ * 운영에서 Google 지도 공급자로 명시 활성화한 비한국 국가만 여기에 추가한다.
+ * 전 세계 wildcard로 바꾸지 않고 국가별 검증·회귀가 끝난 코드만 명시한다.
  */
-export const GOOGLE_MAP_RELEASE_COUNTRIES: readonly string[] = [];
+export const GOOGLE_MAP_RELEASE_COUNTRIES: readonly string[] = [
+  "JP",
+  "TW",
+  "HK",
+  "SG",
+  "VN",
+  "TH",
+  "ID",
+  "MY",
+  "PH",
+];
 
 const ISO_ALPHA_2 = /^[A-Z]{2}$/;
 

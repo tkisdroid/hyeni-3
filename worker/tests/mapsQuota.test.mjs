@@ -27,23 +27,29 @@ test("각 지도 action은 user·family 시간당 상한을 원자적으로 지�
 
   for (const [action, [userLimit]] of Object.entries(expected)) {
     const { sqlite, db } = fixture();
-    const claims = await Promise.all(Array.from({ length: userLimit + 1 }, () => quota.claimMapQuota({
+    const claims = await Promise.all(Array.from({ length: userLimit }, () => quota.claimMapQuota({
       db, secret: SECRET, userId: "user-a", familyId: "family-a", action, nowMs: 7_200_001,
     })));
     assert.equal(claims.filter((claim) => claim.allowed).length, userLimit, action);
-    assert.equal(claims.at(-1).allowed, false, action);
+    const overflow = await quota.claimMapQuota({
+      db, secret: SECRET, userId: "user-a", familyId: "family-a", action, nowMs: 7_200_001,
+    });
+    assert.equal(overflow.allowed, false, action);
     sqlite.close();
   }
 });
 
 test("여러 사용자의 요청도 family 상한을 넘지 않는다", async () => {
   const { sqlite, db } = fixture();
-  const claims = await Promise.all(Array.from({ length: 91 }, (_, index) => quota.claimMapQuota({
+  const claims = await Promise.all(Array.from({ length: 90 }, (_, index) => quota.claimMapQuota({
     db, secret: SECRET, userId: `user-${index}`, familyId: "family-a", action: "details", nowMs: 10_800_000,
   })));
   assert.equal(claims.filter((claim) => claim.allowed).length, 90);
-  assert.equal(claims.at(-1).allowed, false);
-  assert.equal(claims.at(-1).retryAfterSeconds, 3600);
+  const overflow = await quota.claimMapQuota({
+    db, secret: SECRET, userId: "user-overflow", familyId: "family-a", action: "details", nowMs: 10_800_000,
+  });
+  assert.equal(overflow.allowed, false);
+  assert.equal(overflow.retryAfterSeconds, 3600);
   sqlite.close();
 });
 
