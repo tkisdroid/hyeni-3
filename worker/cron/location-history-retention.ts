@@ -127,16 +127,17 @@ export async function cleanupLocationHistoryRetention(
          JOIN location_history AS lh INDEXED BY idx_location_history_family_recorded_norm
            ON lh.family_id = f.id
         WHERE substr(lh.recorded_at, 1, 19) < CASE
-          WHEN ${premiumFamilyEntitlementSql("f")} THEN ?1
+          WHEN ${premiumFamilyEntitlementSql("f", "datetime(substr(?3,1,19))")} THEN ?1
           ELSE ?2
         END
         GROUP BY f.id
         ORDER BY oldest_expired_at ASC, f.id ASC
-        LIMIT ?3`,
+        LIMIT ?4`,
     )
     .bind(
       normalizedTimestamp(premiumCutoff),
       normalizedTimestamp(freeCutoff),
+      normalizedTimestamp(now),
       LOCATION_HISTORY_RETENTION_FAMILY_BATCH,
     )
     .all<{ family_id: string }>();

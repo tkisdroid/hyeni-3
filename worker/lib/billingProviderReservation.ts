@@ -24,16 +24,19 @@ export type BillingProviderClaim =
   | { status: "acquired" | "same_provider"; row: BillingProviderReservationRow }
   | { status: "deferred" | "blocked" | "conflict"; row: BillingProviderReservationRow };
 
-function activeSubscriptionSql(alias = ""): string {
+function activeSubscriptionSql(alias = "", nowParameterIndex?: number): string {
   const prefix = alias ? `${alias}.` : "";
+  const nowSql = nowParameterIndex === undefined
+    ? "datetime('now')"
+    : `datetime(substr(?${nowParameterIndex},1,19))`;
   return `(
     (LOWER(TRIM(COALESCE(${prefix}status,''))) IN ('active','grace','cancelled')
       AND ${prefix}current_period_end IS NOT NULL
-      AND datetime(substr(${prefix}current_period_end,1,19))>datetime('now'))
+      AND datetime(substr(${prefix}current_period_end,1,19))>${nowSql})
     OR
     (LOWER(TRIM(COALESCE(${prefix}status,'')))='trial'
       AND ${prefix}trial_ends_at IS NOT NULL
-      AND datetime(substr(${prefix}trial_ends_at,1,19))>datetime('now'))
+      AND datetime(substr(${prefix}trial_ends_at,1,19))>${nowSql})
   )`;
 }
 
@@ -51,8 +54,8 @@ function prepareSeedFromEntitlement(
        FROM family_subscription
       WHERE family_id=?
         AND provider IN ('google_play','toss_web')
-        AND ${activeSubscriptionSql()}`,
-  ).bind(now, now, familyId);
+        AND ${activeSubscriptionSql("", 4)}`,
+  ).bind(now, now, familyId, now);
 }
 
 function prepareReleaseStaleActive(
@@ -69,7 +72,7 @@ function prepareReleaseStaleActive(
           SELECT 1 FROM family_subscription fs
            WHERE fs.family_id=billing_provider_reservations.family_id
              AND fs.provider=billing_provider_reservations.provider
-             AND ${activeSubscriptionSql("fs")}
+             AND ${activeSubscriptionSql("fs", 3)}
         )
         AND NOT (
           provider='toss_web'
@@ -82,7 +85,7 @@ function prepareReleaseStaleActive(
                AND wbc.billing_key_version='v1'
           )
         )`,
-  ).bind(now, familyId);
+  ).bind(now, familyId, now);
 }
 
 function prepareReleaseStaleGoogleReservation(
@@ -109,9 +112,9 @@ function prepareReleaseStaleGoogleReservation(
         AND NOT EXISTS(
           SELECT 1 FROM family_subscription fs
            WHERE fs.family_id=billing_provider_reservations.family_id
-             AND ${activeSubscriptionSql("fs")}
+             AND ${activeSubscriptionSql("fs", 4)}
         )`,
-  ).bind(now, familyId, cutoff);
+  ).bind(now, familyId, cutoff, now);
 }
 
 export async function readBillingProviderReservation(
@@ -282,8 +285,8 @@ export function prepareBillingProviderFinalization(
   },
 ): D1PreparedStatement {
   const canonicalEntitlementGuard = input.active
-    ? activeSubscriptionSql("fs")
-    : `NOT ${activeSubscriptionSql("fs")}`;
+    ? activeSubscriptionSql("fs", 11)
+    : `NOT ${activeSubscriptionSql("fs", 11)}`;
   return db.prepare(
     `UPDATE billing_provider_reservations
         SET state=?, reservation_ref=?, conflicting_provider=NULL, conflict_ref=NULL,
@@ -310,6 +313,7 @@ export function prepareBillingProviderFinalization(
     input.reservationRef,
     input.provider,
     input.canonicalOrderId,
+    input.now,
   );
 }
 
@@ -383,7 +387,7 @@ export async function resolveBillingProviderConflictAfterRefund(
           SELECT 1 FROM family_subscription fs
            WHERE fs.family_id=billing_provider_reservations.family_id
              AND fs.provider=billing_provider_reservations.provider
-             AND ${activeSubscriptionSql("fs")}
+             AND ${activeSubscriptionSql("fs", 6)}
         )`,
   ).bind(
     pgTs(input.now),
@@ -391,6 +395,7 @@ export async function resolveBillingProviderConflictAfterRefund(
     input.incumbentProvider,
     input.conflictingProvider,
     input.conflictRef,
+    pgTs(input.now),
   ).run();
   return Number(result.meta?.changes ?? 0) === 1;
 }

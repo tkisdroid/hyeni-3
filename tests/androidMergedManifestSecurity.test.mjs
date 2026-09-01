@@ -34,6 +34,10 @@ test("출시 manifest 병합 뒤 receiver·민감 권한·자녀 모니터링 �
     gradleArgs,
     {
       cwd: androidDir,
+      env: {
+        ...process.env,
+        "ORG_GRADLE_PROJECT_android.overridePathCheck": "true",
+      },
       encoding: "utf8",
       timeout: 280_000,
     },
