@@ -2,6 +2,8 @@
 
 import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
+import { CacheFirst } from "workbox-strategies";
+import { ExpirationPlugin } from "workbox-expiration";
 import { API_BASE } from "./config/env";
 import { resolvePwaNavigationResponse } from "./transform/pwaNavigationFreshness";
 import {
@@ -76,8 +78,43 @@ registerRoute(
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
+// 해시가 붙은 같은 출처 정적 JS만 저장한다. 추가 언어 화면도 한 번 방문한 뒤에는
+// 오프라인 재진입할 수 있고, API 응답·계정 데이터는 이 캐시에 들어가지 않는다.
+const localeChunkCache = new CacheFirst({
+    cacheName: "hyeni-locale-chunks-v1",
+    plugins: [new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60, purgeOnQuotaError: true })],
+});
+registerRoute(
+  ({ url, request }) => url.origin === self.location.origin
+    && request.destination === "script"
+    && /^\/assets\/[^/]+-[\w-]+\.js$/.test(url.pathname),
+  localeChunkCache,
+);
+
+/** 첫 제어권 이전에 로드한 문구도 현재 언어에 한해 오프라인용으로 준비한다. */
+const localeWarmups = new Map<SupportedLocale, Promise<void>>();
+function warmLocaleCatalogs(locale: SupportedLocale, event: ExtendableEvent): Promise<void> {
+  const pending = localeWarmups.get(locale);
+  if (pending) return pending;
+  const work = (async () => {
+    const manifest = await matchPrecache("deferred-locale-chunks.json");
+    if (!manifest) return;
+    const byLocale = await manifest.json() as Record<string, unknown>;
+    const urls = byLocale[locale];
+    if (!Array.isArray(urls) || urls.length > 16) return;
+    await Promise.allSettled(urls.filter((url): url is string => typeof url === "string"
+      && /^assets\/[^/]+-[\w-]+\.js$/.test(url)).map((url) => localeChunkCache.handle({
+        event,
+        request: new Request(new URL(url, self.location.origin), { credentials: "omit" }),
+      })));
+  })().catch(() => undefined).finally(() => localeWarmups.delete(locale));
+  localeWarmups.set(locale, work);
+  return work;
+}
+
 self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
+  event.waitUntil(readServiceWorkerLocale().then((locale) => locale ? warmLocaleCatalogs(locale, event) : undefined).catch(() => undefined));
 });
 
 function openContextDb(): Promise<IDBDatabase> {
@@ -198,10 +235,11 @@ self.addEventListener("message", (event) => {
     const raw = (event.data as { locale?: unknown }).locale;
     if (typeof raw !== "string" || !isSupportedLocale(raw)) return;
     const replyPort = event.ports[0];
-    event.waitUntil(writeServiceWorkerLocale(raw).then(
+      event.waitUntil(writeServiceWorkerLocale(raw).then(
       () => replyPort?.postMessage({ type: "HYENI_LOCALE_ACK", ok: true }),
       () => replyPort?.postMessage({ type: "HYENI_LOCALE_ACK", ok: false }),
-    ));
+      ));
+      event.waitUntil(warmLocaleCatalogs(raw, event));
     return;
   }
   const context = messageContext(event.data);

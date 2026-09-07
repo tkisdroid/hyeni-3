@@ -24,16 +24,16 @@ export type BillingProviderClaim =
   | { status: "acquired" | "same_provider"; row: BillingProviderReservationRow }
   | { status: "deferred" | "blocked" | "conflict"; row: BillingProviderReservationRow };
 
-function activeSubscriptionSql(alias = ""): string {
+function activeSubscriptionSql(alias = "", clockParameter = "?1"): string {
   const prefix = alias ? `${alias}.` : "";
   return `(
     (LOWER(TRIM(COALESCE(${prefix}status,''))) IN ('active','grace','cancelled')
       AND ${prefix}current_period_end IS NOT NULL
-      AND datetime(substr(${prefix}current_period_end,1,19))>datetime('now'))
+      AND datetime(substr(${prefix}current_period_end,1,19))>datetime(substr(${clockParameter},1,19)))
     OR
     (LOWER(TRIM(COALESCE(${prefix}status,'')))='trial'
       AND ${prefix}trial_ends_at IS NOT NULL
-      AND datetime(substr(${prefix}trial_ends_at,1,19))>datetime('now'))
+      AND datetime(substr(${prefix}trial_ends_at,1,19))>datetime(substr(${clockParameter},1,19)))
   )`;
 }
 
@@ -282,8 +282,8 @@ export function prepareBillingProviderFinalization(
   },
 ): D1PreparedStatement {
   const canonicalEntitlementGuard = input.active
-    ? activeSubscriptionSql("fs")
-    : `NOT ${activeSubscriptionSql("fs")}`;
+    ? activeSubscriptionSql("fs", "?3")
+    : `NOT ${activeSubscriptionSql("fs", "?3")}`;
   return db.prepare(
     `UPDATE billing_provider_reservations
         SET state=?, reservation_ref=?, conflicting_provider=NULL, conflict_ref=NULL,

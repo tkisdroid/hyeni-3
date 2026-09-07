@@ -10,6 +10,7 @@ import { useAccount, useExportFamilyData } from "@/queries/useAccount";
 import { useMyFamily } from "@/queries/useFamily";
 import { serializeDataExport } from "@/lib/api/endpoints/account";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import { confirmedDataTimestamp } from "@/transform/auditStateScope";
 import { useLocale } from "@/i18n/useLocale";
 import {
   formatClockWithSeconds,
@@ -30,7 +31,7 @@ export function DataSync() {
   const family = familyQuery.data;
   const exportData = useExportFamilyData();
 
-  const [syncedAt, setSyncedAt] = useState<Date | null>(() => new Date());
+  const syncedAt = confirmedDataTimestamp(accountQuery.dataUpdatedAt, familyQuery.dataUpdatedAt);
   const [resyncing, setResyncing] = useState(false);
 
   const members = family?.members ?? [];
@@ -76,7 +77,6 @@ export function DataSync() {
         show(intl.formatMessage({ id: "parent.dataSync.resync.failed" }), "⚠️");
         return;
       }
-      setSyncedAt(new Date());
       show(intl.formatMessage({ id: "parent.dataSync.resync.success" }), "✅");
     } catch (error) {
       console.error("data_sync_failed", error);
@@ -127,7 +127,6 @@ export function DataSync() {
   // 캐시 비우기 — 로컬 쿼리 캐시 전체 제거(다음 조회 시 서버에서 새로 받음).
   const clearCache = () => {
     qc.clear();
-    setSyncedAt(null);
     show(intl.formatMessage({ id: "parent.dataSync.cache.cleared" }), "🧹");
   };
 
@@ -192,7 +191,7 @@ export function DataSync() {
           <div className="ds-sync__top">
             <span className="ds-sync__dot" />
             <span className="ds-sync__state">
-              {resyncing
+              {dataSyncRefetching
                 ? intl.formatMessage({ id: "parent.dataSync.sync.refreshing" })
                 : intl.formatMessage({ id: "parent.dataSync.sync.ready" })}
             </span>

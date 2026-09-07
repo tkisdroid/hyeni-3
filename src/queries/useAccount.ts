@@ -55,6 +55,7 @@ export interface UseAccountResult {
   isLoading: boolean;
   isError: boolean;
   isFetching: boolean;
+  dataUpdatedAt: number;
   refetch: () => Promise<QueryObserverResult<AccountInfo | null, Error>>;
 }
 
@@ -86,6 +87,7 @@ export function useAccount(): UseAccountResult {
     isLoading: query.isLoading,
     isError: query.isError,
     isFetching: query.isFetching,
+    dataUpdatedAt: query.dataUpdatedAt,
     refetch: query.refetch,
   };
 }

@@ -32,14 +32,14 @@ export function isPremiumSubscriptionState(
     && futureDate(currentPeriodEnd, now);
 }
 
-export function premiumSubscriptionSql(alias = "") {
+export function premiumSubscriptionSql(alias = "", clockSql = "datetime('now')") {
   const prefix = alias ? `${alias}.` : "";
   const status = `LOWER(TRIM(COALESCE(${prefix}status, '')))`;
   return `((${status} IN ('active','grace','cancelled') `
     + `AND ${prefix}current_period_end IS NOT NULL `
-    + `AND datetime(substr(${prefix}current_period_end,1,19)) > datetime('now')) OR (`
+    + `AND datetime(substr(${prefix}current_period_end,1,19)) > ${clockSql}) OR (`
     + `${status}='trial' AND ${prefix}trial_ends_at IS NOT NULL `
-    + `AND datetime(substr(${prefix}trial_ends_at,1,19)) > datetime('now')))`;
+    + `AND datetime(substr(${prefix}trial_ends_at,1,19)) > ${clockSql}))`;
 }
 
 /**
@@ -52,25 +52,25 @@ export function isPremiumChildSubscriptionState(status, expiresAt, now = new Dat
   return (normalized === "active" || normalized === "grace") && futureDate(expiresAt, now);
 }
 
-export function premiumChildSubscriptionSql(alias = "") {
+export function premiumChildSubscriptionSql(alias = "", clockSql = "datetime('now')") {
   const prefix = alias ? `${alias}.` : "";
   return `(LOWER(TRIM(COALESCE(${prefix}status, ''))) IN ('active','grace') AND ${prefix}expires_at IS NOT NULL `
-    + `AND datetime(substr(${prefix}expires_at,1,19)) > datetime('now'))`;
+    + `AND datetime(substr(${prefix}expires_at,1,19)) > ${clockSql})`;
 }
 
 /**
  * Premium family_id를 한 번의 set scan으로 만드는 공통 SQL.
  * subscriptions에 family_id 인덱스가 없는 기존 D1에서도 가족마다 반복 스캔하지 않는다.
  */
-export function premiumFamilyIdsSql() {
+export function premiumFamilyIdsSql(clockSql = "datetime('now')") {
   return `
     SELECT entitlement_fs.family_id AS family_id
       FROM family_subscription entitlement_fs
-     WHERE ${premiumSubscriptionSql("entitlement_fs")}
+     WHERE ${premiumSubscriptionSql("entitlement_fs", clockSql)}
     UNION
     SELECT entitlement_cs.family_id AS family_id
       FROM subscriptions entitlement_cs
-     WHERE ${premiumChildSubscriptionSql("entitlement_cs")}
+     WHERE ${premiumChildSubscriptionSql("entitlement_cs", clockSql)}
     UNION
     SELECT entitlement_f.id AS family_id
       FROM families entitlement_f
@@ -91,9 +91,9 @@ export function premiumFamilyIdsSql() {
  *
  * @param {string} familyAlias
  */
-export function premiumFamilyEntitlementSql(familyAlias = "f") {
+export function premiumFamilyEntitlementSql(familyAlias = "f", clockSql = "datetime('now')") {
   const familyPrefix = familyAlias ? `${familyAlias}.` : "";
-  return `(${familyPrefix}id IN (${premiumFamilyIdsSql()}))`;
+  return `(${familyPrefix}id IN (${premiumFamilyIdsSql(clockSql)}))`;
 }
 
 export class FamilyEntitlementUnavailableError extends Error {

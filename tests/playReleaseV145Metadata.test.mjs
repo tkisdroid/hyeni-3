@@ -10,15 +10,15 @@ function read(relativePath) {
   return readFileSync(resolve(rootDir, relativePath), "utf8");
 }
 
-test("1.4.5 출시 후보는 이미 사용된 code 16 다음 빌드 번호 17을 쓴다", () => {
+test("1.4.6 출시 후보는 이전 code 17 다음 빌드 번호 18을 쓴다", () => {
   const packageJson = JSON.parse(read("package.json"));
   const androidGradle = read("android/app/build.gradle");
   const iosProject = read("ios/App/App.xcodeproj/project.pbxproj");
 
-  assert.equal(packageJson.version, "1.4.5");
-  assert.match(androidGradle, /^\s*versionCode 17$/m);
-  assert.equal((iosProject.match(/CURRENT_PROJECT_VERSION = 17;/g) ?? []).length, 2);
-  assert.equal((iosProject.match(/MARKETING_VERSION = 1\.4\.5;/g) ?? []).length, 2);
+  assert.equal(packageJson.version, "1.4.6");
+  assert.match(androidGradle, /^\s*versionCode 18$/m);
+  assert.equal((iosProject.match(/CURRENT_PROJECT_VERSION = 18;/g) ?? []).length, 2);
+  assert.equal((iosProject.match(/MARKETING_VERSION = 1\.4\.6;/g) ?? []).length, 2);
 });
 
 test("1.4.5 Play 문서는 code 17 제출과 실제 게시 전 상태를 분리한다", () => {

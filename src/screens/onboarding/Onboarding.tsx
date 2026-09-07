@@ -1624,7 +1624,6 @@ function LoginStep({
       if (!isOnboardingAuthTransitionActive(transitionToken)) return;
       const message = localizeApiError(e, intl, "formal");
       onAuthError(message);
-      show(message, "⚠️");
       if (isApiError(e) && e.code === "invalid_credentials") {
         passwordInputRef.current?.focus();
       }

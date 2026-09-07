@@ -4,8 +4,10 @@ import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath, URL } from "node:url";
 import { readFileSync } from "node:fs";
 import { initialChunkProvenancePlugin } from "./scripts/vite/initialChunkProvenancePlugin.mjs";
+import { deferredLocalePrecachePlugin } from "./scripts/vite/deferredLocalePrecachePlugin.mjs";
 
 const rootDir = fileURLToPath(new URL(".", import.meta.url));
+const deferredLocaleUrls = new Set<string>();
 
 const packageMetadata = JSON.parse(
   readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf8"),
@@ -60,6 +62,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    deferredLocalePrecachePlugin(deferredLocaleUrls),
     VitePWA({
       strategies: "injectManifest",
       srcDir: "src",
@@ -85,11 +88,11 @@ export default defineConfig({
         ],
       },
       injectManifest: {
-        globPatterns: ["**/*.{js,css,html,woff2,webp,png,svg}"],
+        globPatterns: ["**/*.{js,css,html,woff2,webp,png,svg}", "deferred-locale-chunks.json"],
         // fast-glob 결과 순서는 파일시스템의 대소문자 규칙에 좌우되므로 명시적으로 고정한다.
         manifestTransforms: [
           (manifestEntries) => ({
-            manifest: [...manifestEntries].sort(comparePrecacheEntries),
+            manifest: manifestEntries.filter((entry) => !deferredLocaleUrls.has(entry.url)).sort(comparePrecacheEntries),
             warnings: [],
           }),
         ],

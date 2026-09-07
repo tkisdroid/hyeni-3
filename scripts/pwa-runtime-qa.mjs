@@ -48,6 +48,8 @@ export const PWA_RUNTIME_QA_OUTPUT_DIR = resolve(
 export const PWA_RUNTIME_QA_ROUTE = "/app-update";
 export const PWA_RUNTIME_QA_ROUTE_SELECTOR = ".au-root";
 export const PWA_RUNTIME_QA_VIEWPORT = Object.freeze({ width: 390, height: 844 });
+const PWA_QA_LOCALE = "ja";
+const PWA_QA_BRAND = JSON.parse(await readFile(resolve(ROOT_DIR, "locales/ja/core.json"), "utf8"))["core.brand.name"];
 export const PWA_RUNTIME_QA_UPDATE_VERSION = "pwa-runtime-qa-v2";
 export const PWA_RUNTIME_QA_OFFLINE_PROBE_PATH = "/__pwa-runtime-qa-offline-probe__.txt";
 
@@ -215,6 +217,7 @@ function safeFilePath(rootDir, pathname) {
 
 async function startStaticServer(rootDir) {
   const requests = [];
+  let delayedInitialWorker = false;
   let allowedHost = "";
   let origin = "";
   const server = createHttpServer((request, response) => {
@@ -240,6 +243,10 @@ async function startStaticServer(rootDir) {
         }
         const parsed = new URL(request.url ?? "/", origin || "http://127.0.0.1");
         requestPath = parsed.pathname;
+        if (requestPath === "/sw.js" && !delayedInitialWorker) {
+          delayedInitialWorker = true;
+          await wait(3000);
+        }
         let filePath = safeFilePath(rootDir, requestPath);
         if (!filePath) {
           statusCode = 403;
@@ -488,13 +495,17 @@ async function connectCdp(cdpPort) {
 function instrumentationScript() {
   return `(() => {
     const prefix = ${JSON.stringify(QA_STATE_PREFIX)};
+    Object.defineProperty(navigator, "language", { configurable: true, value: ${JSON.stringify(PWA_QA_LOCALE)} });
+    Object.defineProperty(navigator, "languages", { configurable: true, value: [${JSON.stringify(PWA_QA_LOCALE)}] });
+    delete window.PushManager;
+    delete window.Notification;
     const nativeFetch = window.fetch.bind(window);
     window.fetch = (input, init) => {
       const rawUrl = typeof input === "string" || input instanceof URL ? String(input) : input.url;
       const url = new URL(rawUrl, location.href);
       const method = String(init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
       if (method === "GET" && url.pathname === "/api/access-region") {
-        return Promise.resolve(new Response(JSON.stringify({ country: "KR" }), {
+        return Promise.resolve(new Response(JSON.stringify({ country: "JP" }), {
           status: 200,
           headers: {
             "cache-control": "private, no-store",
@@ -513,11 +524,22 @@ function instrumentationScript() {
       documentLoads: Number(previous?.documentLoads || 0) + 1,
       controllerChanges: Number(previous?.controllerChanges || 0),
       lastLoadAt: Date.now(),
+      localeRenderedBeforeControl: Boolean(previous?.localeRenderedBeforeControl),
     };
     const persist = () => { window.name = prefix + JSON.stringify(state); };
     persist();
+    const localeObserver = new MutationObserver(() => {
+      if (!navigator.serviceWorker?.controller && document.documentElement?.lang === ${JSON.stringify(PWA_QA_LOCALE)}
+        && document.querySelector(${JSON.stringify(PWA_RUNTIME_QA_ROUTE_SELECTOR)})) {
+        state.localeRenderedBeforeControl = true;
+        persist();
+        localeObserver.disconnect();
+      }
+    });
+    localeObserver.observe(document, { childList: true, subtree: true });
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.addEventListener("controllerchange", () => {
+        localeObserver.disconnect();
         state.controllerChanges += 1;
         state.lastControllerChangeAt = Date.now();
         persist();
@@ -561,7 +583,8 @@ async function readRouteState(cdp) {
       title: document.title,
       navigatorOnlineAdvisory: navigator.onLine,
       rootVisible: Boolean(root && rect && rect.width > 0 && rect.height > 0),
-      hasAppName: text.includes("혜니캘린더"),
+      hasAppName: text.includes(${JSON.stringify(PWA_QA_BRAND)}),
+      locale: document.documentElement.lang,
       crash: Boolean(document.querySelector(".hy-crash, .route-error")),
       controlled: Boolean(navigator.serviceWorker?.controller),
     };
@@ -1003,6 +1026,23 @@ export async function runPwaRuntimeQa({ outputDir = resolvePwaRuntimeQaOutputDir
         (target) => target.type === "service_worker" && target.appOwned,
       ),
     };
+    const firstLocaleState = await readInstrumentationState(cdp);
+    if (!firstLocaleState?.localeRenderedBeforeControl) throw new Error("SW 제어 이전 첫 외국어 렌더가 재현되지 않았습니다");
+
+    // 지연한 언어 청크가 실제 SW 캐시에 들어간 뒤 오프라인 재조회되는지 검증한다.
+    const deferredLocaleChunks = JSON.parse(await readFile(resolve(tempDist, "deferred-locale-chunks.json"), "utf8"));
+    const selectedLocaleUrls = deferredLocaleChunks[PWA_QA_LOCALE];
+    if (!selectedLocaleUrls?.length) throw new Error("지연 언어 청크 검증 대상이 없습니다");
+    const deferredLocaleUrl = `/${selectedLocaleUrls[0]}`;
+    const localeCached = await waitForCondition(
+      "지연 언어 청크 runtime 캐시",
+      () => cdp.evaluate(`caches.open("hyeni-locale-chunks-v1").then((cache) => Promise.all(${JSON.stringify(selectedLocaleUrls)}.map((url) => cache.match("/" + url)))).then((responses) => responses.every(Boolean))`),
+      (cached) => cached === true,
+      { timeoutMs: 10_000, interrupted },
+    );
+    const serviceWorkerOnly = await cdp.evaluate('"serviceWorker" in navigator && !("PushManager" in window) && !("Notification" in window)');
+    if (!serviceWorkerOnly) throw new Error("푸시 API 없는 SW 전용 환경이 재현되지 않았습니다");
+    report.checks.deferredLocaleCache = { locale: PWA_QA_LOCALE, serviceWorkerOnly, beforeControl: true, urls: selectedLocaleUrls.length, url: deferredLocaleUrl, onlineCached: localeCached };
 
     phase = "online-navigation";
     const onlineNavigationRequestStart = staticServer.requests.length;
@@ -1061,6 +1101,9 @@ export async function runPwaRuntimeQa({ outputDir = resolvePwaRuntimeQaOutputDir
       { timeoutMs: 10_000, interrupted },
     );
     const offlineNetworkProbe = await runOfflineNetworkProbe(cdp, origin);
+    const offlineLocaleMessages = await cdp.evaluate(`import(${JSON.stringify(deferredLocaleUrl)}).then((module) => Object.keys(module.default).length)`);
+    if (offlineLocaleMessages <= 0) throw new Error("오프라인 지연 언어 문구가 비어 있습니다");
+    report.checks.deferredLocaleCache.offlineMessages = offlineLocaleMessages;
     const offlineRegistration = await readRegistrationState(cdp);
     const offlineServerRequests = staticServer.requests.slice(offlineServerRequestStart);
     const offlineServiceWorkerUpdateRequests = offlineServerRequests.filter(

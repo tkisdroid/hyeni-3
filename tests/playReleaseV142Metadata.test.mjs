@@ -31,7 +31,7 @@ test("1.4.2 Play 문서는 혜니 도약과 code 14 심사 제출 증거를 정�
   const releaseNotes = read("docs/store/play-release-notes-v1.4.2.md");
   const submission = read("docs/store/play-console-submission-v1.4.2.md");
 
-  assert.match(listing, /v1\.4\.2 \/ versionCode 14/);
+  assert.match(listing, /v1\.4\.6 \/ versionCode 18/);
   assert.match(listing, new RegExp(`앱 이름[^\n]*${appName}`));
   assert.match(releaseNotes, /혜니/);
   assert.match(releaseNotes, /가볍게 뛰고 부드럽게 착지/);

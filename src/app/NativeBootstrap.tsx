@@ -1,3 +1,4 @@
+import { createNativeLocaleSyncScheduler } from '@/transform/nativeLocaleSyncScheduler';
 /**
  * 네이티브(Android/Capacitor) 초기화와 웹·PWA foreground pending fallback.
  * App 하위(AuthProvider 안)에 1회 마운트.
@@ -65,43 +66,6 @@ interface NativeNotificationPlugin {
 
 interface AppLocalePlugin {
   setLocale(input: { locale: SupportedLocale }): Promise<{ locale: SupportedLocale }>;
-}
-
-function createNativeLocaleSyncScheduler(
-  writeLocale: (locale: SupportedLocale) => Promise<void>,
-  onError: () => void,
-) {
-  let pendingLocale: SupportedLocale | null = null;
-  let drainPromise: Promise<void> | null = null;
-
-  const drain = async () => {
-    try {
-      while (pendingLocale !== null) {
-        const locale = pendingLocale;
-        pendingLocale = null;
-        try {
-          await writeLocale(locale);
-        } catch {
-          onError();
-        }
-      }
-    } finally {
-      drainPromise = null;
-    }
-  };
-
-  const ensureDrain = (): Promise<void> => {
-    if (drainPromise) return drainPromise;
-    drainPromise = drain();
-    return drainPromise;
-  };
-
-  return {
-    request(locale: SupportedLocale): Promise<void> {
-      pendingLocale = locale;
-      return ensureDrain();
-    },
-  };
 }
 
 const nativeAppLocaleScheduler = createNativeLocaleSyncScheduler(

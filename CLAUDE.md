@@ -3,6 +3,20 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**v1.4.6/code 18 출시 후보 준비(2026-09-07)**:
+사용자 요청으로 전체 앱 조사에서 확인한 8개 개선과 한국어 스토어 소개 개선을 출시용 브랜치에 묶었다.
+로그인 중복 오류, DataSync 실제 확인 시각, DaySummary 가족·아이·날짜 결과 귀속을 수정하고,
+네이티브 언어 스케줄러 테스트를 경량화했다. 아이 학습 안내는 반말로 통일했다. PWA는 순수 외국어
+화면 문구만 지연하고 현재 언어의 첫 SW 제어 전 로드·푸시 미지원 환경도 오프라인 저장한다.
+초기 전체 JS 650,000 bytes·사전 저장 총량 6MiB 예산을 추가했다. Worker 결제·보존 SQL은 전달받은
+시각으로 구독 만료를 판정하고 RTDN 만료 fixture·경계 회귀를 보완했다. Worker 수정은 별도 운영 반영이
+필요하며 AAB 업로드만으로 배포된 것으로 간주하지 않는다.
+
+한국어 소개 정본은 `store/global/source/ko-KR.json`·`docs/store/play-listing.md`, 출시 노트·제출 상태는
+`docs/store/play-release-notes-v1.4.6.md`·`docs/store/play-console-submission-v1.4.6.md`다.
+기존 main의 수정·미추적 파일을 보존하기 위해 `.worktrees/play-release-20260907`에서 빌드하며,
+커밋·서명 AAB·Play 실제 사용 code·검토 요청·게시 상태는 각각 확인한 증거로만 완료 처리한다.
+
 **Worker 운영 보존·출시 게이트(2026-08-31, 구현·로컬 검증 완료/운영 미적용)**:
 만료 `pending_notifications`는 `expires_at` 뒤 24시간 grace를 둔 뒤 hourly 40분 slot에서 한 번에 최대 5,000행만
 멱등 삭제한다. 운영 D1의 ISO `T`/공백 timestamp 혼재를 같은 기준으로 비교하도록 expression index를 사용하며,

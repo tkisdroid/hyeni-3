@@ -5,13 +5,16 @@ import {
   inspectRouteEntryBundle,
   inspectRouteEntryStyles,
 } from "./lib/routeBundleBudget.mjs";
-import { inspectPwaPrecacheManifest } from "./lib/pwaPrecacheManifest.mjs";
+import { inspectPwaPrecacheManifest, inspectPwaPrecacheBudget } from "./lib/pwaPrecacheManifest.mjs";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = resolve(rootDir, "dist");
 const result = inspectRouteEntryBundle({ distDir });
 const styles = inspectRouteEntryStyles({ distDir });
 const pwa = inspectPwaPrecacheManifest({ distDir });
+const precacheBudget = inspectPwaPrecacheBudget({ distDir });
+console.log(`[초기 전체 JS] ${result.bytes + result.excludedFiles.reduce((sum, file) => sum + file.bytes, 0)}바이트 (외부 런타임 포함)`);
+console.log(`[PWA 총량 예산] ${precacheBudget.bytes}/${precacheBudget.limitBytes}바이트 (통과)`);
 const callbackHtml = readFileSync(resolve(distDir, "oauth", "callback.html"), "utf8");
 if (!callbackHtml.includes(`src="/${result.entryFile}"`)) {
   throw new Error(`OAuth 콜백 엔트리가 현재 진입 번들(${result.entryFile})을 참조하지 않습니다.`);

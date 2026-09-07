@@ -16,11 +16,11 @@ const [packageJson, versionPolicy, vite, gradle, androidManifest, parentSettings
 ]);
 
 test("표시 버전은 package.json을 쓰고 원격 업데이트 정책은 Play 제공 버전을 넘지 않는다", () => {
-  assert.equal(packageJson.version, "1.4.5");
+  assert.equal(packageJson.version, "1.4.6");
   assert.equal(versionPolicy.minimumSupportedVersion, "1.4.0");
   assert.equal(versionPolicy.latestVersion, "1.4.0");
   assert.equal(versionPolicy.blockingUpdate, false);
-  assert.match(gradle, /^\s*versionCode 17$/m);
+  assert.match(gradle, /^\s*versionCode 18$/m);
   assert.match(vite, /__APP_VERSION__:\s*JSON\.stringify\(packageMetadata\.version\)/);
   assert.match(gradle, /hyeniPackageVersion = new JsonSlurper\(\)\.parse\(file\('\.\.\/\.\.\/package\.json'\)\)\.version/);
   assert.match(gradle, /versionName hyeniPackageVersion/);

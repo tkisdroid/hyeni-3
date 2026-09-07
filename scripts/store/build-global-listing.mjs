@@ -97,7 +97,7 @@ export async function buildListingFiles() {
   const files = [];
   for (const { listing, app } of LISTING_LOCALES) {
     const isSource = listing === source.sourceLocale;
-    const shortDescription = SHORT_DESCRIPTION[listing];
+    const shortDescription = isSource ? source.shortDescription : SHORT_DESCRIPTION[listing];
     if (typeof shortDescription !== "string") throw new Error(`짧은 설명 누락: ${listing}`);
     files.push({
       listingLocale: listing,
