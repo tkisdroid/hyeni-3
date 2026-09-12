@@ -33,9 +33,10 @@ const route = (
   back,
   tone,
   dialog = "none",
-) => ({ path, screen, source, guard, availability, kind, states, back, tone, dialog });
+  retryMode = "composite",
+) => ({ path, screen, source, guard, availability, kind, states, back, tone, dialog, retryMode });
 
-// App.tsx에서 실제 렌더되는 63개 사용자 화면의 출시 품질 계약이다.
+// App.tsx에서 실제 렌더되는 65개 사용자 화면의 출시 품질 계약이다.
 // 같은 MemoChat 소스를 쓰더라도 부모/아이 라우트는 guard·말투 계약이 달라 별도 행으로 둔다.
 const routeQualityMatrix = [
   route("parent/home", "ParentHome", "src/screens/parent/ParentHome.tsx", "parent", "all", "query", [
@@ -55,6 +56,11 @@ const routeQualityMatrix = [
   ], "shell", "parent-formal"),
   route("study", "ParentStudy", "src/screens/study/ParentStudy.tsx", "parent", "all", "hybrid", [
     queryStatesAt("src/screens/study/ParentStudy.tsx", /parentStudyQueryState === "loading"/, /parentStudyQueryState === "error"/, /target\.kind === "select"/, /<ParentStudySummary/, /void retryParentStudy\(\)/),
+    queryStatesAt("src/features/study/StudyProblemHistory.tsx", /history\.isPending/, /history\.isError/, /items\.length === 0/, /items\.map/, /history\.refetch\(\)/),
+    queryStatesAt("src/features/study/StudyAccessGate.tsx", /status\.isPending \|\| view\.kind === "loading"/, /className="study-access-status" role="alert"/, /view\.kind === "hidden"/, /view\.kind === "enabled"/, /void status\.refetch\(\)/),
+  ], "screen", "parent-formal"),
+  route("study/vocabulary", "ParentVocabulary", "src/screens/study/ParentVocabulary.tsx", "parent", "all", "query", [
+    queryStatesAt("src/screens/study/ParentVocabulary.tsx", /query\.isPending/, /query\.isError/, /reviews\.length === 0/, /reviews\.map/, /query\.refetch\(\)/),
     queryStatesAt("src/features/study/StudyAccessGate.tsx", /status\.isPending \|\| view\.kind === "loading"/, /className="study-access-status" role="alert"/, /view\.kind === "hidden"/, /view\.kind === "enabled"/, /void status\.refetch\(\)/),
   ], "screen", "parent-formal"),
 
@@ -68,6 +74,11 @@ const routeQualityMatrix = [
     queryStatesAt("src/screens/study/ChildStudy.tsx", /childStudyQueryState === "loading"/, /childStudyQueryState === "error"/, /entry\.kind === "unavailable"/, /<StudyMissionPlayer/, /void retryChildStudy\(\)/),
     queryStatesAt("src/features/study/StudyAccessGate.tsx", /status\.isPending \|\| view\.kind === "loading"/, /className="study-access-status" role="alert"/, /view\.kind === "hidden"/, /view\.kind === "enabled"/, /void status\.refetch\(\)/),
   ], "screen", "child-informal"),
+  route("study/vocabulary/learn", "ChildVocabulary", "src/screens/study/ChildVocabulary.tsx", "child", "all", "hybrid", [
+    queryStatesAt("src/screens/study/ChildVocabulary.tsx", /overview\.isPending/, /overview\.isError/, /!overview\.data/, /overview\.data\.levels\.map/, /overview\.refetch\(\)/),
+    queryStatesAt("src/screens/study/ChildVocabulary.tsx", /deck\.isPending/, /deck\.isError/, /!card && !deck\.hasNextPage/, /data-word-id=\{card\.id\}/, /deck\.refetch\(\)/),
+    queryStatesAt("src/features/study/StudyAccessGate.tsx", /status\.isPending \|\| view\.kind === "loading"/, /className="study-access-status" role="alert"/, /view\.kind === "hidden"/, /view\.kind === "enabled"/, /void status\.refetch\(\)/),
+  ], "screen", "child-informal", "none", "independent"),
 
   route("teacher/home", "TeacherHome", "src/screens/teacher/TeacherHome.tsx", "teacher", "dev", "query", queryStates(/loading/, /genuineError/, /preview\.length === 0/, /preview\.map/, /void retryTeacherHome\(\)/), "shell", "teacher-dev"),
   route("teacher/students", "TeacherStudents", "src/screens/teacher/TeacherStudents.tsx", "teacher", "dev", "query", queryStates(/studentsLoading/, /studentsError/, /visibleStudents\.length === 0/, /visibleStudents\.map/, /void retryTeacherStudents\(\)/), "shell", "teacher-dev"),
@@ -274,7 +285,7 @@ function isReadQueryHook(sourcePath, hookName, seen = new Set()) {
     if (readQuery) return;
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
       const called = node.expression.text;
-      if (called === "useQuery" || called === "useQueries") {
+      if (["useQuery", "useQueries", "useInfiniteQuery"].includes(called)) {
         readQuery = true;
         return;
       }
@@ -336,7 +347,7 @@ function readQuerySourcesForScreen(sourcePath, seen = new Set()) {
     }
     if (ts.isCallExpression(node)
       && ts.isIdentifier(node.expression)
-      && (node.expression.text === "useQuery" || node.expression.text === "useQueries")) {
+      && ["useQuery", "useQueries", "useInfiniteQuery"].includes(node.expression.text)) {
       directReadQuery = true;
     }
     ts.forEachChild(node, visit);
@@ -558,8 +569,9 @@ function assertCompositeRetryWiring(row, source = read(row.source)) {
     true,
     ts.ScriptKind.TSX,
   );
-  const queryNames = compositeReadQueryNames(sourceFile, row);
   const bindings = readQueryBindings(sourceFile, row.source);
+  // 단계 목록과 학습 실행은 따로 마운트되며 각자 자기 오류를 재시도한다.
+  const queryNames = row.retryMode === "independent" ? [...bindings.keys()] : compositeReadQueryNames(sourceFile, row);
   for (const queryName of queryNames) {
     assert.ok(
       bindings.has(queryName),
@@ -568,6 +580,11 @@ function assertCompositeRetryWiring(row, source = read(row.source)) {
   }
 
   const handlerSets = jsxHandlerRefetchSets(sourceFile, localFunctionMap(sourceFile));
+  if (row.retryMode === "independent") {
+    assert.ok(queryNames.length > 0, `${row.path}의 독립 read query가 없습니다`);
+    for (const queryName of queryNames) assert.ok(handlerSets.some(set => set.has(queryName)), `${row.path}의 ${queryName} retry handler가 없습니다`);
+    return;
+  }
   const completeHandler = handlerSets.find((set) => queryNames.every((queryName) => set.has(queryName)));
   if (!completeHandler) {
     const reached = new Set(handlerSets.flatMap((set) => [...set]));
@@ -648,12 +665,12 @@ function extractAppRoutes() {
   return routes;
 }
 
-test("라우트 품질 매트릭스는 App.tsx의 63개 실제 화면·가드·출시 범위를 정확히 대조한다", () => {
-  assert.equal(routeQualityMatrix.length, 63);
-  assert.equal(new Set(routeQualityMatrix.map((item) => item.path)).size, 63, "매트릭스 path 중복");
-  assert.equal(new Set(routeQualityMatrix.map((item) => item.source)).size, 62, "MemoChat 외 화면 소스 중복 또는 누락");
-  assert.equal(routeQualityMatrix.filter((item) => item.kind === "query").length, 32);
-  assert.equal(routeQualityMatrix.filter((item) => item.kind === "hybrid").length, 24);
+test("라우트 품질 매트릭스는 App.tsx의 65개 실제 화면·가드·출시 범위를 정확히 대조한다", () => {
+  assert.equal(routeQualityMatrix.length, 65);
+  assert.equal(new Set(routeQualityMatrix.map((item) => item.path)).size, 65, "매트릭스 path 중복");
+  assert.equal(new Set(routeQualityMatrix.map((item) => item.source)).size, 64, "MemoChat 외 화면 소스 중복 또는 누락");
+  assert.equal(routeQualityMatrix.filter((item) => item.kind === "query").length, 33);
+  assert.equal(routeQualityMatrix.filter((item) => item.kind === "hybrid").length, 25);
   assert.equal(routeQualityMatrix.filter((item) => item.kind === "mutation").length, 5);
   assert.equal(routeQualityMatrix.filter((item) => item.kind === "static").length, 2);
   for (const item of routeQualityMatrix.filter((row) => row.kind === "mutation" || row.kind === "static")) {
@@ -661,7 +678,7 @@ test("라우트 품질 매트릭스는 App.tsx의 63개 실제 화면·가드·�
   }
 
   const actual = extractAppRoutes();
-  assert.equal(actual.length, 63, "App.tsx 사용자 화면 수가 바뀌면 매트릭스도 함께 갱신해야 합니다");
+  assert.equal(actual.length, 65, "App.tsx 사용자 화면 수가 바뀌면 매트릭스도 함께 갱신해야 합니다");
 
   const signature = (item) => [item.path, item.screen, item.source, item.guard, item.availability].join("|");
   const expectedSignatures = routeQualityMatrix.map(signature).sort();
@@ -696,8 +713,8 @@ test("중첩 렌더 컴포넌트의 read query도 화면 상태 계약에서 빠
 
 test("query 화면은 loading/error/empty/success와 실제 retry UI 계약을 모두 가진다", () => {
   const queryRows = routeQualityMatrix.filter((item) => item.kind === "query");
-  assert.equal(queryRows.length, 32);
-  assert.equal(new Set(queryRows.map((item) => item.source)).size, 31, "MemoChat만 부모·아이 라우트에서 공유됩니다");
+  assert.equal(queryRows.length, 33);
+  assert.equal(new Set(queryRows.map((item) => item.source)).size, 32, "MemoChat만 부모·아이 라우트에서 공유됩니다");
 
   const failures = [];
   for (const item of queryRows) {
@@ -716,6 +733,7 @@ test("감사 완료된 hybrid 화면은 read query의 다섯 상태와 실제 �
     "parent/settings",
     "study",
     "study/learn",
+    "study/vocabulary/learn",
     "teacher/settings",
     "subscription",
     "remote-audio",

@@ -1,19 +1,22 @@
-import { Calculator, ChevronLeft, ChevronRight } from "lucide-react";
+import { BookOpen, Calculator, ChevronLeft, ChevronRight } from "lucide-react";
+import { useIntl } from "react-intl";
 import { Navigate, useNavigate } from "react-router";
 import { useAuth } from "@/auth/AuthContext";
 import { MINI_APP_COPY } from "@/features/miniapps/miniAppCopy";
-import { isMiniAppsMarket, resolveMathMiniAppDestination } from "@/features/miniapps/miniAppNavigation";
+import { isMiniAppsMarket, resolveMathMiniAppDestination, resolveVocabularyMiniAppDestination } from "@/features/miniapps/miniAppNavigation";
 import { useLocale } from "@/i18n/useLocale";
 import { asset } from "@/lib/assets";
 import "./mini-apps.css";
 
 export function MiniApps() {
+  const intl = useIntl();
   const auth = useAuth();
   const { accessCountry } = useLocale();
   const navigate = useNavigate();
   const isChild = auth.role === "child";
   const homePath = isChild ? "/child/home" : "/parent/home";
   const mathPath = auth.role ? resolveMathMiniAppDestination(auth.role) : null;
+  const vocabularyPath = auth.role ? resolveVocabularyMiniAppDestination(auth.role) : null;
 
   if (!mathPath || !isMiniAppsMarket(accessCountry)) return <Navigate to={homePath} replace />;
 
@@ -52,6 +55,15 @@ export function MiniApps() {
           </span>
           <ChevronRight className="mini-app-card__arrow" aria-hidden="true" />
         </button>
+        {vocabularyPath && <button type="button" className="mini-app-card mini-app-card--vocabulary hy-press" onClick={() => navigate(vocabularyPath)}>
+          <span className="mini-app-card__art" aria-hidden="true"><BookOpen /></span>
+          <span className="mini-app-card__copy">
+            <span className="mini-app-card__badge">{intl.formatMessage({ id: "study.vocabulary.miniBadge" })}</span>
+            <strong>{intl.formatMessage({ id: "study.vocabulary.title" })}</strong>
+            <span>{intl.formatMessage({ id: isChild ? "study.vocabulary.miniChild" : "study.vocabulary.miniParent" })}</span>
+          </span>
+          <ChevronRight className="mini-app-card__arrow" aria-hidden="true" />
+        </button>}
       </section>
     </section>
   );

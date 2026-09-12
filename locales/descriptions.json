@@ -26254,5 +26254,595 @@
     "qualityTier": "B",
     "variables": {},
     "description": "혜니캘린더 내장 Study child 화면 문구: study.result.tryAgain"
+  },
+  "study.history.answer": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.answer"
+  },
+  "study.history.childAnswer": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.childAnswer"
+  },
+  "study.history.commonMistake": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.commonMistake"
+  },
+  "study.history.correct": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.correct"
+  },
+  "study.history.detailsUnavailable": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.detailsUnavailable"
+  },
+  "study.history.empty": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.empty"
+  },
+  "study.history.error": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.error"
+  },
+  "study.history.exampleAnswer": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.exampleAnswer"
+  },
+  "study.history.explanation": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.explanation"
+  },
+  "study.history.false": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.false"
+  },
+  "study.history.incorrect": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.incorrect"
+  },
+  "study.history.loading": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.loading"
+  },
+  "study.history.metadata": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "seconds": "number",
+      "hints": "number"
+    },
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.metadata"
+  },
+  "study.history.missingAnswer": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.missingAnswer"
+  },
+  "study.history.missingProblem": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.missingProblem"
+  },
+  "study.history.more": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.more"
+  },
+  "study.history.noSubmission": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.noSubmission"
+  },
+  "study.history.open": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.open"
+  },
+  "study.history.ordinal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.ordinal"
+  },
+  "study.history.selfCheck": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.selfCheck"
+  },
+  "study.history.skipped": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.skipped"
+  },
+  "study.history.subtitle": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.subtitle"
+  },
+  "study.history.title": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.title"
+  },
+  "study.history.true": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.true"
+  },
+  "study.history.unscored": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.unscored"
+  },
+  "study.history.unsupportedVisual": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.unsupportedVisual"
+  },
+  "study.history.visualDescription": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "domain": "string",
+      "concept": "string"
+    },
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.history.visualDescription"
+  },
+  "study.vocabulary.again": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.again"
+  },
+  "study.vocabulary.allMode": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.allMode"
+  },
+  "study.vocabulary.cefrSource": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 자료의 원문 저작권자와 이용 조건 링크 제목"
+  },
+  "study.vocabulary.chooseLevel": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.chooseLevel"
+  },
+  "study.vocabulary.complete": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.complete"
+  },
+  "study.vocabulary.download": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.download"
+  },
+  "study.vocabulary.flip": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.flip"
+  },
+  "study.vocabulary.flipBack": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.flipBack"
+  },
+  "study.vocabulary.flipHint": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.flipHint"
+  },
+  "study.vocabulary.historyTitle": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.historyTitle"
+  },
+  "study.vocabulary.known": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.known"
+  },
+  "study.vocabulary.level1": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.level1"
+  },
+  "study.vocabulary.level2": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.level2"
+  },
+  "study.vocabulary.level3": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.level3"
+  },
+  "study.vocabulary.level4": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.level4"
+  },
+  "study.vocabulary.level5": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.level5"
+  },
+  "study.vocabulary.levelNote": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.levelNote"
+  },
+  "study.vocabulary.levelNumber": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "level": "number"
+    },
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.levelNumber"
+  },
+  "study.vocabulary.licenseDetails": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.licenseDetails"
+  },
+  "study.vocabulary.loadError": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.loadError"
+  },
+  "study.vocabulary.loading": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.loading"
+  },
+  "study.vocabulary.miniBadge": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.miniBadge"
+  },
+  "study.vocabulary.miniChild": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.miniChild"
+  },
+  "study.vocabulary.miniParent": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.miniParent"
+  },
+  "study.vocabulary.mode": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.mode"
+  },
+  "study.vocabulary.newMode": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.newMode"
+  },
+  "study.vocabulary.nextLevelHint": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.nextLevelHint"
+  },
+  "study.vocabulary.noCards": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.noCards"
+  },
+  "study.vocabulary.parentAgain": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.parentAgain"
+  },
+  "study.vocabulary.parentEmpty": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.parentEmpty"
+  },
+  "study.vocabulary.parentError": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.parentError"
+  },
+  "study.vocabulary.parentHome": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.parentHome"
+  },
+  "study.vocabulary.parentKnown": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.parentKnown"
+  },
+  "study.vocabulary.parentLoading": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.parentLoading"
+  },
+  "study.vocabulary.parentProgress": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "studied": "number",
+      "total": "number",
+      "again": "number"
+    },
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.parentProgress"
+  },
+  "study.vocabulary.parentSubtitle": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.parentSubtitle"
+  },
+  "study.vocabulary.parentTitle": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.parentTitle"
+  },
+  "study.vocabulary.progress": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "studied": "number",
+      "total": "number"
+    },
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.progress"
+  },
+  "study.vocabulary.rateHint": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.rateHint"
+  },
+  "study.vocabulary.retrySave": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.retrySave"
+  },
+  "study.vocabulary.reviewCount": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.reviewCount"
+  },
+  "study.vocabulary.reviewEmpty": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.reviewEmpty"
+  },
+  "study.vocabulary.reviewMode": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.reviewMode"
+  },
+  "study.vocabulary.saveError": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.saveError"
+  },
+  "study.vocabulary.saving": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.saving"
+  },
+  "study.vocabulary.selectChildAtHome": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.selectChildAtHome"
+  },
+  "study.vocabulary.selfReportNote": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.selfReportNote"
+  },
+  "study.vocabulary.sessionCount": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.sessionCount"
+  },
+  "study.vocabulary.sourceNote": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.sourceNote"
+  },
+  "study.vocabulary.sources": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.sources"
+  },
+  "study.vocabulary.subtitle": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.subtitle"
+  },
+  "study.vocabulary.title": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.title"
+  },
+  "study.vocabulary.total": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "영단어 학습 및 부모 풀이 조회 화면 문구: study.vocabulary.total"
+  },
+  "study.vocabulary.wiktionarySource": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "영단어 자료의 원문 저작권자와 이용 조건 링크 제목"
   }
 }

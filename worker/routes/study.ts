@@ -32,6 +32,26 @@ import type {
   SubmitCalendarAnswerInput,
 } from "../contracts/studyRpc";
 import type { Env, Vars } from "../types";
+import type { ChildProblemHistoryInput, ChildVocabularyProgressInput, VocabularyDeckInput, VocabularyReviewInput, VocabularyLevel } from "../../src/features/study/learningExtrasContracts";
+
+function studyCursor(value: string | undefined): { cursor?: string } {
+  if (value === undefined) return {};
+  if (!value || value.length > 2048 || !/^[A-Za-z0-9_.-]+$/u.test(value)) throw new StudyGatewayRequestError(400, "invalid_request");
+  return { cursor: value };
+}
+
+function vocabularyLevel(value: unknown): VocabularyLevel {
+  const level = typeof value === "string" && /^[1-5]$/u.test(value) ? Number(value) : value;
+  if (level !== 1 && level !== 2 && level !== 3 && level !== 4 && level !== 5) throw new StudyGatewayRequestError(400, "invalid_request");
+  return level;
+}
+
+function assertStudyQuery(request: Request, allowed: readonly string[]): void {
+  const params = new URL(request.url).searchParams;
+  for (const key of params.keys()) {
+    if (!allowed.includes(key) || params.getAll(key).length !== 1) throw new StudyGatewayRequestError(400, "invalid_request");
+  }
+}
 
 export const study = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -182,6 +202,65 @@ study.get("/children/:memberId/report", requireAuth, async (c) => {
   } catch (error) {
     return gatewayError(c, error);
   }
+});
+
+study.get("/children/:memberId/history", requireAuth, async (c) => {
+  try {
+    assertStudyQuery(c.req.raw, ["range", "cursor"]);
+    const memberId = studyId(c.req.param("memberId"));
+    const requestId = requestIdForStudy(c.req.raw);
+    const context = await resolveStudyGatewayContext(c.env, c.get("user"), { role: "parent", childMemberId: memberId });
+    const input: ChildProblemHistoryInput = { memberId, requestId, range: studyRange(c.req.query("range")), ...studyCursor(c.req.query("cursor")) };
+    const result = await studyResponse(() => callStudyBinding(c.env, context, input, "guardian.history", "guardian", requestId,
+      (binding, auth) => binding.getChildProblemHistory(input, auth)));
+    return result.ok ? c.json(result.value) : c.json({ error: "study_unavailable" }, 503);
+  } catch (error) { return gatewayError(c, error); }
+});
+
+study.get("/children/:memberId/vocabulary", requireAuth, async (c) => {
+  try {
+    assertStudyQuery(c.req.raw, ["cursor"]);
+    const memberId = studyId(c.req.param("memberId"));
+    const requestId = requestIdForStudy(c.req.raw);
+    const context = await resolveStudyGatewayContext(c.env, c.get("user"), { role: "parent", childMemberId: memberId });
+    const input: ChildVocabularyProgressInput = { memberId, requestId, ...studyCursor(c.req.query("cursor")) };
+    const result = await studyResponse(() => callStudyBinding(c.env, context, input, "guardian.vocabulary", "guardian", requestId,
+      (binding, auth) => binding.getChildVocabularyProgress(input, auth)));
+    return result.ok ? c.json(result.value) : c.json({ error: "study_unavailable" }, 503);
+  } catch (error) { return gatewayError(c, error); }
+});
+
+study.get("/learner/vocabulary", requireAuth, async (c) => {
+  try {
+    assertStudyQuery(c.req.raw, ["level", "mode", "cursor"]);
+    const requestId = requestIdForStudy(c.req.raw);
+    const context = await resolveStudyGatewayContext(c.env, c.get("user"), { role: "child" });
+    const memberId = context.child?.memberId;
+    if (!memberId) throw new StudyGatewayRequestError(403, "study_not_available");
+    const mode = c.req.query("mode") ?? "new";
+    if (mode !== "new" && mode !== "all" && mode !== "review") throw new StudyGatewayRequestError(400, "invalid_request");
+    const level = c.req.query("level");
+    const input: VocabularyDeckInput = { memberId, requestId, mode, ...(level === undefined ? {} : { level: vocabularyLevel(level) }), ...studyCursor(c.req.query("cursor")) };
+    const result = await studyResponse(() => callStudyBinding(c.env, context, input, "learner.vocabulary.read", "learner", requestId,
+      (binding, auth) => binding.getVocabularyDeck(input, auth)));
+    return result.ok ? c.json(result.value) : c.json({ error: "study_unavailable" }, 503);
+  } catch (error) { return gatewayError(c, error); }
+});
+
+study.post("/learner/vocabulary/reviews", requireAuth, async (c) => {
+  try {
+    const body = await parseStudyJson(c.req.raw, ["catalogVersion", "wordId", "level", "rating"]);
+    const requestId = requestIdForStudy(c.req.raw);
+    const context = await resolveStudyGatewayContext(c.env, c.get("user"), { role: "child" });
+    const memberId = context.child?.memberId;
+    if (!memberId) throw new StudyGatewayRequestError(403, "study_not_available");
+    if (body.rating !== "known" && body.rating !== "again") throw new StudyGatewayRequestError(400, "invalid_request");
+    const input: VocabularyReviewInput = { memberId, requestId, catalogVersion: studyId(body.catalogVersion),
+      wordId: studyId(body.wordId), level: vocabularyLevel(body.level), rating: body.rating };
+    const result = await studyResponse(() => callStudyBinding(c.env, context, input, "learner.vocabulary.review", "learner", requestId,
+      (binding, auth) => binding.recordVocabularyReview(input, auth)));
+    return result.ok ? c.json(result.value, 201) : c.json({ error: "study_unavailable" }, 503);
+  } catch (error) { return gatewayError(c, error); }
 });
 
 study.get("/learner/me", requireAuth, async (c) => {

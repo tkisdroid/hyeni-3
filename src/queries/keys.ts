@@ -95,6 +95,12 @@ export const qk = {
 
   // 학습 — 부모/자녀 역할과 정확한 자녀 member를 키에 고정해 캐시가 섞이지 않게 한다.
   study: {
+    history: (familyId: string, userId: string, memberId: string, range: "7d" | "30d" | "term") =>
+      ["study", "history", familyId, userId, memberId, range] as const,
+    vocabulary: (familyId: string, userId: string, memberId: string, level: number | null, mode: "new" | "review" | "all", runId: string) =>
+      ["study", "vocabulary", familyId, userId, memberId, level, mode, runId] as const,
+    vocabularyProgress: (familyId: string, userId: string, memberId: string) =>
+      ["study", "vocabularyProgress", familyId, userId, memberId] as const,
     all: ["study"] as const,
     status: (familyId: string, role: "parent" | "child") =>
       ["study", "status", familyId, role] as const,

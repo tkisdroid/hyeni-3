@@ -11,6 +11,20 @@ Android 만 Capacitor 래핑**. 백엔드 Cloudflare Worker 는 **이 저장소 
 2026-08-02 hyeni-1 에서 이관 — 이제 hyeni-3 만으로 앱·Worker·D1 전체가 동작한다).
 1~10단계 전부 완료 — 현 국면은 **실사용 안정화**(TK 가 실기기 3대로 쓰며 제보 → 즉시 수정·검증·배포).
 
+**영단어·부모 실제 풀이 조회(2026-09-12, 기능 브랜치 구현/운영 미반영)**:
+미니앱 영어는 5단계 4,067개(352/352/813/1,322/1,228)이며 영어 단계와 수학 학년은 별개다.
+위키낱말사전 뜻·CEFR-J 수준 자료의 출처와 이용 조건을 앱에서 제공하고, 공식 학년별 필수 범위로 표시하지 않는다.
+아이의 `알겠어/다시 볼래`는 자가평가다. Study의 `vocabulary_reviews`와 `vocabulary_progress`를 아이별 DO와 한 D1 batch로 저장하며,
+실패 재시도는 같은 request ID를 유지한다. 평가로 목록이 줄어도 원본 카탈로그 위치 cursor를 사용해 페이지 누락을 막는다.
+부모 수학 원문은 `session_problems.release_id`로 조회한다. 답안 11종·건너뜀·미채점·원문 누락을 구분하고,
+해설 `alternative`는 문자열 배열이다. 현재 수학 3,384문항 전수 파싱으로 이 계약을 대조했다.
+Calendar 인증·활성 가족/아이 검사 후 기존 Study RPC만 사용하며 영어용 로그인·refresh·공개 Study HTTP를 추가하지 않는다.
+운영 순서는 Study D1 `0010_vocabulary_learning.sql` → Study Worker → Calendar Worker → 앱이다. schema 9 Worker는
+migration 10 직후 준비 상태가 닫히므로 변경 창 안에서 후속 배포까지 이어야 한다. 같은 schema 9 바이너리만 되돌리는 롤백은 금지한다.
+회귀: `tests/studyLearningApi.test.ts`·`tests/vocabularyLearning.test.ts`·`worker/tests/studyGateway.test.mjs`,
+Study `calendarLearningExtras.test.ts`·`problemHistoryService.test.ts`·`vocabularyService.test.ts`·`vocabularyCatalog.test.ts`.
+브라우저는 `node scripts/qa-study-learning.mjs <저장소 밖 출력 경로>`의 격리 fixture 검증이며 운영 API·실기기 확인과 구분한다.
+
 ## 언어·말투 (절대 규칙)
 
 - 모든 응답·주석·커밋 메시지 = **한국어**. 기술 용어·코드 식별자는 원문.
