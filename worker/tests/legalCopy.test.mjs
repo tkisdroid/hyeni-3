@@ -6,7 +6,7 @@ const source = await readFile(new URL("../routes/legal.ts", import.meta.url), "u
 const indexSource = await readFile(new URL("../index.ts", import.meta.url), "utf8");
 
 test("공개 법적 문서는 자연스러운 서비스명 조사와 최신 갱신일을 사용한다", () => {
-  assert.match(source, /lastUpdated:\s*"2026-08-18"/);
+  assert.match(source, /lastUpdated:\s*"2026-09-01"/);
   assert.match(source, /\$\{META\.serviceName\}가 어떤 정보를/);
   assert.match(source, /\$\{META\.serviceName\}의 계정과 데이터를/);
   assert.doesNotMatch(source, /\$\{META\.serviceName\}이 어떤 정보를/);
@@ -110,7 +110,7 @@ test("처리방침은 실제 외부 전송업체·필드를 열거하고 증거 
     "Google OAuth",
     "Kakao OAuth",
     "Naver OAuth",
-    "Resend",
+    "Cloudflare Email Service",
     "NCP SENS",
     "공개 OSRM",
     "SpeechRecognizer",

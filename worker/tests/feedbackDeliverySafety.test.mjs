@@ -29,7 +29,6 @@ after(() => typeScriptResolutionHook.deregister());
 const feedbackRoutes = (
   await import(pathToFileURL(resolve(workerDir, "routes/feedback.ts")).href)
 ).default;
-const feedbackSource = readFileSync(resolve(workerDir, "routes/feedback.ts"), "utf8");
 
 class Statement {
   constructor(owner, sql, bindings = []) {
@@ -184,39 +183,39 @@ function validBody(index = 1) {
   };
 }
 
-const originalFetch = globalThis.fetch;
-after(() => {
-  globalThis.fetch = originalFetch;
-});
-
 test("피드백 relay는 인증 없이는 본문을 접수하거나 이메일을 보내지 않는다", async () => {
   const { sqlite, db } = createDb();
-  let fetchCalls = 0;
-  globalThis.fetch = async () => {
-    fetchCalls += 1;
-    return Response.json({ id: "email-id" });
-  };
+  let emailCalls = 0;
 
   const response = await request(db, validBody(), {
     auth: false,
-    env: { RESEND_API_KEY: "secret", FEEDBACK_FROM_EMAIL: "feedback@example.com" },
+    env: {
+      FEEDBACK_EMAIL: {
+        async send() {
+          emailCalls += 1;
+          return { messageId: "email-id" };
+        },
+      },
+    },
   });
 
   assert.equal(response.status, 401, await response.clone().text());
-  assert.equal(fetchCalls, 0);
+  assert.equal(emailCalls, 0);
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM user_feedback").get().count, 0);
 });
 
-test("서버 정본 사용자·가족만 저장하고 저장 완료 뒤 Resend로 전달한다", async () => {
+test("서버 정본 사용자·가족만 저장하고 저장 완료 뒤 Cloudflare Email Service로 전달한다", async () => {
   const { sqlite, db } = createDb();
   let emailRequest = null;
-  globalThis.fetch = async (_url, init) => {
-    const durable = sqlite.prepare(
-      "SELECT status FROM user_feedback WHERE type='feature_feedback'",
-    ).get();
-    assert.equal(durable?.status, "queued", "이메일 호출 전에 durable 접수가 끝나야 한다");
-    emailRequest = init;
-    return Response.json({ id: "email-id" });
+  const emailBinding = {
+    async send(message) {
+      const durable = sqlite.prepare(
+        "SELECT status FROM user_feedback WHERE type='feature_feedback'",
+      ).get();
+      assert.equal(durable?.status, "queued", "이메일 호출 전에 durable 접수가 끝나야 한다");
+      emailRequest = message;
+      return { messageId: "email-id" };
+    },
   };
 
   const response = await request(
@@ -229,7 +228,7 @@ test("서버 정본 사용자·가족만 저장하고 저장 완료 뒤 Resend�
       senderEmail: "spoof@example.com",
       accessToken: "공격자 토큰",
     },
-    { env: { RESEND_API_KEY: "secret", FEEDBACK_FROM_EMAIL: "feedback@example.com" } },
+    { env: { FEEDBACK_EMAIL: emailBinding } },
   );
 
   assert.equal(response.status, 200, await response.clone().text());
@@ -272,7 +271,7 @@ test("서버 정본 사용자·가족만 저장하고 저장 완료 뒤 Resend�
     source: "index-ABC123.js:42:7",
   }]);
 
-  const email = JSON.parse(emailRequest.body);
+  const email = emailRequest;
   assert.match(email.text, /정본 부모/);
   assert.match(email.text, /canonical@example\.com/);
   assert.match(email.text, /parent-a/);
@@ -283,21 +282,15 @@ test("서버 정본 사용자·가족만 저장하고 저장 완료 뒤 Resend�
     email.text,
     /attacker|위조 이름|spoof@example\.com|admin|본문 토큰|민감한 오류 원문|37\.5/,
   );
-  assert.equal(email.reply_to, "canonical@example.com");
+  assert.equal(email.from, "feedback@hyenicalendar.com");
+  assert.equal(email.to, "tkisdroid@gmail.com");
+  assert.equal(email.replyTo, "canonical@example.com");
   assert.equal(email.subject, "[혜니캘린더] 문제 신고");
-  assert.ok(emailRequest.signal instanceof AbortSignal);
-  assert.equal(
-    emailRequest.headers["Idempotency-Key"],
-    `feedback:parent-a:${validBody().requestId}`,
-  );
 });
 
-test("Resend 상류 대기는 8초 deadline 뒤 queued로 강등한다", () => {
-  assert.match(feedbackSource, /signal:\s*AbortSignal\.timeout\(8_000\)/);
-});
-
-test("Resend 미설정·실패는 접수 행을 queued로 보존하고 PII를 응답하지 않는다", async (t) => {
+test("Cloudflare 이메일 바인딩 미설정·실패는 접수 행을 queued로 보존하고 PII를 응답하지 않는다", async (t) => {
   t.mock.method(console, "error", () => {});
+  t.mock.method(console, "warn", () => {});
   const missing = createDb();
   const missingResponse = await request(missing.db, validBody());
   assert.equal(missingResponse.status, 202, await missingResponse.clone().text());
@@ -308,9 +301,14 @@ test("Resend 미설정·실패는 접수 행을 queued로 보존하고 PII를 �
   );
 
   const failed = createDb();
-  globalThis.fetch = async () => new Response("provider secret detail", { status: 503 });
   const failedResponse = await request(failed.db, validBody(), {
-    env: { RESEND_API_KEY: "secret", FEEDBACK_FROM_EMAIL: "feedback@example.com" },
+    env: {
+      FEEDBACK_EMAIL: {
+        async send() {
+          throw new Error("provider secret detail");
+        },
+      },
+    },
   });
   assert.equal(failedResponse.status, 202, await failedResponse.clone().text());
   assert.deepEqual(await failedResponse.json(), { ok: true, status: "queued" });

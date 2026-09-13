@@ -130,7 +130,7 @@ test("quiet 편집기는 44px 조작 영역과 360px 한 열을 보장한다", (
 });
 
 test("운영 문서는 알림 조용한 시간 정본과 배포 순서를 보존한다", () => {
-  const docs = `${source("AGENTS.md")}\n${source("CLAUDE.md")}`;
+  const docs = `${source("AGENTS.md")}\n${source("docs/engineering/contracts.md")}\n${source("docs/engineering/operations.md")}`;
 
   assert.match(docs, /notification quiet hours/i);
   assert.match(docs, /부모 본인[^\n]*user_id[^\n]*활성 아이/);
@@ -143,6 +143,6 @@ test("운영 문서는 알림 조용한 시간 정본과 배포 순서를 보존
   assert.match(docs, /notification-quiet-hours\.sql[^\n]*Worker[^\n]*(이전|전에)/);
   assert.match(docs, /A17[^\n]*(부모|parent)/i);
   assert.match(docs, /razr[^\n]*(아이|child)/i);
-  assert.match(docs, /adb install -r[^\n]*(읽기 전용|역할별)/);
-  assert.match(docs, /S25[^\n]*(제외|미조작)/);
+  assert.match(docs, /adb install --user 0 -r/);
+  assert.match(docs, /S25[^\n]*고정 역할[^\n]*확인/);
 });

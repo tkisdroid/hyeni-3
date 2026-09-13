@@ -13,7 +13,7 @@ const META = {
   privacyOfficer: "이윤미",
   businessRegistrationNumber: "369-02-01464",
   effectiveDate: "2026-06-18",
-  lastUpdated: "2026-08-18",
+  lastUpdated: "2026-09-01",
 };
 
 const EXTERNAL_PROCESSING = [
@@ -27,7 +27,7 @@ const EXTERNAL_PROCESSING = [
   "Kakao Corp. (지도·모빌리티) — 지도 SDK 표시와 역지오코딩·도보 경로 요청에 지도 화면 및 조회 좌표, 주소, 출발·도착 좌표를 처리",
   "공개 OSRM(openstreetmap.de routed-foot) — 카카오 도보 경로가 제공되지 않을 때 출발·도착 좌표를 공개 라우팅 서버에 전송해 경로를 조회",
   "OpenAI — AI 친구 프롬프트·대화와 assistant 답변 생성, 일정 사진·텍스트 분석 및 AI 요약에 이용자가 제출한 콘텐츠를 처리",
-  "Resend — 문제 신고·문의·기능 제안 이메일 발송 시 senderName, senderEmail, senderRole, senderUserId, familyId, content, appOrigin과 사용자가 포함을 선택한 currentScreen·deviceInfo·errorLogs를 처리",
+  "Cloudflare Email Service — 문제 신고·문의·기능 제안 이메일 발송 시 senderName, senderEmail, senderRole, senderUserId, familyId, content, appOrigin과 사용자가 포함을 선택한 currentScreen·deviceInfo·errorLogs를 처리",
   "NAVER Cloud Platform NCP SENS — 전화 가입·OAuth 계정 연결 인증 시 전화번호와 6자리 OTP 문자 내용을 발송 처리",
   "운영체제·브라우저 음성 서비스 제공자(Android SpeechRecognizer·Web Speech Recognition·Android TextToSpeech·Web speechSynthesis 및 선택된 음성 엔진) — 음성 입력 시 사용자 음성·인식 결과·기기 관련 정보를, 답변 읽어주기 시 합성할 AI 답변 텍스트·기기 관련 정보를 외부에서 처리할 수 있음",
 ];

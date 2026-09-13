@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { inspectPwaPrecacheManifest } from "../scripts/lib/pwaPrecacheManifest.mjs";
+import { inspectPwaPrecacheManifest, inspectPwaPrecacheBudget } from "../scripts/lib/pwaPrecacheManifest.mjs";
 
 function withServiceWorker(source, run) {
   const dir = mkdtempSync(join(tmpdir(), "hyeni-pwa-precache-"));
@@ -14,6 +14,14 @@ function withServiceWorker(source, run) {
     rmSync(dir, { recursive: true, force: true });
   }
 }
+
+test("PWA 전체 캐시 예산은 실제 파일 크기로 경계 초과를 막는다", () => {
+  withServiceWorker('precache([{"revision":null,"url":"index.html"}]);', (distDir) => {
+    writeFileSync(join(distDir, 'index.html'), '12345');
+    assert.equal(inspectPwaPrecacheBudget({ distDir, limitBytes: 6 }).bytes, 5);
+    assert.throws(() => inspectPwaPrecacheBudget({ distDir, limitBytes: 5 }), /예산/);
+  });
+});
 
 test("PWA precache 검증은 고유 URL 목록을 통과시킨다", () => {
   withServiceWorker(

@@ -1113,7 +1113,7 @@ test("Google preflight는 가족 trial 이력과 기존 Toss active를 결제창
   assert.equal(eligibility.status, 200);
   assert.equal((await eligibility.json()).trialEligible, false);
 
-  const tossEnd = "2026-09-01T00:00:00.000Z";
+  const tossEnd = DEFAULT_SUBSCRIPTION_EXPIRY;
   db.sqlite.prepare(
     `INSERT INTO family_subscription
        (family_id,status,product_id,qonversion_user_id,provider,base_plan_id,
@@ -1520,7 +1520,7 @@ test("Google verify는 provider 선점 전에 검증된 received owner mapping�
 test("Toss가 이미 활성인데 RTDN Google 구매가 확인되면 자동 환불하고 Toss active를 보존한다", async () => {
   const db = createDb();
   await seedPurchaseOwner(db, RAW_TOKEN);
-  const tossEnd = "2026-09-01T00:00:00.000Z";
+  const tossEnd = DEFAULT_SUBSCRIPTION_EXPIRY;
   db.sqlite.prepare(
     `INSERT INTO family_subscription
        (family_id,status,product_id,qonversion_user_id,provider,base_plan_id,
@@ -1578,7 +1578,7 @@ test("Google 자동 환불 실패는 RTDN retryable로 남기고 재시도 성�
        (family_id,status,product_id,qonversion_user_id,provider,base_plan_id,
         current_period_end,google_play_raw,raw_event,created_at,updated_at)
      VALUES (?,'active','hyeni_premium_monthly',?,'toss_web','web-month',?,'{}','{}',?,?)`,
-  ).run(FAMILY_ID, `toss:${FAMILY_ID}`, "2026-09-01T00:00:00.000Z", NOW.toISOString(), NOW.toISOString());
+  ).run(FAMILY_ID, `toss:${FAMILY_ID}`, DEFAULT_SUBSCRIPTION_EXPIRY, NOW.toISOString(), NOW.toISOString());
   db.sqlite.prepare(
     `INSERT INTO billing_provider_reservations
        (family_id,provider,state,reservation_ref,created_at,updated_at)
@@ -1625,7 +1625,7 @@ test("기존 refund_required 충돌 행도 Google 환불 확인과 함께 Toss a
        (family_id,status,product_id,qonversion_user_id,provider,base_plan_id,
         current_period_end,google_play_raw,raw_event,created_at,updated_at)
      VALUES (?,'active','hyeni_premium_monthly',?,'toss_web','web-month',?,'{}','{}',?,?)`,
-  ).run(FAMILY_ID, `toss:${FAMILY_ID}`, "2026-09-01T00:00:00.000Z", NOW.toISOString(), NOW.toISOString());
+  ).run(FAMILY_ID, `toss:${FAMILY_ID}`, DEFAULT_SUBSCRIPTION_EXPIRY, NOW.toISOString(), NOW.toISOString());
   db.sqlite.prepare(
     `INSERT INTO billing_provider_reservations
        (family_id,provider,state,reservation_ref,conflicting_provider,conflict_ref,
@@ -1657,7 +1657,7 @@ test("기존 refund_required 충돌 행도 Google 환불 확인과 함께 Toss a
 test("Toss 활성 중 직접 Google 구매도 자동 환불하고 기존 Toss renewal 상태를 끊지 않는다", async () => {
   const db = createDb();
   seedOwnerAccount(db);
-  const tossEnd = "2026-09-01T00:00:00.000Z";
+  const tossEnd = DEFAULT_SUBSCRIPTION_EXPIRY;
   db.sqlite.prepare(
     `INSERT INTO family_subscription
        (family_id,status,product_id,qonversion_user_id,provider,base_plan_id,

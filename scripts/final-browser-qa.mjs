@@ -186,6 +186,7 @@ function familyResponse(role, options = {}) {
           updatedAt: new Date().toISOString(),
         },
       },
+      ...(options.daySummaryAudit ? [{ id: "qa-child-member-2", user_id: "qa-child-2", role: "child", name: "둘째 데모", child_order: 2, birthdate: "2018-03-02" }] : []),
     ],
     user: { id: myId },
   };
@@ -720,7 +721,12 @@ export function mockApi(pathname, scenario, method = "GET", requestBody = null, 
   if (pathname === "/api/ai/settings/friend-public") return { ai_enabled: true, ai_friend_name: "데모 친구", daily_limit: tier === "premium" ? 20 : 5 };
   if (pathname === "/api/ai/settings/friend") return { ai_enabled: true, ai_friend_name: "데모 친구", daily_limit: tier === "premium" ? 20 : 5 };
   if (pathname === "/api/ai/settings/chat") return { enabled: true, daily_limit: tier === "premium" ? 20 : 5 };
-  if (pathname === "/api/ai/day-summary") return null;
+  if (pathname === "/api/ai/day-summary") {
+    if (scenario.daySummaryAudit && method === "POST") {
+      return { premium: true, summary: `검증 요약 ${requestBody?.childUserId} ${requestBody?.dateKey}`, signals: {}, empty: false, cached: false };
+    }
+    return null;
+  }
   if (pathname === "/api/ai/voice-parse") {
     return aiScheduleExhausted
       ? { error: "daily_limit_reached", remaining: 0, dailyLimit: 5 }
@@ -1608,6 +1614,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     await wait(900);
     const wrongPasswordFacts = await cdp.evaluate(`(() => ({
       alert: document.querySelector(".ob-auth-alert")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      duplicateToast: [...document.querySelectorAll(".hy-toast__text")].some((node) => node.textContent?.includes("아이디 또는 비밀번호가 맞지 않아요")),
       loginId: document.querySelector("#hyeni-login-username")?.value ?? null,
       password: document.querySelector("#hyeni-login-password")?.value ?? null,
       focusedId: document.activeElement?.id ?? null,
@@ -1626,6 +1633,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || loginEntryFacts.paddingLeft !== 16
       || loginEntryFacts.paddingRight !== 16
       || !wrongPasswordFacts.alert?.includes("아이디 또는 비밀번호가 맞지 않아요")
+      || wrongPasswordFacts.duplicateToast
       || wrongPasswordFacts.loginId !== "mindlady"
       || wrongPasswordFacts.password !== "incorrect-password"
       || wrongPasswordFacts.focusedId !== "hyeni-login-password"
@@ -1704,7 +1712,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     consoleMessages = [];
     networkFailures = [];
     await cdp.send("Page.reload", { ignoreCache: true });
-    await wait(3_200);
+    await waitForSelector(cdp, ".ob-session-end", 10_000);
     const successfulLoginReloadFacts = await cdp.evaluate(`(() => ({
       hash: location.hash,
       sessionPresent: localStorage.getItem("hyeni-api-session-v1") !== null,
@@ -1801,7 +1809,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     consoleMessages = [];
     networkFailures = [];
     await cdp.send("Page.reload", { ignoreCache: true });
-    await wait(1_800);
+    await waitForSelector(cdp, ".ob-role-card--parent", 10_000);
     const deviceTakeoverReloadFacts = await cdp.evaluate(`(() => ({
       hash: location.hash,
       sessionAbsent: localStorage.getItem("hyeni-api-session-v1") === null,
@@ -2512,7 +2520,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       target.click();
       return true;
     })()`);
-    await wait(3_200);
+    await waitForSelector(cdp, ".rr-cta:not(:disabled)", 10_000);
     const deviceFinderFacts = await cdp.evaluate(`(() => ({
       hash: location.hash,
       routedChildUserId: history.state?.usr?.childUserId ?? null,
@@ -2815,6 +2823,47 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       process.stdout.write(`${row.problems.length ? "FAIL" : "OK  "} child  ${route}\n`);
     }
 
+    // 캐시로 다시 연 화면은 조회 성공 시각을 유지하고 명시적 새로고침 뒤에만 갱신한다.
+    await navigate({ role: "parent", tier: "free" }, "data-sync");
+    const firstCheckedAt = await cdp.evaluate(`[...document.querySelectorAll(".ds-sync__v")].at(-1)?.textContent ?? null`);
+    await cdp.evaluate(`location.hash = "#/parent/home"`);
+    await wait(1400);
+    await cdp.evaluate(`location.hash = "#/data-sync"`);
+    await wait(600);
+    const cachedCheckedAt = await cdp.evaluate(`[...document.querySelectorAll(".ds-sync__v")].at(-1)?.textContent ?? null`);
+    await clickSelector(cdp, ".ds-sync__btn");
+    await wait(600);
+    const refreshedCheckedAt = await cdp.evaluate(`[...document.querySelectorAll(".ds-sync__v")].at(-1)?.textContent ?? null`);
+    report.focused.dataSyncTimestamp = { firstCheckedAt, cachedCheckedAt, refreshedCheckedAt };
+    if (!firstCheckedAt || firstCheckedAt !== cachedCheckedAt || !refreshedCheckedAt || refreshedCheckedAt === firstCheckedAt) {
+      report.problems.push({ scope: "data-sync-confirmed-timestamp", facts: report.focused.dataSyncTimestamp });
+    }
+
+    // 같은 화면 인스턴스에서 날짜와 아이를 바꿔 이전 생성 결과가 남지 않는지 확인한다.
+    await navigate({ role: "parent", tier: "premium", daySummaryAudit: true }, "day-summary");
+    await clickSelector(cdp, ".ds-panel__cta");
+    await wait(600);
+    const generatedSummaryText = await cdp.evaluate(`document.querySelector(".ds-quote")?.textContent ?? null`);
+    await cdp.evaluate(`(() => {
+      history.pushState({ ...history.state, key: "qa-summary-date", usr: { childUserId: ${JSON.stringify(CHILD_ID)}, dateKey: "2026-8-6" } }, "", location.href);
+      dispatchEvent(new PopStateEvent("popstate", { state: history.state }));
+    })()`);
+    await wait(600);
+    const afterDateChange = await cdp.evaluate(`document.querySelector(".ds-quote")?.textContent ?? null`);
+    await clickSelector(cdp, ".ds-panel__cta");
+    await wait(600);
+    const regeneratedSummaryText = await cdp.evaluate(`document.querySelector(".ds-quote")?.textContent ?? null`);
+    await cdp.evaluate(`(() => {
+      history.pushState({ ...history.state, key: "qa-summary-child", usr: { childUserId: "qa-child-2", dateKey: "2026-8-6" } }, "", location.href);
+      dispatchEvent(new PopStateEvent("popstate", { state: history.state }));
+    })()`);
+    await wait(600);
+    const afterChildChange = await cdp.evaluate(`({ quote: document.querySelector(".ds-quote")?.textContent ?? null, title: document.querySelector(".ds-panel__title")?.textContent ?? null })`);
+    report.focused.daySummaryScope = { generatedSummaryText, afterDateChange, regeneratedSummaryText, afterChildChange };
+    if (!generatedSummaryText?.includes("검증 요약") || afterDateChange !== null || !regeneratedSummaryText?.includes("2026-09-06") || afterChildChange.quote !== null || !afterChildChange.title?.includes("둘째 데모")) {
+      report.problems.push({ scope: "day-summary-target-isolation", facts: report.focused.daySummaryScope });
+    }
+
     // Calendar 한 앱 안의 Study 수용 흐름. 전부 합성 가족·아이이며 운영 계정과 학습 기록을 쓰지 않는다.
     const parentStudyScenario = {
       role: "parent",
@@ -2837,7 +2886,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     })()`);
     if (
       !parentStudyEntryFacts.promoVisible
-      || !parentStudyEntryFacts.promoText?.includes("캘린더에서 학습 관리 열기")
+      || !parentStudyEntryFacts.promoText?.includes("학습도 할 수 있어요")
       || parentStudyEntryFacts.slideCount !== 2
       || parentStudyEntryFacts.externalHref !== null
       || rowProblems(parentStudyEntry).length > 0

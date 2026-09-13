@@ -81,7 +81,9 @@ test("데이터 동기화는 두 서버 query의 실제 실패를 성공·빈 �
   assert.match(resync, /Promise\.all\(\[[\s\S]*accountQuery\.refetch\(\)[\s\S]*familyQuery\.refetch\(\)[\s\S]*\]\)/);
   assert.match(resync, /accountResult\.isError \|\| familyResult\.isError/);
   assert.match(resync, /parent\.dataSync\.resync\.failed/);
-  assert.match(resync, /setSyncedAt\(new Date\(\)\)[\s\S]*parent\.dataSync\.resync\.success/);
+  assert.match(resync, /parent\.dataSync\.resync\.success/);
+  assert.match(dataSync, /confirmedDataTimestamp\(accountQuery\.dataUpdatedAt, familyQuery\.dataUpdatedAt\)/);
+  assert.doesNotMatch(dataSync, /setSyncedAt|useState.*new Date/);
 });
 
 test("가족 수·확인 시각·내보내기 제외 수와 서버 원문은 번역하지 않고 값으로 보존한다", () => {
