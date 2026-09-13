@@ -154,7 +154,14 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   // 웹 push 브랜드 폴백을 사용자 언어로 맞춘다(계정 정보 없이 locale 만 보낸다).
   // 실패는 무시한다 — 알림은 기존 폴백으로 정상 표시된다.
   useEffect(() => {
-    void syncWebPushLocale(runtime.locale).catch(() => undefined);
+    const syncLocale = () => { void syncWebPushLocale(runtime.locale).catch(() => undefined); };
+    syncLocale();
+    navigator.serviceWorker?.addEventListener("controllerchange", syncLocale);
+    window.addEventListener("online", syncLocale);
+    return () => {
+      navigator.serviceWorker?.removeEventListener("controllerchange", syncLocale);
+      window.removeEventListener("online", syncLocale);
+    };
   }, [runtime.locale]);
 
   useEffect(() => {

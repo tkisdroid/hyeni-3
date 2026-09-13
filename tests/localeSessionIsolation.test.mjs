@@ -3,7 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { createServer } from "vite";
+import "./helpers/appModuleResolve.mjs";
+const { createNativeLocaleSyncScheduler } = await import("../src/transform/nativeLocaleSyncScheduler.ts");
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const forbiddenSessionMutations = /clearApiSession|logout|setActiveChildId\s*\(\s*null\s*\)|anonymousLogin/;
@@ -33,40 +34,12 @@ function deferred() {
 }
 
 async function loadNativeLocaleSync(plugin) {
-  const pluginKey = `__hyeniLocalePlugin_${crypto.randomUUID().replaceAll("-", "")}`;
-  globalThis[pluginKey] = plugin;
-  const server = await createServer({
-    root: rootDir,
-    logLevel: "silent",
-    server: { middlewareMode: true },
-    appType: "custom",
-    plugins: [{
-      name: "native-locale-plugin-test-double",
-      enforce: "pre",
-      resolveId(id) {
-        if (id === "@/lib/native/plugins" || id.endsWith("/lib/native/plugins")) {
-          return "\0native-locale-plugin-test-double";
-        }
-      },
-      load(id) {
-        if (id !== "\0native-locale-plugin-test-double") return undefined;
-        return `
-          export const isNativePlatform = () => true;
-          export const getNativePlugin = () => globalThis.${pluginKey};
-        `;
-      },
-    }],
-  });
-  const module = await server.ssrLoadModule("/src/app/NativeBootstrap.tsx");
-  return {
-    syncNativeAppLocale: module.syncNativeAppLocale,
-    async close() {
-      delete globalThis[pluginKey];
-      await server.close();
-    },
-  };
+  const scheduler = createNativeLocaleSyncScheduler(
+    (locale) => plugin.setLocale({ locale }),
+    () => {},
+  );
+  return { syncNativeAppLocale: scheduler.request, async close() {} };
 }
-
 test("언어 선택은 locale runtime만 호출하고 인증·활성 아이 세션을 바꾸지 않는다", () => {
   const selector = read("src/components/LanguageSelector.tsx");
 

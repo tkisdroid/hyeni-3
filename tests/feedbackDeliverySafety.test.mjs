@@ -108,7 +108,7 @@ test("운영 가이드는 본문을 먼저 열지 않고 requestId·오류 빈�
   assert.match(operations, /json_each\(CASE WHEN json_valid\(f\.error_logs\)/);
   assert.match(operations, /status = 'queued'/);
   assert.match(operations, /wrangler tail hyeni-calendar-api --format pretty/);
-  assert.match(operations, /status='sent'.*Resend 전달 완료/s);
+  assert.match(operations, /status='sent'.*Cloudflare Email Service 전달 완료/s);
   assert.doesNotMatch(operations, /SELECT\s+\*/i);
   assert.doesNotMatch(operations, /access_token|refresh_token|purchase_token/i);
 });

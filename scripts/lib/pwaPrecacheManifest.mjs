@@ -1,7 +1,22 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 const PRECACHE_ENTRY_PATTERN = /"revision":(?:null|"[^"]*"),"url":"([^"]+)"/g;
+export const PWA_PRECACHE_LIMIT_BYTES = 6 * 1024 * 1024;
+
+export function inspectPwaPrecacheBudget({ distDir, limitBytes = PWA_PRECACHE_LIMIT_BYTES }) {
+  const source = readFileSync(resolve(distDir, "sw.js"), "utf8");
+  const urls = [...new Set([...source.matchAll(PRECACHE_ENTRY_PATTERN)].map((match) => match[1]))];
+  if (!urls.length) throw new Error("PWA precache 항목이 없습니다.");
+  const bytes = urls.reduce((sum, url) => {
+    if (url.startsWith('/') || url.split('/').includes('..') || url.includes(':') || url.includes('\\')) {
+      throw new Error("PWA precache는 dist 안의 정적 파일만 검사합니다.");
+    }
+    return sum + statSync(resolve(distDir, url)).size;
+  }, 0);
+  if (bytes >= limitBytes) throw new Error(`PWA precache ${bytes}바이트가 예산 ${limitBytes}바이트 이상입니다.`);
+  return { bytes, limitBytes };
+}
 const ADDITIONAL_PRECACHE_URLS = new Set([
   "apple-touch-icon.png",
   "favicon-32x32.png",

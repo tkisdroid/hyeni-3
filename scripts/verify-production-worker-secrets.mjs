@@ -13,8 +13,6 @@ const REQUIRED_WORKER_SECRETS = Object.freeze([
   "LOCATION_AUDIT_CURSOR_SECRET",
   "PREMIUM_FUNNEL_HASH_SECRET",
   "WEB_BILLING_KEY_ENCRYPTION_SECRET",
-  "RESEND_API_KEY",
-  "FEEDBACK_FROM_EMAIL",
 ]);
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));

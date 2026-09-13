@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { scopedDaySummary, type DaySummaryScope, type ScopedDaySummary } from "@/transform/auditStateScope";
+import { useAuth } from "@/auth/AuthContext";
 import { useLocation, useNavigate } from "react-router";
 import { useIntl, type IntlShape } from "react-intl";
 import {
@@ -179,7 +181,12 @@ export function DaySummary() {
     await summaryQuery.refetch();
   };
   const generate = useGenerateDaySummary();
-  const [generated, setGenerated] = useState<DaySummaryResult | null>(null);
+  const { familyId } = useAuth();
+  const scope: DaySummaryScope = [familyId ?? "", childUserId ?? "", isoDateKey ?? ""];
+  const currentScope = useRef(scope);
+  currentScope.current = scope;
+  const [generatedResult, setGenerated] = useState<ScopedDaySummary<DaySummaryResult> | null>(null);
+  const generated = scopedDaySummary(generatedResult, scope);
   const [upsellOpen, setUpsellOpen] = useState(false);
 
   const summary = generated?.summary ?? cached?.summary ?? "";
@@ -201,14 +208,19 @@ export function DaySummary() {
       { childUserId, isoDateKey, clientSignals },
       {
         onSuccess: (res) => {
+          if (!scopedDaySummary({ scope, value: res }, currentScope.current)) return;
           if (!res.premium) {
             setGenerated(null);
             setUpsellOpen(true);
             return;
           }
-          setGenerated(res);
+          setGenerated({ scope, value: res });
         },
-        onError: () => show(intl.formatMessage({ id: "parent.daySummary.generateError" }), "💜"),
+        onError: () => {
+          if (scopedDaySummary({ scope, value: true }, currentScope.current)) {
+            show(intl.formatMessage({ id: "parent.daySummary.generateError" }), "💜");
+          }
+        },
       },
     );
   };

@@ -24,6 +24,6 @@ Consolidated, referenceable design system for Hyeni Calendar. Start here, then o
 
 ## How to reference
 
-- **In code / Claude Code sessions:** `CLAUDE.md → Project context` points here. For any brand, color, token, or component-spec question, read `DESIGN_SYSTEM.md` first.
+- **In code / Claude Code sessions:** `AGENTS.md → docs/engineering/design.md` points here. For any brand, color, token, or component-spec question, read `DESIGN_SYSTEM.md` first.
 - **Assets:** paths in `DESIGN_SYSTEM.md → Asset Anchors` are relative to this folder (e.g. `../01-runtime-3d/`, `../05-icons/`).
 - **Live tokens:** the shipped values live in `src/App.css` (`:root`) and `src/styles/tokens.css`. This folder is the design intent; those files are ground truth for what is currently rendered.

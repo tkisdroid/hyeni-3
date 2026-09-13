@@ -1,6 +1,6 @@
 # Play 데이터 보안(Data Safety) 제출 워크시트 — 혜니캘린더
 
-코드 근거 기준 초안(2026-08-18). 서버는 Cloudflare Worker(hyeni-calendar-api), D1, R2를 사용한다. 이 문서는 Play Console에 기계적으로 복사하는 확정 답안이 아니다. Console의 최신 데이터 유형·수집·공유 정의와 각 처리업체 계약을 제출 직전에 다시 대조한다.
+코드 근거 기준 초안(2026-09-01). 서버는 Cloudflare Worker(hyeni-calendar-api), D1, R2, Email Service를 사용한다. 이 문서는 Play Console에 기계적으로 복사하는 확정 답안이 아니다. Console의 최신 데이터 유형·수집·공유 정의와 각 처리업체 계약을 제출 직전에 다시 대조한다.
 
 > **제출 차단:** 각 외부 처리 흐름에 대한 계약·DPA, 실제 제품 설정, 보관·삭제 기간, 학습·광고 등 2차 이용 여부의 증거가 모두 확보되기 전에는 Google Play의 서비스 제공자 예외를 적용하지 않는다. 확인되지 않은 흐름은 해당 데이터 유형을 공유로 보수적으로 신고하거나 기능을 출시 빌드에서 차단한다.
 
@@ -9,7 +9,7 @@
 - 데이터를 수집하나요? **예**
 - 데이터를 제3자와 공유하나요? **미확정**
   - 가족 구성원에게 사용자가 의도한 범위로 보여 주는 행위와 데이터 판매는 현재 코드에서 확인되지 않는다.
-  - Cloudflare, Firebase/FCM, Google Play, Toss Payments, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, Google Maps Platform, 공개 OSRM, Resend, NCP SENS 및 단말·브라우저의 음성 인식·합성 제공자가 기능 제공 과정에서 데이터를 처리할 수 있다.
+  - Cloudflare Worker/D1/R2/AI Gateway/Email Service, Firebase/FCM, Google Play, Toss Payments, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, Google Maps Platform, 공개 OSRM, NCP SENS 및 단말·브라우저의 음성 인식·합성 제공자가 기능 제공 과정에서 데이터를 처리할 수 있다.
   - 각 업체가 개발자 지시에 따라서만 처리하는 서비스 제공자 예외에 해당하는지는 계약·DPA, 제품 설정, 보관·삭제 기간 및 2차 이용 조건의 서면 증거를 확인해 데이터 유형별로 판단한다.
 - 전송 중 암호화하나요? **예** — 공개 API와 실시간 채널은 HTTPS/WSS를 사용한다. 출시 빌드에서 평문 endpoint가 없는지 최종 확인한다.
 - 삭제 요청 수단을 제공하나요? **예, 공개 상태 재확인 필요** — 앱 내 회원 탈퇴와 `https://hyeni-calendar-api.tkisdroid.workers.dev/data-deletion`을 사용한다. 제출 직전 로그인 없이 안내를 읽을 수 있고 URL이 HTTPS 200인지 확인한다.
@@ -38,7 +38,7 @@
 | 앱 정보·성능 | 배터리, 네트워크, 알림·권한 상태, 오류 진단 | 아이 기기 상태 보고 또는 사용자가 피드백을 보낸 경우 | 기기 상태·피드백에 저장 | 앱 기능, 보안, 문제 해결 | `device_health`, `user_feedback` |
 | 기기 또는 기타 ID | 앱 설치 ID, FCM 토큰, 세션 인스턴스 ID | 설치·로그인·푸시 등록 시 | 기기 바인딩, 푸시 라우팅, 로그아웃 안전 처리 | 앱 기능, 보안, 사기 방지 | `deviceInstallId`, `fcm_tokens`, session nonce |
 | 금융 정보 | 구매 내역·구독 상태 | Google Play 구독을 구매·복원하거나 iPhone 홈 화면 PWA에서 Toss 구독·AI 크레딧 결제를 진행한 경우 | 결제 검증·엔타이틀먼트·금융 원장에 저장. 카드정보와 auth key는 저장하지 않고 billing key는 암호화, payment key·purchase token은 해시로 보관한다. Toss가 후속 결제·조회에 요구하는 서버 난수 `customerKey`는 운영 주문에만 보관하고 로그·진단·계정 삭제 후 분리 금융 정본에서는 제외 | 앱 기능, 계정 관리, 사기 방지 | Google Play verify, Toss verify, subscription·web billing tables |
-| 개인 정보/사용자 콘텐츠 | 문제 신고·문의·기능 제안의 작성 내용과 서버 정본 계정·가족 정보 | 사용자가 피드백을 제출한 경우 | D1에 먼저 내구 저장하고 설정 시 Resend 이메일 본문·회신 주소로 전송. Resend 보관·2차 이용은 계약 증거 전 미확정 | 사용자 지원 | `user_feedback`, `routes/feedback.ts` |
+| 개인 정보/사용자 콘텐츠 | 문제 신고·문의·기능 제안의 작성 내용과 서버 정본 계정·가족 정보 | 사용자가 피드백을 제출한 경우 | D1에 먼저 내구 저장하고 Cloudflare Email Service에서 인증된 운영자 주소로 이메일 본문·회신 주소를 전송. Email Service 보관·2차 이용은 계약 증거 전 미확정 | 사용자 지원 | `user_feedback`, `routes/feedback.ts` |
 | 앱 정보·성능 | 사용자가 선택한 앱 버전·실행 환경·현재 화면·최근 24시간 정규화 오류 최대 12건 | 사용자가 피드백에서 `진단 정보 함께 보내기`를 켠 경우 | D1 `device_info/error_logs/current_screen`에 저장. 대화·좌표·사진·비밀번호·로그인/구매 토큰·원문 오류 제외 | 문제 해결, 앱 품질 개선 | `user_feedback`, `feedbackDiagnostics.ts` |
 | 개인 정보 | 전화번호와 6자리 OTP | 전화 가입 또는 OAuth 전화 계정 연결 인증을 요청한 경우 | OTP 원문은 NCP SENS 문자 내용으로 전송하고 서버에는 검증용 해시와 만료 정보를 저장 | 계정 관리, 보안 | `lib/ncpSens.ts`, `phone_otp` |
 | 위치 | 지도 표시·장소 검색·역지오코딩·도보 경로의 좌표와 지역 힌트 | 사용자가 지도 기능을 열거나 검색·경로를 요청한 경우 | 가족 국가 정책에 따라 한국은 Kakao, 승인된 비한국 국가는 Google Maps Platform이 일시 처리한다. 검색 후보와 provider ID는 저장하지 않고 사용자가 별도로 확정한 핀·별칭만 기존 장소/일정에 저장한다 | 앱 기능 | `routes/maps.ts`, `lib/maps/*`, `src/maps/*` |
@@ -57,7 +57,7 @@ Android `SpeechRecognizer`와 브라우저 Web Speech Recognition은 사용 중�
 
 | 처리업체·흐름 | 실제 전송·처리 가능 데이터 | 제출 전 필수 증거 |
 |---|---|---|
-| Cloudflare Worker·D1·R2·AI Gateway | 계정, 가족 관계, 위치, 메시지, 일정, 사진, 알림·기기 상태, 로그, AI 요청 | 계약·DPA, 리전, 보관·삭제, AI Gateway 로그, 개발자 지시 외 2차 이용 여부 |
+| Cloudflare Worker·D1·R2·AI Gateway·Email Service | 계정, 가족 관계, 위치, 메시지, 일정, 사진, 알림·기기 상태, 로그, AI 요청, 피드백의 `senderName`·`senderEmail`·`senderRole`·`senderUserId`·`familyId`·`content`·`appOrigin`과 선택 진단 정보 | 계약·DPA, 리전, 보관·삭제, AI Gateway·Email Service 로그, 개발자 지시 외 2차 이용 여부 |
 | Firebase Cloud Messaging | FCM 토큰, 알림 제목·본문·유형·대상·라우팅 식별자 | payload 최소화, 보관·삭제, 2차 이용, 서비스 제공자 조건 |
 | Google Play Billing·Android Publisher API·RTDN | product/base plan/offer, purchase token, order·구독 상태, 난독화 account/profile ID | 결제·RTDN 계약, 보관·삭제, 2차 이용, Developer API 설정 |
 | Toss Payments | PWA 구독·AI 크레딧 주문 금액·통화·상태, 사용자 정보를 포함하지 않는 서버 난수 customer key, 암호화 전 billing key, payment key. 카드번호·유효기간·CVC는 Worker가 받지 않음 | 자동결제 계약, live/test 설정, 암호화·키 폐기, customer key 운영 보관·삭제, 환불·금융 보존, 국외 이전·2차 이용, 서비스 제공자 조건 |
@@ -68,7 +68,6 @@ Android `SpeechRecognizer`와 브라우저 Web Speech Recognition은 사용 중�
 | Kakao 지도 SDK·Local·Mobility | 지도 화면·조회 좌표, 역지오코딩 좌표·주소, 도보 출발·도착 좌표 | SDK/API 약관, 로그·보관·삭제, 2차 이용, 아동 대상 적격성 |
 | Google Maps Platform(Maps JavaScript/Android SDK, Places, Geocoding, Routes) | 지도 화면과 locale·region, 검색 문자열·bias object reference가 해석한 좌표, 역지오코딩 좌표, 경로 출발·도착 좌표 | 키 제한·OAuth scope·field mask, 계약·DPA, 로그·보관·삭제, 2차 이용, 아동 대상 적격성. 국가별 시간대/DST와 실기기 E2E 전에는 출시 차단 |
 | 공개 OSRM(openstreetmap.de routed-foot) | 도보 경로 출발·도착 좌표, 요청 IP·기술 로그 가능성 | 운영 주체·약관, 로그·보관·삭제, 2차 이용, DPA·아동 대상 적격성. 증거가 없으면 아이 경로에서 차단 |
-| Resend | 기능 제안의 `senderName`, `senderEmail`, `senderRole`, `senderUserId`, `familyId`, `content`, `appOrigin` | 이메일 본문·로그 보관·삭제, 2차 이용, DPA, 전송 지역 |
 | NAVER Cloud Platform NCP SENS | 수신 전화번호와 6자리 OTP 문자 내용 | SMS 계약, 로그·보관·삭제, 2차 이용, 국외 이전 여부 |
 | OS/브라우저 음성 인식·합성 제공자 | Android `SpeechRecognizer`·Web Speech Recognition을 통한 사용자 음성·인식 결과·기기 관련 정보와 Android `TextToSpeech`·Web `speechSynthesis`·선택된 음성 엔진이 처리할 수 있는 합성할 AI 답변 텍스트·기기 관련 정보 | 실제 STT·TTS 제공자 식별, TTS 엔진의 계약·정책, 음성·텍스트·로그 보관·삭제, 학습 등 2차 이용, 아동 대상 적격성 증거 |
 

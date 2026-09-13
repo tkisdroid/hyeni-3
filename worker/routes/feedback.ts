@@ -1,4 +1,4 @@
-// 인증된 사용자의 신고·문의·제안을 D1에 먼저 내구 접수한 뒤 Resend로 전달한다.
+// 인증된 사용자의 신고·문의·제안을 D1에 먼저 내구 접수한 뒤 Cloudflare Email Service로 전달한다.
 // 진단 정보는 허용된 구조만 다시 조립해 저장하며 원문 오류·토큰·좌표는 보존하지 않는다.
 import { Hono } from "hono";
 import { resolveVerifiedFamilyMembership } from "../db/authz";
@@ -13,6 +13,8 @@ const MAX_FAMILY_ID_LENGTH = 128;
 const MAX_CURRENT_SCREEN_LENGTH = 180;
 const MAX_ERROR_LOGS = 12;
 const MAX_FEEDBACK_PER_HOUR = 5;
+const FEEDBACK_SENDER_ADDRESS = "feedback@hyenicalendar.com";
+const FEEDBACK_DESTINATION_ADDRESS = "tkisdroid@gmail.com";
 const REQUEST_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const FAMILY_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -612,10 +614,8 @@ feedback.post("/", requireAuth, async (c) => {
   }
 
   const diagnosticCount = input.errorLogs?.length ?? 0;
-  const resendApiKey = c.env.RESEND_API_KEY?.trim() ?? "";
-  const fromEmail = c.env.FEEDBACK_FROM_EMAIL?.trim() ?? "";
-  const toEmail = c.env.FEEDBACK_TO_EMAIL?.trim() || "tkisdroid@gmail.com";
-  if (!resendApiKey || !fromEmail) {
+  const emailBinding = c.env.FEEDBACK_EMAIL;
+  if (!emailBinding) {
     writeFeedbackLog("info", "accepted_queued", input.requestId, {
       feedbackKind: input.feedbackKind,
       category: input.category,
@@ -648,26 +648,15 @@ feedback.post("/", requireAuth, async (c) => {
   ].join("\n");
 
   let delivered = false;
-  let providerStatus: number | null = null;
   try {
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      signal: AbortSignal.timeout(8_000),
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": `feedback:${user.sub}:${input.requestId}`,
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [toEmail],
-        subject: `[혜니캘린더] ${kindLabel}`,
-        text: textBody,
-        ...(sender.email ? { reply_to: sender.email } : {}),
-      }),
+    await emailBinding.send({
+      from: FEEDBACK_SENDER_ADDRESS,
+      to: FEEDBACK_DESTINATION_ADDRESS,
+      subject: `[혜니캘린더] ${kindLabel}`,
+      text: textBody,
+      ...(sender.email ? { replyTo: sender.email } : {}),
     });
-    providerStatus = resendResponse.status;
-    delivered = resendResponse.ok;
+    delivered = true;
   } catch {
     delivered = false;
   }
@@ -677,8 +666,7 @@ feedback.post("/", requireAuth, async (c) => {
       category: input.category,
       diagnosticCount,
       diagnosticSchemaVersion: input.diagnosticSchemaVersion,
-      reason: providerStatus === null ? "email_network_error" : "email_provider_error",
-      providerStatus,
+      reason: "email_provider_error",
     });
     return c.json({ ok: true, status: "queued" }, 202);
   }
@@ -693,9 +681,7 @@ feedback.post("/", requireAuth, async (c) => {
       .bind(feedbackId, user.sub)
       .run();
   } catch {
-    writeFeedbackLog("error", "status_update_failed", input.requestId, {
-      providerStatus,
-    });
+    writeFeedbackLog("error", "status_update_failed", input.requestId);
     return c.json({ ok: true, status: "queued" }, 202);
   }
   writeFeedbackLog("info", "accepted_sent", input.requestId, {
@@ -703,7 +689,6 @@ feedback.post("/", requireAuth, async (c) => {
     category: input.category,
     diagnosticCount,
     diagnosticSchemaVersion: input.diagnosticSchemaVersion,
-    providerStatus,
   });
   return c.json({ ok: true, status: "sent" });
 });

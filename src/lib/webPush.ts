@@ -44,15 +44,21 @@ interface VapidConfig {
 let lastContext: WebPushSessionContext | null = null;
 let controllerListenerAttached = false;
 let contextSyncGeneration = 0;
+let localeSyncGeneration = 0;
 
 const PUSH_CONTEXT_DB = "hyeni-push-context-v1";
 const PUSH_CONTEXT_STORE = "session";
 const SHOWN_PUSH_IDS_KEY = "shown-push-ids";
 
-function isSupported(): boolean {
+function isServiceWorkerSupported(): boolean {
   return !isNativePlatform()
     && typeof window !== "undefined"
-    && "serviceWorker" in navigator
+    && typeof navigator !== "undefined"
+    && "serviceWorker" in navigator;
+}
+
+function isSupported(): boolean {
+  return isServiceWorkerSupported()
     && "PushManager" in window
     && "Notification" in window;
 }
@@ -132,7 +138,7 @@ export async function wasWebPushDisplayed(
 }
 
 async function getRegistration(waitForReady: boolean): Promise<ServiceWorkerRegistration | null> {
-  if (!isSupported()) return null;
+  if (!isServiceWorkerSupported()) return null;
   const current = await navigator.serviceWorker.getRegistration();
   if (!waitForReady) return current ?? null;
   if (current?.active) return current;
@@ -206,8 +212,10 @@ export async function syncWebPushSessionContext(
  * 실패해도 알림 표시를 막지 않는다(폴백은 기존 한국어 브랜드로 강등된다).
  */
 export async function syncWebPushLocale(locale: string): Promise<boolean> {
-  if (!isSupported()) return false;
-  const registration = await getRegistration(false);
+  const generation = ++localeSyncGeneration;
+  if (!isServiceWorkerSupported()) return false;
+  const registration = await getRegistration(true);
+  if (generation !== localeSyncGeneration) return false;
   if (!registration) return false;
   const worker = navigator.serviceWorker.controller
     ?? registration.active
