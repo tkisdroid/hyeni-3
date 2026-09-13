@@ -1897,7 +1897,7 @@ const semanticSurfaceManifest = [
     ["src/components/QrScanner.css", "qrs-cam", "media"],
     ["src/screens/onboarding/Onboarding.css", "ob-qr", "media"],
     ["src/screens/feature/PairingWizard.css", "pw-childcard", "card"],
-    ["src/screens/parent/ParentSettings.css", "ps-profile", "card"],
+    ["src/screens/parent/ParentSettings.css", "ps-profile", "open-section"],
     ["src/screens/feature/Subscription.css", "sub-plan", "card"],
     ["src/screens/onboarding/Onboarding.css", "ob-role-card", "card"],
     ["src/screens/onboarding/Onboarding.css", "ob-invite-context", "card"],
@@ -1938,6 +1938,7 @@ const semanticSurfaceManifest = [
     ["src/screens/parent/ParentHome.redesign.css", "ph-section-shell", "glass-panel"],
     ["src/screens/parent/ParentHome.redesign.css", "ph-glass", "glass-panel"],
     ["src/screens/parent/ParentHome.redesign.css", "ph-hero", "glass-panel"],
+    ["src/screens/parent/ParentHome.redesign.css", "ph-sched-row", "glass-panel"],
     ["src/screens/parent/ParentLocation.redesign.css", "pl-sheet", "glass-panel"],
     ["src/screens/parent/ParentLocation.redesign.css", "pl-visited", "glass-panel"],
     ["src/screens/parent/ParentHome.css", "ph-hero", "hero"],
@@ -1945,7 +1946,7 @@ const semanticSurfaceManifest = [
     ["src/screens/parent/ParentHome.css", "ph-section-shell", "ice-section"],
     ["src/screens/parent/ParentHome.css", "ph-inner-surface", "card"],
     ["src/screens/parent/ParentHome.css", "ph-section-drag-preview", "floating"],
-    ["src/screens/parent/ParentCalendar.css", "pc-card", "card"],
+    ["src/screens/parent/ParentCalendar.css", "pc-card", "open-section"],
     ["src/screens/parent/ParentCalendar.css", "pc-event__card", "card"],
     ["src/screens/parent/ParentCalendar.css", "pc-sheet", "sheet"],
     ["src/screens/parent/ParentLocation.css", "pl-sheet", "sheet"],
@@ -1958,7 +1959,7 @@ const semanticSurfaceManifest = [
     ["src/screens/parent/ParentFamily.css", "pf-conn", "card"],
     ["src/screens/parent/ParentFamily.css", "pf-paircode__card", "card"],
     ["src/screens/parent/ParentFamily.css", "pf-paircode__target", "card"],
-    ["src/screens/parent/ParentSettings.css", "ps-list", "card"],
+    ["src/screens/parent/ParentSettings.css", "ps-list", "list-card"],
     ["src/screens/parent/ParentSettings.css", "ps-modal__card", "modal"],
     ["src/screens/shared/MemoChat.css", "mc-photo-preview__panel", "modal"],
     ["src/screens/child/overlays/ChildSheet.css", "ks-sheet", "sheet"],
@@ -2148,6 +2149,16 @@ function unclassifiedSurfaceCandidates(blocks, manifestKeys, nonSurfaceKeys) {
 const semanticSurfaceManifestKeys = new Set(semanticSurfaceManifest.map(([path, className]) =>
   surfaceManifestKey(path, `.${className}`)));
 const nonSurfacePaintManifest = new Set([
+  // 레퍼런스의 투명 알약 버튼·날짜 선택·기존 아이콘 받침은 조작면이다.
+  ["src/styles/glass.css", ".hy-adult .hy-section-action"],
+  ["src/screens/parent/EventForm.css", ".ef-chip"],
+  ["src/screens/parent/ParentCalendar.css", ".pc-day"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .hy-section-action"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .hy-section-action.ph-neu-control"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-small-control"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-prep-edit"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-safety__refresh .ph-small-control"],
+  ["src/screens/parent/ParentSettings.css", ".hy-adult :is(.ps-nav__chip, .ps-feature__icon, .ps-account__chip)[data-tone]"],
   // 인증 탭·상태·폼 선택 컨트롤 — 독립 콘텐츠 판이 아니라 입력 흐름의 조작/피드백 면이다.
   ["src/screens/onboarding/Onboarding.css", ".ob-auth-intent"],
   // 언어 피커 트리거·토글 알약과 OTP 진행 칸 — 조작면·상태 표식이다.
@@ -2177,9 +2188,16 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-call-btn"],
   ["src/styles/glass.css", ".hy-adult .hy-tile"],
   ["src/styles/glass.css", ".hy-adult .hy-status::before"],
-  // 모든 화면이 공유하는 뒤로가기는 독립 카드가 아니라 투명한 44px 아이콘 조작면이다.
+  // 모든 화면이 공유하는 뒤로가기는 독립 카드가 아니라 44px 아이콘 조작면이다.
   ["src/styles/components.css", ".hy-app button.hy-press[class*=\"-back\"]"],
   ["src/styles/components.css", ".hy-app button.hy-backbtn"],
+  // 공통 유리 버튼: 목록 판과 구분되는 실제 조작 요소만 명시한다.
+  ["src/styles/components.css", `.hy-app button:is(
+  .hy-btn, .hy-iconbtn, .pc-navbtn, .ps-profile__edit, .pf-invite-btn,
+  .raa-refresh, .ds-sync__btn, .nst-system-btn, .ef-mapbtn, .ef-supply-add,
+  .mc-attach, .afc-setup, .afc-voicetog, .kd-prep__edit, .hy-language__current,
+  .msd-close, .mps-close, .pu-close, .rrp__close
+)`],
   // 히어로 캐러셀의 좌우 화살표와 위치 점 — 콘텐츠 판이 아니라 슬라이드 조작면·현재 위치 표식이다.
   ["src/screens/parent/ParentHome.redesign.css", ".ph-hero-carousel__arrow"],
   ["src/screens/parent/ParentHome.redesign.css", ".ph-hero-carousel__dot::after"],
@@ -2801,13 +2819,16 @@ const nonSurfacePaintManifest = new Set([
 ].map(([path, selector]) => surfaceManifestKey(path, selector)));
 
 const semanticSurfaceRoleSpecs = {
+  // 중첩된 판을 걷은 프로필·월간 프레임과 넓은 설정 목록을 따로 확인한다.
+  "open-section": { radius: ["0"], shadow: ["none"] },
+  "list-card": { radius: ["var(--radius-24)"], shadow: ["var(--shadow-soft)"] },
   card: { radius: ["var(--radius-16)"], shadow: ["none", "var(--shadow-soft)"] },
   "glass-card": { radius: ["var(--radius-16)"], shadow: ["var(--glass-rim), var(--glass-lift)"] },
   // 2026-08-21 어른 모드 유리 언어: 오로라 위의 판(--ph-panel-shadow)과
   // 지도처럼 고대비 배경 위의 판(--ph-float-shadow) 두 등급만 쓴다.
   "glass-panel": {
     radius: ["var(--radius-20)", "var(--radius-24)"],
-    shadow: ["var(--ph-panel-shadow)", "var(--ph-float-shadow)"],
+    shadow: ["none", "var(--ph-panel-shadow)", "var(--ph-float-shadow)"],
   },
   // 2026-08-21 어른 모드 유리 언어 전환: --liquid-glass-* 는 폐기하고 --ph-glass-* 가 정본이다.
   "ice-section": { radius: ["var(--radius-24)"], shadow: ["var(--ph-glass-lift)", "var(--ph-glass-rim), var(--ph-glass-lift)"] },

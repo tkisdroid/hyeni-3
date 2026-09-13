@@ -45,7 +45,7 @@ const featureRows: FeatureRow[] = [
   { id: "child", icon: "ui/clay/children.webp", tone: "blue", labelId: "parent.settings.children", route: "/parent/family" },
   { id: "place", icon: "ui/clay/places.webp", tone: "mint", labelId: "parent.settings.places", route: "/place-manager" },
   { id: "friend", icon: "ui/clay/playdate.webp", tone: "gold", labelId: "parent.settings.playdates", route: "/friend-play" },
-  { id: "audio", icon: "ui/clay/remote-audio.webp", tone: "rose", labelId: "parent.settings.remoteAudio", route: "/remote-audio" },
+  { id: "audio", icon: "ui/clay/remote-audio.webp", tone: "rose", labelId: "parent.location.action.remoteAudio", route: "/remote-audio" },
   { id: "audio-audit", icon: "ui/clay/remote-audio-history.webp", tone: "neutral", labelId: "parent.settings.remoteAudioAudit", route: "/remote-audio-audit" },
   { id: "reward", icon: "ui/clay/sticker.webp", tone: "gold", labelId: "parent.settings.stickers", route: "/sticker-send" },
   { id: "ai", icon: "ui/clay/ai-credit.webp", tone: "lav", labelId: "parent.settings.aiCredits", route: "/ai-credit" },

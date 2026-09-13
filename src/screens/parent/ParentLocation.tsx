@@ -22,6 +22,7 @@ import {
 } from "@/queries/useLocation";
 import { useEvents } from "@/queries/useSchedule";
 import { useLocationLabels } from "@/queries/useLocationLabels";
+import { stayLocationReference } from "@/transform/locationLabelReference";
 import { useEntitlement } from "@/queries/useEntitlement";
 import {
   formatFreshness,
@@ -403,9 +404,23 @@ export function ParentLocation() {
       ),
     [events, historyDayKey, selected?.id],
   );
-  const stayLabels = useMemo(
+  const knownStayLabels = useMemo(
     () => stayPoints.map((s) => scheduleStayLabel(s, selectedHistoryEvents, intl) ?? stayPlaceLabel(s, places)),
     [stayPoints, selectedHistoryEvents, places],
+  );
+  const stayReferences = useMemo(
+    () => stayPoints.map((stay, index) => knownStayLabels[index]
+      ? null : stayLocationReference(stay, visibleHistory, selected?.user_id ?? null)),
+    [stayPoints, knownStayLabels, visibleHistory, selected?.user_id],
+  );
+  const unresolvedStayLocations = useMemo(
+    () => stayReferences.filter((reference) => reference !== null), [stayReferences],
+  );
+  const mapStayLabel = useLocationLabels(unresolvedStayLocations, undefined, { fallback: "" });
+  const stayLabels = useMemo(
+    () => stayPoints.map((_, index) => knownStayLabels[index]
+      ?? (stayReferences[index] ? mapStayLabel(stayReferences[index]) || null : null)),
+    [stayPoints, knownStayLabels, stayReferences, mapStayLabel],
   );
   const visibleStayPoints = useMemo(
     () => stayPoints.filter((s) => s.arrivalMs <= scrubMs),
@@ -969,11 +984,11 @@ export function ParentLocation() {
               <button
                 type="button"
                 className="pl-listen-btn hy-press"
-                aria-label={intl.formatMessage({ id: "parent.parentLocation.copy055" })}
+                aria-label={intl.formatMessage({ id: "parent.location.action.remoteAudio" })}
                 onClick={() => navigate("/remote-audio")}
               >
                 <img className="pl-actions__icon" src={asset("ui/clay/remote-audio.webp")} alt="" />
-                <span className="pl-actions__label">{intl.formatMessage({ id: "parent.home.shortcut.remoteAudio" })}</span>
+                <span className="pl-actions__label">{intl.formatMessage({ id: "parent.location.action.remoteAudio" })}</span>
               </button>
             </>
           )}

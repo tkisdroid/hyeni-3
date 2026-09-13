@@ -60,6 +60,15 @@ export function addDaysToDateKey(dateKey: string, days: number): string {
   return dateToDateKey(next);
 }
 
+/** 월 이동은 같은 일을 유지하되, 대상 월에 없는 날짜는 그 달의 말일로 맞춘다. */
+export function addMonthsToDateKey(dateKey: string, months: number): string {
+  const date = parseAppDateKey(dateKey);
+  if (!date || !Number.isInteger(months)) return dateKey;
+  const first = new Date(date.getFullYear(), date.getMonth() + months, 1);
+  const lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  return ymdToDateKey(first.getFullYear(), first.getMonth() + 1, Math.min(date.getDate(), lastDay));
+}
+
 /** 오늘의 date_key. */
 export function todayDateKey(now: Date = new Date()): string {
   return dateToDateKey(now);

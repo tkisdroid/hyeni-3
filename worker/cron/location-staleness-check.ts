@@ -1,12 +1,12 @@
-// location-staleness-check (cron */3) — supabase edge 직역.
-// 프리미엄 가족 자녀의 위치 보고가 10분 넘게 끊기면 부모 알림(끊김 원인 분류) + 복구 알림.
-// 끊김 동안 매 tick 자녀 기기에 request_location FCM(자동 웨이크)으로 즉석 fix 강제 시도.
+// 5분 cron: 10분 초과 끊김은 자동 복구하고 등록장소 부근은 20분 지속 뒤 부모에게 알린다.
+// 전원·배터리·미등록 장소의 경고는 기존 10분 기준을 유지한다.
 // 24h+ 미복구는 child_unpair_suspected 로 격상(백오프). 상태머신은 child_location_link_state.
 import type { Env } from "../types";
 import type { PushEnv } from "../lib/pushEnv";
 import {
   RECENT_LOCATION_WINDOW_MS,
   STALENESS_THRESHOLD_MS,
+  POWER_SAVE_REPEAT_ALERT_AGE_MS,
   computeAgeMs,
   decideLinkTransition,
   episodeIdempotencyKey,
@@ -30,6 +30,7 @@ import {
 } from "../lib/accountMutationScope";
 import { recordLocationConfirmationForSubjects } from "../lib/locationConfirmationAudit";
 import { chunkSqlVariables } from "../lib/sqlChunk";
+import { expireSupersededLocationLinkNotifications } from "../lib/locationLinkNotifications";
 
 const POWER_SAVE_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 const LOW_BATTERY_LOOKBACK_MS = 2 * 60 * 60 * 1000;
@@ -53,6 +54,7 @@ interface PlaceRow {
 interface LinkStateRow {
   state: string;
   lastLocationAt: string | null;
+  lastAlertedAt: string | null;
   lastPowerSaveAlertedAt: string | null;
   lastShutdownAt: string | null;
 }
@@ -148,7 +150,7 @@ async function loadLinkStates(db: D1Database, children: ChildCandidate[]): Promi
     const ph = ids.map(() => "?").join(",");
     const { results } = await db
       .prepare(
-        `SELECT family_id, child_user_id, state, last_location_at, last_power_save_alerted_at, last_shutdown_at
+        `SELECT family_id, child_user_id, state, last_location_at, last_alerted_at, last_power_save_alerted_at, last_shutdown_at
            FROM child_location_link_state WHERE family_id IN (${ph})`,
       )
       .bind(...ids)
@@ -157,6 +159,7 @@ async function loadLinkStates(db: D1Database, children: ChildCandidate[]): Promi
       map.set(`${row.family_id}:${row.child_user_id}`, {
         state: String(row.state),
         lastLocationAt: row.last_location_at ? String(row.last_location_at) : null,
+        lastAlertedAt: row.last_alerted_at ? String(row.last_alerted_at) : null,
         lastPowerSaveAlertedAt: row.last_power_save_alerted_at ? String(row.last_power_save_alerted_at) : null,
         lastShutdownAt: row.last_shutdown_at ? String(row.last_shutdown_at) : null,
       });
@@ -191,7 +194,7 @@ async function loadFamilyPlaces(db: D1Database, familyIds: string[]): Promise<Ma
   return byFamily;
 }
 
-async function loadRecentLowBatteryFamilies(db: D1Database, familyIds: string[]): Promise<Set<string>> {
+async function loadRecentLowBatteryChildren(db: D1Database, familyIds: string[]): Promise<Set<string>> {
   const set = new Set<string>();
   if (!familyIds.length) return set;
   const since = tsNorm(new Date(Date.now() - LOW_BATTERY_LOOKBACK_MS).toISOString());
@@ -199,12 +202,14 @@ async function loadRecentLowBatteryFamilies(db: D1Database, familyIds: string[])
     const ph = ids.map(() => "?").join(",");
     const { results } = await db
       .prepare(
-        `SELECT family_id FROM parent_alerts
+        `SELECT family_id, child_user_id FROM parent_alerts
           WHERE family_id IN (${ph}) AND alert_type = 'low_battery' AND substr(created_at,1,19) > ?`,
       )
       .bind(...ids, since)
-      .all<{ family_id: string }>();
-    for (const row of results ?? []) set.add(String(row.family_id));
+      .all<{ family_id: string; child_user_id: string | null }>();
+    for (const row of results ?? []) {
+      if (row.child_user_id) set.add(`${row.family_id}:${row.child_user_id}`);
+    }
   }
   return set;
 }
@@ -268,13 +273,13 @@ async function persistState(
   db: D1Database,
   child: ChildCandidate,
   nextState: string,
-  opts: { staleReason?: string | null; markPowerSave?: boolean } = {},
+  opts: { staleReason?: string | null; markPowerSave?: boolean; notified?: boolean } = {},
 ): Promise<void> {
   const now = pgNow();
   const patch: Record<string, unknown> = {
     state: nextState,
     last_location_at: child.lastLocationAt,
-    last_alerted_at: now,
+    last_alerted_at: opts.notified === false ? null : now,
     updated_at: now,
   };
   if (nextState === "connected") {
@@ -359,7 +364,7 @@ export async function run(env: Env): Promise<Record<string, unknown>> {
   const states = await loadLinkStates(db, children);
   const familyIds = [...new Set(children.map((c) => c.familyId))];
   const placesByFamily = await loadFamilyPlaces(db, familyIds);
-  const lowBatteryFamilies = await loadRecentLowBatteryFamilies(db, familyIds);
+  const lowBatteryChildren = await loadRecentLowBatteryChildren(db, familyIds);
 
   const nowMs = Date.now();
   let wakeSent = 0;
@@ -393,31 +398,45 @@ export async function run(env: Env): Promise<Record<string, unknown>> {
 
     const stateRow = states.get(`${child.familyId}:${child.childUserId}`);
     const currentState = stateRow?.state;
-    const { action, nextState } = decideLinkTransition({ currentState, ageMs });
+    const { reason: locReason, placeName } = classifyStaleReason({
+      lastLat: child.lastLat,
+      lastLng: child.lastLng,
+      registeredPlaces: placesByFamily.get(child.familyId) || [],
+      hasRecentLowBattery: lowBatteryChildren.has(`${child.familyId}:${child.childUserId}`),
+    });
+    const shutdownMs = pgToMs(stateRow?.lastShutdownAt);
+    const lastFixMs = pgToMs(child.lastLocationAt);
+    const recentShutdown =
+      Number.isFinite(shutdownMs) && Number.isFinite(lastFixMs) && shutdownMs >= lastFixMs - 5 * 60_000;
+    const reason = recentShutdown ? "power_off" : locReason;
+    const { action, nextState } = decideLinkTransition({
+      currentState, ageMs, reason, notified: Boolean(stateRow?.lastAlertedAt),
+    });
     if (action === "none") continue;
+
+    await expireSupersededLocationLinkNotifications(db, {
+      familyId: child.familyId,
+      childUserId: child.childUserId,
+      nextState: nextState as "connected" | "stale",
+      nowMs,
+    });
+    // 쿨다운으로 경고하지 않은 끊김은 회복 알림도 만들지 않는다.
+    if (action === "recover" && !stateRow?.lastAlertedAt) {
+      await persistState(db, child, "connected", { notified: false });
+      continue;
+    }
 
     const ageMinutes = Math.max(1, Math.round(ageMs / 60_000));
     let alert: AlertCopy;
     let staleReason: string | null = null;
     let markPowerSave = false;
     if (action === "alert") {
-      const { reason: locReason, placeName } = classifyStaleReason({
-        lastLat: child.lastLat,
-        lastLng: child.lastLng,
-        registeredPlaces: placesByFamily.get(child.familyId) || [],
-        hasRecentLowBattery: lowBatteryFamilies.has(child.familyId),
-      });
-      const shutdownMs = pgToMs(stateRow?.lastShutdownAt);
-      const lastFixMs = pgToMs(child.lastLocationAt);
-      const recentShutdown =
-        Number.isFinite(shutdownMs) && Number.isFinite(lastFixMs) && shutdownMs >= lastFixMs - 5 * 60_000;
-      const reason = recentShutdown ? "power_off" : locReason;
       staleReason = reason;
       if (reason === "power_save") {
         const lastPSMs = pgToMs(stateRow?.lastPowerSaveAlertedAt);
         const withinCooldown = Number.isFinite(lastPSMs) && nowMs - lastPSMs < POWER_SAVE_COOLDOWN_MS;
-        if (withinCooldown) {
-          await persistState(db, child, "stale", { staleReason: reason });
+        if (withinCooldown && ageMs <= POWER_SAVE_REPEAT_ALERT_AGE_MS) {
+          await persistState(db, child, "stale", { staleReason: reason, notified: false });
           continue;
         }
         markPowerSave = true;

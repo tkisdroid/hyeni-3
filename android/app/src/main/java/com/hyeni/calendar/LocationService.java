@@ -583,6 +583,9 @@ public class LocationService extends Service {
     // 이전 방문 상태로 다음날 출발 알림을 만들지 않게 6시간 뒤 persisted 상태를 만료한다.
     private static final long PLACE_STATE_TTL_MS = 6L * 60 * 60_000L;
     private static final String PLACE_STATE_PREFIX = "place_geo_";
+    private static final String PLACE_RETRY_PREFIX = "place_geo_retry_";
+    private final java.util.Map<String, RegisteredPlaceAlertRetry> pendingPlaceAlerts =
+        new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.List<org.json.JSONObject> cachedPlaces = new java.util.ArrayList<>(); // canonical {placeKey,name,source,lat,lng}
     private volatile boolean placeAlertsEnabled = false; // registered_place_alerts_enabled
     private volatile String cachedChildName = ""; // family_members.name (부모 알림 카피용, M2)
@@ -612,12 +615,19 @@ public class LocationService extends Service {
             placeRefreshAtMs = now;
             runOnNetworkThread("place_refresh", this::refreshPlacesAndGates);
         }
-        if (!placeAlertsEnabled || Double.isNaN(lastUploadedLat) || Double.isNaN(lastUploadedLng)) return;
+        if (!placeAlertsEnabled) return;
+        java.util.List<org.json.JSONObject> places;
+        synchronized (cachedPlaces) { places = new java.util.ArrayList<>(cachedPlaces); }
+        // 이미 확정한 사건은 새 fix 없이도 원래 payload로 재시도한다.
+        for (org.json.JSONObject p : places) {
+            String placeKey = p.optString("placeKey", "");
+            RegisteredPlaceAlertRetry retry = loadPendingPlaceAlert(placeKey);
+            if (retry != null) dispatchPendingPlaceAlert(placeKey, retry);
+        }
+        if (Double.isNaN(lastUploadedLat) || Double.isNaN(lastUploadedLng)) return;
         // M1: stale fix 면 평가 skip — wall-clock 만 흐르고 좌표가 frozen 이면 가짜
         // dwell/departure 전이가 날 수 있다(서버 GEOFENCE_FIX_FRESH_MS 와 동일 보호).
         if (lastUploadedAtMs <= 0L || now < lastUploadedAtMs || now - lastUploadedAtMs > PLACE_FIX_FRESH_MS) return;
-        java.util.List<org.json.JSONObject> places;
-        synchronized (cachedPlaces) { places = new java.util.ArrayList<>(cachedPlaces); }
         for (org.json.JSONObject p : places) {
             try {
                 evaluateOnePlace(
@@ -891,6 +901,12 @@ public class LocationService extends Service {
                                   float accuracyM, long fixCapturedAtMs) throws Exception {
         long now = fixCapturedAtMs;
         String placeKey = p.getString("placeKey");
+        if (placeAlertInFlight.contains(placeKey)) return;
+        RegisteredPlaceAlertRetry existingRetry = loadPendingPlaceAlert(placeKey);
+        if (existingRetry != null) {
+            dispatchPendingPlaceAlert(placeKey, existingRetry);
+            return;
+        }
         double plat = p.getDouble("lat"), plng = p.getDouble("lng");
         // 장소별 알림 반경(없으면 null → config 기본 30m). collectPlaces 가 학교류 기본을 채운다.
         double rRaw = p.optDouble("alertRadiusM", Double.NaN);
@@ -950,42 +966,98 @@ public class LocationService extends Service {
                 : (arrived
                     ? (childDisplayName() + "가 " + place + "에 도착했어요.")
                     : (childDisplayName() + "가 " + place + "에서 출발했어요."));
-            final String fPlaceKey = placeKey;
-            final String fPlaceName = place;
-            final GeofenceStateMachine.GeofenceState fNext = res.nextState;
-            // H1: 전송 성공 시에만 phase 진행(서버 deliverAlert retry 설계 parity). 실패 시
-            // state 미진행 → 다음 tick 재시도(멱등키로 dedup, 부모 알림 유실 방지).
-            // 상태가 저장되기 전까지는 같은 전이가 다시 평가될 수 있으므로 장소별 in-flight
-            // 가드로 잠근다 — 이게 없으면 새 fix 즉시 평가가 같은 알림을 한 번 더 쏜다.
-            if (!placeAlertInFlight.add(fPlaceKey)) return;
-            try {
-            runOnNetworkThread("place_alert", () -> {
-                try {
-                    if (sendPlaceAlert(alertType, title, msg, key, episodeMs, sourceEventId, fPlaceKey)) {
-                        if (!occurrenceId.isEmpty()) {
-                            shownEventNotifs.add(occurrenceId + "-arrived");
-                            persistShownEventNotifs();
-                        }
-                        saveGeoState(fPlaceKey, fNext);
-                        // 집 도착이면 AI 친구가 먼저 말을 건다(숙제·하루 이야기).
-                        if (arrived && fPlaceName.contains("집")) triggerHomeArrivalAiGreeting(fPlaceName);
-                    }
-                } finally {
-                    placeAlertInFlight.remove(fPlaceKey);
-                }
-            });
-            } catch (Throwable t) {
-                // 스레드 제출 자체가 실패하면 람다의 finally 가 돌지 않아 잠금이 영구히 남는다
-                // → 그 장소는 앱 재시작까지 알림이 끊긴다. 여기서 반드시 풀어준다.
-                placeAlertInFlight.remove(fPlaceKey);
-                Log.w(TAG, "place alert dispatch failed", t);
-            }
+            RegisteredPlaceAlertRetry retry = new RegisteredPlaceAlertRetry(
+                RegisteredPlaceAlertPayload.build(familyId, alertType, title, msg, key, userId,
+                    episodeMs, sourceEventId, placeKey),
+                res.nextState, getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString("sessionNonce", ""),
+                occurrenceId, arrived && place.contains("집") ? place : "", System.currentTimeMillis());
+            pendingPlaceAlerts.put(placeKey, retry);
+            dispatchPendingPlaceAlert(placeKey, retry);
             return;
         }
         // 비-발사 전이(pending/armed 타이머)는 네트워크 없이 즉시 영속.
         if (!sameState(evalState, res.nextState)
             || (!hadGeoState && res.action == GeofenceStateMachine.Action.OUTSIDE_NO_CHANGE)) {
             saveGeoState(placeKey, res.nextState);
+        }
+    }
+
+    private RegisteredPlaceAlertRetry loadPendingPlaceAlert(String placeKey) {
+        synchronized (immediateFixStateLock) {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            try {
+                RegisteredPlaceAlertRetry retry = pendingPlaceAlerts.get(placeKey);
+                if (retry == null) {
+                    String raw = prefs.getString(PLACE_RETRY_PREFIX + placeKey, null);
+                    if (raw == null) return null;
+                    retry = RegisteredPlaceAlertRetry.deserialize(raw);
+                }
+                if (retry.matchesScope(familyId, userId, prefs.getString("sessionNonce", ""), System.currentTimeMillis())) {
+                    pendingPlaceAlerts.put(placeKey, retry);
+                    return retry;
+                }
+            } catch (Exception ignored) {
+                Log.w(TAG, "invalid place alert retry discarded");
+            }
+            pendingPlaceAlerts.remove(placeKey);
+            prefs.edit().remove(PLACE_RETRY_PREFIX + placeKey).apply();
+            return null;
+        }
+    }
+
+    private boolean isPendingPlaceAlertActive(String placeKey, RegisteredPlaceAlertRetry retry, int lifecycleEpoch) {
+        if (!isServiceLifecycleActive(lifecycleEpoch) || !placeAlertsEnabled
+            || pendingPlaceAlerts.get(placeKey) != retry
+            || !retry.matchesScope(familyId, userId,
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString("sessionNonce", ""), System.currentTimeMillis())) return false;
+        synchronized (cachedPlaces) {
+            for (JSONObject place : cachedPlaces) {
+                if (placeKey.equals(place.optString("placeKey"))) return true;
+            }
+        }
+        return false;
+    }
+
+    private void dispatchPendingPlaceAlert(String placeKey, RegisteredPlaceAlertRetry retry) {
+        if (!placeAlertInFlight.add(placeKey)) return;
+        final int lifecycleEpoch = serviceLifecycleEpoch.get();
+        try {
+            runOnNetworkThread("place_alert", () -> {
+                try {
+                    synchronized (immediateFixStateLock) {
+                        if (!isPendingPlaceAlertActive(placeKey, retry, lifecycleEpoch)) return;
+                        // 디스크 적재 뒤 HTTP를 시작한다. 저장 실패 시에도 메모리의 최초 사건은 유지한다.
+                        if (!getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                            .putString(PLACE_RETRY_PREFIX + placeKey, retry.serialize()).commit()) {
+                            Log.w(TAG, "place alert retry persistence failed");
+                        }
+                    }
+                    if (!sendPlaceAlert(retry.payload)) return;
+                    synchronized (immediateFixStateLock) {
+                        if (!isPendingPlaceAlertActive(placeKey, retry, lifecycleEpoch)) return;
+                        // 다음 phase와 재시도 삭제를 한 번에 저장해 재시작 중 절반만 확정되지 않게 한다.
+                        boolean committed = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                            .putString(PLACE_STATE_PREFIX + placeKey,
+                                RegisteredPlaceAlertRetry.encodeState(retry.nextState, System.currentTimeMillis()).toString())
+                            .remove(PLACE_RETRY_PREFIX + placeKey).commit();
+                        if (!committed) return;
+                        pendingPlaceAlerts.remove(placeKey, retry);
+                        if (!retry.occurrenceId.isEmpty()) {
+                            shownEventNotifs.add(retry.occurrenceId + "-arrived");
+                            persistShownEventNotifs();
+                        }
+                    }
+                    if (!retry.homePlaceName.isEmpty() && System.currentTimeMillis() - retry.queuedAtMs < 30 * 60_000L
+                        && isServiceLifecycleActive(lifecycleEpoch)) triggerHomeArrivalAiGreeting(retry.homePlaceName);
+                } catch (Exception error) {
+                    Log.w(TAG, "place alert retry failed", error);
+                } finally {
+                    placeAlertInFlight.remove(placeKey);
+                }
+            });
+        } catch (Throwable error) {
+            placeAlertInFlight.remove(placeKey);
+            Log.w(TAG, "place alert dispatch failed", error);
         }
     }
 
@@ -1062,25 +1134,13 @@ public class LocationService extends Service {
     }
 
     // place_arrived/place_left 부모 알림 발송. 서버 단일 endpoint가 event_id+alert_type
-    // 멱등 저장과 부모 FCM을 함께 처리한다. 실패 시 state를 진행하지 않아 다음 tick 재시도한다.
-    private boolean sendPlaceAlert(String alertType, String title, String message, String idemUuid,
-                                   long occurredAtMs, @Nullable String sourceEventId, @Nullable String placeKey) {
+    // 멱등 저장과 부모 FCM을 함께 처리한다. 재시도는 최초 payload를 그대로 전송한다.
+    private boolean sendPlaceAlert(JSONObject alertBody) {
         if (isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) return false;
         final String base = supabaseUrl.replaceAll("/+$", "");
         try {
-            JSONObject alertBody = RegisteredPlaceAlertPayload.build(
-                familyId,
-                alertType,
-                title,
-                message,
-                idemUuid,
-                userId,
-                occurredAtMs,
-                sourceEventId,
-                placeKey
-            );
             boolean delivered = postWithAuthRetry(base + "/api/parent-alerts", alertBody.toString());
-            Log.i(TAG, "place alert " + alertType + " accepted=" + delivered);
+            Log.i(TAG, "place alert accepted=" + delivered);
             return delivered;
         } catch (Exception e) {
             Log.w(TAG, "sendPlaceAlert failed", e);
@@ -1521,9 +1581,12 @@ public class LocationService extends Service {
     private PendingIntent activityTransitionPendingIntent;
     private BroadcastReceiver activityTransitionReceiver;
     private boolean activityTransitionRegistered = false;
+    private boolean activityTransitionRegistering = false;
+    private int activityTransitionGeneration = 0;
+    private static final AtomicInteger activityTransitionRequestCodes = new AtomicInteger(4100);
 
     private void setupActivityTransitionTracking() {
-        if (activityTransitionRegistered) return;
+        if (activityTransitionRegistered || activityTransitionRegistering || serviceStopping) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -1551,7 +1614,9 @@ public class LocationService extends Service {
             Intent intent = new Intent(ACTION_ACTIVITY_TRANSITION).setPackage(getPackageName());
             int piFlags = PendingIntent.FLAG_UPDATE_CURRENT
                 | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0);
-            activityTransitionPendingIntent = PendingIntent.getBroadcast(this, 4101, intent, piFlags);
+            // action 전용 receiver 필터를 유지하며 이전 요청의 늦은 해제가 새 구독을 건드리지 않게 한다.
+            activityTransitionPendingIntent = PendingIntent.getBroadcast(
+                this, activityTransitionRequestCodes.incrementAndGet(), intent, piFlags);
 
             activityTransitionReceiver = new BroadcastReceiver() {
                 @Override
@@ -1578,6 +1643,7 @@ public class LocationService extends Service {
 
             requestActivityTransitionUpdates(request);
         } catch (Exception error) {
+            teardownActivityTransitionTracking();
             Log.w(TAG, "setupActivityTransitionTracking failed", error);
         }
     }
@@ -1588,44 +1654,56 @@ public class LocationService extends Service {
      */
     @SuppressLint("MissingPermission")
     private void requestActivityTransitionUpdates(ActivityTransitionRequest request) {
+        final int generation = ++activityTransitionGeneration;
+        final PendingIntent pendingIntent = activityTransitionPendingIntent;
+        activityTransitionRegistering = true;
         try {
             ActivityRecognition.getClient(this)
-                .requestActivityTransitionUpdates(request, activityTransitionPendingIntent)
-                .addOnSuccessListener(ignored -> Log.i(TAG, "Activity transition updates registered"))
-                .addOnFailureListener(error -> Log.w(TAG, "Activity transition register failed", error));
-            activityTransitionRegistered = true;
+                .requestActivityTransitionUpdates(request, pendingIntent)
+                .addOnSuccessListener(ignored -> {
+                    if (generation != activityTransitionGeneration || serviceStopping) {
+                        removeActivityTransitionUpdatesIfPermitted(pendingIntent);
+                        return;
+                    }
+                    activityTransitionRegistering = false;
+                    activityTransitionRegistered = true;
+                    Log.i(TAG, "Activity transition updates registered");
+                })
+                .addOnFailureListener(error -> {
+                    if (generation == activityTransitionGeneration) teardownActivityTransitionTracking();
+                    Log.w(TAG, "Activity transition register failed; retry on heartbeat", error);
+                });
         } catch (SecurityException error) {
-            if (activityTransitionReceiver != null) {
-                unregisterReceiver(activityTransitionReceiver);
-                activityTransitionReceiver = null;
-            }
+            teardownActivityTransitionTracking();
             Log.w(TAG, "Activity transition permission changed before registration", error);
         }
     }
 
     private void teardownActivityTransitionTracking() {
-        if (!activityTransitionRegistered) return;
-        removeActivityTransitionUpdatesIfPermitted();
+        activityTransitionGeneration++;
+        removeActivityTransitionUpdatesIfPermitted(activityTransitionPendingIntent);
         try {
             if (activityTransitionReceiver != null) unregisterReceiver(activityTransitionReceiver);
         } catch (Exception ignored) {
             // receiver may not be registered
         }
         activityTransitionReceiver = null;
+        activityTransitionPendingIntent = null;
+        activityTransitionRegistering = false;
         activityTransitionRegistered = false;
     }
 
     @SuppressLint("MissingPermission")
-    private void removeActivityTransitionUpdatesIfPermitted() {
+    private void removeActivityTransitionUpdatesIfPermitted(PendingIntent pendingIntent) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
                 && ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION)
                     != PackageManager.PERMISSION_GRANTED) {
             return;
         }
         try {
-            if (activityTransitionPendingIntent != null) {
+            if (pendingIntent != null) {
                 ActivityRecognition.getClient(this)
-                    .removeActivityTransitionUpdates(activityTransitionPendingIntent);
+                    .removeActivityTransitionUpdates(pendingIntent);
             }
         } catch (SecurityException ignored) {
             // 권한이 확인 직후 회수되면 해제 요청만 건너뛴다.
@@ -2211,12 +2289,25 @@ public class LocationService extends Service {
         if (!isServiceLifecycleActive(uploadLifecycleEpoch)) return;
         runOnNetworkThread("upload", () -> {
             int generationToFinish = refreshGeneration;
+            boolean historyCandidate = false;
+            boolean queued = false;
+            boolean historyRecorded = false;
+            int pendingBefore = 0;
             try {
                 if (!isServiceLifecycleActive(uploadLifecycleEpoch)
                         || (generationToFinish > 0
                             && !isImmediateFixGenerationActive(generationToFinish))) {
                     generationToFinish = 0;
                     return;
+                }
+                // 첫 HTTP 요청 자체가 IOException으로 실패해도 실측 원본은 남아야 한다.
+                synchronized (immediateFixStateLock) {
+                    if (!isServiceLifecycleActive(uploadLifecycleEpoch)) return;
+                    historyCandidate = shouldRecordLocationHistory(lat, lng, capturedAtMs, fixElapsedRealtimeNanos);
+                    if (historyCandidate) {
+                        pendingBefore = LocationBuffer.size(locationBufferFile);
+                        queued = LocationBuffer.append(locationBufferFile, lat, lng, accuracy, capturedAtMs);
+                    }
                 }
                 JSONObject body = new JSONObject();
                 body.put("p_user_id", userId);
@@ -2362,23 +2453,11 @@ public class LocationService extends Service {
                     }
                 }
 
-                // 이동경로 점 — 서버 성공 전 로컬 큐에 먼저 적재한다.
-                // 온라인 업로드 성공 후에만 방금 적재한 동일 점을 제거하므로, 앱 종료/
-                // 네트워크 전환/프로세스 킬 타이밍에도 원본 GPS 점이 기기에 남는다.
-                final int pendingBefore;
-                final boolean queued;
-                synchronized (immediateFixStateLock) {
-                    if (!isServiceLifecycleActive(uploadLifecycleEpoch)) return;
-                    if (!shouldRecordLocationHistory(
-                        lat,
-                        lng,
-                        capturedAtMs,
-                        fixElapsedRealtimeNanos)) return;
-                    pendingBefore = LocationBuffer.size(locationBufferFile);
-                    queued = LocationBuffer.append(locationBufferFile, lat, lng, accuracy, capturedAtMs);
-                }
-                boolean historyRecorded = uploaded
+                if (!historyCandidate) return;
+                historyRecorded = uploaded
                     && !isBlank(successfulBearer)
+                    // HTTP를 기다리는 동안 더 최신 점이 기록됐으면 역방향 도로매칭은 하지 않는다.
+                    && shouldRecordLocationHistory(lat, lng, capturedAtMs, fixElapsedRealtimeNanos)
                     && uploadLocationHistory(lat, lng, accuracy, capturedAtMs, successfulBearer);
                 synchronized (immediateFixStateLock) {
                     if (!isServiceLifecycleActive(uploadLifecycleEpoch)) return;
@@ -2390,24 +2469,28 @@ public class LocationService extends Service {
                     } else if (queued) {
                         flushLocationBuffer();
                     }
-                    // 온라인/오프라인 어느 경로든 기준점을 갱신 — 오프라인 중에도
-                    // 2m/전원정책 간격 밀도가 유지되어 경로 누락을 최소화한다.
-                    synchronized (locationStateLock) {
-                        boolean newerThanLastHistory = fixElapsedRealtimeNanos > 0L
-                                && lastHistoryElapsedRealtimeNanos > 0L
-                            ? fixElapsedRealtimeNanos > lastHistoryElapsedRealtimeNanos
-                            : capturedAtMs > lastHistoryAtMs;
-                        if (newerThanLastHistory) {
-                            lastHistoryLat = lat;
-                            lastHistoryLng = lng;
-                            lastHistoryAtMs = capturedAtMs;
-                            lastHistoryElapsedRealtimeNanos = fixElapsedRealtimeNanos;
-                        }
-                    }
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Location upload error", e);
             } finally {
+                // 로컬 또는 서버 저장이 확인된 점만 기준점으로 삼는다. 첫 HTTP 예외도
+                // 이 경로를 거치므로 통신 단절 중 수집 간격과 복구 이력을 보존한다.
+                if (queued || historyRecorded) synchronized (immediateFixStateLock) {
+                    if (isServiceLifecycleActive(uploadLifecycleEpoch)) {
+                        synchronized (locationStateLock) {
+                            boolean newerThanLastHistory = fixElapsedRealtimeNanos > 0L
+                                    && lastHistoryElapsedRealtimeNanos > 0L
+                                ? fixElapsedRealtimeNanos > lastHistoryElapsedRealtimeNanos
+                                : capturedAtMs > lastHistoryAtMs;
+                            if (newerThanLastHistory) {
+                                lastHistoryLat = lat;
+                                lastHistoryLng = lng;
+                                lastHistoryAtMs = capturedAtMs;
+                                lastHistoryElapsedRealtimeNanos = fixElapsedRealtimeNanos;
+                            }
+                        }
+                    }
+                }
                 if (generationToFinish > 0) {
                     finishImmediateLocationFix(generationToFinish);
                 }

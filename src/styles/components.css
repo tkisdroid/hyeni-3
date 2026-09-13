@@ -6,10 +6,13 @@
 /* 탭 눌림 피드백 (--press 로 스케일 조정) */
 .hy-press {
   min-height: var(--control-min-size);
-  transition: transform var(--duration-fast) var(--easing-standard);
+  transition:
+    transform var(--duration-fast) var(--easing-standard),
+    box-shadow var(--duration-fast) var(--easing-standard),
+    background-color var(--duration-fast) var(--easing-standard);
 }
-.hy-press:active {
-  transform: scale(var(--press, 0.96));
+.hy-press:active:not(:disabled):not([aria-disabled="true"]):not([aria-busy="true"]) {
+  transform: scale(var(--press, 0.98));
 }
 
 /* 디자인 시스템 기본값: 별도 화면 규칙이 없어도 실제 조작 면적은 44px 아래로 줄지 않는다. */
@@ -105,8 +108,7 @@
   border: 2px solid #fff;
 }
 
-/* 모든 화면의 뒤로가기 버튼 정본.
-   화면별 `*-back` 클래스는 배치만 맡는다. 보이는 면은 없애되 44px 터치 영역은 유지한다. */
+/* 모든 화면의 뒤로가기 버튼 정본: 같은 원형 유리와 44px 터치 영역. */
 .hy-app button.hy-press[class*="-back"],
 .hy-app button.hy-backbtn {
   width: var(--control-min-size) !important;
@@ -116,9 +118,9 @@
   margin: 0;
   padding: 0 !important;
   border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border-radius: var(--radius-pill) !important;
+  background: var(--control-fill) !important;
+  box-shadow: var(--control-shadow) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
   display: grid;
@@ -126,7 +128,12 @@
   flex: none;
   color: var(--fg-secondary);
   touch-action: manipulation;
-  --press: 0.94;
+  --press: 0.97;
+}
+
+.hy-app button.hy-press[class*="-back"]:active:not(:disabled),
+.hy-app button.hy-backbtn:active:not(:disabled) {
+  box-shadow: var(--control-shadow-pressed) !important;
 }
 
 .hy-app button.hy-press[class*="-back"] > svg,
@@ -137,10 +144,72 @@
   stroke-width: 2.2 !important;
 }
 
-/* 어두운 온보딩·아이 SOS도 표면은 만들지 않고 아이콘 대비만 반전한다. */
+/* 어두운 온보딩·아이 SOS에서는 흰 아이콘의 대비를 유지한다. */
 .hy-app button.hy-press.ob-back--dark,
 .hy-app button.hy-press.cs-back {
+  --control-fill: rgba(0, 0, 0, 0.16);
   color: #fff;
+}
+
+/* 같은 동작은 같은 조작 면을 쓴다. 목록 행·상태 배지에는 버튼 테두리를 만들지 않는다. */
+.hy-app button:is(
+  .hy-btn, .hy-iconbtn, .pc-navbtn, .ps-profile__edit, .pf-invite-btn,
+  .raa-refresh, .ds-sync__btn, .nst-system-btn, .ef-mapbtn, .ef-supply-add,
+  .mc-attach, .afc-setup, .afc-voicetog, .kd-prep__edit, .hy-language__current,
+  .msd-close, .mps-close, .pu-close, .rrp__close
+) {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--control-fill);
+  box-shadow: var(--control-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* 주요 동작의 기존 포인트색·위험색은 유지하고 윤곽과 깊이만 통일한다. */
+.hy-app button:is(
+  .ob-cta, .pc-addbtn, .pm-add, .ef-save, .pe-save, .pf-save, .psu-save,
+  .pa-save, .dzf-save, .ss-send, .mc-send, .afc-send, .afs-cta,
+  .ais-confirm, .fb-submit, .ds-panel__cta, .ds-card__cta,
+  .pw-cta, .ra-start, .rr-cta, .ls-retry, .cls-cta, .au-cta, .pd-cta,
+  .tl-cta, .tl-ghost, .rv-empty__home, .sup-add__btn, .trg-primary,
+  .trg-danger, .pc-btn, .ps-modal__btn, .mps-confirm, .clp-primary, .clp-secondary
+) {
+  border-radius: var(--radius-pill);
+  box-shadow: var(--control-shadow);
+}
+
+/* 선택 칩의 배경과 글자색은 각 기능의 상태를 계속 표현한다. */
+.hy-app button:is(
+  .ef-chip, .nst-minute, .pf-type, .ais-tab, .pl-viewtog__btn,
+  .fb-cat, .lset-seg__item, .rr-chip, .mc-quick-btn, .afc-chip
+) {
+  border-radius: var(--radius-pill);
+  box-shadow: var(--control-rim);
+}
+
+.hy-app button:is(
+  .hy-btn, .hy-iconbtn, .pc-navbtn, .ps-profile__edit, .pf-invite-btn,
+  .raa-refresh, .ds-sync__btn, .nst-system-btn, .ef-mapbtn, .ef-supply-add,
+  .ob-cta, .pc-addbtn, .pm-add, .ef-save, .pe-save, .pf-save, .psu-save,
+  .pa-save, .dzf-save, .ss-send, .mc-send, .afc-send, .afs-cta,
+  .ais-confirm, .fb-submit, .ds-panel__cta, .ds-card__cta, .pw-cta,
+  .ra-start, .rr-cta, .pc-btn, .ps-modal__btn, .clp-primary, .clp-secondary,
+  .ef-chip, .nst-minute, .pf-type, .ais-tab, .pl-viewtog__btn, .rr-chip
+):active:not(:disabled):not([aria-disabled="true"]):not([aria-busy="true"]) {
+  box-shadow: var(--control-shadow-pressed);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hy-app button:is(.hy-iconbtn, .pc-navbtn, .ps-profile__edit, .raa-refresh):hover:not(:disabled) {
+    background-color: var(--control-fill-hover);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .hy-app {
+    --control-fill: var(--bg-card);
+  }
 }
 
 /* ── 스크롤 콘텐츠 컬럼 ─────────────────────────────────────────────────── */

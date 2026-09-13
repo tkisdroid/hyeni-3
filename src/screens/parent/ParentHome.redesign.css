@@ -8,8 +8,8 @@
 
 /* ── 리듬: 섹션은 붙이고 안쪽에 숨 쉴 공간을 준다 ────────────────────────── */
 .hy-app .ph-page .hy-content {
-  gap: 12px;
-  padding: 8px 16px calc(112px + env(safe-area-inset-bottom, 0px));
+  gap: 20px;
+  padding: 8px 20px calc(112px + env(safe-area-inset-bottom, 0px));
 }
 
 .ph-page .hy-iconbtn,
@@ -17,8 +17,8 @@
   background: var(--ph-object-fill);
   border: 0;
   box-shadow: var(--ph-object-raise);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .ph-page .ph-stickerbtn {
@@ -110,11 +110,11 @@
   /* 글자는 작아도 실제 누르는 영역은 44px 을 유지한다(배경이 없어 눈에는 안 보인다). */
   min-height: var(--control-min-size);
   margin-left: auto;
-  padding: 8px 4px;
+  padding: 8px 12px;
   border: 0;
-  border-radius: var(--radius-8);
-  background: transparent;
-  box-shadow: none;
+  border-radius: var(--radius-pill);
+  background: var(--control-fill);
+  box-shadow: var(--control-shadow);
   font-size: var(--type-meta);
   line-height: var(--type-meta-line-height);
   font-weight: var(--type-meta-weight);
@@ -289,25 +289,25 @@
 
 /* ── ③ 목록 행: 납작하고, 선으로만 나뉜다 ──────────────────────────────── */
 .ph-page .ph-sched {
-  gap: 0;
+  gap: 8px;
   padding: 0;
 }
 
 .ph-page .ph-sched-row,
 .ph-page .ph-sched-row.ph-neu-control {
-  padding: 12px 4px;
+  padding: 16px;
   gap: 12px;
   border: 0;
-  border-radius: var(--radius-12);
-  background: transparent;
-  box-shadow: none;
+  border-radius: var(--radius-24);
+  background: var(--ph-glass-fill);
+  box-shadow: var(--ph-panel-shadow);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   --press: 1;
 }
 
 .ph-page .ph-sched-row + .ph-sched-row {
-  border-top: 1px solid var(--ph-hairline);
+  border-top: 0;
 }
 
 .ph-page button.ph-sched-row:active {
@@ -318,9 +318,9 @@
 .ph-page .ph-sched-icon {
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-12);
-  background: rgba(255, 255, 255, 0.62) !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+  border-radius: var(--radius-pill);
+  background: var(--control-fill) !important;
+  box-shadow: var(--control-rim);
 }
 
 .ph-page .ph-sched-icon img {
@@ -388,7 +388,7 @@
 }
 
 .ph-page .ph-ai__grid {
-  gap: 12px;
+  gap: 8px;
   margin-top: 16px;
 }
 
@@ -398,11 +398,11 @@
   padding: 12px;
   gap: 12px;
   border: 0;
-  border-radius: var(--radius-16);
+  border-radius: var(--radius-pill);
   background: var(--ph-object-fill);
   box-shadow: var(--ph-object-raise);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -1077,6 +1077,16 @@
   text-align: left;
 }
 
+/* 미니앱 캐릭터는 카드 안에서 온전히 보이도록 위아래 여백을 확보한다. */
+.ph-page .ph-hero--promo .ph-hero__mascot {
+  top: var(--spacing-16);
+  right: var(--spacing-12);
+  bottom: var(--spacing-16);
+  width: 104px;
+  height: auto;
+  animation: none;
+}
+
 .ph-hero-carousel__controls {
   display: flex;
   align-items: center;
@@ -1093,9 +1103,9 @@
   height: 44px;
   border: 0;
   border-radius: 999px;
-  background: transparent;
+  background: var(--control-fill);
   color: var(--ph-ink-3);
-  box-shadow: none;
+  box-shadow: var(--control-shadow);
 }
 
 /* 슬라이드 상한(6장)에서도 44px 점이 잘리지 않게 줄바꿈한다 — 캐러셀은 overflow:hidden 이라 넘치면 사라진다. */
@@ -1141,4 +1151,32 @@
 @media (prefers-reduced-motion: reduce) {
   .ph-hero-carousel__track { scroll-behavior: auto; }
   .ph-hero-carousel__dot::after { transition: none; }
+}
+
+/* 일정과 빠른 입력은 바닥 위에 놓고, 실제 조작 행에만 유리 면을 둔다. */
+.ph-page .ph-home-section[data-section-id="schedule"] .ph-section-shell,
+.ph-page .ph-home-section[data-section-id="ai_schedule"] .ph-section-shell,
+.ph-page .ph-home-section[data-section-id="shortcuts"] .ph-section-shell {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ph-page .ph-home-section[data-section-id="schedule"] .hy-section-head {
+  margin-bottom: 8px;
+}
+
+.ph-page .ph-hero-carousel__controls {
+  margin-top: 4px;
+}
+
+.ph-page .ph-subscription__icon,
+.ph-page .ph-referral__icon,
+.ph-page .ph-memo__icon.ph-neu-control {
+  border-radius: var(--radius-pill);
+  background: var(--control-fill);
+  box-shadow: var(--control-rim);
 }

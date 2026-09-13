@@ -139,6 +139,8 @@
   transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   padding: 8px 16px;
   border-radius: 999px;
+  border: 1px solid var(--control-border);
+  background: var(--control-fill);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

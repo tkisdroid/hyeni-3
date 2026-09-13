@@ -168,6 +168,8 @@ export function parentAlertPendingTtlMs(alertType: string, action = "parent_aler
     return 2 * 60 * 60_000;
   }
   if (normalizedAlertType === "low_battery") return 6 * 60 * 60_000;
+  // 연결 상태는 곧 바뀔 수 있으므로 잠금 해제 뒤 오래된 상태를 재생하지 않는다.
+  if (["location_stale", "location_recovered"].includes(normalizedAlertType)) return 10 * 60_000;
   return 24 * 60 * 60_000;
 }
 

@@ -516,8 +516,11 @@
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
-
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 .pl-route-btn {
   background: var(--blue-soft);
@@ -1329,9 +1332,9 @@
 
 .pl-visited__row {
   display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 16px;
+  gap: 4px;
   width: 100%;
   min-height: 68px;
   padding: 12px 4px;
@@ -1346,6 +1349,7 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .pl-visited__row strong {
@@ -1354,8 +1358,8 @@
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .pl-visited__row--selected strong {
@@ -1421,9 +1425,6 @@
     min-height: 440px;
   }
 
-  .pl-visited__row {
-    grid-template-columns: 104px minmax(0, 1fr);
-  }
 }
 
 @media (min-width: 720px) and (orientation: landscape) {

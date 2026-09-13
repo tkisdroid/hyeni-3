@@ -244,8 +244,6 @@
   min-width: 0;
   padding: var(--spacing-16);
   border-radius: var(--radius-16);
-  background: var(--bg-card);
-  box-shadow: var(--shadow-soft);
 }
 .nst-quiet__state {
   display: flex;
