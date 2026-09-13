@@ -37,16 +37,9 @@ test("1.4.5 Play 문서는 code 17 제출 당시 상태를 역사 기록으로 �
   assert.match(submission, /D1.*migration.*없/s);
 });
 
-test("1.4.6 Google 지도 출시 후보는 code 18과 10개 locale 출시 노트를 쓴다", () => {
-  const packageJson = JSON.parse(read("package.json"));
-  const androidGradle = read("android/app/build.gradle");
-  const iosProject = read("ios/App/App.xcodeproj/project.pbxproj");
+test("1.4.6 Google 지도 출시 노트는 당시 10개 locale 기록을 보존한다", () => {
   const notesPath = resolve(rootDir, "docs/store/play-release-notes-v1.4.6.md");
 
-  assert.equal(packageJson.version, "1.4.6");
-  assert.match(androidGradle, /^\s*versionCode 18$/m);
-  assert.equal((iosProject.match(/CURRENT_PROJECT_VERSION = 18;/g) ?? []).length, 2);
-  assert.equal((iosProject.match(/MARKETING_VERSION = 1\.4\.6;/g) ?? []).length, 2);
   assert.ok(existsSync(notesPath), "1.4.6 출시 노트가 필요합니다");
 
   const releaseNotes = read("docs/store/play-release-notes-v1.4.6.md");

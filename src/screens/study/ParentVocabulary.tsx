@@ -31,7 +31,7 @@ function VocabularyProgress({ memberId }: { memberId: string }) {
           <p>{review.meaning}</p>
           <small>{label(VOCABULARY_LEVEL_IDS[review.level])} · <time dateTime={review.reviewedAt}>{intl.formatDate(review.reviewedAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</time></small>
         </article>)}
-        {query.hasNextPage && !query.isError && <button type="button" className="study-learning-button is-secondary" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>{label(query.isFetchingNextPage ? "study.vocabulary.parentLoading" : "study.history.more")}</button>}
+        {query.hasNextPage && !query.isError && <button type="button" className="study-learning-button is-secondary" disabled={query.isFetchingNextPage} aria-busy={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>{label(query.isFetchingNextPage ? "study.vocabulary.parentLoading" : "study.history.more")}</button>}
       </section>
     </>}
   </>;

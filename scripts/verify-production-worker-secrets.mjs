@@ -73,4 +73,4 @@ if (missing.length > 0) {
   process.exit(2);
 }
 
-console.log("프로덕션 Worker 필수 secret 10개 확인 완료.");
+console.log(`프로덕션 Worker 필수 secret ${REQUIRED_WORKER_SECRETS.length}개 확인 완료.`);

@@ -56,7 +56,7 @@ export function StudyProblemHistory({ memberId, range }: { memberId: string; ran
     {history.isError && <div className="study-learning-state" role="alert"><p>{intl.formatMessage({ id: "study.history.error" })}</p><button type="button" onClick={() => void (history.isFetchNextPageError ? history.fetchNextPage() : history.refetch())}>{intl.formatMessage({ id: "study.unavailable.retry" })}</button></div>}
     {!history.isPending && !history.isError && items.length === 0 && <p>{intl.formatMessage({ id: "study.history.empty" })}</p>}
     <div className="study-attempt-list">{items.map(item => <Attempt key={item.id} item={item} />)}</div>
-    {history.hasNextPage && !history.isError && <button className="study-learning-button is-secondary" type="button" disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>
+    {history.hasNextPage && !history.isError && <button className="study-learning-button is-secondary" type="button" disabled={history.isFetchingNextPage} aria-busy={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>
       {intl.formatMessage({ id: history.isFetchingNextPage ? "study.history.loading" : "study.history.more" })}
     </button>}
   </section>;

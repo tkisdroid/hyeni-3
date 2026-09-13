@@ -55,7 +55,7 @@ function VocabularyRun({ run, memberId, onBack }: { run: Run; memberId: string; 
 
   return <div className="vocabulary-screen vocabulary-run">
     <header className="study-learning-header">
-      <button className="study-learning-back" type="button" disabled={state.status === "saving"} onClick={onBack} aria-label={label("study.vocabulary.chooseLevel")}><ChevronLeft aria-hidden="true" /></button>
+      <button className="study-learning-back" type="button" disabled={state.status === "saving"} aria-busy={state.status === "saving"} onClick={onBack} aria-label={label("study.vocabulary.chooseLevel")}><ChevronLeft aria-hidden="true" /></button>
       <div><h1>{label(VOCABULARY_LEVEL_IDS[run.level])}</h1><p>{intl.formatMessage({ id: "study.vocabulary.sessionCount" }, { count: state.index })}</p></div>
     </header>
     {deck.isPending || (!card && deck.isFetchingNextPage) ? <p role="status">{label("study.vocabulary.loading")}</p> : deck.isError ? (
