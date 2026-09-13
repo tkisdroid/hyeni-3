@@ -11,7 +11,8 @@ import type {
 export const GOOGLE_FIELD_MASKS = {
   autocomplete: "suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat",
   details: "id,displayName,formattedAddress,location",
-  reverse: "results.formattedAddress",
+  reverse: "results.formattedAddress,results.addressComponents.longText,results.addressComponents.types,results.placeId,results.types",
+  reverseDetails: "id,displayName,types",
   routes: "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline",
 } as const;
 
@@ -149,10 +150,35 @@ export function createGoogleMapAdapter(input: {
         tokenProvider: input.tokenProvider,
         fetchImpl,
       });
-      const first = Array.isArray(data.results) ? data.results[0] : null;
-      return first && typeof first === "object" && typeof (first as { formattedAddress?: unknown }).formattedAddress === "string"
-        ? (first as { formattedAddress: string }).formattedAddress
-        : null;
+      const first = Array.isArray(data.results) ? data.results[0] as Record<string, unknown> | undefined : undefined;
+      if (!first || typeof first !== "object") return null;
+      const address = typeof first.formattedAddress === "string" ? first.formattedAddress : null;
+      const components = Array.isArray(first.addressComponents) ? first.addressComponents : [];
+      for (const component of components) {
+        const types = Array.isArray(component?.types) ? component.types : [];
+        const name = typeof component?.longText === "string" ? component.longText.trim() : "";
+        if (name && /[^\d\s-]/u.test(name) && types.some((type: string) => ["premise", "establishment", "point_of_interest"].includes(type))) return name;
+      }
+      // 역지오코딩이 특정 장소로 확인한 placeId만 상세 조회한다. 주변 검색의 첫 상호를 추정하지 않는다.
+      const types = Array.isArray(first.types) ? first.types : [];
+      if (typeof first.placeId === "string" && types.some(type => ["premise", "establishment", "point_of_interest"].includes(String(type)))) {
+        try {
+          const details = await googleJson({
+            url: `https://places.googleapis.com/v1/places/${encodeURIComponent(first.placeId)}?${params}`,
+            scope: GOOGLE_MAP_SCOPES.details,
+            fieldMask: GOOGLE_FIELD_MASKS.reverseDetails,
+            tokenProvider: input.tokenProvider,
+            fetchImpl,
+          });
+          const name = (details.displayName as { text?: string } | undefined)?.text?.trim();
+          const detailTypes = Array.isArray(details.types) ? details.types : [];
+          if (name && details.id === first.placeId
+            && detailTypes.some(type => ["premise", "establishment", "point_of_interest"].includes(String(type)))) return name;
+        } catch {
+          // 상호 상세 조회 장애가 이미 확인한 주소까지 없애지는 않는다.
+        }
+      }
+      return address;
     },
     async directions(_origin: LatLngPoint, _destination: LatLngPoint, _locale: string) {
       // 표준 Routes v2 REST reference는 현재 OAuth scope를 명시하지 않는다. 광범위 scope/API key 우회 금지.
@@ -161,4 +187,3 @@ export function createGoogleMapAdapter(input: {
     },
   };
 }
-

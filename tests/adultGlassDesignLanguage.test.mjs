@@ -75,7 +75,7 @@ test("위치 실시간 카드와 이동 기록 카드는 같은 판·같은 행 
   assert.match(css, /\.pl-root \.pl-memo-btn,/);
 });
 
-test("서리 스크림은 가릴 것이 생겼을 때만 켠다", () => {
+test("스크롤 위치 복원은 유지하고 헤더는 스크롤 중에도 투명하다", () => {
   const shell = read("src/app/AppShell.tsx");
   const hook = read("src/app/useScrolledShell.ts");
 
@@ -85,13 +85,15 @@ test("서리 스크림은 가릴 것이 생겼을 때만 켠다", () => {
   assert.match(hook, /dataset\.scrolled/);
   assert.match(hook, /passive: true/);
 
-  // 맨 위에서는 스크림이 없어야 오로라 위에 납작한 사각형이 생기지 않는다.
-  assert.match(glass, /\.hy-adult \.hy-screen\[data-scrolled\] :is\(/);
+  // 스크롤 상태에 따라 불투명한 배경막을 다시 올리지 않는다.
+  assert.doesNotMatch(glass, /\.hy-adult \.hy-screen\[data-scrolled\] :is\(/);
   const topbarRule = glass.match(/\.hy-adult \.hy-topbar \{([\s\S]*?)\n\}/)?.[1] ?? "";
   assert.match(topbarRule, /background: transparent/);
+  assert.match(topbarRule, /backdrop-filter: blur\(16px\)/);
+  assert.match(topbarRule, /mask-image: linear-gradient/);
 });
 
-test("어른 화면 헤더는 같은 상하 리듬과 투명한 44px 뒤로가기를 쓴다", () => {
+test("어른 화면 헤더는 같은 상하 리듬과 원형 유리 44px 뒤로가기를 쓴다", () => {
   const components = read("src/styles/components.css");
   const family = read("src/screens/parent/ParentFamily.tsx");
   const backRule = components.match(
@@ -104,12 +106,12 @@ test("어른 화면 헤더는 같은 상하 리듬과 투명한 44px 뒤로가�
   assert.match(glass, /padding: calc\(env\(safe-area-inset-top, 0px\) \+ 16px\) 16px 28px/);
   assert.match(glass, /padding-top: calc\(env\(safe-area-inset-top, 0px\) \+ 16px\)/);
   assert.match(glass, /padding-bottom: 28px/);
-  assert.match(glass, /calc\(100% - 28px\)/);
   assert.match(backRule, /width: var\(--control-min-size\) !important/);
   assert.match(backRule, /height: var\(--control-min-size\) !important/);
   assert.match(backRule, /border: 0 !important/);
-  assert.match(backRule, /background: transparent !important/);
-  assert.match(backRule, /box-shadow: none !important/);
+  assert.match(backRule, /border-radius: var\(--radius-pill\) !important/);
+  assert.match(backRule, /background: var\(--control-fill\) !important/);
+  assert.match(backRule, /box-shadow: var\(--control-shadow\) !important/);
   assert.match(backRule, /backdrop-filter: none !important/);
   assert.match(iconRule, /width: var\(--icon-20\) !important/);
   assert.match(iconRule, /height: var\(--icon-20\) !important/);

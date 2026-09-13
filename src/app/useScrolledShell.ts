@@ -4,18 +4,14 @@ import { useLocation } from "react-router";
 /**
  * 셸의 스크롤 영역 하나를 맡아 두 가지를 한다.
  *
- * ① 맨 위인지 아닌지를 `data-scrolled` 로 알린다(2026-08-21 TK 제보 "필터와 오늘 섹션 사이 경계").
- *    sticky 헤더의 서리 스크림은 두 가지를 동시에 만족할 수 없다 —
- *    맨 위에서는 가릴 내용이 없어 스크림이 **납작한 사각형**으로 읽히고,
- *    스크롤 중에는 스크림이 옅으면 목록이 헤더 뒤로 **비쳐 보인다**.
- *    그래서 "가릴 것이 생겼을 때만" 켠다.
+ * ① 맨 위인지 아닌지를 `data-scrolled`로 알린다.
+ *    헤더 배경은 이 상태와 관계없이 투명하게 유지한다.
  *
  * ② 화면별 스크롤 위치를 기억한다(2026-08-21 TK 지시).
  *    처음 들어가는 화면은 **최상단부터** 읽을 수 있어야 하고,
  *    다시 찾은 화면은 **보던 자리로** 돌아가야 한다.
  *
- * 순수 CSS(animation-timeline: scroll())로도 ①은 되지만 PWA Safari 가 아직 지원하지 않아
- * 어느 환경에서나 같게 동작하도록 passive 리스너 하나로 처리한다.
+ * 스크롤 상태와 위치 저장을 passive 리스너 하나로 처리한다.
  */
 const SCROLLED_THRESHOLD_PX = 4;
 
@@ -45,7 +41,7 @@ export function useScrolledShell(): (node: HTMLElement | null) => void {
   const screenKey = `${pathname}${search}`;
   const activeScreenKeyRef = useRef(screenKey);
 
-  /** 현재 위치를 저장하지 않고 헤더 스크림 상태만 맞춘다. */
+  /** 현재 위치를 저장하지 않고 스크롤 상태만 맞춘다. */
   const syncScrolledState = useCallback((node: HTMLElement) => {
     const scrolled = node.scrollTop > SCROLLED_THRESHOLD_PX;
     // 매 스크롤 프레임마다 DOM 을 건드리지 않는다 — 상태가 실제로 바뀔 때만 쓴다.

@@ -311,7 +311,7 @@ export function ChildDetail() {
             <img src={asset("ui/menu-remote-audio.webp")} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
           </span>
           <span className="cd-row__main">
-            <span className="cd-row__title">{intl.formatMessage({ id: "parent.home.shortcut.remoteAudio" })}</span>
+            <span className="cd-row__title">{intl.formatMessage({ id: "parent.location.action.remoteAudio" })}</span>
             <span className="cd-row__sub">{intl.formatMessage({ id: "parent.childDetail.copy014" })}</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />

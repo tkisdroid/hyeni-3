@@ -7,6 +7,7 @@ import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { Hono } from "hono";
 
 const mapsRoutes = (await import("../routes/maps.ts")).default;
+const { standardLocationHistoryWindow } = await import("../routes/location.ts");
 const { privateKey, publicKey } = await generateKeyPair("ES256", { extractable: true });
 const jwtPrivateKey = JSON.stringify(await exportJWK(privateKey));
 const jwtPublicKey = JSON.stringify(await exportJWK(publicKey));
@@ -46,7 +47,16 @@ function fixture() {
       ('place-a','family-a','학교','{"lat":37.51,"lng":127.01}'),
       ('place-b','family-b','다른 학교','{"lat":35.2,"lng":129.1}');
   `);
+  sqlite.prepare("INSERT INTO family_subscription(family_id,status,product_id,qonversion_user_id,current_period_end) VALUES (?,?,?,?,?)")
+    .run("family-a", "active", "test-premium", "test-parent", new Date(Date.now() + 30 * 24 * 60 * 60_000).toISOString());
   return { sqlite, db: new Db(sqlite) };
+}
+
+function addHistory(sqlite, atMs, options = {}) {
+  const recordedAt = new Date(atMs).toISOString().replace("T", " ").replace("Z", "+00");
+  sqlite.prepare("INSERT INTO location_history(user_id,family_id,lat,lng,recorded_at,accuracy_m,is_estimated) VALUES(?,?,?,?,?,?,?)")
+    .run(options.child ?? "child-a", "family-a", options.lat ?? 37.51, options.lng ?? 127.01, recordedAt, 12, options.estimated ?? 0);
+  return recordedAt;
 }
 
 async function authorization(sub, familyId, role = "parent") {
@@ -185,7 +195,7 @@ test("reverse raw 좌표 경계와 object ref 소유권을 검증한 뒤 Kakao �
       familyId: "family-a", source: { kind: "saved_place", savedPlaceId: "place-a" },
     }, auth);
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { policyProvider: "kakao", label: "학교 · 서울시 길 1", measuredAt: null });
+    assert.deepEqual(await response.json(), { policyProvider: "kakao", label: "학교", measuredAt: null });
   } finally {
     globalThis.fetch = originalFetch;
     sqlite.close();
@@ -247,4 +257,101 @@ test("지도 전용 secret이나 quota DB가 없으면 provider fetch 전에 503
     globalThis.fetch = originalFetch;
     sqlite.close();
   }
+});
+
+test("과거 도착지 라벨은 요청한 실측 시각으로 조회하고 누락된 과거 점을 최신 위치로 바꾸지 않는다", async () => {
+  const { sqlite, db } = fixture();
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async input => {
+    const url = new URL(input);
+    calls.push(url);
+    return Response.json({ documents: [{ road_address: { building_name: "당시 문화센터" } }] });
+  };
+  try {
+    const now = Date.now();
+    const recordedAt = addHistory(sqlite, now - 60 * 60_000);
+    sqlite.prepare("UPDATE child_locations SET lat=37.6,lng=127.2,updated_at=? WHERE user_id='child-a'").run(new Date(now).toISOString());
+    const auth = await authorization("parent-a", "family-a");
+    const result = await post(db, "reverse", {
+      familyId: "family-a", source: { kind: "child_location", childUserId: "child-a", recordedAt }, locale: "ko",
+    }, auth);
+    assert.equal(result.status, 200);
+    assert.deepEqual(await result.json(), { policyProvider: "kakao", label: "당시 문화센터", measuredAt: recordedAt });
+    assert.equal(calls[0].searchParams.get("x"), "127.01");
+    assert.equal(calls[0].searchParams.get("y"), "37.51");
+    const missing = await post(db, "reverse", {
+      familyId: "family-a", source: { kind: "child_location", childUserId: "child-a", recordedAt: new Date(now - 30 * 60_000).toISOString() },
+    }, auth);
+    assert.equal(missing.status, 404);
+    assert.equal(calls.length, 1);
+  } finally { globalThis.fetch = originalFetch; sqlite.close(); }
+});
+
+test("현재 실측과 정확히 일치하면 이력 저장 전에도 해당 장소명을 반환한다", async () => {
+  const { sqlite, db } = fixture();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ documents: [{ road_address: { building_name: "지금 도서관" } }] });
+  try {
+    const at = new Date(Date.now() - 1_000).toISOString();
+    sqlite.prepare("UPDATE child_locations SET updated_at=? WHERE user_id='child-a'").run(at);
+    const result = await post(db, "reverse", {
+      familyId: "family-a", source: { kind: "child_location", childUserId: "child-a", recordedAt: at },
+    }, await authorization("parent-a", "family-a"));
+    assert.equal(result.status, 200);
+    assert.equal((await result.json()).measuredAt, at);
+  } finally { globalThis.fetch = originalFetch; sqlite.close(); }
+});
+
+test("지도 이름 조회에도 본인 아이 범위·프리미엄 30일·무료 오늘 이력 경계를 적용한다", async () => {
+  const { sqlite, db } = fixture();
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; return Response.json({ documents: [{ road_address: { building_name: "도서관" } }] }); };
+  try {
+    const now = Date.now();
+    const ancient = addHistory(sqlite, now - 31 * 24 * 60 * 60_000);
+    const yesterday = addHistory(sqlite, now - 2 * 24 * 60 * 60_000);
+    // 무료 현재 위치가 이틀 전 점을 마지막 확인점으로 선택하지 않도록 최근 자동 스냅샷도 둔다.
+    addHistory(sqlite, now - 15 * 60_000);
+    const todayAt = Math.max(standardLocationHistoryWindow(now).startMs + 1, now - 1_000);
+    const today = addHistory(sqlite, todayAt);
+    const estimated = addHistory(sqlite, todayAt - 10, { estimated: 1 });
+    const auth = await authorization("parent-a", "family-a");
+    const reverse = (recordedAt, caller = auth) => post(db, "reverse", {
+      familyId: "family-a", source: { kind: "child_location", childUserId: "child-a", recordedAt },
+    }, caller);
+    assert.equal((await reverse(ancient)).status, 404);
+    assert.equal((await reverse(estimated)).status, 404);
+    assert.equal((await reverse(today, await authorization("child-a", "family-a", "child"))).status, 404);
+    sqlite.prepare("DELETE FROM family_subscription WHERE family_id='family-a'").run();
+    assert.equal((await reverse(yesterday)).status, 404);
+    assert.equal(calls, 0);
+    assert.equal((await reverse(today)).status, 200);
+    assert.equal(calls, 1);
+    sqlite.exec("INSERT INTO users(id,is_anonymous) VALUES('sibling',0); INSERT INTO family_members(id,family_id,user_id,role,name,is_active) VALUES('sibling-member','family-a','sibling','child','다른 아이',1)");
+    const forbidden = await post(db, "reverse", {
+      familyId: "family-a", source: { kind: "child_location", childUserId: "sibling" },
+    }, await authorization("child-a", "family-a", "child"));
+    assert.equal(forbidden.status, 404);
+    assert.equal(calls, 1);
+  } finally { globalThis.fetch = originalFetch; sqlite.close(); }
+});
+
+test("위치 권한 DB 장애에서는 지도 제공자에 좌표를 보내지 않는다", async () => {
+  const { sqlite, db } = fixture();
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; throw new Error("호출 금지"); };
+  try {
+    const broken = { prepare(sql) {
+      if (/family_subscription|subscriptions/.test(sql)) throw new Error("격리 DB 장애");
+      return db.prepare(sql);
+    } };
+    const result = await post(broken, "reverse", {
+      familyId: "family-a", source: { kind: "child_location", childUserId: "child-a" },
+    }, await authorization("parent-a", "family-a"));
+    assert.equal(result.status, 503);
+    assert.equal(calls, 0);
+  } finally { globalThis.fetch = originalFetch; sqlite.close(); }
 });

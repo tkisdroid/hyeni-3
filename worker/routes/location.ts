@@ -133,7 +133,7 @@ type ChildLocationRow = {
   accuracy_m: number | null;
 };
 
-async function loadStandardChildLocations(
+export async function loadStandardChildLocations(
   db: D1Database,
   familyId: string,
   nowMs = Date.now(),

@@ -109,7 +109,6 @@ const WEEKDAY_LABEL_IDS: Record<WeekdayIndex, string> = {
 
 // 미선택 칩 — 토큰 정본을 쓴다. 하드코딩 #8B7E84/#F3EEF1 은 3.38:1 이라
 // 고를 수 있는 칩이 비활성처럼 보였다(--fg-tertiary 조합은 4.98:1).
-const IDLE_BG = "var(--bg-chip-idle)";
 const IDLE_COLOR = "var(--fg-tertiary)";
 
 function initialChildIdList(event?: CalendarEvent): string[] {
@@ -654,15 +653,7 @@ export function EventForm() {
                     type="button"
                     className="ef-chip hy-press"
                     aria-pressed={active}
-                    style={
-                      active
-                        ? {
-                            background: "var(--hy-accent-soft)",
-                            color: "var(--hy-accent-text)",
-                            border: "1.5px solid var(--hy-accent)",
-                          }
-                        : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
-                    }
+                    style={{ color: active ? "var(--hy-accent-text)" : IDLE_COLOR }}
                     onClick={() => toggleChild(m.id)}
                   >
                     <span className="ef-chip__avatar">
@@ -699,15 +690,7 @@ export function EventForm() {
               className="ef-chip hy-press"
               aria-pressed={allDay}
               onClick={() => setAllDay((value) => !value)}
-              style={
-                allDay
-                  ? {
-                      background: "var(--hy-accent-soft)",
-                      color: "var(--hy-accent-text)",
-                      border: "1.5px solid var(--hy-accent)",
-                    }
-                  : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
-              }
+              style={{ color: allDay ? "var(--hy-accent-text)" : IDLE_COLOR }}
             >
               {intl.formatMessage({ id: "parent.eventForm.copy031" })}
             </button>
@@ -742,15 +725,7 @@ export function EventForm() {
                   type="button"
                   className="ef-chip hy-press"
                   aria-pressed={active}
-                  style={
-                    active
-                      ? {
-                          background: "var(--hy-accent-soft)",
-                          color: "var(--hy-accent-text)",
-                          border: "1.5px solid var(--hy-accent)",
-                        }
-                      : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
-                  }
+                  style={{ color: active ? "var(--hy-accent-text)" : IDLE_COLOR }}
                   onClick={() => setDurationMin(d.minutes)}
                 >
                   {intl.formatMessage({ id: d.labelId })}
@@ -777,11 +752,7 @@ export function EventForm() {
                   type="button"
                   className="ef-chip hy-press"
                   aria-pressed={active}
-                  style={
-                    active
-                      ? { background: c.soft, color: c.color, border: `1.5px solid ${c.color}` }
-                      : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
-                  }
+                  style={{ color: active ? c.color : IDLE_COLOR }}
                   onClick={() => setCategory(c.id)}
                 >
                   <img
@@ -811,15 +782,7 @@ export function EventForm() {
                     type="button"
                     className="ef-chip hy-press"
                     aria-pressed={active}
-                    style={
-                      active
-                        ? {
-                            background: "var(--hy-accent-soft)",
-                            color: "var(--hy-accent-text)",
-                            border: "1.5px solid var(--hy-accent)",
-                          }
-                        : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
-                    }
+                    style={{ color: active ? "var(--hy-accent-text)" : IDLE_COLOR }}
                     onClick={() => {
                       if (active) {
                         setPlace("");
@@ -911,15 +874,8 @@ export function EventForm() {
                     key={r}
                     type="button"
                     className="ef-chip hy-press"
-                    style={
-                      active
-                        ? {
-                            background: "var(--hy-accent-soft)",
-                            color: "var(--hy-accent-text)",
-                            border: "1.5px solid var(--hy-accent)",
-                          }
-                        : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
-                    }
+                    aria-pressed={active}
+                    style={{ color: active ? "var(--hy-accent-text)" : IDLE_COLOR }}
                     onClick={() => handleRepeatSelect(r)}
                   >
                     {intl.formatMessage({ id: REPEAT_LABEL_IDS[r] })}
@@ -977,15 +933,7 @@ export function EventForm() {
                   type="button"
                   className="ef-chip hy-press"
                   aria-pressed={active}
-                  style={
-                    active
-                      ? {
-                          background: "var(--hy-accent-soft)",
-                          color: "var(--hy-accent-text)",
-                          border: "1.5px solid var(--hy-accent)",
-                        }
-                      : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
-                  }
+                  style={{ color: active ? "var(--hy-accent-text)" : IDLE_COLOR }}
                   onClick={() => setPrealarm(p.minutes)}
                 >
                   {intl.formatMessage({ id: p.labelId })}

@@ -16,9 +16,9 @@ test("부모 홈 바로가기는 핵심 서비스 순서와 실제 라우트를 
 
   const labels = [...mock.matchAll(/label: "([^"]+)"/g)]
     .map((m) => m[1])
-    .filter((label) => ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "아이 기기 찾기", "알림"].includes(label));
+    .filter((label) => ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변 소리 듣기", "안심리포트", "아이 기기 찾기", "알림"].includes(label));
 
-  assert.deepEqual(labels, ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "아이 기기 찾기", "알림"]);
+  assert.deepEqual(labels, ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변 소리 듣기", "안심리포트", "아이 기기 찾기", "알림"]);
   assert.match(home, /sc1: "\/ai-schedule\?tab=text"/);
   assert.match(home, /sc2: "\/parent\/location\?view=history"/);
   assert.match(home, /sc3: "\/friend-play"/);
@@ -67,7 +67,7 @@ test("부모 위치 시트의 액션 버튼은 원시 이모지 대신 아이콘
   const labels = {
     "parent.eventForm.copy060": "메모",
     "parent.parentLocation.copy054": "경로",
-    "parent.home.shortcut.remoteAudio": "주변소리",
+    "parent.location.action.remoteAudio": "주변 소리 듣기",
     "parent.parentLocation.copy057": "전화",
   };
   for (const [id, label] of Object.entries(labels)) {

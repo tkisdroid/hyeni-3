@@ -1,6 +1,6 @@
 /**
  * 좌표를 화면 표시용 위치명으로 변환한다.
- * 우선순위: 저장장소(200m 이내) → 가족 국가 정책의 공통 역지오코딩 → "주소 확인 중".
+ * 우선순위: 가까운 저장장소 → 해당 실측 시각의 지도 건물명·상호명 → 주소.
  */
 import { useCallback, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
@@ -11,10 +11,7 @@ import { mapsApi } from "@/lib/api/endpoints/maps";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "./useFamily";
 import { exactSavedPlaceLabel } from "@/transform/locationView";
-
-function coordKey(loc: Pick<ChildLocation, "lat" | "lng">): string {
-  return `${loc.lat.toFixed(5)},${loc.lng.toFixed(5)}`;
-}
+import { labelForMeasuredLocation, locationLabelReferenceKey } from "@/transform/locationLabelReference";
 
 function savedPlaceLabel(loc: ChildLocation, places: SavedPlace[] | undefined): string | null {
   if (!places) return null;
@@ -24,6 +21,7 @@ function savedPlaceLabel(loc: ChildLocation, places: SavedPlace[] | undefined): 
 export function useLocationLabels(
   locations: readonly ChildLocation[] | undefined,
   places: SavedPlace[] | undefined,
+  options?: { fallback?: string },
 ): (loc: ChildLocation) => string {
   const intl = useIntl();
   const { familyId } = useAuth();
@@ -34,7 +32,7 @@ export function useLocationLabels(
     for (const loc of locations ?? []) {
       if (!Number.isFinite(loc.lat) || !Number.isFinite(loc.lng)) continue;
       if (savedPlaceLabel(loc, places)) continue;
-      const key = coordKey(loc);
+      const key = locationLabelReferenceKey(loc);
       if (!out.has(key)) out.set(key, loc);
     }
     return [...out.entries()].map(([key, loc]) => ({ key, loc }));
@@ -42,11 +40,11 @@ export function useLocationLabels(
 
   const queries = useQueries({
     queries: candidates.map(({ loc }) => ({
-      queryKey: qk.mapReverse(familyId, provider, { kind: "child_location", childUserId: loc.user_id, measuredAt: loc.updated_at }),
+      queryKey: qk.mapReverse(familyId, provider, { kind: "child_location", childUserId: loc.user_id, recordedAt: loc.updated_at, locale: intl.locale }),
       queryFn: () => mapsApi.reverse({
         familyId: familyId!,
         locale: intl.locale,
-        source: { kind: "child_location", childUserId: loc.user_id },
+        source: { kind: "child_location", childUserId: loc.user_id, recordedAt: loc.updated_at },
       }),
       enabled: Boolean(familyId) && provider !== "unsupported",
       staleTime: 24 * 60 * 60_000,
@@ -57,18 +55,22 @@ export function useLocationLabels(
 
   const addressByKey = useMemo(() => {
     const map = new Map<string, string>();
-    candidates.forEach(({ key }, index) => {
-      const label = queries[index]?.data?.label?.trim();
+    candidates.forEach(({ key, loc }, index) => {
+      const label = labelForMeasuredLocation(loc, queries[index]?.data);
       if (label) map.set(key, label);
+      else if (queries[index]?.isError || queries[index]?.isSuccess || provider === "unsupported") {
+        map.set(key, options?.fallback ?? intl.formatMessage({ id: "parent.location.unverifiedPlace" }));
+      }
     });
     return map;
-  }, [candidates, queries]);
+  }, [candidates, queries, provider, intl, options?.fallback]);
 
   return useCallback(
     (loc: ChildLocation) =>
       savedPlaceLabel(loc, places)
-      ?? addressByKey.get(coordKey(loc))
+      ?? addressByKey.get(locationLabelReferenceKey(loc))
+      ?? options?.fallback
       ?? intl.formatMessage({ id: "parent.location.addressLoading" }),
-    [addressByKey, intl, places],
+    [addressByKey, intl, places, options?.fallback],
   );
 }

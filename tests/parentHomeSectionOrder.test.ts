@@ -92,7 +92,8 @@ test("부모 홈 핵심 섹션과 바로가기는 제목 왼쪽 장식 아이콘
   assert.match(source, /className="ph-child__avatar"[\s\S]{0,120}data-photo=/);
   assert.match(css, /\.ph-child__avatar\s*\{[\s\S]*?width: 72px;[\s\S]*?height: 72px;/);
   assert.match(css, /\.ph-child__avatar\[data-photo="true"\] img[\s\S]*?width: 100%;[\s\S]*?object-fit: cover;/);
-  assert.doesNotMatch(source, /ChevronRight|ph-child__now|ph-child__more/);
+  const childSection = source.slice(source.indexOf("{/* 아이 현황 */}"), source.indexOf("{/* 안전 지표 */}"));
+  assert.doesNotMatch(childSection, /ChevronRight|ph-child__now|ph-child__more/);
   assert.doesNotMatch(source.slice(source.indexOf("{/* 오늘의 일정 */}"), source.indexOf("{/* AI로 일정 추가")), /ChevronRight/);
 });
 

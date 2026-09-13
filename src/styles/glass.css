@@ -1,76 +1,41 @@
-/* ══════════════════════════════════════════════════════════════════════════
-   혜니캘린더 어른 모드 디자인 언어 — "떠 있는 서리 유리, 살아 있는 바닥"
-   2026-08-21 TK 지시로 부모 홈에서 확정하고 어른 화면 전체에 적용한다.
-
-   적용 범위 = `.hy-adult` — 부모·선생님·푸시(상세) 셸.
-   ⚠️ 아이 모드는 제외한다. 아이 홈은 '오늘 모험 지도'라는 다른 언어(Jua 서체,
-      캐릭터 노드, 배경 일러스트)를 의도적으로 쓰고 있고, 여기에 서리 유리를
-      덧씌우면 그 화면이 무너진다.
-
-   ── 원칙 5가지. 이 파일의 모든 값이 여기서 나온다 ────────────────────────
-   ① 유리는 뒤에 색이 있어야 유리다.
-      단색 바닥 위의 반투명 판은 그냥 흰 카드다. 화면마다 고정된 오로라
-      (큰 색 오브 + 흰 베일)를 깔고 판이 그 위를 지나가게 한다.
-   ② 한 섹션은 한 장이다.
-      판 안에 판을 넣지 않는다. 목록은 1px 머리카락 선으로만 나눈다.
-   ③ 물체만 솟는다.
-      버튼·아이콘 타일·체크박스처럼 '집어서 누르는 것'만 볼록하다.
-      목록 행·상태 표시는 판 위에 인쇄된 것이라 납작하다.
-   ④ 상태는 조용하고, 동작은 색이다.
-      상태 = 점 + 회색 글자(박스 없음). 동작 = 강조색 글자(박스 없음).
-      채워진 알약은 화면당 한두 개, 진짜 주요 동작에만 남긴다.
-   ⑤ 조용함이 흐림이 되면 안 된다(2026-08-21 TK 제보 "너무 톤다운돼 잘 안 보인다").
-      톤을 낮추는 건 '크기·굵기·박스'이지 '대비'가 아니다. 본문 잉크는 8:1 이상,
-      보조 잉크도 5.5:1 이상을 목표로 하고 최소 글자는 12px 아래로 내리지 않는다.
-   ══════════════════════════════════════════════════════════════════════════ */
+/* 어른 화면 공통 재질 — 2026-09-13 사용자 레퍼런스 기준.
+   중립 회색 바닥, 투명한 면, 흰 윤곽, 원형·알약 버튼을 함께 적용한다.
+   기존 아이콘·포인트 색상과 글자 크기는 유지하고 여백과 굵기로 위계를 만든다.
+   아이 홈의 캐릭터 지도와 SOS의 긴급 색상은 각 화면의 의미를 유지한다. */
 
 .hy-adult {
   /* ── 바닥(오로라) ── */
-  --ph-ground: #edf0f8;
-  --ph-orb-lav: 185, 166, 242;
-  --ph-orb-sky: 143, 198, 242;
-  --ph-orb-peach: 248, 188, 164;
-  --ph-orb-mint: 166, 232, 210;
-
-  /* ── 유리 ──
-     ⚠️ 채움을 0.5 아래로 내리면 유리는 더 예뻐지지만 보조 글자가 먼저 안 읽힌다.
-     0.62 는 '오로라가 비치면서 12px 글자도 5.5:1 이상'인 실측 균형점이다. */
-  --ph-glass-fill: rgba(255, 255, 255, 0.62);
-  --ph-glass-fill-clear: rgba(255, 255, 255, 0.46);
-  --ph-glass-blur: blur(28px) saturate(180%);
+  --ph-ground: var(--interface-ground);
+  /* 중립 바닥 위 투명한 면과 흰 윤곽. 글자는 별도의 짙은 잉크로 대비를 확보한다. */
+  --ph-glass-fill: rgba(255, 255, 255, 0.3);
+  --ph-glass-fill-clear: rgba(255, 255, 255, 0.12);
+  --ph-glass-blur: blur(18px) saturate(110%);
   --ph-glass-rim:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
   /* 판 전용 합성 그림자 — 역할(role)로 분류되려면 한 토큰이어야 한다. */
   --ph-panel-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
-    0 1px 2px rgba(40, 50, 78, 0.05),
-    0 14px 30px -22px rgba(40, 50, 78, 0.34);
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.72),
+    0 4px 10px -8px rgba(40, 50, 78, 0.2);
   /* 지도처럼 고대비 배경 위에 뜨는 판은 더 또렷하게 떠 있어야 한다. */
   --ph-float-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
     inset 0 0 0 1px rgba(255, 255, 255, 0.55),
     0 12px 30px -18px rgba(40, 50, 78, 0.42);
   --ph-glass-lift:
-    0 1px 2px rgba(40, 50, 78, 0.05),
-    0 14px 30px -22px rgba(40, 50, 78, 0.34);
-  --ph-hairline: rgba(58, 70, 100, 0.14);
+    0 4px 12px -9px rgba(40, 50, 78, 0.24);
+  --ph-hairline: rgba(50, 52, 60, 0.16);
 
   /* ── 솟은 물체 ── */
-  --ph-object-fill: rgba(255, 255, 255, 0.86);
-  --ph-object-raise:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 1px 1px rgba(40, 50, 78, 0.04),
-    0 6px 14px -8px rgba(40, 50, 78, 0.26);
-  --ph-object-press:
-    inset 0 1px 3px rgba(40, 50, 78, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  --ph-object-fill: var(--control-fill);
+  --ph-object-raise: var(--control-shadow);
+  --ph-object-press: var(--control-shadow-pressed);
 
   /* ── 잉크(원칙 ⑤: 대비를 먼저 확보하고 크기로 위계를 만든다) ── */
-  --ph-ink: #161b2b;
-  --ph-ink-2: #333c50;
-  --ph-ink-3: #4c5670;
+  --ph-ink: var(--interface-ink);
+  --ph-ink-2: var(--interface-ink-secondary);
+  --ph-ink-3: var(--interface-ink-muted);
   --ph-link: #4a32ac;
 
   /* 화면 공용 토큰을 새 언어로 갈아 끼운다 — 60개 화면이 자기 CSS 수정 없이 따라온다. */
@@ -87,6 +52,18 @@
   --line-hair: var(--ph-hairline);
   --shadow-soft: var(--ph-glass-lift);
   --shadow-floating: var(--ph-glass-lift);
+  /* 크기는 유지하고 굵기 차이로 읽는 순서를 정리한다. */
+  --type-title-xl-weight: 600;
+  --type-title-lg-weight: 600;
+  --type-title-weight: 600;
+  --type-section-weight: 600;
+  --type-row-weight: 500;
+  --type-body-weight: 400;
+  --type-body-sm-weight: 400;
+  --type-label-weight: 400;
+  --type-caption-weight: 400;
+  --type-metric-weight: 700;
+  --type-meta-weight: 400;
 }
 
 /* ① 살아 있는 바닥 — 스크롤 영역에 고정돼 모든 판 뒤에서 움직인다.
@@ -105,35 +82,16 @@
   z-index: -1;
   pointer-events: none;
   background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.12) 40%,
-      rgba(255, 255, 255, 0.3) 74%,
-      rgba(255, 255, 255, 0.4) 100%
-    ),
-    radial-gradient(74% 40% at 84% 2%, rgba(var(--ph-orb-peach), 0.62) 0%, rgba(var(--ph-orb-peach), 0) 64%),
-    radial-gradient(86% 46% at 6% -4%, rgba(var(--ph-orb-lav), 0.68) 0%, rgba(var(--ph-orb-lav), 0) 66%),
-    radial-gradient(76% 38% at 100% 30%, rgba(var(--ph-orb-sky), 0.55) 0%, rgba(var(--ph-orb-sky), 0) 64%),
-    radial-gradient(84% 40% at -6% 44%, rgba(var(--ph-orb-mint), 0.46) 0%, rgba(var(--ph-orb-mint), 0) 66%),
-    radial-gradient(80% 40% at 104% 78%, rgba(var(--ph-orb-lav), 0.4) 0%, rgba(var(--ph-orb-lav), 0) 66%),
-    radial-gradient(76% 36% at -4% 100%, rgba(var(--ph-orb-sky), 0.34) 0%, rgba(var(--ph-orb-sky), 0) 64%),
-    linear-gradient(180deg, #e8ecf8 0%, #eff1f7 54%, #f3f1f6 100%);
+    radial-gradient(62% 28% at 108% 4%, rgba(var(--interface-orb), 0.34), transparent 76%),
+    radial-gradient(68% 32% at -18% 73%, rgba(var(--interface-orb), 0.38), transparent 76%),
+    radial-gradient(50% 24% at 100% 98%, rgba(var(--interface-orb), 0.23), transparent 80%),
+    linear-gradient(145deg, var(--interface-ground-light), var(--ph-ground) 48%, var(--interface-ground-light));
 }
 
 
 
 /* ── ② 공용 판 ─────────────────────────────────────────────────────────── */
-.hy-adult .hy-card {
-  border: 0;
-  border-radius: var(--radius-20);
-  background: var(--ph-glass-fill);
-  box-shadow: var(--ph-panel-shadow);
-  backdrop-filter: var(--ph-glass-blur);
-  -webkit-backdrop-filter: var(--ph-glass-blur);
-}
-
-/* 화면이 직접 만든 판에도 같은 재질을 주는 opt-in 클래스. */
+.hy-adult .hy-card,
 .hy-adult .hy-glass {
   border: 0;
   border-radius: var(--radius-20);
@@ -147,7 +105,7 @@
 .hy-adult .hy-tile {
   border: 0;
   border-radius: var(--radius-12);
-  background: rgba(255, 255, 255, 0.52);
+  background: rgba(255, 255, 255, 0.14);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
@@ -156,8 +114,8 @@
   border: 0;
   background: var(--ph-object-fill);
   box-shadow: var(--ph-object-raise);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .hy-adult button.hy-object:active {
@@ -168,18 +126,12 @@
 .hy-adult .hy-topbar {
   padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 28px;
   border-bottom: 0;
-  /* 스크롤 내용이 브랜드 행 뒤로 비쳐 보이면 안 된다 — 제목 줄까지는 거의 불투명하게
-     덮고 마지막 구간만 오로라로 녹아든다. */
+  /* 배경색 없이 본문 글자만 흐리고, 아래 경계는 부드럽게 푼다. */
   background: transparent;
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  /* ⚠️ backdrop-filter 는 요소 상자에서 잘려 아래쪽에 딱딱한 경계선을 만든다.
-     마스크로 블러를 함께 페이드시켜야 오로라와 이어진다.
-     ⚠️ 페이드 띠는 퍼센트가 아니라 padding-bottom 과 같은 px 로 잡는다 —
-     헤더 높이가 화면마다 달라 퍼센트로 잡으면 띠가 여백을 넘어
-     아래 목록 카드가 반쯤 비친다(2026-08-21 실측). */
-  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 28px), rgba(0, 0, 0, 0) 100%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 28px), rgba(0, 0, 0, 0) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
 }
 
 .hy-adult .hy-topbar__title {
@@ -195,8 +147,8 @@
   border: 0;
   background: var(--ph-object-fill);
   box-shadow: var(--ph-object-raise);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .hy-adult button.hy-iconbtn:active {
@@ -221,17 +173,17 @@
   color: var(--ph-ink);
 }
 
-/* 동작은 박스가 아니라 색으로 알린다. 히트 영역 44px 은 유지한다. */
+/* 보조 동작은 투명한 알약 버튼으로 구분하고 44px 조작 영역을 유지한다. */
 .hy-adult .hy-section-action {
   min-width: 0;
-  /* 글자는 작아도 실제 누르는 영역은 44px 을 유지한다(배경이 없어 눈에는 안 보인다). */
+  /* 글자 크기와 무관하게 누르는 영역을 확보한다. */
   min-height: var(--control-min-size);
   margin-left: auto;
-  padding: 8px 4px;
+  padding: 8px 12px;
   border: 0;
-  border-radius: var(--radius-8);
-  background: transparent;
-  box-shadow: none;
+  border-radius: var(--radius-pill);
+  background: var(--control-fill);
+  box-shadow: var(--control-shadow);
   font-size: var(--type-meta);
   line-height: var(--type-meta-line-height);
   font-weight: var(--type-meta-weight);
@@ -284,7 +236,7 @@
 
 /* ── 하단 탭: 오로라 위에 떠 있는 유리 알약 ─────────────────────────────── */
 .hy-adult .hy-tabbar {
-  padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 20px calc(16px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(
     180deg,
     rgba(243, 241, 246, 0) 0%,
@@ -294,19 +246,19 @@
 }
 
 .hy-adult .hy-tabbar__inner {
-  padding: 8px;
+  padding: 4px;
   border: 0;
-  background: rgba(255, 255, 255, 0.74);
+  background: rgba(255, 255, 255, 0.3);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
-    0 10px 26px -16px rgba(40, 50, 78, 0.42);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.8),
+    0 7px 12px -5px rgba(40, 50, 78, 0.3);
+  backdrop-filter: blur(22px) saturate(110%);
+  -webkit-backdrop-filter: blur(22px) saturate(110%);
 }
 
 .hy-adult .hy-tab__icon {
-  color: var(--ph-ink-3);
+  color: var(--ph-ink);
 }
 
 .hy-adult .hy-tab__label {
@@ -321,9 +273,9 @@
 }
 
 .hy-adult .hy-tab[data-active="true"] .hy-tab__icon {
-  background: rgba(74, 50, 172, 0.13);
-  color: var(--ph-link);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  background: var(--hy-accent-cta);
+  color: var(--bg-card);
+  box-shadow: var(--control-rim);
 }
 
 .hy-adult .hy-tab[data-active="true"] .hy-tab__label {
@@ -332,6 +284,12 @@
 
 /* ── 접근성 강등: 투명·블러를 쓸 수 없으면 단색 면으로 정직하게 내려간다 ── */
 @media (prefers-reduced-transparency: reduce) {
+  .hy-adult {
+    --ph-glass-fill: var(--bg-card);
+    --ph-glass-fill-clear: var(--bg-card);
+    --ph-glass-blur: none;
+  }
+
   .hy-adult .hy-screen::before {
     background: var(--ph-ground);
   }
@@ -377,7 +335,7 @@
   background: transparent;
 }
 
-/* 화면별 sticky 헤더도 상단바와 같은 서리 스크림을 쓴다.
+/* 화면별 sticky 헤더도 상단바와 같이 투명하게 유지한다.
    ⚠️ 이 목록은 '어른 화면의 sticky 헤더 전수'다(2026-08-21 실측 33곳).
       새 화면이 자기 헤더에 배경을 칠하면 오로라 위에서 딱딱한 밴드로 남으므로
       여기에 등록하거나 아예 배경을 칠하지 않아야 한다.
@@ -387,7 +345,7 @@
   .wr-header, .ps-head, .mc-header, .ac-header,
   .aa-header, .ci-header, .da-header, .dzf-header,
   .ds-head, .ds-header, .fc-header, .fb-header,
-  .fp-header, .lset-header, .ls-header, .nc-header,
+  .fp-header, .lset-header, .ls-header, .nc-header, .nst-header,
   .pw-header, .psu-header, .pf-header, .pm-header,
   .pa-header, .pa-head, .pe-header, .rv-header,
   .sub-header, .sup-header, .tl-head, .cd-header,
@@ -399,17 +357,16 @@
   padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
   padding-bottom: 28px;
   background: transparent;
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 28px), rgba(0, 0, 0, 0) 100%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 28px), rgba(0, 0, 0, 0) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
 }
 
-/* 섹션 사이 여백은 카드가 자기 padding 을 가지므로 12px 이면 충분하다.
-   (부모 모드 기본값이 32px 이라 화면마다 스크롤이 과하게 길었다 — TK 제보 ①) */
+/* 섹션 간격과 좌우 여백을 같은 리듬으로 유지한다. */
 .hy-adult .hy-content {
-  gap: 12px;
-  padding: 8px 16px calc(112px + env(safe-area-inset-bottom, 0px));
+  gap: 20px;
+  padding: 8px 20px calc(112px + env(safe-area-inset-bottom, 0px));
 }
 
 .hy-adult .hy-section-icon {
@@ -425,9 +382,9 @@
 }
 
 .hy-adult .hy-tabbar[data-icon-only="true"] .hy-tab__icon {
-  width: var(--control-min-size);
-  height: var(--control-min-size);
-  border-radius: var(--radius-16);
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-pill);
 }
 
 .hy-adult .hy-tab:active .hy-tab__icon {
@@ -461,7 +418,7 @@
   .fp-setting, .ls-card, .ls-last, .lset-row,
   .nc-item, .nst-list, .ob-connect-card, .ob-perm,
   .ob-role-card--parent, .ob-survey-card, .pa-action, .pa-card,
-  .pc-card, .pc-event__card, .pc-sheet__row, .pd-card,
+  .pc-event__card, .pc-sheet__row, .pd-card,
   .pf-child, .pf-conn, .pf-paircode__card, .pf-parents,
   .pm-danger, .pm-item, .ps-list, .psu-card,
   .pw-childcard, .pw-summary, .rrp__code, .rrp__progress,
@@ -490,7 +447,7 @@
   .fp-setting, .ls-card, .ls-last, .lset-row,
   .nc-item, .nst-list, .ob-connect-card, .ob-perm,
   .ob-role-card--parent, .ob-survey-card, .pa-action, .pa-card,
-  .pc-card, .pc-event__card, .pc-sheet__row, .pd-card,
+  .pc-event__card, .pc-sheet__row, .pd-card,
   .pf-child, .pf-conn, .pf-paircode__card, .pf-parents,
   .pm-danger, .pm-item, .ps-list, .psu-card,
   .pw-childcard, .pw-summary, .rrp__code, .rrp__progress,
@@ -505,32 +462,6 @@
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   서리 스크림은 "가릴 것이 생겼을 때만" 켠다 (2026-08-21 TK 제보).
-   맨 위에서는 헤더 뒤에 아무것도 없으므로 스크림이 오로라 위에 납작한 사각형으로
-   읽힌다 — 그게 "전체·안전·위치 버튼과 오늘 섹션 사이 경계"의 실체였다.
-   스크롤 상태는 useScrolledShell 이 .hy-screen 에 data-scrolled 로 알린다.
-   ══════════════════════════════════════════════════════════════════════════ */
-.hy-adult .hy-screen[data-scrolled] :is(
-  .hy-topbar, .ais-header, .cdd-header, .dr-header,
-  .raa-header, .wr-header, .ps-head, .mc-header,
-  .ac-header, .aa-header, .ci-header, .da-header,
-  .dzf-header, .ds-head, .ds-header, .fc-header,
-  .fb-header, .fp-header, .lset-header, .ls-header,
-  .nc-header, .pw-header, .psu-header, .pf-header,
-  .pm-header, .pa-header, .pa-head, .pe-header,
-  .rv-header, .sub-header, .sup-header, .tl-head,
-  .cd-header, .ef-header, .pc-header, .th-topbar,
-  .tn-header, .ts-header, .tt-topbar
-) {
-  background: linear-gradient(
-    180deg,
-    rgba(248, 248, 253, 0.94) 0,
-    rgba(248, 248, 253, 0.92) calc(100% - 28px),
-    rgba(248, 248, 253, 0) 100%
-  );
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -555,4 +486,20 @@
 /* 화면이 자기 .hy-content 로 이미 여백을 잡았다면 그 몫은 줄인다(중복 방지). */
 .hy-adult .hy-screen[data-nav="push"] .hy-content {
   padding-bottom: 24px;
+}
+
+/* 입력과 선택도 같은 유리 위에 놓인다. 상태 글자·체크 표시·경고색은 각 화면이 맡는다. */
+.hy-adult :is(input:where(:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"])), textarea, select) {
+  background: var(--control-fill);
+  border-color: var(--control-border);
+  box-shadow: var(--control-rim);
+  color: var(--fg-primary);
+}
+.hy-adult button:is(.ef-chip, .nst-minute, .pf-type, .ais-tab, .rr-chip, .mc-quick-btn, .afc-chip) {
+  background: var(--control-fill);
+  border-color: var(--control-border);
+}
+.hy-adult button:is(.ef-chip, .nst-minute, .pf-type, .ais-tab, .rr-chip, .mc-quick-btn, .afc-chip):is([data-on="true"], [data-active="true"], [data-selected="true"], [aria-pressed="true"], [aria-selected="true"]) {
+  background: var(--control-fill-hover);
+  box-shadow: var(--control-shadow);
 }

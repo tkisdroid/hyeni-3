@@ -63,3 +63,30 @@ test("공식 최소 OAuth 확인 전 Google Routes만 외부 호출 없이 HOLD�
   assert.equal(route.distanceMeters, null);
 });
 
+test("Google 역지오코딩은 확인된 건물명·정확한 장소 상세명을 우선하며 일반 주소는 상호로 추정하지 않는다", async () => {
+  const scenarios = [
+    { result: { formattedAddress: "1 Test Road", addressComponents: [{ longText: "Test Library", types: ["premise"] }] }, expected: "Test Library", count: 1 },
+    { result: { formattedAddress: "2 Test Road", placeId: "exact-place", types: ["establishment"] }, details: { id: "exact-place", displayName: { text: "Test Cafe" }, types: ["establishment"] }, expected: "Test Cafe", count: 2 },
+    { result: { formattedAddress: "3 Test Road", placeId: "street", types: ["street_address"] }, expected: "3 Test Road", count: 1 },
+    { result: { formattedAddress: "4 Test Road", placeId: "exact-place", types: ["premise"] }, details: { id: "other-place", displayName: { text: "Wrong Shop" }, types: ["establishment"] }, expected: "4 Test Road", count: 2 },
+    { result: { formattedAddress: "5 Test Road", placeId: "exact-place", types: ["premise"] }, error: true, expected: "5 Test Road", count: 2 },
+  ];
+  for (const scenario of scenarios) {
+    const calls = [];
+    const adapter = createGoogleMapAdapter({
+      countryCode: "GB", tokenProvider: { getAccessToken: async () => "test-token" },
+      fetchImpl: async (url, init) => {
+        calls.push({ url: String(url), init });
+        if (calls.length === 1) return Response.json({ results: [scenario.result] });
+        if (scenario.error) throw new Error("일시 장애");
+        return Response.json(scenario.details);
+      },
+    });
+    assert.equal(await adapter.reverse({ lat: 51.5, lng: -0.1 }, "en-GB"), scenario.expected);
+    assert.equal(calls.length, scenario.count);
+    if (calls.length === 2) {
+      assert.match(calls[1].url, /^https:\/\/places\.googleapis\.com\/v1\/places\/exact-place\?/);
+      assert.equal(calls[1].init.headers["X-Goog-FieldMask"], "id,displayName,types");
+    }
+  }
+});

@@ -110,6 +110,12 @@ test("D1 단조 upsert SQL은 동시 지연을 가정해도 과거 좌표를 거
   db.close();
 });
 
+test("위치가 10분을 넘겨 끊긴 첫 검사에서 복구 요청을 다음 5분까지 미루지 않는다", () => {
+  assert.equal(shouldAutoWakeForStaleAge(10 * 60_000 + 20_000), true);
+  assert.equal(shouldAutoWakeForStaleAge(14 * 60_000 + 40_000), true);
+  assert.equal(shouldAutoWakeForStaleAge(10 * 60_000), false);
+});
+
 test("자동 위치 깨우기는 초기에만 빠르게 시도하고 장기 무진전에는 15·30·60분으로 백오프한다", () => {
   const tickMs = 5 * 60_000;
   const sentAtMinutes = [];

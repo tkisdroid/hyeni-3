@@ -64,7 +64,7 @@ test("모든 페이지 뒤로가기는 공용 투명 버튼 규칙에 연결된�
   assert.deepEqual(misses, [], `공용 뒤로가기 규칙을 쓰지 않는 버튼:\n${misses.join("\n")}`);
 });
 
-test("뒤로가기는 44px 터치 영역에 20px 꺾쇠만 표시한다", () => {
+test("뒤로가기는 원형 유리 44px 터치 영역에 20px 꺾쇠를 표시한다", () => {
   const components = readFileSync(join(repoRoot, "src/styles/components.css"), "utf8");
   const backRule = components.match(
     /\.hy-app button\.hy-press\[class\*="-back"\],\s*\.hy-app button\.hy-backbtn \{([\s\S]*?)\n\}/,
@@ -80,9 +80,9 @@ test("뒤로가기는 44px 터치 영역에 20px 꺾쇠만 표시한다", () => 
     assert.match(backRule, new RegExp(`${property}: var\\(--control-min-size\\) !important`));
   }
   assert.match(backRule, /border: 0 !important/);
-  assert.match(backRule, /border-radius: 0 !important/);
-  assert.match(backRule, /background: transparent !important/);
-  assert.match(backRule, /box-shadow: none !important/);
+  assert.match(backRule, /border-radius: var\(--radius-pill\) !important/);
+  assert.match(backRule, /background: var\(--control-fill\) !important/);
+  assert.match(backRule, /box-shadow: var\(--control-shadow\) !important/);
   assert.match(backRule, /-webkit-backdrop-filter: none !important/);
   assert.match(backRule, /backdrop-filter: none !important/);
   assert.match(iconRule, /width: var\(--icon-20\) !important/);

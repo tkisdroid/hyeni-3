@@ -79,12 +79,12 @@ test("좌우 화살표와 점은 44px 터치 영역과 눌림 피드백을 갖�
   assert.equal(pressed.length, 3, "화살표 2개와 점 버튼 1개 모두 hy-press 를 써야 합니다");
 });
 
-test("좌우 화살표는 큰 원형 카드 없이 작은 아이콘만 보인다", () => {
+test("좌우 화살표는 공통 유리 조작 면에 작은 아이콘을 표시한다", () => {
   const controls = block(".ph-hero-carousel__controls");
   const arrow = block(".ph-hero-carousel__arrow");
   assert.match(controls, /gap:\s*4px/);
-  assert.match(arrow, /background:\s*transparent/);
-  assert.match(arrow, /box-shadow:\s*none/);
+  assert.match(arrow, /background:\s*var\(--control-fill\)/);
+  assert.match(arrow, /box-shadow:\s*var\(--control-shadow\)/);
   assert.doesNotMatch(arrow, /backdrop-filter/);
 
   const icons = component.match(/<Chevron(?:Left|Right) size=\{16\} strokeWidth=\{2\.2\}/g) ?? [];
