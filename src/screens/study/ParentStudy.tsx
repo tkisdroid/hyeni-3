@@ -8,6 +8,7 @@ import { StudyAccessGate } from "@/features/study/StudyAccessGate";
 import { ParentStudySummary } from "@/features/study/ParentStudySummary";
 import { StudyGradeEditor } from "@/features/study/StudyGradeEditor";
 import { StudyReport } from "@/features/study/StudyReport";
+import { StudyProblemHistory } from "@/features/study/StudyProblemHistory";
 import { buildStudyGradeCommand, resolveParentStudyTarget } from "@/features/study/parentStudyModel";
 import type { StudyGrade, StudyRange } from "@/features/study/contracts";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
@@ -101,6 +102,7 @@ export function ParentStudy() {
                 )}
                 <label className="study-range-select">{intl.formatMessage({ id: "study.parent.range" })}<select value={range} onChange={(event) => setRange(event.currentTarget.value as StudyRange)}><option value="7d">{intl.formatMessage({ id: "study.parent.range7d" })}</option><option value="30d">{intl.formatMessage({ id: "study.parent.range30d" })}</option><option value="term">{intl.formatMessage({ id: "study.parent.rangeTerm" })}</option></select></label>
                 <StudyReport report={report.data} />
+                <StudyProblemHistory key={`${memberId}:${range}`} memberId={target.child.id} range={range} />
               </>
             )}
           </>

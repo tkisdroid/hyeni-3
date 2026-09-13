@@ -174,6 +174,10 @@ function recordingBinding({ reject = false } = {}) {
     calls,
     readinessCalls: 0,
     getChildrenOverview: record("getChildrenOverview"),
+    getChildProblemHistory: record("getChildProblemHistory"),
+    getChildVocabularyProgress: record("getChildVocabularyProgress"),
+    getVocabularyDeck: record("getVocabularyDeck"),
+    recordVocabularyReview: record("recordVocabularyReview"),
     getChildReport: record("getChildReport"),
     getLearnerState: record("getLearnerState"),
     listCalendarConcepts: record("listCalendarConcepts"),
@@ -291,6 +295,60 @@ async function request(db, binding, path, { method = "GET", body, actor, headers
   }, {});
   return { response, body: await response.json() };
 }
+
+test("부모 풀이 및 영단어 조회는 활성 제2 보호자를 허용하고 아이와 비활성 보호자를 거부한다", async () => {
+  const db = createFixture();
+  const binding = recordingBinding();
+  try {
+    const second = "study-second-parent";
+    db.sqlite.prepare("INSERT INTO users(id) VALUES (?)").run(second);
+    db.sqlite.prepare("INSERT INTO family_members(id,family_id,user_id,role,is_active,created_at) VALUES (?,?,?,'parent',1,?)")
+      .run("second-parent-member", FAMILY_ID, second, "2026-08-28T00:00:00.000Z");
+    db.sqlite.prepare("INSERT INTO account_device_sessions(user_id,device_id,claimed_at,last_seen_at,expires_at) VALUES (?,?,?,?,?)")
+      .run(second, "second-device", "2026-08-28T00:00:00.000Z", "2026-08-28T00:00:00.000Z", "2099-08-28T00:00:00.000Z");
+    const actor = { userId: second, role: "parent", deviceId: "second-device" };
+    for (const [suffix, operation] of [["history?range=30d", "guardian.history"], ["vocabulary", "guardian.vocabulary"]]) {
+      const result = await request(db, binding, `/children/${CHILD_MEMBER_ID}/${suffix}`, { actor });
+      assert.equal(result.response.status, 200);
+      assert.equal(binding.calls.at(-1).auth.operation, operation);
+      assert.equal(binding.calls.at(-1).auth.familyId, FAMILY_ID);
+      assert.equal(binding.calls.at(-1).input.memberId, CHILD_MEMBER_ID);
+      assert.equal(binding.calls.at(-1).auth.fingerprint, visibleFingerprint(binding.calls.at(-1)));
+      assert.equal(result.response.headers.get("cache-control"), "no-store");
+      assert.equal((await request(db, binding, `/children/foreign-child/${suffix}`, { actor })).response.status, 403);
+      assert.equal((await request(db, binding, `/children/${CHILD_MEMBER_ID}/${suffix}`,
+        { actor: { userId: CHILD_ID, role: "child", deviceId: "child-device" } })).response.status, 403);
+    }
+    db.sqlite.prepare("UPDATE family_members SET is_active=0 WHERE user_id=?").run(second);
+    assert.equal((await request(db, binding, `/children/${CHILD_MEMBER_ID}/history`, { actor })).response.status, 403);
+  } finally { db.close(); }
+});
+
+test("영단어는 학년 없이 본인만 학습하고 대상이나 점수 및 시각 주입을 거부한다", async () => {
+  const db = createFixture();
+  const binding = recordingBinding();
+  const actor = { userId: CHILD_ID, role: "child", deviceId: "child-device" };
+  const body = { wordId: "apple", catalogVersion: "en-ko-v1", level: 1, rating: "again" };
+  try {
+    db.sqlite.prepare("UPDATE family_members SET birthdate=NULL WHERE id=?").run(CHILD_MEMBER_ID);
+    const deck = await request(db, binding, "/learner/vocabulary?level=1&mode=new", { actor });
+    assert.equal(deck.response.status, 200);
+    assert.equal(binding.calls.at(-1).auth.grade, null);
+    const saved = await request(db, binding, "/learner/vocabulary/reviews", {
+      method: "POST", actor, body, headers: { "Idempotency-Key": "66666666-6666-4666-8666-666666666666" },
+    });
+    assert.equal(saved.response.status, 201);
+    assert.equal(binding.calls.at(-1).input.memberId, CHILD_MEMBER_ID);
+    assert.equal(binding.calls.at(-1).input.requestId, "66666666-6666-4666-8666-666666666666");
+    for (const extra of [{ memberId: SIBLING_MEMBER_ID }, { familyId: "foreign" }, { profileId: "foreign" }, { score: 100 }, { reviewedAt: "2026-01-01" }]) {
+      assert.equal((await request(db, binding, "/learner/vocabulary/reviews", { method: "POST", actor, body: { ...body, ...extra } })).response.status, 400);
+    }
+    for (const query of ["level=6", "level=1&level=2", "memberId=foreign", "mode=wrong"]) {
+      assert.equal((await request(db, binding, `/learner/vocabulary?${query}`, { actor })).response.status, 400);
+    }
+    assert.equal((await request(db, binding, "/learner/vocabulary")).response.status, 403);
+  } finally { db.close(); }
+});
 
 test("아이 시작 요청은 토큰의 정확한 자녀와 계산 학년만 RPC로 보낸다", async () => {
   const db = createFixture();

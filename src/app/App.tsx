@@ -47,6 +47,8 @@ const ChildSos = lazyScreen(() => import("@/screens/child/ChildSos"), "ChildSos"
 const AiFriendChat = lazyScreen(() => import("@/screens/child/AiFriendChat"), "AiFriendChat");
 const ParentStudy = lazyScreen(() => import("@/screens/study/ParentStudy"), "ParentStudy");
 const ChildStudy = lazyScreen(() => import("@/screens/study/ChildStudy"), "ChildStudy");
+const ChildVocabulary = lazyScreen(() => import("@/screens/study/ChildVocabulary"), "ChildVocabulary");
+const ParentVocabulary = lazyScreen(() => import("@/screens/study/ParentVocabulary"), "ParentVocabulary");
 const MiniApps = lazyScreen(() => import("@/screens/miniapps/MiniApps"), "MiniApps");
 const TeacherHome = lazyScreen(() => import("@/screens/teacher/TeacherHome"), "TeacherHome");
 const TeacherStudents = lazyScreen(() => import("@/screens/teacher/TeacherStudents"), "TeacherStudents");
@@ -173,6 +175,7 @@ const PWA_DRAFT_PROTECTED_ROUTES = new Set([
   "/child/sos",
   "/child/ai-friend-setup",
   "/study/learn",
+  "/study/vocabulary/learn",
   "/feedback",
   "/supplies",
   "/teacher/notice",
@@ -314,6 +317,7 @@ const router = createHashRouter([
           { path: "remote-ring", element: routeElement(<RemoteRing />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "sos-receive", element: routeElement(<SosReceive />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "study", element: routeElement(<ParentStudy />, PARENT_STUDY_NAMESPACES) },
+          { path: "study/vocabulary", element: routeElement(<ParentVocabulary />, PARENT_STUDY_NAMESPACES) },
         ],
       },
 
@@ -328,6 +332,7 @@ const router = createHashRouter([
           { path: "child/ai-friend-setup", element: routeElement(<AiFriendSetup />, CHILD_NAMESPACES) },
           { path: "playdate-accept", element: routeElement(<PlaydateAccept />, CHILD_NAMESPACES) },
           { path: "study/learn", element: routeElement(<ChildStudy />, CHILD_STUDY_NAMESPACES) },
+          { path: "study/vocabulary/learn", element: routeElement(<ChildVocabulary />, CHILD_STUDY_NAMESPACES) },
         ],
       },
 

@@ -113,7 +113,7 @@ export async function buildListingFiles() {
     const isSource = listing === source.sourceLocale;
     const authoredFullDescription = isSource ? null : await readAuthoredFullDescription(listing);
     const fullDescription = isSource ? koFullDescription : authoredFullDescription;
-    const shortDescription = SHORT_DESCRIPTION[listing];
+    const shortDescription = isSource ? source.shortDescription : SHORT_DESCRIPTION[listing];
     if (typeof shortDescription !== "string") throw new Error(`짧은 설명 누락: ${listing}`);
     files.push({
       listingLocale: listing,

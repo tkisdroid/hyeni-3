@@ -721,3 +721,13 @@
 신규 구독·AI 크레딧 구매는 Android 네이티브 Google Play에서만 시작한다. iPhone·웹은 신규 결제 CTA·Toss 카탈로그를 열지 않고 무료 기능과 무료 AI 제공량을 안내한다. 같은 계정으로 Android에서 획득한 프리미엄은 iPhone·웹에서도 사용하며 관리는 Android Google Play에서 한다.
 
 운영 `commerce_runtime_controls_v1`의 두 웹 checkout 값은 false를 유지하고 Toss client/secret·가격 환경값은 신규 설정하지 않는다. 기존 웹 주문 완료·대사·해지·환불과 `WEB_BILLING_KEY_ENCRYPTION_SECRET`은 레거시 안전 경로로 보존한다.
+
+## 영단어와 부모 풀이 조회
+
+영어는 5단계 4,067개(352/352/813/1,322/1,228)이며 수학 학년과 별개다. 위키낱말사전 뜻과 CEFR-J 수준 자료의 출처·이용 조건을 앱에서 제공한다. 공식 학년별 필수 범위로 표시하지 않는다.
+
+`알겠어/다시 볼래`는 자가평가다. Study의 `vocabulary_reviews`와 `vocabulary_progress`를 아이별 DO와 한 D1 batch로 저장하며 실패 재시도는 같은 request ID를 유지한다. 평가로 목록이 줄어도 원본 카탈로그 위치 cursor를 사용한다. 부모 수학 원문은 `session_problems.release_id`로 조회하고 답안 11종·건너뜀·미채점·원문 누락을 구분한다. 해설 `alternative`는 문자열 배열이다.
+
+Calendar 인증·활성 가족/아이 검사 후 기존 Study RPC만 사용한다. 영어용 로그인·refresh·공개 Study HTTP를 추가하지 않는다. 운영 순서는 Study D1 `0010_vocabulary_learning.sql` → Study Worker → Calendar Worker → 앱이다. schema 9 Worker는 migration 10 직후 준비 상태가 닫히므로 후속 배포까지 이어야 하며 schema 9 바이너리만 되돌리는 롤백은 사용하지 않는다.
+
+회귀는 앱 `studyLearningApi`·`vocabularyLearning`, Calendar `studyGateway`, Study `calendarLearningExtras`·`problemHistoryService`·`vocabularyService`·`vocabularyCatalog`다. `scripts/qa-study-learning.mjs`의 브라우저 fixture 결과는 운영 API·실기기 확인과 구분한다.

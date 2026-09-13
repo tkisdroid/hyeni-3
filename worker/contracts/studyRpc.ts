@@ -1,4 +1,8 @@
 /** Calendar와 Study Worker가 공유하는 RPC 경계의 첫 버전이다. */
+import type {
+  ChildProblemHistoryInput, ChildProblemHistoryDto, VocabularyDeckInput, VocabularyDeckDto,
+  VocabularyReviewInput, VocabularyReviewDto, ChildVocabularyProgressInput, ChildVocabularyProgressDto,
+} from "../../src/features/study/learningExtrasContracts";
 export const STUDY_API_VERSION = "2026-08-27" as const;
 
 export const CALENDAR_STUDY_ROLES = ["guardian", "primary", "learner", "system_cleanup"] as const;
@@ -208,6 +212,10 @@ export type StudyReadinessDto = Readonly<{
 }>;
 
 export interface CalendarStudyServiceBinding {
+  getChildProblemHistory(input: ChildProblemHistoryInput, auth: CalendarStudyAuthorizationV2): Promise<ChildProblemHistoryDto>;
+  getVocabularyDeck(input: VocabularyDeckInput, auth: CalendarStudyAuthorizationV2): Promise<VocabularyDeckDto>;
+  recordVocabularyReview(input: VocabularyReviewInput, auth: CalendarStudyAuthorizationV2): Promise<VocabularyReviewDto>;
+  getChildVocabularyProgress(input: ChildVocabularyProgressInput, auth: CalendarStudyAuthorizationV2): Promise<ChildVocabularyProgressDto>;
   getChildrenOverview(input: ParentOverviewInput, auth: CalendarStudyAuthorizationV2): Promise<ChildrenOverviewDto>;
   getChildReport(input: ChildReportInput, auth: CalendarStudyAuthorizationV2): Promise<ChildReportDto>;
   getLearnerState(input: LearnerStateInput, auth: CalendarStudyAuthorizationV2): Promise<CalendarLearnerStateDto>;
