@@ -82,9 +82,11 @@ export interface FamilyQuietHoursRecipient {
   end_minute: number;
   updated_at: string | null;
   configured: boolean;
+  time_zone?: string;
 }
 
 interface FamilyQuietHoursRecipientRow {
+  time_zone?: string;
   target_user_id: string;
   role: string;
   quiet_hours_enabled: unknown;
@@ -129,7 +131,8 @@ export async function loadFamilyQuietHoursRecipients(
               settings.quiet_hours_enabled,
               settings.quiet_hours_start_minute,
               settings.quiet_hours_end_minute,
-              settings.quiet_hours_updated_at
+              settings.quiet_hours_updated_at,
+              COALESCE(settings.time_zone, (SELECT time_zone FROM families WHERE id=?2)) AS time_zone
          FROM (
            SELECT ?1 AS target_user_id, 'parent' AS role, 0 AS sort_order, '' AS sort_key
            UNION ALL
@@ -157,6 +160,7 @@ export async function loadFamilyQuietHoursRecipients(
       end_minute: quietHours.endMinute,
       updated_at: quietHours.updatedAt,
       configured: row.quiet_hours_updated_at != null,
+      time_zone: row.time_zone ?? "Asia/Seoul",
     };
   });
 }

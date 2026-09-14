@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight, Pencil, Smartphone, Trash2, AlertTriangle } from "lucide-react";
@@ -17,7 +18,7 @@ import { dateToDateKeyInTimeZone, parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { formatFreshness } from "@/transform/locationView";
 import { useLocale } from "@/i18n/useLocale";
-import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+
 import { useRecentDateKeys } from "@/app/useRecentDateKeys";
 import { Loading } from "@/components/ui/Loading";
 import "./ChildDetail.css";
@@ -60,6 +61,7 @@ type SafetyTone = "safe" | "warn" | "muted";
  * 데이터는 모두 실 훅(가족·일정·위치) 기반. 백엔드 부재 항목은 정직하게 처리.
  */
 export function ChildDetail() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -67,7 +69,7 @@ export function ChildDetail() {
   const { show } = useToast();
   const childId = (routeLocation.state as { childId?: string } | null)?.childId ?? null;
 
-  const recentDateKeys = useRecentDateKeys(1, LEGACY_FAMILY_TIME_ZONE);
+  const recentDateKeys = useRecentDateKeys(1, familyTimeZone);
   const recentTodayKey = recentDateKeys[0];
   const now = useMemo(() => new Date(), [recentTodayKey]);
   const familyQuery = useMyFamily();
@@ -125,19 +127,19 @@ export function ChildDetail() {
     return filterEventsForChild(events ?? [], rawChild?.id);
   }, [events, rawChild?.id]);
   const todayCount = useMemo(() => {
-    const key = recentTodayKey ?? dateToDateKeyInTimeZone(now, LEGACY_FAMILY_TIME_ZONE);
+    const key = recentTodayKey ?? dateToDateKeyInTimeZone(now, familyTimeZone);
     return childEvents.filter((e) => e.date_key === key).length;
-  }, [childEvents, now, recentTodayKey]);
+  }, [familyTimeZone, childEvents, now, recentTodayKey]);
   const upcomingCount = useMemo(() => {
     const todayMid = parseAppDateKey(
-      recentTodayKey ?? dateToDateKeyInTimeZone(now, LEGACY_FAMILY_TIME_ZONE),
+      recentTodayKey ?? dateToDateKeyInTimeZone(now, familyTimeZone),
     )?.getTime();
     if (todayMid == null) return 0;
     return childEvents.filter((e) => {
       const d = parseAppDateKey(e.date_key);
       return d != null && d.getTime() > todayMid;
     }).length;
-  }, [childEvents, now, recentTodayKey]);
+  }, [familyTimeZone, childEvents, now, recentTodayKey]);
 
   // 안전 상태 — 실 위치 신선도 + 저장장소 근접.
   const loc = useMemo(() => {

@@ -2,6 +2,7 @@
 // 원본: src/lib/notifSettings.js — select(user_id=eq)/upsert(onConflict user_id)/realtime(user_id 필터).
 // D1 저장형: boolean→INTEGER 0/1, minutes_before→TEXT pg array literal('{15,5}').
 // 응답은 Supabase 형태(snake_case row, boolean, int[])로 되돌려 클라 rowToSettings 가 그대로 소비.
+import { normalizeTimeZone, readFamilyTimeZone } from "../lib/timeZone.ts";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import type { Env, Vars } from "../types";
@@ -75,6 +76,7 @@ function accountDeletionConflict(c: NotifSettingsContext) {
 }
 
 type SettingsRow = {
+  time_zone?: string;
   user_id: string;
   family_id: string | null;
   child_enabled: unknown;
@@ -101,6 +103,7 @@ function toSupabaseRow(r: SettingsRow) {
     playdate_enabled: toBool(r.playdate_enabled),
     minutes_before: pgArray(r.minutes_before).map((n) => Number(n)).filter((n) => Number.isFinite(n)),
     quiet_hours: {
+      time_zone: r.time_zone ?? "Asia/Seoul",
       enabled: toBool(r.quiet_hours_enabled),
       start_minute: Number(r.quiet_hours_start_minute ?? 1320),
       end_minute: Number(r.quiet_hours_end_minute ?? 420),
@@ -114,7 +117,7 @@ function toSupabaseRow(r: SettingsRow) {
 notifSettings.get("/", requireAuth, async (c) => {
   const user = c.get("user");
   const row = await c.env.DB.prepare(
-    `SELECT user_id, family_id, child_enabled, parent_enabled, location_enabled,
+    `SELECT user_id, family_id, COALESCE(time_zone, (SELECT f.time_zone FROM families f WHERE f.id=notification_settings.family_id), 'Asia/Seoul') AS time_zone, child_enabled, parent_enabled, location_enabled,
             registered_place_enabled, playdate_enabled, minutes_before,
             quiet_hours_enabled, quiet_hours_start_minute, quiet_hours_end_minute,
             quiet_hours_updated_at
@@ -306,6 +309,8 @@ notifSettings.put("/quiet-hours", requireAuth, async (c) => {
   const enabled = body.enabled;
   const startMinute = body.start_minute;
   const endMinute = body.end_minute;
+  const requestedTimeZone = body.time_zone === undefined ? null : normalizeTimeZone(body.time_zone);
+  if (body.time_zone !== undefined && !requestedTimeZone) return c.json({ error: "invalid_time_zone" }, 400);
   if (
     typeof enabled !== "boolean"
     || !Number.isInteger(startMinute)
@@ -345,15 +350,18 @@ notifSettings.put("/quiet-hours", requireAuth, async (c) => {
       .first<{ user_id: string }>();
     const eventType: "INSERT" | "UPDATE" = existing ? "UPDATE" : "INSERT";
     const now = pgNow();
+    const timeZone = requestedTimeZone ?? await readFamilyTimeZone(c.env.DB, familyId);
     const stored = await c.env.DB
       .prepare(
         `INSERT INTO notification_settings
           (user_id, family_id, child_enabled, parent_enabled, location_enabled,
            registered_place_enabled, playdate_enabled, minutes_before, updated_at,
            quiet_hours_enabled, quiet_hours_start_minute, quiet_hours_end_minute,
-           quiet_hours_updated_by, quiet_hours_updated_at)
-         VALUES (?,?,1,1,1,1,1,'{15,5}',?,?,?,?,?,${QUIET_HOURS_DB_NOW_SQL})
+           quiet_hours_updated_by, quiet_hours_updated_at, time_zone)
+         VALUES (?,?,1,1,1,1,1,'{15,5}',?,?,?,?,?,${QUIET_HOURS_DB_NOW_SQL},?)
          ON CONFLICT(user_id) DO UPDATE SET
+           time_zone = excluded.time_zone,
+           family_id = excluded.family_id,
            quiet_hours_enabled = excluded.quiet_hours_enabled,
            quiet_hours_start_minute = excluded.quiet_hours_start_minute,
            quiet_hours_end_minute = excluded.quiet_hours_end_minute,
@@ -380,6 +388,7 @@ notifSettings.put("/quiet-hours", requireAuth, async (c) => {
         startMinute,
         endMinute,
         user.sub,
+        timeZone,
       )
       .first<{
         quiet_hours_enabled: unknown;
@@ -389,6 +398,7 @@ notifSettings.put("/quiet-hours", requireAuth, async (c) => {
       }>();
     if (!stored) return c.json({ error: "quiet_hours_write_failed" }, 503);
     const savedRow: FamilyQuietHoursRecipient = {
+      time_zone: timeZone,
       target_user_id: targetUserId,
       role: targetKind === "active_child" ? "child" : "parent",
       enabled: toBool(stored.quiet_hours_enabled),

@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { Outlet, useLocation } from "react-router";
 import { Home, CalendarDays, MapPin, MessageCircle, Settings, Users } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";
@@ -10,7 +11,7 @@ import { ToastHost } from "./toast";
 import { useMyFamily } from "@/queries/useFamily";
 import { useUnreadMemoForChildren } from "@/queries/useMemo";
 import { useRecentDateKeys } from "./useRecentDateKeys";
-import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+
 import { useIntl } from "react-intl";
 
 /**
@@ -41,8 +42,9 @@ function useParentTabs(): TabItem[] {
 
 /** 대화 탭 빨간 점 — 모든 아이의 실제 1:1 스레드 read_by 기준. */
 function useMemoDotTabs(baseTabs: TabItem[], memoPath: string): TabItem[] {
+  const familyTimeZone = useFamilyTimeZone();
   const { data: family } = useMyFamily();
-  const dateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
+  const dateKeys = useRecentDateKeys(7, familyTimeZone);
   const childIds = useMemo(
     () => (family?.members ?? []).filter((member) => member.role === "child").map((member) => member.id),
     [family],

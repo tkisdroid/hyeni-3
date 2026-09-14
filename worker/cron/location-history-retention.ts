@@ -1,3 +1,4 @@
+import { dayWindowAt, normalizeTimeZone } from "../lib/timeZone.ts";
 import type { Env } from "../types";
 import {
   premiumFamilyEntitlementSql,
@@ -9,14 +10,13 @@ export const LOCATION_HISTORY_RETENTION_DELETE_BATCH = 5_000;
 
 // Free D1 호출당 50 queries 기준: 후보 조회 1 + 가족별 엔타이틀먼트 4·삭제 1 + 고아 삭제 1.
 const D1_FREE_QUERY_LIMIT = 50;
-const LOCATION_HISTORY_RETENTION_FIXED_QUERY_COUNT = 2;
+const LOCATION_HISTORY_RETENTION_FIXED_QUERY_COUNT = 3;
 const LOCATION_HISTORY_RETENTION_QUERY_COUNT_PER_FAMILY = 5;
 export const LOCATION_HISTORY_RETENTION_FAMILY_BATCH = Math.floor(
   (D1_FREE_QUERY_LIMIT - LOCATION_HISTORY_RETENTION_FIXED_QUERY_COUNT)
     / LOCATION_HISTORY_RETENTION_QUERY_COUNT_PER_FAMILY,
 );
 
-const KST_OFFSET_MS = 9 * 60 * 60_000;
 const HISTORY_DAY_START_HOUR = 8;
 
 type RetentionTier = "free" | "premium";
@@ -38,23 +38,14 @@ function normalizedTimestamp(date: Date): string {
   return date.toISOString().replace("T", " ").slice(0, 19);
 }
 
-export function locationHistoryRetentionCutoff(tier: RetentionTier, now = new Date()): Date {
+export function locationHistoryRetentionCutoff(tier: RetentionTier, now = new Date(), timeZone = "Asia/Seoul"): Date {
   if (tier === "premium") {
     return new Date(
       now.getTime() - PREMIUM_LOCATION_HISTORY_RETENTION_DAYS * 24 * 60 * 60_000,
     );
   }
 
-  const nowMs = now.getTime();
-  const kst = new Date(nowMs + KST_OFFSET_MS);
-  let startMs = Date.UTC(
-    kst.getUTCFullYear(),
-    kst.getUTCMonth(),
-    kst.getUTCDate(),
-    HISTORY_DAY_START_HOUR,
-  ) - KST_OFFSET_MS;
-  if (nowMs < startMs) startMs -= 24 * 60 * 60_000;
-  return new Date(startMs);
+  return new Date(dayWindowAt(now.getTime(), timeZone, HISTORY_DAY_START_HOUR * 60).startMs);
 }
 
 export async function resolveFamilyEntitlementForRetention(
@@ -117,18 +108,24 @@ export async function cleanupLocationHistoryRetention(
   now = new Date(),
   resolveEntitlement: EntitlementResolver = resolveFamilyEntitlementForRetention,
 ): Promise<LocationHistoryRetentionResult> {
-  const freeCutoff = locationHistoryRetentionCutoff("free", now);
+  // 시간대별 실제 경계를 JSON table로 전달해 후보 선정과 삭제가 같은 기준을 쓴다.
+  const zoneRows = await db.prepare("SELECT DISTINCT time_zone FROM families").all<{ time_zone: string }>();
+  const cutoffs: Record<string, string> = {};
+  for (const row of zoneRows.results ?? []) {
+    if (normalizeTimeZone(row.time_zone)) cutoffs[row.time_zone] = normalizedTimestamp(locationHistoryRetentionCutoff("free", now, row.time_zone));
+  }
   const premiumCutoff = locationHistoryRetentionCutoff("premium", now);
   const { results } = await db
     .prepare(
-      `SELECT f.id AS family_id,
+      `SELECT f.id AS family_id, f.time_zone,
               MIN(substr(lh.recorded_at, 1, 19)) AS oldest_expired_at
          FROM families f
+         JOIN json_each(?2) zone ON zone.key = f.time_zone
          JOIN location_history AS lh INDEXED BY idx_location_history_family_recorded_norm
            ON lh.family_id = f.id
         WHERE substr(lh.recorded_at, 1, 19) < CASE
           WHEN ${premiumFamilyEntitlementSql("f", "datetime(substr(?3,1,19))")} THEN ?1
-          ELSE ?2
+          ELSE zone.value
         END
         GROUP BY f.id
         ORDER BY oldest_expired_at ASC, f.id ASC
@@ -136,11 +133,11 @@ export async function cleanupLocationHistoryRetention(
     )
     .bind(
       normalizedTimestamp(premiumCutoff),
-      normalizedTimestamp(freeCutoff),
+      JSON.stringify(cutoffs),
       normalizedTimestamp(now),
       LOCATION_HISTORY_RETENTION_FAMILY_BATCH,
     )
-    .all<{ family_id: string }>();
+    .all<{ family_id: string; time_zone: string }>();
 
   let removedRows = 0;
   let processedFamilies = 0;
@@ -153,6 +150,7 @@ export async function cleanupLocationHistoryRetention(
       const cutoff = locationHistoryRetentionCutoff(
         entitlement.isPremium ? "premium" : "free",
         now,
+        row.time_zone,
       );
       removedRows += await deleteFamilyHistoryBefore(db, familyId, cutoff);
       processedFamilies += 1;

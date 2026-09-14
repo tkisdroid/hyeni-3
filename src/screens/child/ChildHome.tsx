@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Backpack, Check, MapPin, MessageCircle, Navigation, Palette, Settings2, X } from "lucide-react";
@@ -20,7 +21,7 @@ import { placePhoneCall } from "@/lib/native/phone";
 import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { useLocale } from "@/i18n/useLocale";
-import { formatCalendarDay, formatRelativeMinutes, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { formatCalendarDay, formatRelativeMinutes } from "@/i18n/format";
 import { dateTimeScopeInTimeZone, latestDateKeyOrNull } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { QUICK_STATUS_ACTIONS, buildQuickStatusMemo, type QuickStatusActionId } from "@/transform/quickStatusShare";
@@ -78,6 +79,7 @@ const CELEBRATE_ICON: Record<string, string> = {
 const MAP_PATH = "M 292 78 C 250 128 152 112 126 172 C 100 236 224 244 252 306 C 278 364 168 372 128 428";
 
 export function ChildHome() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale, accessCountry } = useLocale();
   const navigate = useNavigate();
@@ -110,12 +112,12 @@ export function ChildHome() {
     };
   }, [familyId, userId]);
 
-  const memoDateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
+  const memoDateKeys = useRecentDateKeys(7, familyTimeZone);
   const memoDateKey = latestDateKeyOrNull(memoDateKeys);
   const now = useMemo(() => new Date(), [memoDateKey]);
   const dateTimeScope = useMemo(
-    () => dateTimeScopeInTimeZone(now, LEGACY_FAMILY_TIME_ZONE),
-    [now],
+    () => dateTimeScopeInTimeZone(now, familyTimeZone),
+    [familyTimeZone, now],
   );
   const todayKey = memoDateKey ?? dateTimeScope.dateKey;
   const nowMinutes = dateTimeScope.minutesSinceMidnight;
@@ -155,11 +157,11 @@ export function ChildHome() {
       myEvents,
       now,
       locale,
-      LEGACY_FAMILY_TIME_ZONE,
+      familyTimeZone,
       undefined,
       places,
     )[todayKey] ?? [],
-    [locale, myEvents, now, todayKey, places],
+    [familyTimeZone, locale, myEvents, now, todayKey, places],
   );
   const rawById = useMemo(() => {
     const map = new Map<string, CalendarEvent>();
@@ -415,7 +417,7 @@ export function ChildHome() {
 
   const dateLabel = formatCalendarDay(now, {
     locale,
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeZone: familyTimeZone,
     weekday: "long",
   });
 

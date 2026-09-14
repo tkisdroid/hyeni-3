@@ -837,12 +837,14 @@ public class LocationService extends Service {
         String raw = cachedEventsJson;
         if (raw == null || raw.isEmpty()) return null;
         try {
-            Calendar atFix = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+            String familyTimeZone = currentFamilyTimeZone();
+            if (familyTimeZone == null) return null;
+            Calendar atFix = Calendar.getInstance(TimeZone.getTimeZone(familyTimeZone));
             atFix.setTimeInMillis(fixCapturedAtMs);
             String expectedDateKey = atFix.get(Calendar.YEAR) + "-" + atFix.get(Calendar.MONTH) + "-"
                 + atFix.get(Calendar.DAY_OF_MONTH);
             if (!expectedDateKey.equals(cachedEventsDateKey)) return null;
-            int nowMinute = atFix.get(Calendar.HOUR_OF_DAY) * 60 + atFix.get(Calendar.MINUTE);
+            int nowMinute = (int) (fixCapturedAtMs / 60000L);
             JSONArray events = new JSONArray(raw);
             JSONObject best = null;
             int bestEventMinute = 0;
@@ -855,7 +857,9 @@ public class LocationService extends Service {
                 if (parts.length != 2) continue;
                 int eventMinute;
                 try {
-                    eventMinute = Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
+                    int wallMinute = Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
+                    if (wallMinute < 0 || wallMinute >= 1440) continue;
+                    eventMinute = (int) (FamilyTimePolicy.wallTimeMs(expectedDateKey, wallMinute, familyTimeZone) / 60000L);
                 } catch (NumberFormatException ignored) {
                     continue;
                 }
@@ -3194,18 +3198,53 @@ public class LocationService extends Service {
         Log.i(TAG, "Event time checking started (every " + EVENT_CHECK_INTERVAL_MS + "ms)");
     }
 
+    private volatile String cachedFamilyTimeZone = null;
+    private volatile String cachedFamilyTimeZoneOwner = "";
+    private long familyTimeZoneFetchedAtMs = 0;
+
+    private String currentFamilyTimeZone() {
+        return (userId + "|" + familyId).equals(cachedFamilyTimeZoneOwner) ? cachedFamilyTimeZone : null;
+    }
+
+    private boolean refreshFamilyTimeZone(boolean allowRefresh) {
+        String owner = userId + "|" + familyId;
+        if (currentFamilyTimeZone() != null && System.currentTimeMillis() - familyTimeZoneFetchedAtMs < EVENT_REFRESH_INTERVAL_MS) return true;
+        try (Response response = httpClient.newCall(new Request.Builder()
+                .url(supabaseUrl.replaceAll("/+$", "") + "/api/family/mine")
+                .header("Authorization", "Bearer " + accessToken).get().build()).execute()) {
+            if (response.code() == 401 && allowRefresh) {
+                response.close();
+                String renewed = networkRefreshAccessToken();
+                return renewed != null && !renewed.isEmpty() && refreshFamilyTimeZone(false);
+            }
+            if (!response.isSuccessful() || response.body() == null) return false;
+            JSONObject family = new JSONObject(response.body().string());
+            String zone = family.optString("timeZone", "");
+            if (!familyId.equals(family.optString("familyId", "")) || !owner.equals(userId + "|" + familyId)
+                    || !NotificationQuietHoursStore.isValidTimeZone(zone)) return false;
+            cachedFamilyTimeZone = zone;
+            cachedFamilyTimeZoneOwner = owner;
+            familyTimeZoneFetchedAtMs = System.currentTimeMillis();
+            return true;
+        } catch (Exception error) {
+            Log.w(TAG, "가족 시간대 조회 실패");
+            return false;
+        }
+    }
+
     private void checkEventTimes() {
         runOnNetworkThread("event_check", () -> {
             try {
-                // Get current time in KST
-                Calendar kst = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+                if (!refreshFamilyTimeZone(true)) return;
+                String familyTimeZone = currentFamilyTimeZone();
+                Calendar kst = Calendar.getInstance(TimeZone.getTimeZone(familyTimeZone));
                 int year = kst.get(Calendar.YEAR);
                 // 앱/Worker date_key 규칙은 0-index 월이다. 예: 2026-6-7 = 2026년 7월 7일.
                 int monthIndex = kst.get(Calendar.MONTH);
                 int day = kst.get(Calendar.DAY_OF_MONTH);
                 int nowHour = kst.get(Calendar.HOUR_OF_DAY);
                 int nowMin = kst.get(Calendar.MINUTE);
-                int nowTotalMin = nowHour * 60 + nowMin;
+                int nowTotalMin = (int) (System.currentTimeMillis() / 60000L);
 
                 String dateKey = year + "-" + monthIndex + "-" + day;
 
@@ -3295,7 +3334,8 @@ public class LocationService extends Service {
                         Log.w(TAG, "Invalid time format: " + time);
                         continue;
                     }
-                    int evTotalMin = evHour * 60 + evMin;
+                    if (evHour < 0 || evHour > 23 || evMin < 0 || evMin > 59) continue;
+                    int evTotalMin = (int) (FamilyTimePolicy.wallTimeMs(dateKey, evHour * 60 + evMin, familyTimeZone) / 60000L);
 
                     int minutesFromStart = nowTotalMin - evTotalMin;
 
@@ -3432,7 +3472,7 @@ public class LocationService extends Service {
                 }
 
                 // Clean up old notification keys (reset at midnight)
-                if (nowTotalMin == 0) {
+                if (nowHour * 60 + nowMin == 0) {
                     shownEventNotifs.clear();
                 }
 
@@ -3608,7 +3648,7 @@ public class LocationService extends Service {
                             (Boolean) enabledRaw,
                             startMinute,
                             endMinute,
-                            NotificationQuietHoursStore.SEOUL_TIME_ZONE_ID,
+                            quietHours.optString("time_zone", NotificationQuietHoursStore.SEOUL_TIME_ZONE_ID),
                             updatedAtMs
                     );
             Log.i(TAG, "Quiet-hours refresh result=" + result.name());

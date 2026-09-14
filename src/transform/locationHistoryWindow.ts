@@ -1,3 +1,4 @@
+import { wallTimeToEpoch } from "../../shared/timeZone.ts";
 import {
   addDaysToDateKey,
   dateToDateKey,
@@ -17,60 +18,10 @@ export interface HistoryDayWindow {
   maxOffsetMinutes: number;
 }
 
-interface ZonedDateTimeParts {
-  year: number;
-  month: number;
-  day: number;
-  hour: number;
-  minute: number;
-  second: number;
-}
-
-function zonedParts(value: Date, timeZone: string): ZonedDateTimeParts {
-  const parts = new Intl.DateTimeFormat("en-US-u-ca-gregory-nu-latn", {
-    timeZone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).formatToParts(value);
-  const number = (type: Intl.DateTimeFormatPartTypes) => (
-    Number(parts.find((part) => part.type === type)?.value)
-  );
-  return {
-    year: number("year"),
-    month: number("month"),
-    day: number("day"),
-    hour: number("hour"),
-    minute: number("minute"),
-    second: number("second"),
-  };
-}
-
-/** 앱 달력 날짜의 명시 time zone wall-clock 시각을 epoch로 바꾼다. */
+/** DST 날짜도 실제 civil-time 경계로 변환한다. */
 function zonedDateKeyHour(dateKey: string, hour: number, timeZone: string): Date | null {
-  const date = parseAppDateKey(dateKey);
-  if (!date) return null;
-  const desiredMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), hour, 0, 0, 0);
-  let candidateMs = desiredMs;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const actual = zonedParts(new Date(candidateMs), timeZone);
-    const actualWallMs = Date.UTC(
-      actual.year,
-      actual.month - 1,
-      actual.day,
-      actual.hour,
-      actual.minute,
-      actual.second,
-    );
-    const adjustment = desiredMs - actualWallMs;
-    candidateMs += adjustment;
-    if (adjustment === 0) break;
-  }
-  return new Date(candidateMs);
+  try { return new Date(wallTimeToEpoch(dateKey, hour * 60, timeZone)); }
+  catch { return null; }
 }
 
 function buildHistoryDayWindow(start: Date, queryEnd: Date, now: Date): HistoryDayWindow {

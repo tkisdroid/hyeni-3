@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useIntl, type IntlShape } from "react-intl";
@@ -28,26 +29,25 @@ import { useLocale } from "@/i18n/useLocale";
 import {
   formatDateTime,
   formatNumber,
-  LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
 import "./WeeklyFamilyReport.css";
 
 const REPORT_DATE_STYLE = "medium" as const;
 
-function dateLabel(dateKey: string, locale: SupportedLocale, intl: IntlShape): string {
+function dateLabel(dateKey: string, locale: SupportedLocale, intl: IntlShape, familyTimeZone: string): string {
   const date = parseAppDateKey(dateKey);
   if (!date) return intl.formatMessage({ id: "reports.weekly.noRecord" });
   // date_key는 instant가 아닌 달력 날짜이므로 정오 합성값으로 날짜 자체만 지역화한다.
   return formatDateTime(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12), {
     locale,
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeZone: familyTimeZone,
     dateStyle: REPORT_DATE_STYLE,
   });
 }
 
-function rangeLabel(keys: readonly string[], locale: SupportedLocale, intl: IntlShape): string {
-  const first = keys[0] ? dateLabel(keys[0], locale, intl) : "";
-  const last = keys[keys.length - 1] ? dateLabel(keys[keys.length - 1], locale, intl) : "";
+function rangeLabel(keys: readonly string[], locale: SupportedLocale, intl: IntlShape, familyTimeZone: string): string {
+  const first = keys[0] ? dateLabel(keys[0], locale, intl, familyTimeZone) : "";
+  const last = keys[keys.length - 1] ? dateLabel(keys[keys.length - 1], locale, intl, familyTimeZone) : "";
   return first && last
     ? intl.formatMessage({ id: "reports.weekly.range" }, { first, last })
     : intl.formatMessage({ id: "reports.weekly.recentDays" }, { count: 7 });
@@ -60,6 +60,7 @@ interface WeeklyReportRouteState {
 }
 
 export function WeeklyFamilyReport() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const navigate = useNavigate();
   const routeState = (useLocation().state ?? null) as WeeklyReportRouteState | null;
@@ -79,8 +80,8 @@ export function WeeklyFamilyReport() {
     }
   }, [activeChild?.id, restoredChildId, setActiveChildId]);
   const weekDateKeys = useMemo(
-    () => buildRecentWeekDateKeys(now, LEGACY_FAMILY_TIME_ZONE),
-    [now],
+    () => buildRecentWeekDateKeys(now, familyTimeZone),
+    [familyTimeZone, now],
   );
   const eventsQuery = useEvents();
   const suppliesQuery = useDailySupplies();
@@ -104,9 +105,9 @@ export function WeeklyFamilyReport() {
       supplies: suppliesQuery.data ?? [],
       memos: memoThread.data ?? [],
       alerts: alertsQuery.data ?? [],
-      timeZone: LEGACY_FAMILY_TIME_ZONE,
+      timeZone: familyTimeZone,
     });
-  }, [
+  }, [familyTimeZone,
     activeChild?.id,
     activeChild?.user_id,
     alertsQuery.data,
@@ -162,7 +163,7 @@ export function WeeklyFamilyReport() {
                 <div className="wr-hero__eyebrow">
                   {intl.formatMessage(
                     { id: "reports.weekly.heroEyebrow" },
-                    { childName: activeChild.name, range: rangeLabel(weekDateKeys, locale, intl) },
+                    { childName: activeChild.name, range: rangeLabel(weekDateKeys, locale, intl, familyTimeZone) },
                   )}
                 </div>
                 <h1>
@@ -324,7 +325,7 @@ export function WeeklyFamilyReport() {
                   {summary.busiestDay ? (
                     <div className="wr-kv">
                       <span>{intl.formatMessage({ id: "reports.weekly.date" })}</span>
-                      <strong>{dateLabel(summary.busiestDay.dateKey, locale, intl)}</strong>
+                      <strong>{dateLabel(summary.busiestDay.dateKey, locale, intl, familyTimeZone)}</strong>
                       <span>{intl.formatMessage({ id: "reports.weekly.events" })}</span>
                       <strong>
                         {intl.formatMessage(

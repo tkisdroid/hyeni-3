@@ -1,4 +1,7 @@
 {
+  "core.familyRegion.label": "Rehiyon ng pamilya",
+  "core.recipientTimeZone.label": "Time zone ng tatanggap",
+  "core.familyTimeZone.label": "Time zone ng pamilya · iskedyul at lokasyon",
   "core.action.back": "Bumalik",
   "core.action.goHome": "Pumunta sa home",
   "core.action.reload": "I-reload",

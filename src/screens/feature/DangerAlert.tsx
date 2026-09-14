@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { ChevronLeft, MapPin } from "lucide-react";
@@ -8,7 +9,7 @@ import { cleanAlertTitle, isDangerAlert, relativeTime } from "@/transform/notifi
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import { Loading } from "@/components/ui/Loading";
 import { useLocale } from "@/i18n/useLocale";
-import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+
 import { useIntl } from "react-intl";
 import "./DangerAlert.css";
 
@@ -26,6 +27,7 @@ function iconOf(type: string): string {
 }
 
 export function DangerAlert() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -106,7 +108,7 @@ export function DangerAlert() {
                   <img className="da-hero__img" src={asset(iconOf(latest.alert_type))} alt="" />
                 </span>
                 <span className="da-hero__time">
-                  {relativeTime(latest.created_at, now, locale, LEGACY_FAMILY_TIME_ZONE)}
+                  {relativeTime(latest.created_at, now, locale, familyTimeZone)}
                 </span>
               </div>
               <div className="da-hero__title">
@@ -148,7 +150,7 @@ export function DangerAlert() {
                       </span>
                       <span className="da-item__meta">
                         <span className="da-item__time">
-                          {relativeTime(a.created_at, now, locale, LEGACY_FAMILY_TIME_ZONE)}
+                          {relativeTime(a.created_at, now, locale, familyTimeZone)}
                         </span>
                         {!a.read && <span className="da-item__dot" />}
                       </span>

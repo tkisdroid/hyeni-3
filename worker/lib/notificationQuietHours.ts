@@ -1,4 +1,7 @@
+import { minuteOfDayInTimeZone } from "./timeZone.ts";
+
 export interface NotificationQuietHours {
+  timeZone?: string;
   enabled: boolean;
   startMinute: number;
   endMinute: number;
@@ -12,6 +15,7 @@ export interface QuietHoursNotificationIdentity {
 
 interface NotificationQuietHoursRow {
   user_id: string;
+  time_zone?: string;
   quiet_hours_enabled: number;
   quiet_hours_start_minute: number;
   quiet_hours_end_minute: number;
@@ -62,7 +66,7 @@ export function isNotificationQuietAtMs(
   nowMs: number,
 ): boolean {
   return !isQuietHoursBypass(identity)
-    && isQuietHoursActive(setting, minuteOfDayInSeoul(nowMs));
+    && isQuietHoursActive(setting, minuteOfDayInTimeZone(nowMs, setting.timeZone ?? "Asia/Seoul"));
 }
 
 export async function partitionNotificationRecipients(
@@ -89,7 +93,8 @@ export async function partitionNotificationRecipients(
     const { results } = await db
       .prepare(
         `SELECT user_id, quiet_hours_enabled, quiet_hours_start_minute,
-                quiet_hours_end_minute, quiet_hours_updated_at
+                quiet_hours_end_minute, quiet_hours_updated_at,
+                COALESCE(time_zone, (SELECT f.time_zone FROM families f WHERE f.id = notification_settings.family_id), 'Asia/Seoul') AS time_zone
            FROM notification_settings
           WHERE user_id IN (${markers})`,
       )
@@ -97,6 +102,7 @@ export async function partitionNotificationRecipients(
       .all<NotificationQuietHoursRow>();
     for (const row of results ?? []) {
       settingsByUserId.set(row.user_id, {
+        timeZone: row.time_zone ?? "Asia/Seoul",
         enabled: row.quiet_hours_enabled === 1,
         startMinute: row.quiet_hours_start_minute,
         endMinute: row.quiet_hours_end_minute,

@@ -444,6 +444,7 @@ CREATE TABLE "families" (
   "study_market" TEXT CHECK ("study_market" IS NULL OR "study_market" = 'KR'),
   "service_country_row_version" INTEGER NOT NULL DEFAULT 1,
   "country_code" TEXT NOT NULL DEFAULT 'KR',
+  "time_zone" TEXT NOT NULL DEFAULT 'Asia/Seoul',
   PRIMARY KEY ("id")
 );
 
@@ -725,6 +726,7 @@ CREATE TABLE "location_history" (
   "recorded_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "is_estimated" INTEGER DEFAULT 0 NOT NULL,
   "accuracy_m" REAL,
+  "ingest_date_key" TEXT CHECK ("ingest_date_key" IS NULL OR (length("ingest_date_key")=10 AND "ingest_date_key" GLOB '????-??-??')),
   PRIMARY KEY ("id")
 );
 
@@ -760,7 +762,7 @@ BEGIN
     ("user_id","date_key","row_count","last_claim_id","updated_at")
   VALUES (
     NEW."user_id",
-    strftime('%Y-%m-%d', substr(NEW."recorded_at",1,19), '+9 hours'),
+    COALESCE(NEW."ingest_date_key", strftime('%Y-%m-%d', substr(NEW."recorded_at",1,19), '+9 hours')),
     1,
     lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' ||
       lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' ||
@@ -980,6 +982,7 @@ CREATE TABLE "notification_settings" (
   "quiet_hours_end_minute" INTEGER NOT NULL DEFAULT 420 CHECK ("quiet_hours_end_minute" BETWEEN 0 AND 1439),
   "quiet_hours_updated_by" TEXT NULL,
   "quiet_hours_updated_at" TEXT NULL,
+  "time_zone" TEXT NULL,
   PRIMARY KEY ("user_id")
 );
 

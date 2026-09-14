@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useNavigate } from "react-router";
 import { useIntl, type IntlShape } from "react-intl";
 import { ChevronLeft, Crown, Gift } from "lucide-react";
@@ -6,7 +7,7 @@ import { useEntitlement } from "@/queries/useEntitlement";
 import { Loading } from "@/components/ui/Loading";
 import type { SupportedLocale } from "@/i18n/locale";
 import { useLocale } from "@/i18n/useLocale";
-import { formatDateTime, formatRelativeTime, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { formatDateTime, formatRelativeTime } from "@/i18n/format";
 import "./TrialLock.css";
 
 const PREMIUM_PERKS = [
@@ -16,17 +17,18 @@ const PREMIUM_PERKS = [
 ] as const;
 const TRIAL_LOCK_DATE_STYLE = "medium" as const;
 
-function formatDate(d: Date | null, locale: SupportedLocale): string {
+function formatDate(d: Date | null, locale: SupportedLocale, familyTimeZone: string): string {
   if (!d) return "";
   return formatDateTime(d, {
     locale,
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeZone: familyTimeZone,
     dateStyle: TRIAL_LOCK_DATE_STYLE,
   });
 }
 
 /** S-03 체험 종료 · 잠금 — useEntitlement 기준 잠금/체험 상태 안내 + 구독 유도. */
 export function TrialLock() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -81,7 +83,7 @@ export function TrialLock() {
               <div className="tl-hero__sub">
                 {intl.formatMessage(
                   { id: "billing.trialLock.trialEnds" },
-                  { date: formatDate(view.trialEndsAt, locale) },
+                  { date: formatDate(view.trialEndsAt, locale, familyTimeZone) },
                 )}
               </div>
             )}
@@ -110,7 +112,7 @@ export function TrialLock() {
               <div className="tl-hero__sub">
                 {intl.formatMessage(
                   { id: "billing.trialLock.activeUntil" },
-                  { date: formatDate(view.periodEnd, locale) },
+                  { date: formatDate(view.periodEnd, locale, familyTimeZone) },
                 )}
               </div>
             )}

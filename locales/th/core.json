@@ -1,4 +1,7 @@
 {
+  "core.familyRegion.label": "ภูมิภาคครอบครัว",
+  "core.recipientTimeZone.label": "เขตเวลาของผู้รับ",
+  "core.familyTimeZone.label": "เขตเวลาครอบครัว · กำหนดการและการแจ้งเตือนตำแหน่ง",
   "core.action.back": "กลับ",
   "core.action.goHome": "ไปหน้าหลัก",
   "core.action.reload": "โหลดซ้ำ",

@@ -1,4 +1,7 @@
 {
+  "core.familyRegion.label": "Khu vực gia đình",
+  "core.recipientTimeZone.label": "Múi giờ người nhận",
+  "core.familyTimeZone.label": "Múi giờ gia đình · lịch và thông báo vị trí",
   "core.action.back": "Quay lại",
   "core.action.goHome": "Về trang chủ",
   "core.action.reload": "Tải lại",

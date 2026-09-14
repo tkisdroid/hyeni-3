@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, RefreshCw } from "lucide-react";
@@ -14,12 +15,12 @@ import { confirmedDataTimestamp } from "@/transform/auditStateScope";
 import { useLocale } from "@/i18n/useLocale";
 import {
   formatClockWithSeconds,
-  LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
 import "./DataSync.css";
 
 /** P-32 데이터 · 동기화 — 동기화 상태·데이터 내보내기(JSON)·캐시 비우기. */
 export function DataSync() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ export function DataSync() {
   const formattedSyncedAt = syncedAt
     ? formatClockWithSeconds(syncedAt, {
         locale,
-        timeZone: LEGACY_FAMILY_TIME_ZONE,
+        timeZone: familyTimeZone,
       })
     : intl.formatMessage({ id: "parent.dataSync.value.unavailable" });
 

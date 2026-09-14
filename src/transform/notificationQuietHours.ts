@@ -2,6 +2,7 @@ import type { SupportedLocale } from "../i18n/locale.ts";
 import { formatDateTime } from "../i18n/format.ts";
 
 export interface NotificationQuietHours {
+  timeZone?: string;
   enabled: boolean;
   startMinute: number;
   endMinute: number;
@@ -10,6 +11,7 @@ export interface NotificationQuietHours {
 }
 
 export interface NotificationQuietHoursDraft {
+  timeZone?: string;
   enabled: boolean;
   startMinute: number;
   endMinute: number;
@@ -59,7 +61,8 @@ export function isSameNotificationQuietHoursTargetDraft(
   return current.targetUserId === submitted.targetUserId
     && current.enabled === submitted.enabled
     && current.startMinute === submitted.startMinute
-    && current.endMinute === submitted.endMinute;
+    && current.endMinute === submitted.endMinute
+    && current.timeZone === submitted.timeZone;
 }
 
 export interface NotificationQuietHoursSourceResolution {

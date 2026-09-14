@@ -535,3 +535,16 @@
 .hy-adult :is(.ps-nav__chev, .ps-feature__chev) {
   color: var(--fg-primary);
 }
+.ps-region-value {
+  display: grid;
+  gap: 4px;
+  max-width: 55%;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
+.ps-region-value small {
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}

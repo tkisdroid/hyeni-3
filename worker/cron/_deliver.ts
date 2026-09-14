@@ -6,6 +6,7 @@
 //
 // FCM 키 미설정(현 dev) → 발송은 graceful 실패(handleInstantNotification 은 200 반환,
 // sent=0). 그래도 insert_parent_alert_v2 는 수행 → 알림 행은 DB 에 남아 검증 가능.
+import { readFamilyTimeZone } from "../lib/timeZone.ts";
 import type { PushEnv } from "../lib/pushEnv";
 import { parentAlertDeliveryKey } from "../lib/parentAlertDedupe";
 import { parentAlertTargetRoute } from "../lib/parentAlertRoute";
@@ -111,6 +112,7 @@ export async function deliverParentAlert(
   const baseMetadata = args.metadata ?? alert.metadata ?? null;
   const scopeMetadata = presenceMetadata ?? stayMetadata ?? null;
   const occurrence = prepareRegisteredPlaceAlertOccurrence({
+    timeZone: await readFamilyTimeZone(db, familyId),
     alertType: alert.alertType,
     message: alert.message,
     occurredAt: args.occurredAtMs,

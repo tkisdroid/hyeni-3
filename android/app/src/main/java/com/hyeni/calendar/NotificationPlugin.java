@@ -64,7 +64,7 @@ public class NotificationPlugin extends Plugin {
                 || startMinute < 0 || startMinute > 1439
                 || endMinute < 0 || endMinute > 1439
                 || startMinute.equals(endMinute)
-                || !NotificationQuietHoursStore.SEOUL_TIME_ZONE_ID.equals(timeZoneId)
+                || !NotificationQuietHoursStore.isValidTimeZone(timeZoneId)
                 || updatedAtMs == null) {
             call.resolve(quietHoursResult(
                     NotificationQuietHoursStore.SaveResult.INVALID_POLICY));

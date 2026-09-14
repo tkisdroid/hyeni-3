@@ -1,3 +1,4 @@
+import { TimeZoneSelect, suggestedTimeZone } from "@/region/TimeZoneSelect";
 import { useIntl } from "react-intl";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
@@ -94,6 +95,7 @@ export function ParentSettings() {
   const familyQuery = useMyFamily();
   const updateFamilyRegion = useUpdateFamilyRegion();
   const [countryDraft, setCountryDraft] = useState("");
+  const [timeZoneDraft, setTimeZoneDraft] = useState(suggestedTimeZone);
   // 티어 배지는 ready 일 때만 노출(미확정/조회실패 시 미표시 — R9: free 강등 금지).
   const entitlementQuery = useEntitlement();
   const { ready, tier } = entitlementQuery;
@@ -136,7 +138,7 @@ export function ParentSettings() {
 
   const saveFamilyCountry = async () => {
     try {
-      await updateFamilyRegion.mutateAsync(countryDraft);
+      await updateFamilyRegion.mutateAsync({ countryCode: countryDraft, timeZone: timeZoneDraft });
       setCountryOpen(false);
       show(intl.formatMessage({ id: "study.country.confirmed" }), "🌍");
     } catch (error) {
@@ -283,13 +285,14 @@ export function ParentSettings() {
             aria-expanded={countryOpen}
             onClick={() => {
               if (!familyQuery.data?.isPrimaryParent) return;
+              setTimeZoneDraft(familyQuery.data.timeZone);
               setCountryDraft(familyCountryCode === "ZZ" ? "" : familyCountryCode);
               setCountryOpen((open) => !open);
             }}
           >
             <SettingsIcon icon="ui/clay/location.webp" tone="mint" />
-            <span className="ps-nav__label">{intl.formatMessage({ id: "study.country.title" })}</span>
-            <span className="ps-nav__value">{familyCountryName}</span>
+            <span className="ps-nav__label">{intl.formatMessage({ id: "core.familyRegion.label" })}</span>
+            <span className="ps-nav__value ps-region-value"><span>{familyCountryName}</span><small>{familyQuery.data?.timeZone}</small></span>
             {familyQuery.data?.isPrimaryParent ? chevronIcon : null}
           </button>
           {countryOpen && familyQuery.data?.isPrimaryParent && (
@@ -308,6 +311,7 @@ export function ParentSettings() {
                 )}
               />
               <small>{intl.formatMessage({ id: "study.country.inputHelp" })}</small>
+              <TimeZoneSelect value={timeZoneDraft} onChange={setTimeZoneDraft} disabled={updateFamilyRegion.isPending} />
               <button
                 type="button"
                 className="hy-btn hy-btn--primary"

@@ -10,6 +10,32 @@
 이 allowlist는 지도 공급자 선택만 연다. 가족 현지 시간대/DST, Google Routes OAuth 실호출,
 비한국 부모 PWA↔아이 Android 실기기 E2E와 새 Android AAB Play 배포가 완료됐다는 의미가 아니다.
 
+## 2026-09-14 출시 구현 및 선행 운영 반영
+
+- 최신 `origin/main bd55190`의 1.4.8 안정화를 현재 지도 브랜치에 병합했다. 248개국 정책은 유지한다.
+- 가족 국가와 IANA 시간대를 주 보호자가 함께 확정한다. 일정·위치 이력·보존·도착 판정·메모/리포트 날짜는 가족 시간대다.
+  조용한 시간은 부모/아이 수신자별 시간대를 별도로 저장하고 Android에 동일한 버전과 함께 전달한다.
+- DST 없는 시각은 전환 간격 뒤, 중복 시각은 첫 발생으로 결정한다. 23/25시간 날짜와 30분 전환·45분 시차를 검증했다.
+- native 일정 조회는 인증된 가족의 시간대를 읽고 같은 사용자/가족에만 캐시한다. 실패 시 한국 시각으로 추정하지 않는다.
+- 위치 업로드 quota는 서버가 정한 `ingest_date_key`를 원자 DB trigger까지 전달한다. 클라이언트의 날짜 위조는 무시한다.
+  400행 업로드는 bind 100개·D1 query 50회 이내이며 동일 fix 재전송은 quota를 추가 소비하지 않는다.
+- 운영 D1 `hyeni-calendar`에 `global-family-time-zone.sql` 및 `global-location-ingest-time-zone.sql`을 적용했다.
+  readback: 기존 가족 113개·수신자 설정 135개 모두 `Asia/Seoul` 보존, 새 위치 날짜 컬럼 및 quota trigger 확인.
+  과거 일정/위치 timestamp·원시 이력은 재작성하거나 삭제하지 않았다.
+- 앱 회귀 2,148개, Worker 회귀 1,510개, Android 단위 테스트 192개 통과. 앱/Worker 타입 검사 및 10개 locale 검사 통과.
+  Windows 한글 경로의 Gradle 테스트 classpath 문제는 임시 ASCII junction으로 우회했고 원본 작업 경로는 이동하지 않았다.
+- 격리 브라우저(390×844, 기기 시간대 Seoul)에서 가족 LA → Nepal 변경, 서버 payload와 readback, 400개 이상 시간대 선택,
+  가로 overflow 없음 확인. `scripts/qa-global-time-zone.mjs`는 정적 fixture이며 실제 아이/Google API E2E 증거가 아니다.
+- 운영 필수 Secret 이름 8개 및 지도 전용 두 Secret 존재를 확인했다. 값은 읽거나 변경하지 않았다.
+- Google Console은 직접 브라우저로 열었으나 Google 로그인 화면이다. 표준 Routes v2의 격리 최소 OAuth 권한 실호출은
+  아직 입증하지 못했으므로 길찾기 stub/게이트를 강제로 열지 않는다.
+- 공개 운영 웹 키와 허용된 브랜드 origin의 격리 문서에서 실제 Google SDK/뉴욕 Central Park 타일을 로드했다.
+  인증 오류·지도 오류 overlay 없음. `scripts/qa-google-maps-web-canary.mjs`는 실제 Google 웹 SDK 증거지만 가족 위치/검색/푸시 E2E는 아니다.
+- 서버 생성 알림의 title/body 일부는 한국어 원문이며 PWA/Android가 원문을 표시한다. 시간대와 알림 본문 현지화는 별개다.
+  서버 알림 message ID/매개변수 및 수신 기기별 번역 계약이 완료되기 전까지 본문 현지화 gate를 유지한다.
+- 남은 출시 gate: 알림 본문 현지화, Google Routes 최소 권한 실호출, 신규 Android AAB 서명/배포, 비한국 부모 PWA↔아이 Android 실제 위치·푸시 ACK.
+  자동검사 성공이나 운영 스키마 반영을 해외 전체 출시 GO로 해석하지 않는다.
+
 ## 2026-09-01 운영 반영 증거
 
 - Google Cloud 프로젝트 `hyeni-496213`에서 Maps JavaScript API, Maps SDK for Android,

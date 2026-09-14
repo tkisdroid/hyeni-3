@@ -5,7 +5,7 @@ export interface NativeQuietHoursInput {
   enabled: boolean;
   startMinute: number;
   endMinute: number;
-  timeZoneId: "Asia/Seoul";
+  timeZoneId: string;
   updatedAtMs: number;
 }
 

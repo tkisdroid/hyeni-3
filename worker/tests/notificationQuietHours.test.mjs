@@ -51,7 +51,10 @@ class SqliteD1Adapter {
   constructor() {
     this.sqlite = new DatabaseSync(":memory:");
     this.prepareCount = 0;
-    this.sqlite.exec(`CREATE TABLE notification_settings (
+    this.sqlite.exec(`CREATE TABLE families (id TEXT PRIMARY KEY, time_zone TEXT DEFAULT 'Asia/Seoul');
+    CREATE TABLE notification_settings (
+      family_id TEXT,
+      time_zone TEXT DEFAULT 'Asia/Seoul',
       user_id TEXT PRIMARY KEY,
       quiet_hours_enabled INTEGER NOT NULL DEFAULT 0,
       quiet_hours_start_minute INTEGER NOT NULL DEFAULT 1320,

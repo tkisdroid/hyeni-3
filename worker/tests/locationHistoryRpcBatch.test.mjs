@@ -115,6 +115,8 @@ class D1DatabaseAdapter {
 function createDb(maxQueries = Number.POSITIVE_INFINITY) {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(`
+    CREATE TABLE families(id TEXT PRIMARY KEY, time_zone TEXT NOT NULL DEFAULT 'Asia/Seoul');
+    INSERT INTO families(id) VALUES ('family-1');
     CREATE TABLE family_members(
       id TEXT PRIMARY KEY,
       family_id TEXT NOT NULL,
@@ -148,6 +150,7 @@ function createDb(maxQueries = Number.POSITIVE_INFINITY) {
     VALUES ('member-child', 'family-1', 'child-1', 'child', 1);
   `);
   sqlite.exec(quotaMigration);
+  sqlite.exec(readFileSync(new URL("../db/global-location-ingest-time-zone.sql", import.meta.url), "utf8"));
   return { sqlite, db: new D1DatabaseAdapter(sqlite, maxQueries) };
 }
 
@@ -181,7 +184,7 @@ function row(recordedAt, index = 0) {
 }
 
 test("Android 최대 400행 flush는 D1 bind 100·호출 query 50 한도 안에서 원자 저장되고 중복·trigger가 보존된다", async () => {
-  const { sqlite, db } = createDb(32);
+  const { sqlite, db } = createDb(37);
   const baseMs = Date.now() - 36 * 60 * 60_000;
   const rows = Array.from({ length: 400 }, (_, index) =>
     row(new Date(baseMs + index * 1_000).toISOString(), index));
@@ -195,14 +198,14 @@ test("Android 최대 400행 flush는 D1 bind 100·호출 query 50 한도 안에�
   assert.equal(response.status, 204);
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM location_history").get().count, 400);
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM location_history_trigger_log").get().count, 400);
-  assert.ok(db.queryCount <= 32, `RPC 내부 D1 query가 ${db.queryCount}회입니다`);
+  assert.ok(db.queryCount <= 37, `RPC 내부 D1 query가 ${db.queryCount}회입니다`);
   assert.ok(Math.max(...db.boundParameterCounts) <= 100);
   assert.equal(
     sqlite.prepare("SELECT row_count AS n FROM location_history_ingest_daily_usage").get().n,
     400,
   );
 
-  db.resetBudget(32);
+  db.resetBudget(37);
   const duplicate = await dispatchRpc(
     createContext(db, rows),
     "record_location_history_rows",
@@ -219,7 +222,7 @@ test("Android 최대 400행 flush는 D1 bind 100·호출 query 50 한도 안에�
 });
 
 test("stale 중복 prefetch 뒤 다른 요청이 먼저 저장해도 실제 INSERT 0건이면 quota가 증가하지 않는다", async () => {
-  const { sqlite, db } = createDb(32);
+  const { sqlite, db } = createDb(37);
   const recordedAt = new Date(Date.now() - 60_000).toISOString();
   const storedRecordedAt = recordedAt.replace("T", " ").replace("Z", "+00");
   db.beforeBatch = () => {
@@ -457,4 +460,23 @@ test("quota migration·정본 스키마와 35일 bounded cleanup이 일치한다
     ["fresh-child"],
   );
   sqlite.close();
+});
+
+test("해외 업로드 한도는 서버가 정한 현지 기록일을 DB trigger와 공유하며 입력 위조를 무시한다", async () => {
+  const { sqlite, db } = createDb(50);
+  try {
+    sqlite.exec("UPDATE families SET time_zone='America/Los_Angeles' WHERE id='family-1'");
+    const now = new Date();
+    const at = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()-1, 1);
+    const point = { ...row(new Date(at).toISOString()), ingest_date_key: "1900-01-01" };
+    const response = await dispatchRpc(createContext(db, [point]), "record_location_history_rows", caller());
+    assert.equal(response.status, 204);
+    const { isoDateAt } = await import("../lib/timeZone.ts");
+    const dateKey = isoDateAt(at, "America/Los_Angeles");
+    assert.notEqual(dateKey, isoDateAt(at, "Asia/Seoul"));
+    assert.equal(sqlite.prepare("SELECT date_key FROM location_history_ingest_daily_usage").get().date_key, dateKey);
+    assert.equal(sqlite.prepare("SELECT ingest_date_key FROM location_history").get().ingest_date_key, dateKey);
+    assert.equal((await dispatchRpc(createContext(db,[point]), "record_location_history_rows", caller())).status,204);
+    assert.equal(sqlite.prepare("SELECT row_count FROM location_history_ingest_daily_usage").get().row_count,1);
+  } finally { sqlite.close(); }
 });

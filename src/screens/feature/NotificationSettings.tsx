@@ -1,3 +1,4 @@
+import { TimeZoneSelect } from "@/region/TimeZoneSelect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
@@ -412,6 +413,7 @@ export function NotificationSettings() {
   useEffect(() => {
     if (!quietDataReady || !selectedQuietRecipient) return;
     const nextSource = {
+      timeZone: selectedQuietRecipient.quietHours.timeZone ?? familyQuery.data?.timeZone ?? "Asia/Seoul",
       targetUserId: selectedQuietRecipient.targetUserId,
       enabled: selectedQuietRecipient.quietHours.enabled,
       startMinute: selectedQuietRecipient.quietHours.startMinute,
@@ -434,10 +436,13 @@ export function NotificationSettings() {
     selectedQuietRecipient?.quietHours.startMinute,
     selectedQuietRecipient?.quietHours.endMinute,
     selectedQuietRecipient?.quietHours.updatedAt,
+    selectedQuietRecipient?.quietHours.timeZone,
+    familyQuery.data?.timeZone,
   ]);
 
   const dirty = selectedQuietRecipient !== null && (
-    quietDraft.enabled !== selectedQuietRecipient.quietHours.enabled
+    quietDraft.timeZone !== (selectedQuietRecipient.quietHours.timeZone ?? familyQuery.data?.timeZone ?? "Asia/Seoul")
+    || quietDraft.enabled !== selectedQuietRecipient.quietHours.enabled
     || quietDraft.startMinute !== selectedQuietRecipient.quietHours.startMinute
     || quietDraft.endMinute !== selectedQuietRecipient.quietHours.endMinute
   );
@@ -452,6 +457,7 @@ export function NotificationSettings() {
     const target = quietTargets.find((candidate) => candidate.targetUserId === targetUserId);
     if (!target) return;
     const nextSource = {
+      timeZone: target.recipient.quietHours.timeZone ?? familyQuery.data?.timeZone ?? "Asia/Seoul",
       targetUserId: target.recipient.targetUserId,
       enabled: target.recipient.quietHours.enabled,
       startMinute: target.recipient.quietHours.startMinute,
@@ -482,6 +488,7 @@ export function NotificationSettings() {
       {
         targetUserId: submittedQuietDraft.targetUserId,
         quietHours: {
+          timeZone: submittedQuietDraft.timeZone,
           enabled: submittedQuietDraft.enabled,
           startMinute: submittedQuietDraft.startMinute,
           endMinute: submittedQuietDraft.endMinute,
@@ -501,6 +508,7 @@ export function NotificationSettings() {
             enabled: result.quietHours.enabled,
             startMinute: result.quietHours.startMinute,
             endMinute: result.quietHours.endMinute,
+            timeZone: result.quietHours.timeZone ?? submittedQuietDraft.timeZone,
           });
           setQuietSaveMessage(intl.formatMessage({ id: "notifications.settings.quiet.saved" }));
         },
@@ -901,6 +909,7 @@ export function NotificationSettings() {
                     </div>
 
                     <div className="nst-quiet__editor">
+                      <TimeZoneSelect recipient value={quietDraft.timeZone ?? familyQuery.data?.timeZone ?? "Asia/Seoul"} onChange={timeZone => setQuietDraft(current => ({ ...current, timeZone }))} disabled={saveQuietHours.isPending} />
                       <button
                         type="button"
                         className="nst-quiet__switch-row hy-press"

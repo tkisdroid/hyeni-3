@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { AlertTriangle, ChevronLeft, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useNavigate } from "react-router";
@@ -8,7 +9,6 @@ import type { SupportedLocale } from "@/i18n/locale";
 import { useLocale } from "@/i18n/useLocale";
 import {
   formatDateTime,
-  LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
 import "./RemoteAudioAudit.css";
 
@@ -18,12 +18,12 @@ function parseServerDate(value: string): Date | null {
   return Number.isFinite(date.getTime()) ? date : null;
 }
 
-function auditDateTime(value: string, locale: SupportedLocale, intl: IntlShape): string {
+function auditDateTime(value: string, locale: SupportedLocale, intl: IntlShape, familyTimeZone: string): string {
   const date = parseServerDate(value);
   if (!date) return intl.formatMessage({ id: "notifications.remoteAudio.audit.timeUnavailable" });
   return formatDateTime(date, {
     locale,
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeZone: familyTimeZone,
     dateStyle: "short",
     timeStyle: "short",
   });
@@ -51,6 +51,7 @@ function reasonLabel(reason: string | null, intl: IntlShape): string | null {
 }
 
 export function RemoteAudioAudit() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -125,7 +126,7 @@ export function RemoteAudioAudit() {
                       <b>{intl.formatMessage({ id: "notifications.remoteAudio.audit.itemTitle" }, { child: item.childName })}</b>
                       <span>{intl.formatMessage(
                         { id: "notifications.remoteAudio.audit.requestedBy" },
-                        { initiator: item.initiatorName, time: auditDateTime(item.startedAt, locale, intl) },
+                        { initiator: item.initiatorName, time: auditDateTime(item.startedAt, locale, intl, familyTimeZone) },
                       )}</span>
                     </div>
                     <div className="raa-item__status">

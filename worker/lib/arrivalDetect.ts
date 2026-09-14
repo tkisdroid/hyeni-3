@@ -5,6 +5,7 @@
 // 추적해, 반경 150m 안에서 5분 이상 머물면 역지오코딩한 주소로 부모에게 도착 알림을 보낸다.
 // 같은 장소(200m)는 2시간 쿨다운, 등록 장소 근처(150m)는 skip(네이티브 지오펜스와 중복 방지).
 // upsert_child_location 의 waitUntil 로 실행 — 실패해도 위치 저장에는 영향 없다(fire-and-forget).
+import { readFamilyTimeZone } from "./timeZone.ts";
 import { handleInstantNotification, insertParentAlertV2 } from "../routes/push-notify";
 import { episodeIdempotencyKey } from "../shared/locationStaleness.js";
 import { pgNow, pgTs } from "./time";
@@ -59,7 +60,8 @@ async function overlappingScheduleEvent(
   db: D1Database,
   args: { familyId: string; childMemberId: string; atMs: number; lat: number; lng: number },
 ): Promise<{ active: ScheduleArrivalCandidate | null; nearby: ScheduleArrivalCandidate | null }> {
-  const dateKeys = scheduleWindowDateKeys(args.atMs);
+  const timeZone = await readFamilyTimeZone(db, args.familyId);
+  const dateKeys = scheduleWindowDateKeys(args.atMs, undefined, timeZone);
   const datePh = dateKeys.map(() => "?").join(",");
   const { results } = await db
     .prepare(
@@ -75,7 +77,7 @@ async function overlappingScheduleEvent(
   const candidates: ScheduleArrivalCandidate[] = [];
   for (const row of results ?? []) {
     if (typeof row.time !== "string" || !row.time) continue;
-    const startAtMs = eventStartAtMs(String(row.date_key), row.time);
+    const startAtMs = eventStartAtMs(String(row.date_key), row.time, timeZone);
     if (startAtMs == null) continue;
     let location: unknown = row.location;
     if (typeof location === "string") {

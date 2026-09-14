@@ -77,6 +77,7 @@ function createTeacherAudienceDb() {
       id TEXT PRIMARY KEY
     );
     CREATE TABLE families (
+      time_zone TEXT NOT NULL DEFAULT 'Asia/Seoul',
       id TEXT PRIMARY KEY,
       parent_id TEXT NULL
     );
@@ -94,7 +95,10 @@ function createTeacherAudienceDb() {
 function createQuietHoursDb(options) {
   const db = new BoundedSqliteD1Adapter(options);
   db.sqlite.exec(`
+    CREATE TABLE families (id TEXT PRIMARY KEY, time_zone TEXT DEFAULT 'Asia/Seoul');
     CREATE TABLE notification_settings (
+      family_id TEXT,
+      time_zone TEXT DEFAULT 'Asia/Seoul',
       user_id TEXT PRIMARY KEY,
       quiet_hours_enabled INTEGER NOT NULL DEFAULT 0,
       quiet_hours_start_minute INTEGER NOT NULL DEFAULT 1320,

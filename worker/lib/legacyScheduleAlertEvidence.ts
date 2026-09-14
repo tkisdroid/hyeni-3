@@ -11,7 +11,8 @@ const ARRIVAL_STALE_MS = 15 * 60_000;
 const ARRIVAL_MAX_ACCURACY_M = 150;
 const ARRIVAL_EARLY_MS = 15 * 60_000;
 const ARRIVAL_LATE_MS = 60 * 60_000;
-const KST_OFFSET_MS = 9 * 60 * 60_000;
+import { readFamilyTimeZone } from "./timeZone.ts";
+import { eventStartAtMs } from "./scheduleArrivalOverlap.ts";
 const EARTH_RADIUS_M = 6_371_000;
 
 export type LegacyChildScheduleAlertEvidence =
@@ -51,30 +52,6 @@ function parseEventLocation(value: unknown): { lat: number; lng: number } | null
   const lng = Number(point.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return { lat, lng };
-}
-
-function eventStartAtMs(dateKey: string, time: string): number | null {
-  const dateMatch = /^(\d{4,})-(\d{1,2})-(\d{1,2})$/.exec(dateKey);
-  const timeMatch = /^(\d{1,2}):(\d{2})$/.exec(time);
-  if (!dateMatch || !timeMatch) return null;
-  const year = Number(dateMatch[1]);
-  const month = Number(dateMatch[2]);
-  const day = Number(dateMatch[3]);
-  const hour = Number(timeMatch[1]);
-  const minute = Number(timeMatch[2]);
-  if (month < 0 || month > 11 || day < 1 || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-    return null;
-  }
-  const value = Date.UTC(year, month, day, hour - 9, minute);
-  const roundTrip = new Date(value + KST_OFFSET_MS);
-  if (
-    roundTrip.getUTCFullYear() !== year
-    || roundTrip.getUTCMonth() !== month
-    || roundTrip.getUTCDate() !== day
-    || roundTrip.getUTCHours() !== hour
-    || roundTrip.getUTCMinutes() !== minute
-  ) return null;
-  return value;
 }
 
 function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
@@ -154,7 +131,7 @@ export async function resolveLegacyChildScheduleAlertEvidence(
   if (!event?.id) return { status: "deferred" };
 
   const eventLocation = parseEventLocation(event.location);
-  const startAtMs = eventStartAtMs(String(event.date_key), String(event.time));
+  const startAtMs = eventStartAtMs(String(event.date_key), String(event.time), await readFamilyTimeZone(db, input.familyId));
   if (!eventLocation || startAtMs == null) return { status: "deferred" };
 
   await recordLocationConfirmation(db, {

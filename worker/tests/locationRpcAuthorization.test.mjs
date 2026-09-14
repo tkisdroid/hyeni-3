@@ -31,7 +31,7 @@ test("일반 위치 이력 batch는 caller 외 user와 활성 child membership �
   assert.match(source, /return c\.json\(\{ error: "forbidden" \}, 403\)/);
   assert.match(
     source,
-    /WHERE user_id IN \(\$\{ph\}\) AND role = 'child' AND is_active = 1/,
+    /WHERE fm\.user_id IN \(\$\{ph\}\) AND fm\.role = 'child' AND fm\.is_active = 1/,
   );
 });
 

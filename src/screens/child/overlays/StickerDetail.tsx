@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 /**
  * 스티커 상세 모달 — 스티커북에서 받은 스티커를 누르면 열린다.
  *
@@ -10,7 +11,7 @@ import { useIntl } from "react-intl";
 import { stickerOriginText, stickerWhenLabel, type StickerSlot } from "@/transform/stickerBook";
 import { ChildModal } from "./ChildSheet";
 import { useLocale } from "@/i18n/useLocale";
-import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+
 
 export interface StickerDetailProps {
   slot: StickerSlot | null;
@@ -19,6 +20,7 @@ export interface StickerDetailProps {
 }
 
 export function StickerDetail({ slot, nowMs, onClose }: StickerDetailProps) {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   if (!slot) return null;
@@ -31,7 +33,7 @@ export function StickerDetail({ slot, nowMs, onClose }: StickerDetailProps) {
       <img className="ks-modal__img" src={asset(slot.img)} alt={slot.label} />
       <div className="ks-modal__label">{slot.label}</div>
       <div className="ks-modal__meta">
-        {stickerWhenLabel(slot.latestAt, nowMs, locale, LEGACY_FAMILY_TIME_ZONE, intl)}
+        {stickerWhenLabel(slot.latestAt, nowMs, locale, familyTimeZone, intl)}
         {slot.count > 1
           ? intl.formatMessage({ id: "child.stickerDetail.count" }, { count: slot.count })
           : ""}

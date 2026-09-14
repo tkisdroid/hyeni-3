@@ -1,3 +1,5 @@
+import { nextEventDefault } from "@/transform/eventDefaultTime";
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Check, ChevronLeft, Home, Map as MapIcon, MapPin } from "lucide-react";
@@ -21,11 +23,10 @@ import {
 } from "@/lib/api/endpoints/schedule";
 import {
   dateInputValueToDateKey,
-  dateToDateKeyInTimeZone,
   dateKeyToDateInputValue,
   parseAppDateKey,
 } from "@/transform/dateKey";
-import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+
 import { useIntl } from "react-intl";
 import { localizeApiError } from "@/i18n/apiError";
 import {
@@ -168,21 +169,12 @@ function finiteNumberFrom(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** 새 일정 시작 시간 기본값 — 지금 이후 가장 가까운 30분 경계("HH:MM"). 빈 시간 입력을 없앤다. */
-function nextHalfHourTime(now: Date = new Date()): string {
-  const stepped = new Date(now.getTime());
-  stepped.setSeconds(0, 0);
-  const minutes = stepped.getMinutes();
-  stepped.setMinutes(minutes <= 30 ? 30 : 60);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(stepped.getHours())}:${pad(stepped.getMinutes())}`;
-}
-
 function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
 export function EventForm() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
@@ -287,12 +279,24 @@ export function EventForm() {
   }, [editingNeedsAssignment, initialAssignedChildIds, mode]);
   const [dateValue, setDateValue] = useState(() => {
     if (editing) return dateKeyToDateInputValue(editing.date_key);
-    const key = nav?.dateKey ?? dateToDateKeyInTimeZone(new Date(), LEGACY_FAMILY_TIME_ZONE);
+    const key = nav?.dateKey ?? nextEventDefault(familyTimeZone).dateKey;
     return dateKeyToDateInputValue(key);
   });
   const [timeValue, setTimeValue] = useState(
-    () => editing?.time ?? stringFrom(suggestion?.time) ?? nextHalfHourTime(),
+    () => editing?.time ?? stringFrom(suggestion?.time) ?? nextEventDefault(familyTimeZone).time,
   );
+  const dateTouched = useRef(false);
+  const timeTouched = useRef(false);
+  const timeDefaultDone = useRef(false);
+  useEffect(() => {
+    // 첫 로드의 임시 서울 값은 가족 정본을 받은 뒤 한 번만 교정한다. 입력·수정·명시 날짜는 보존한다.
+    if (timeDefaultDone.current || mode !== "create" || !familyQuery.data
+      || familyQuery.data.timeZone !== familyTimeZone) return;
+    timeDefaultDone.current = true;
+    const defaults = nextEventDefault(familyTimeZone);
+    if (!dateTouched.current && !nav?.dateKey) setDateValue(dateKeyToDateInputValue(defaults.dateKey));
+    if (!timeTouched.current && !stringFrom(suggestion?.time)) setTimeValue(defaults.time);
+  }, [familyQuery.data, familyTimeZone, mode, nav?.dateKey, suggestion?.time]);
   const [allDay, setAllDay] = useState(() => (editing ? editing.time == null : false));
   const [durationMin, setDurationMin] = useState(
     () => finiteNumberFrom(suggestion?.durationMinutes) ?? durationFromEvent(editing?.time, editing?.end_time),
@@ -701,14 +705,14 @@ export function EventForm() {
               className="ef-input ef-input--date"
               aria-label={intl.formatMessage({ id: "parent.eventForm.copy032" })}
               value={dateValue}
-              onChange={(e) => setDateValue(e.target.value)}
+              onChange={(e) => { dateTouched.current = true; setDateValue(e.target.value); }}
             />
             <input
               type="time"
               className="ef-input ef-input--time"
               aria-label={intl.formatMessage({ id: "parent.eventForm.copy033" })}
               value={timeValue}
-              onChange={(e) => setTimeValue(e.target.value)}
+              onChange={(e) => { timeTouched.current = true; setTimeValue(e.target.value); }}
               disabled={allDay}
             />
           </div>

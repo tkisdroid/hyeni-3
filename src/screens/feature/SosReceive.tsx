@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useIntl } from "react-intl";
@@ -24,17 +25,16 @@ import { useLocale } from "@/i18n/useLocale";
 import {
   formatClockWithSeconds,
   formatPastTime,
-  LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
 import "./SosReceive.css";
 
 /** ISO/Date → 상대시간(방금/N분/N시간 전). */
 /** Date → locale 시각. */
-function formatClock(d: Date | null, locale: SupportedLocale): string {
+function formatClock(d: Date | null, locale: SupportedLocale, familyTimeZone: string): string {
   if (!d) return "";
   return formatClockWithSeconds(d, {
     locale,
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeZone: familyTimeZone,
   });
 }
 
@@ -47,6 +47,7 @@ function formatClock(d: Date | null, locale: SupportedLocale): string {
  * 함께 추적한다. 액션: 전화(네이티브 다이얼)·주변소리(청취 화면)·지도 추적·확인 처리(읽음).
  */
 export function SosReceive() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -241,7 +242,7 @@ export function SosReceive() {
                     )}
                 </div>
                 <div className="sr-banner-meta">
-                  {formatClock(latestAt, locale)} · {latestAt ? formatPastTime(latestAt, new Date(), locale) : ""}
+                  {formatClock(latestAt, locale, familyTimeZone)} · {latestAt ? formatPastTime(latestAt, new Date(), locale) : ""}
                 </div>
               </div>
               {latest.read && <span className="sr-banner-chip">{intl.formatMessage({ id: "notifications.sosReceive.read" })}</span>}
@@ -325,7 +326,7 @@ export function SosReceive() {
                       <div className="sr-history-body">
                         <div className="sr-history-name">{c?.name || intl.formatMessage({ id: "notifications.location.childFallback" })}</div>
                         <div className="sr-history-time">
-                          {formatClock(at, locale)} · {at ? formatPastTime(at, new Date(), locale) : ""}
+                          {formatClock(at, locale, familyTimeZone)} · {at ? formatPastTime(at, new Date(), locale) : ""}
                         </div>
                       </div>
                       {!s.read && <span className="sr-history-dot" />}

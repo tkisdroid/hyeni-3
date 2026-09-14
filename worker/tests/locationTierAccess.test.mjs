@@ -86,6 +86,7 @@ function createDb() {
   sqlite.exec(`
     CREATE TABLE users(id TEXT PRIMARY KEY, is_anonymous INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE families(
+      time_zone TEXT NOT NULL DEFAULT 'Asia/Seoul',
       id TEXT PRIMARY KEY,
       parent_id TEXT NOT NULL,
       user_tier TEXT DEFAULT 'free',

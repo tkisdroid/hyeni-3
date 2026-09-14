@@ -1,6 +1,7 @@
 // 부모 알림 read API. get_parent_alerts(p_family_id, p_limit=20) RPC를 D1 SQL로 직역.
 // 핵심: read 는 가족 전역 boolean → 사용자별로 (pa.read OR 호출자 ∈ read_by) 계산.
 //   레거시 행(read=true)은 "전원 읽음"으로 유지, 신규 행은 호출자 기준.
+import { readFamilyTimeZone } from "../lib/timeZone.ts";
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../middleware/auth";
@@ -285,6 +286,7 @@ parentAlerts.post("/", requireAuth, async (c) => {
   }
   const notificationAtMs = Date.now();
   const occurrence = prepareRegisteredPlaceAlertOccurrence({
+    timeZone: await readFamilyTimeZone(c.env.DB, familyId),
     alertType,
     message,
     occurredAt: b.occurred_at,

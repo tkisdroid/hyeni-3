@@ -155,6 +155,8 @@ const REQUIRED_SCHEMA_OBJECTS: readonly RequiredSchemaObject[] = [
 
 const REQUIRED_SCHEMA_COLUMNS: readonly RequiredSchemaColumn[] = [
   { table: "families", name: "country_code" },
+  { table: "families", name: "time_zone" },
+  { table: "notification_settings", name: "time_zone" },
   ...requiredSchemaColumns("map_autocomplete_sessions", [
     "handle_digest",
     "expires_at_ms",
@@ -184,6 +186,7 @@ const REQUIRED_SCHEMA_COLUMNS: readonly RequiredSchemaColumn[] = [
   { table: "family_members", name: "is_active" },
   { table: "child_locations", name: "accuracy_m" },
   { table: "location_history", name: "accuracy_m" },
+  { table: "location_history", name: "ingest_date_key" },
   { table: "remote_listen_sessions", name: "consented_at" },
   { table: "remote_listen_sessions", name: "capture_expires_at" },
   { table: "notification_settings", name: "quiet_hours_enabled" },

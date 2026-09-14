@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useIntl, type IntlShape } from "react-intl";
@@ -40,27 +41,27 @@ import {
 import { isLocationVisible, TIERS } from "@/transform/tierPolicy";
 import type { SupportedLocale } from "@/i18n/locale";
 import { useLocale } from "@/i18n/useLocale";
-import { formatDateTime, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { formatDateTime } from "@/i18n/format";
 import "./DailySafetyReport.css";
 
 function formatShortTime(
   value: string | null | undefined,
-  locale: SupportedLocale,
+  locale: SupportedLocale, familyTimeZone: string
 ): string {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return formatDateTime(date, {
     locale,
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeZone: familyTimeZone,
     timeStyle: "short",
   });
 }
 
-function formatClock(value: Date, locale: SupportedLocale): string {
+function formatClock(value: Date, locale: SupportedLocale, familyTimeZone: string): string {
   return formatDateTime(value, {
     locale,
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeZone: familyTimeZone,
     timeStyle: "short",
   });
 }
@@ -96,6 +97,7 @@ interface ReportOverviewCard {
 }
 
 export function DailySafetyReport() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
@@ -111,8 +113,8 @@ export function DailySafetyReport() {
   }, []);
 
   const reportDateScope = useMemo(
-    () => dailyReportDateScope(now, LEGACY_FAMILY_TIME_ZONE),
-    [now],
+    () => dailyReportDateScope(now, familyTimeZone),
+    [familyTimeZone, now],
   );
   const todayKey = reportDateScope.dateKey;
   const eventsQuery = useEvents();
@@ -173,8 +175,7 @@ export function DailySafetyReport() {
           : "loading",
       intl,
     ),
-    [
-      activeChild,
+    [activeChild,
       childNotifSettingsQuery.data,
       childNotifSettingsQuery.isError,
       childNotifSettingsQuery.isSuccess,
@@ -194,14 +195,14 @@ export function DailySafetyReport() {
       eventsQuery.data ?? [],
       now,
       locale,
-      LEGACY_FAMILY_TIME_ZONE,
+      familyTimeZone,
       undefined,
       places,
       intl,
     )[todayKey] ?? []).filter((event) =>
       allowedIds.has(event.id),
     );
-  }, [activeChild, eventsQuery.data, intl, locale, now, places, todayKey]);
+  }, [familyTimeZone, activeChild, eventsQuery.data, intl, locale, now, places, todayKey]);
   const nextEvent = todayEvents.find((event) => !PAST_TAGS.has(event.tag)) ?? null;
   const pastEventCount = todayEvents.filter((event) => PAST_TAGS.has(event.tag)).length;
 
@@ -224,13 +225,13 @@ export function DailySafetyReport() {
     deviceSafetyState: device.safetyState,
     deviceHasData: device.hasData,
     now,
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeZone: familyTimeZone,
   });
   const todayAlerts = useMemo(
     () => childAlerts.filter((alert) => reportDateScope.includesTimestamp(alert.created_at)).slice(0, 3),
     [childAlerts, reportDateScope],
   );
-  const reportTimeLabel = useMemo(() => formatClock(now, locale), [locale, now]);
+  const reportTimeLabel = useMemo(() => formatClock(now, locale, familyTimeZone), [familyTimeZone, locale, now]);
   const supplyPercent = supplySummary.total > 0 ? Math.round((supplySummary.done / supplySummary.total) * 100) : 0;
   const overviewCards = useMemo<ReportOverviewCard[]>(() => {
     const locationTone: ReportTone = locationScopeError
@@ -315,8 +316,7 @@ export function DailySafetyReport() {
         icon: <img src={asset("ui/battery.webp")} alt="" loading="lazy" decoding="async" />,
       },
     ];
-  }, [
-    childLocation,
+  }, [childLocation,
     device.batteryLabel,
     device.hasData,
     device.networkLabel,
@@ -385,8 +385,7 @@ export function DailySafetyReport() {
         icon: <img src={asset("ui/battery.webp")} alt="" loading="lazy" decoding="async" />,
       },
     ],
-    [
-      childLocation,
+    [childLocation,
       device.unlockCountLabel,
       device.freshnessLabel,
       device.hasData,
@@ -618,7 +617,7 @@ export function DailySafetyReport() {
                       <BellRing size={16} strokeWidth={2.2} />
                       <span>{alertLabel(alert, intl)}</span>
                       <small>
-                        {formatShortTime(alert.created_at, locale)
+                        {formatShortTime(alert.created_at, locale, familyTimeZone)
                           || intl.formatMessage({ id: "reports.daily.timePending" })}
                       </small>
                     </div>
@@ -972,7 +971,7 @@ export function DailySafetyReport() {
                           : intl.formatMessage({ id: "reports.daily.parentSender" })}
                       </span>
                       <b>{memo.content}</b>
-                      <small>{formatShortTime(memo.created_at, locale)}</small>
+                      <small>{formatShortTime(memo.created_at, locale, familyTimeZone)}</small>
                     </div>
                   ))}
                 </div>

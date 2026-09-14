@@ -1,3 +1,5 @@
+import { wallTimeToEpoch } from "../../shared/timeZone.ts";
+
 /**
  * 일정 date_key 처리(hyeni-1 scheduleDateRange.js 정확 이관).
  *
@@ -151,26 +153,8 @@ function dateKeyWallClockInTimeZone(
   minute: number,
   timeZone: string,
 ): Date | null {
-  const date = parseAppDateKey(dateKey);
-  if (!date) return null;
-  const desiredMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute);
-  let candidateMs = desiredMs;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const actual = zonedDateTimeParts(new Date(candidateMs), timeZone);
-    if (!actual) return null;
-    const actualWallMs = Date.UTC(
-      actual.year,
-      actual.month - 1,
-      actual.day,
-      actual.hour,
-      actual.minute,
-      actual.second,
-    );
-    const adjustment = desiredMs - actualWallMs;
-    candidateMs += adjustment;
-    if (adjustment === 0) break;
-  }
-  return new Date(candidateMs);
+  try { return new Date(wallTimeToEpoch(dateKey, hour * 60 + minute, timeZone)); }
+  catch { return null; }
 }
 
 /** 앱 date_key의 wall-clock 분을 명시 time zone의 instant로 바꾼다. 1440 이상은 다음 날이다. */

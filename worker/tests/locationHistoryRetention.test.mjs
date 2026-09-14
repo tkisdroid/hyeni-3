@@ -80,6 +80,7 @@ function createDb() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(`
     CREATE TABLE families(
+      time_zone TEXT NOT NULL DEFAULT 'Asia/Seoul',
       id TEXT PRIMARY KEY,
       parent_id TEXT NOT NULL,
       user_tier TEXT DEFAULT 'free',
@@ -238,7 +239,8 @@ test("한 번의 retention 실행은 Free D1 호출당 50 query 예산을 넘지
   const result = await retention.cleanupLocationHistoryRetention(db, now);
 
   assert.equal(result.processedFamilies, 9);
-  assert.equal(db.queryCount, 47);
+  assert.equal(db.queryCount, 48);
+  assert.ok(db.queryCount <= 50);
   assert.equal(
     sqlite.prepare("SELECT COUNT(DISTINCT family_id) AS n FROM location_history").get().n,
     1,
@@ -306,4 +308,19 @@ test("보존 migration은 좌표 원본 범위 인덱스만 추가하고 확인�
   assert.match(migration, /idx_location_history_recorded_family/);
   assert.match(migration, /idx_location_history_family_recorded_norm/);
   assert.doesNotMatch(migration, /location_usage_audit|lat\s+REAL|lng\s+REAL/i);
+});
+
+test("서로 다른 가족 시간대의 08시 경계로 후보를 고르고 해당 경계 이후 위치는 보존한다", async () => {
+  const {sqlite,db} = createDb();
+  try {
+    sqlite.exec("UPDATE families SET time_zone='America/Los_Angeles' WHERE id='family-free'");
+    const now = new Date("2026-08-01T03:00Z");
+    addPoint(sqlite,"family-free","2026-07-31 14:59:59+00",1);
+    addPoint(sqlite,"family-free","2026-07-31 15:00:00+00",2);
+    addPoint(sqlite,"family-reviewed","2026-07-31 22:59:59+00",3);
+    addPoint(sqlite,"family-reviewed","2026-07-31 23:00:00+00",4);
+    const result = await retention.cleanupLocationHistoryRetention(db, now);
+    assert.equal(result.removedRows,2);
+    assert.deepEqual(sqlite.prepare("SELECT lat FROM location_history ORDER BY lat").all().map(row=>row.lat),[2,4]);
+  } finally {sqlite.close();}
 });

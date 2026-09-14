@@ -95,7 +95,7 @@ test("Android 일반 표시 경로 8곳은 exact identity를 9번째 인자로 �
 test("Capacitor adapter는 웹 no-op과 native 저장 거부를 구분한다", () => {
   const adapter = readMaybe("src/lib/native/notificationQuietHours.ts");
   assert.match(adapter, /export interface NativeQuietHoursInput/);
-  assert.match(adapter, /timeZoneId: "Asia\/Seoul"/);
+  assert.match(adapter, /timeZoneId: string/);
   assert.match(adapter, /updatedAtMs: number/);
   assert.match(adapter, /if \(getPlatform\(\) !== "android"\) return true/);
   assert.match(adapter, /getNativePlugin<[^>]+>\("NativeNotification"\)/s);
@@ -156,7 +156,7 @@ test("FCM quiet control은 대상 정책 직후 처리되고 어떤 결과든 �
     "private void showNotification(",
   );
   assert.match(handler, /targetContext\.userId/);
-  assert.match(handler, /NotificationQuietHoursStore\.SEOUL_TIME_ZONE_ID\.equals\(timeZoneId\)/);
+  assert.match(handler, /NotificationQuietHoursStore\.isValidTimeZone\(timeZoneId\)/);
   assert.match(handler, /startMinute[\s\S]*endMinute[\s\S]*updatedAt/);
   assert.match(handler, /NotificationQuietHoursStore\.saveIfCurrentSession\(/);
   assert.doesNotMatch(handler, /NotificationHelper\.showNotification|PolledNotificationStore\.markAck/);

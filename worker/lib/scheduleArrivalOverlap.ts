@@ -1,4 +1,4 @@
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+import { appDateKeyAt, wallTimeToEpoch } from "./timeZone.ts";
 export const SCHEDULE_ARRIVAL_OVERLAP_RADIUS_M = 80;
 export const SCHEDULE_ARRIVAL_OVERLAP_WINDOW_MS = 60 * 60_000;
 export const SCHEDULE_ARRIVAL_EARLY_WINDOW_MS = 15 * 60_000;
@@ -106,40 +106,17 @@ export function buildScheduledArrivalAlert(
   };
 }
 
-function kstDateKey(atMs: number): string {
-  const date = new Date(atMs + KST_OFFSET_MS);
-  return `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}`;
-}
-
 export function scheduleWindowDateKeys(
   atMs: number,
   windowMs = SCHEDULE_ARRIVAL_OVERLAP_WINDOW_MS,
+  timeZone = "Asia/Seoul",
 ): string[] {
-  return [...new Set([
-    kstDateKey(atMs - windowMs),
-    kstDateKey(atMs),
-    kstDateKey(atMs + windowMs),
-  ])];
+  return [...new Set([atMs - windowMs, atMs, atMs + windowMs].map(ms => appDateKeyAt(ms, timeZone)))];
 }
 
-export function eventStartAtMs(dateKey: string, time: string): number | null {
-  const match = /^(\d{4,})-(\d{1,2})-(\d{1,2})$/.exec(dateKey);
-  const timeMatch = /^(\d{1,2}):(\d{2})$/.exec(time);
-  if (!match || !timeMatch) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const hour = Number(timeMatch[1]);
-  const minute = Number(timeMatch[2]);
-  if (month < 0 || month > 11 || day < 1 || hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-  const value = Date.UTC(year, month, day, hour - 9, minute);
-  const roundTrip = new Date(value + KST_OFFSET_MS);
-  if (
-    roundTrip.getUTCFullYear() !== year
-    || roundTrip.getUTCMonth() !== month
-    || roundTrip.getUTCDate() !== day
-    || roundTrip.getUTCHours() !== hour
-    || roundTrip.getUTCMinutes() !== minute
-  ) return null;
-  return value;
+export function eventStartAtMs(dateKey: string, time: string, timeZone = "Asia/Seoul"): number | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(time);
+  if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return null;
+  try { return wallTimeToEpoch(dateKey, Number(match[1]) * 60 + Number(match[2]), timeZone); }
+  catch { return null; }
 }

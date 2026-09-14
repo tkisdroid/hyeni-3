@@ -20,7 +20,7 @@ test("오늘 경로는 플로팅 시트와 시간 막대 없이 지도 아래 �
 });
 
 test("오늘 경로는 오전 8시 기준 윈도우와 아이·날짜 도구막대를 함께 사용한다", () => {
-  assert.match(source, /getHistoryDayWindowForKey\(historyDayKey, now, LEGACY_FAMILY_TIME_ZONE\)/);
+  assert.match(source, /getHistoryDayWindowForKey\(historyDayKey, now, familyTimeZone\)/);
   assert.match(source, /const timedHistoryPoints = useMemo\(/);
   assert.match(source, /getJourneyRecordedRange\(timedHistoryPoints\)/);
   assert.doesNotMatch(source, /getJourneyRecordedRange\(timedTrail\)/);

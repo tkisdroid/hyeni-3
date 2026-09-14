@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useIntl } from "react-intl";
@@ -16,7 +17,7 @@ import {
   isDailySupplyLimitError,
 } from "@/transform/eventSupplies";
 import { useLocale } from "@/i18n/useLocale";
-import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { formatCalendarDay } from "@/i18n/format";
 import "./Supplies.css";
 
 /**
@@ -25,6 +26,7 @@ import "./Supplies.css";
  * 서버에 반영. 서버 daily_supplies 는 (family, child, date) 당 1행이라 대상 아이를 하나 정한다.
  */
 export function Supplies() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -38,8 +40,8 @@ export function Supplies() {
     const fromState = (location.state as { dateKey?: string } | null)?.dateKey;
     return typeof fromState === "string" && fromState
       ? fromState
-      : dateToDateKeyInTimeZone(new Date(), LEGACY_FAMILY_TIME_ZONE);
-  }, [location.state]);
+      : dateToDateKeyInTimeZone(new Date(), familyTimeZone);
+  }, [familyTimeZone, location.state]);
 
   const dateLabel = useMemo(() => {
     const d = parseAppDateKey(dateKey) ?? new Date();

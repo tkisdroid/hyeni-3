@@ -4,6 +4,7 @@
 // 상태머신·문구·멱등키는 ../shared/registeredPlaceGeofence.js(클라 parity) 재사용.
 //
 // 원본 대비: Deno.serve(service_role JWT 게이트) 제거 → scheduled 내부 호출이라 run(env)만.
+import { readFamilyTimeZone } from "../lib/timeZone.ts";
 import type { Env } from "../types";
 import type { PushEnv } from "../lib/pushEnv";
 import {
@@ -128,10 +129,13 @@ async function loadScheduleArrivalCandidates(
   nowMs: number,
 ): Promise<Map<string, ScheduleArrivalCandidate[]>> {
   const byChild = new Map<string, ScheduleArrivalCandidate[]>();
-  const dateKeys = scheduleWindowDateKeys(nowMs);
-  const datePh = dateKeys.map(() => "?").join(",");
+  const zones = new Map<string, string>();
   for (const child of children) {
     if (!child.childMemberId) continue;
+    const timeZone = zones.get(child.familyId) ?? await readFamilyTimeZone(db, child.familyId);
+    zones.set(child.familyId, timeZone);
+    const dateKeys = scheduleWindowDateKeys(nowMs, undefined, timeZone);
+    const datePh = dateKeys.map(() => "?").join(",");
     const { results } = await db
       .prepare(
         `SELECT DISTINCT e.id, e.title, e.date_key, e.time, e.location, e.updated_at
@@ -146,7 +150,7 @@ async function loadScheduleArrivalCandidates(
     for (const event of results ?? []) {
       const point = coord(event.location);
       if (!point || typeof event.time !== "string") continue;
-      const startAtMs = eventStartAtMs(String(event.date_key), event.time);
+      const startAtMs = eventStartAtMs(String(event.date_key), event.time, timeZone);
       if (startAtMs == null) continue;
       candidates.push({
         eventId: String(event.id),

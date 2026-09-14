@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { ChevronLeft } from "lucide-react";
@@ -12,7 +13,7 @@ import {
   type AlertItemView,
 } from "@/transform/notificationsView";
 import { useLocale } from "@/i18n/useLocale";
-import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+
 import { useIntl } from "react-intl";
 import "./Notifications.css";
 
@@ -24,6 +25,7 @@ import "./Notifications.css";
  */
 
 export function Notifications() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -41,8 +43,8 @@ export function Notifications() {
   const now = useMemo(() => new Date(), [list]);
 
   const groups = useMemo(
-    () => mapAlertsToGroups(list, now, locale, LEGACY_FAMILY_TIME_ZONE),
-    [list, locale, now],
+    () => mapAlertsToGroups(list, now, locale, familyTimeZone),
+    [familyTimeZone, list, locale, now],
   );
 
   useEffect(() => {

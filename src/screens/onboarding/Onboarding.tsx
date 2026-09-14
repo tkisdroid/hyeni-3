@@ -1,3 +1,4 @@
+import { TimeZoneSelect, suggestedTimeZone } from "@/region/TimeZoneSelect";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -239,6 +240,7 @@ export function Onboarding() {
     () => normalizeSuggestedStudyCountry(accessCountry) ?? "KR",
   );
   const [studyCountryConfirmed, setStudyCountryConfirmed] = useState(false);
+  const [familyTimeZone, setFamilyTimeZone] = useState(suggestedTimeZone);
   const oauthLoginPromiseRef = useRef<ReturnType<typeof finishOAuthLogin> | null>(null);
   const nativeOAuthCompletionInFlightRef = useRef<string | null>(null);
   const nativeOAuthCompletionRetryRef = useRef<{ id: string; attempts: number } | null>(null);
@@ -1070,6 +1072,8 @@ export function Onboarding() {
           referralDraft={referralDraft}
           onReferralDraftChange={applyReferralDraft}
           suggestedStudyCountry={suggestedStudyCountry}
+          familyTimeZone={familyTimeZone}
+          onTimeZoneChange={setFamilyTimeZone}
           selectedStudyCountry={selectedStudyCountry}
           studyCountryConfirmed={studyCountryConfirmed}
           onStudyCountryChange={(country) => {
@@ -1095,6 +1099,7 @@ export function Onboarding() {
                 parentName: (signupName ?? "").trim() || parentNameFromUser(user),
                 referralCode: referralPrefill ?? undefined,
                 countryCode: selectedStudyCountry,
+                timeZone: familyTimeZone,
                 studyCountry: {
                   serviceCountry: selectedStudyCountry,
                   serviceCountrySource: selectedStudyCountry === suggestedStudyCountry
@@ -2422,6 +2427,8 @@ function SignupStep({
 /* ── STEP: CONNECT ─────────────────────────────────────────────────────── */
 
 function ConnectStep({
+  familyTimeZone,
+  onTimeZoneChange,
   busy,
   progressPercent,
   referralCode,
@@ -2442,6 +2449,8 @@ function ConnectStep({
   referralDraft: string;
   onReferralDraftChange: (value: string) => void;
   suggestedStudyCountry: string | null;
+  familyTimeZone: string;
+  onTimeZoneChange: (value: string) => void;
   selectedStudyCountry: string;
   studyCountryConfirmed: boolean;
   onStudyCountryChange: (country: string) => void;
@@ -2497,6 +2506,7 @@ function ConnectStep({
         />
       </div>
 
+      <TimeZoneSelect value={familyTimeZone} onChange={value => { onTimeZoneChange(value); onStudyCountryChange(selectedStudyCountry); }} disabled={busy} />
       <StudyCountryConfirmation
         suggestedCountry={suggestedStudyCountry}
         initialCountry={selectedStudyCountry}

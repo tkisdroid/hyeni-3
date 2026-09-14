@@ -52,6 +52,11 @@ final class NotificationQuietHoursStore {
 
     private NotificationQuietHoursStore() {}
 
+    static boolean isValidTimeZone(String value) {
+        if (value == null || value.length() > 100) return false;
+        return "UTC".equals(value) || (value.contains("/") && java.util.Arrays.asList(java.util.TimeZone.getAvailableIDs()).contains(value));
+    }
+
     static synchronized Snapshot read(SharedPreferences prefs) {
         if (prefs == null) {
             return defaultSnapshot();
@@ -81,7 +86,7 @@ final class NotificationQuietHoursStore {
             || !isMinuteOfDay(startMinute)
             || !isMinuteOfDay(endMinute)
             || startMinute == endMinute
-            || !SEOUL_TIME_ZONE_ID.equals(timeZoneId)
+            || !isValidTimeZone(timeZoneId)
             || updatedAtMs < 0L) {
             return SaveResult.INVALID_POLICY;
         }
@@ -104,7 +109,7 @@ final class NotificationQuietHoursStore {
                 .putBoolean(KEY_ENABLED, enabled)
                 .putInt(KEY_START_MINUTE, startMinute)
                 .putInt(KEY_END_MINUTE, endMinute)
-                .putString(KEY_TIME_ZONE, SEOUL_TIME_ZONE_ID)
+                .putString(KEY_TIME_ZONE, timeZoneId)
                 .putLong(KEY_UPDATED_AT_MS, updatedAtMs)
                 .apply();
             return SaveResult.SAVED;

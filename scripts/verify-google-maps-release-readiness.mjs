@@ -5,6 +5,7 @@ import {
   GOOGLE_MAPS_CORE_COVERAGE_REVIEWED_AT,
   GOOGLE_MAPS_CORE_COVERAGE_SOURCE,
 } from "../shared/mapPolicy.ts";
+import { dayWindowAt, wallTimeToEpoch } from "../shared/timeZone.ts";
 import { SERVICE_COUNTRY_CODES } from "../shared/serviceCountries.ts";
 
 const root = resolve(import.meta.dirname, "..");
@@ -30,9 +31,18 @@ check(
 );
 check("Google CSP가 허용됨", /maps\.googleapis\.com/u.test(read("public/_headers")) && /maps\.gstatic\.com/u.test(read("public/_headers")));
 
+check("가족·수신자 시간대 migration 존재", /ADD COLUMN time_zone/u.test(read("worker/db/global-family-time-zone.sql")));
+check("위치 quota 원자 trigger에 서버 확정 현지 날짜 반영", /COALESCE\(NEW.ingest_date_key/u.test(read("worker/db/global-location-ingest-time-zone.sql")));
+const spring = dayWindowAt(Date.parse("2026-03-08T12:00Z"), "America/Los_Angeles");
+const autumn = dayWindowAt(Date.parse("2026-11-01T12:00Z"), "America/Los_Angeles");
+check("DST 23·25시간 날짜 경계", spring.endMs - spring.startMs === 23 * 3600000 && autumn.endMs - autumn.startMs === 25 * 3600000);
+check("DST 반복 시각은 첫 발생으로 고정", wallTimeToEpoch("2026-10-1",90,"America/Los_Angeles") === Date.parse("2026-11-01T08:30Z"));
+check("Android 가족 시간대·수신자 시간대 분리", /refreshFamilyTimeZone/u.test(read("android/app/src/main/java/com/hyeni/calendar/LocationService.java")) && /isValidTimeZone/u.test(read("android/app/src/main/java/com/hyeni/calendar/NotificationQuietHoursPolicy.java")));
+
 const failedChecks = checks.filter((item) => !item.passed);
 const externalBlockers = [
-  "BLOCKED_BY_TIMEZONE_GATE",
+  "BLOCKED_BY_NOTIFICATION_CONTENT_LOCALIZATION",
+  "BLOCKED_BY_ANDROID_TIMEZONE_RELEASE",
   "BLOCKED_BY_GOOGLE_ROUTES_OAUTH_SCOPE_PROOF",
   "BLOCKED_BY_LIVE_NON_KR_DEVICE_E2E",
 ];

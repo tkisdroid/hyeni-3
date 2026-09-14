@@ -244,7 +244,7 @@ export function NativeBootstrap() {
             enabled: quietHours.enabled,
             startMinute: quietHours.startMinute,
             endMinute: quietHours.endMinute,
-            timeZoneId: "Asia/Seoul",
+            timeZoneId: quietHours.timeZone ?? "Asia/Seoul",
             updatedAtMs: parsedUpdatedAt,
           });
           if (isCurrentSession() && !saved) {

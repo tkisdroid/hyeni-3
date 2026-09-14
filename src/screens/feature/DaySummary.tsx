@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useMemo, useRef, useState } from "react";
 import { scopedDaySummary, type DaySummaryScope, type ScopedDaySummary } from "@/transform/auditStateScope";
 import { useAuth } from "@/auth/AuthContext";
@@ -32,7 +33,7 @@ import {
 import { Loading } from "@/components/ui/Loading";
 import type { SupportedLocale } from "@/i18n/locale";
 import { useLocale } from "@/i18n/useLocale";
-import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { formatCalendarDay } from "@/i18n/format";
 import "./DaySummary.css";
 
 type RowTone = "info" | "safe" | "caution";
@@ -110,6 +111,7 @@ function isCautionDay(signals: DaySummarySignals | null): boolean {
 }
 
 export function DaySummary() {
+  const familyTimeZone = useFamilyTimeZone();
   const { locale } = useLocale();
   const intl = useIntl();
   const navigate = useNavigate();
@@ -148,7 +150,7 @@ export function DaySummary() {
   // 앱 date_key(0-index 월) → ISO "YYYY-MM-DD"(서버 계약). 기본 = 오늘.
   const appDateKey = requestedDateKey && parseAppDateKey(requestedDateKey)
     ? requestedDateKey
-    : dateToDateKeyInTimeZone(new Date(), LEGACY_FAMILY_TIME_ZONE);
+    : dateToDateKeyInTimeZone(new Date(), familyTimeZone);
   const isoDateKey = dateKeyToDateInputValue(appDateKey);
   const dateLabel = useMemo(() => {
     const d = parseAppDateKey(appDateKey);

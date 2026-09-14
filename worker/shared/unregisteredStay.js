@@ -108,10 +108,10 @@ export function findConfirmedDepartureFix(points, center, radiusM = 120) {
     return null;
 }
 
-function formatKstClock(ms) {
-    const d = new Date(ms + 9 * 60 * 60 * 1000);
-    const h = d.getUTCHours();
-    const m = d.getUTCMinutes();
+function formatKstClock(ms, timeZone = "Asia/Seoul") {
+    const parts = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "numeric", minute: "numeric", hourCycle: "h23" }).formatToParts(ms);
+    const h = Number(parts.find(p => p.type === "hour").value);
+    const m = Number(parts.find(p => p.type === "minute").value);
     const ampm = h < 12 ? "오전" : "오후";
     const h12 = h % 12 === 0 ? 12 : h % 12;
     return `${ampm} ${h12}시${m > 0 ? ` ${m}분` : ""}`;
@@ -137,7 +137,7 @@ export function buildUnregisteredStayLeftAlert(childName, areaLabel, options = {
         severity: "info",
         title: delayed ? delayedTitle : currentTitle,
         message: delayed
-            ? `${name}가 ${formatKstClock(confirmedAtMs)}경 ${fromPart} 출발한 것으로 확인됐어요. 위치 연결이 복구된 뒤 늦게 확인된 기록이에요.`
+            ? `${name}가 ${formatKstClock(confirmedAtMs, options.timeZone)}경 ${fromPart} 출발한 것으로 확인됐어요. 위치 연결이 복구된 뒤 늦게 확인된 기록이에요.`
             : `${name}가 ${fromPart} 출발했어요.`,
         ...(hasEventTime ? {
             metadata: {

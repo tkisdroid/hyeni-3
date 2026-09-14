@@ -627,6 +627,7 @@ test("self GET은 quiet 정보를 더하고 가족 GET은 호출 부모 본인�
     end_minute: 420,
     updated_at: "2026-07-19T12:00:00.000Z",
     configured: true,
+    time_zone: 'Asia/Seoul',
   });
 
   const family = await requestApi(
@@ -647,6 +648,7 @@ test("self GET은 quiet 정보를 더하고 가족 GET은 호출 부모 본인�
         end_minute: 420,
         updated_at: "2026-07-19T12:00:00.000Z",
         configured: true,
+    time_zone: 'Asia/Seoul',
       },
       {
         target_user_id: "quiet-child",
@@ -656,6 +658,7 @@ test("self GET은 quiet 정보를 더하고 가족 GET은 호출 부모 본인�
         end_minute: 420,
         updated_at: null,
         configured: false,
+    time_zone: 'Asia/Seoul',
       },
     ],
   });
@@ -717,6 +720,7 @@ test("quiet PUT은 부모 본인과 같은 가족 활성 아이만 정본 row로
       end_minute: 420,
       updated_at: "<timestamp>",
       configured: true,
+    time_zone: 'Asia/Seoul',
     },
   );
   assert.ok(Number.isFinite(Date.parse(childRow.updated_at)));
@@ -819,6 +823,7 @@ test("quiet 최초 저장은 동시 행 생성과 경합해도 quiet 컬럼만 �
       end_minute: 390,
       updated_at: "<timestamp>",
       configured: true,
+    time_zone: 'Asia/Seoul',
     },
   );
   assert.deepEqual(
@@ -1060,6 +1065,7 @@ test("quiet PUT은 지연된 FCM fetch를 기다리지 않고 canonical row를 �
         end_minute: 360,
         updated_at: "<timestamp>",
         configured: true,
+    time_zone: 'Asia/Seoul',
       },
     );
     assert.equal(

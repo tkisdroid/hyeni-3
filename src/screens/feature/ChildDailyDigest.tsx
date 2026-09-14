@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useIntl } from "react-intl";
@@ -8,7 +9,7 @@ import { useActiveChild } from "@/app/activeChild";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { useChildDailyDigest } from "@/queries/useAi";
 import { FEATURES, canUse } from "@/transform/tierPolicy";
-import { formatDateTime, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { formatDateTime } from "@/i18n/format";
 import { useLocale } from "@/i18n/useLocale";
 import "./ChildDailyDigest.css";
 
@@ -29,6 +30,7 @@ function useDigestChildUserId(): string | null {
  *  · 프리미엄이 확인되기 전에는 Free 로 단정하지 않고 확인 중으로 둔다.
  */
 export function ChildDailyDigest() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const navigate = useNavigate();
   const { locale } = useLocale();
@@ -55,9 +57,9 @@ export function ChildDailyDigest() {
     if (!parts) return "";
     return formatDateTime(
       Date.UTC(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]), 12),
-      { locale, timeZone: LEGACY_FAMILY_TIME_ZONE, dateStyle: "medium" },
+      { locale, timeZone: familyTimeZone, dateStyle: "medium" },
     );
-  }, [locale, result?.dateKey]);
+  }, [familyTimeZone, locale, result?.dateKey]);
 
   const childName = digest?.childName
     || childMembers.find((child) => child.user_id === childUserId)?.name

@@ -2,7 +2,7 @@ import { parentAlertPendingTtlMs } from "./notificationRouting";
 
 const REGISTERED_PLACE_ALERT_TYPES = new Set(["place_arrived", "place_left"]);
 const MAX_FUTURE_SKEW_MS = 10 * 60_000;
-const KST_OFFSET_MS = 9 * 60 * 60_000;
+import { localDateTimeParts } from "./timeZone.ts";
 
 export interface PreparedRegisteredPlaceAlertOccurrence {
   message: string;
@@ -26,12 +26,12 @@ function parseOccurredAtMs(value: unknown, nowMs: number): number {
   return parsed;
 }
 
-function formatKoreanClock(ms: number): string {
-  const kst = new Date(ms + KST_OFFSET_MS);
-  const hour24 = kst.getUTCHours();
+function formatKoreanClock(ms: number, timeZone: string): string {
+  const parts = localDateTimeParts(ms, timeZone);
+  const hour24 = parts.hour;
   const period = hour24 < 12 ? "오전" : "오후";
   const hour12 = hour24 % 12 || 12;
-  const minute = String(kst.getUTCMinutes()).padStart(2, "0");
+  const minute = String(parts.minute).padStart(2, "0");
   return `${period} ${hour12}:${minute}`;
 }
 
@@ -60,6 +60,7 @@ export function resolveRegisteredPlaceAlertOccurrenceTiming(input: {
 export function prepareRegisteredPlaceAlertOccurrence(input: {
   alertType: string;
   message: string;
+  timeZone?: string;
   occurredAt: unknown;
   nowMs: number;
 }): PreparedRegisteredPlaceAlertOccurrence {
@@ -69,7 +70,7 @@ export function prepareRegisteredPlaceAlertOccurrence(input: {
   if (!timing.occurredAt) return { message, ...timing };
   const occurredAtMs = Date.parse(timing.occurredAt);
   return {
-    message: `${formatKoreanClock(occurredAtMs)}에 ${message}`,
+    message: `${formatKoreanClock(occurredAtMs, input.timeZone ?? "Asia/Seoul")}에 ${message}`,
     ...timing,
   };
 }

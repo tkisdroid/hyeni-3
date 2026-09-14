@@ -1,4 +1,7 @@
 {
+  "core.familyRegion.label": "가족 지역",
+  "core.recipientTimeZone.label": "알림 받을 계정의 시간대",
+  "core.familyTimeZone.label": "가족 시간대 · 일정과 위치 알림의 기준",
   "core.action.back": "뒤로",
   "core.action.goHome": "홈으로 가기",
   "core.action.reload": "다시 불러오기",

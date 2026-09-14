@@ -111,7 +111,7 @@ public class NotificationQuietHoursStoreTest {
         assertEquals(
             NotificationQuietHoursStore.SaveResult.INVALID_POLICY,
             NotificationQuietHoursStore.saveIfCurrentSession(
-                prefs, "parent-1", false, 600, 900, "UTC", 3_000L
+                prefs, "parent-1", false, 600, 900, "Invalid/Zone", 3_000L
             )
         );
 

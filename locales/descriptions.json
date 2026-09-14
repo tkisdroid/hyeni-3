@@ -1,4 +1,7 @@
 {
+  "core.familyRegion.label": { "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {}, "description": "가족 지도 지역 설정 라벨" },
+  "core.recipientTimeZone.label": { "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {}, "description": "수신자별 조용한 시간의 시간대 선택 라벨" },
+  "core.familyTimeZone.label": { "namespace": "core", "description": "가족 일정 및 위치 알림의 IANA 시간대를 보호자가 확인하는 선택 필드 라벨" },
   "billing.aiCredit.creditUse": {
     "namespace": "billing",
     "audience": "parent",

@@ -43,6 +43,8 @@ class Statement {
 function createDb() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(`
+    CREATE TABLE families(id TEXT PRIMARY KEY, time_zone TEXT DEFAULT 'Asia/Seoul');
+    INSERT INTO families(id) VALUES ('family-a');
     CREATE TABLE family_members(
       id TEXT PRIMARY KEY, family_id TEXT NOT NULL, user_id TEXT,
       role TEXT NOT NULL, name TEXT NOT NULL, is_active INTEGER NOT NULL DEFAULT 1

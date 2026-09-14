@@ -93,11 +93,12 @@ async function patchRegion(db, caller, tokenFamily, body) {
 
 test("주 보호자만 정본 가족 국가를 바꾸며 정규화한 값을 반환한다", async () => {
   const { sqlite, db } = fixture();
-  const response = await patchRegion(db, "primary", "family-a", { countryCode: " jp " });
+  const response = await patchRegion(db, "primary", "family-a", { countryCode: " jp ", timeZone: "Asia/Tokyo" });
 
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.countryCode, "JP");
+  assert.equal(body.timeZone, "Asia/Tokyo");
   assert.deepEqual(body.mapPolicy, { provider: "google", countryCode: "JP" });
   assert.equal(sqlite.prepare("SELECT country_code FROM families WHERE id='family-a'").get().country_code, "JP");
   sqlite.close();

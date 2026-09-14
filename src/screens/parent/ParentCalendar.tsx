@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useIntl, type IntlShape } from "react-intl";
 import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
@@ -23,7 +24,6 @@ import {
   formatCalendarMonth,
   formatRelativeMinutes,
   formatWeekday,
-  LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
 import type { SupportedLocale } from "@/i18n/locale";
 
@@ -64,6 +64,7 @@ const buildCells = (year: number, month: number): (number | null)[] => {
 };
 
 export function ParentCalendar() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const { show } = useToast();
@@ -78,11 +79,11 @@ export function ParentCalendar() {
     [locale],
   );
   const TODAY = useMemo(() => {
-    const date = parseAppDateKey(dateTimeScopeInTimeZone(now, LEGACY_FAMILY_TIME_ZONE).dateKey);
+    const date = parseAppDateKey(dateTimeScopeInTimeZone(now, familyTimeZone).dateKey);
     return date
       ? { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() }
       : { year: 1970, month: 1, day: 1 };
-  }, [now]);
+  }, [familyTimeZone, now]);
 
   const dateParam = searchParams.get("date");
   const selectedDate = dateParam ? parseAppDateKey(dateParam) : null;
@@ -126,7 +127,7 @@ export function ParentCalendar() {
   const canVerifyVisits = !entitlement.isError && locationModeFor(entitlement.tier) === "realtime";
   const visitMap = useVisitVerify(
     selectedKey,
-    LEGACY_FAMILY_TIME_ZONE,
+    familyTimeZone,
     events,
     childUserByMemberId,
     canVerifyVisits,
@@ -136,12 +137,12 @@ export function ParentCalendar() {
       events ?? [],
       now,
       locale,
-      LEGACY_FAMILY_TIME_ZONE,
+      familyTimeZone,
       visitMap,
       savedPlaces,
       intl,
     ),
-    [events, locale, now, visitMap, savedPlaces, intl],
+    [familyTimeZone, events, locale, now, visitMap, savedPlaces, intl],
   );
   const rawById = useMemo(() => {
     const map = new Map<string, CalendarEvent>();
@@ -206,7 +207,7 @@ export function ParentCalendar() {
       sheetEvent,
       now,
       locale,
-      LEGACY_FAMILY_TIME_ZONE,
+      familyTimeZone,
       visitMap,
       savedPlaces,
       intl,

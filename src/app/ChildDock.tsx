@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 /**
  * 아이 모드 하단 독 — 홈 · 스티커 · 대화 3탭 + 오른쪽 SOS 버튼(시안 2a).
  *
@@ -14,7 +15,7 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useMemoThread } from "@/queries/useMemo";
 import { unreadParentMemoCount } from "@/transform/childHomeData";
 import { useRecentDateKeys } from "./useRecentDateKeys";
-import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+
 import "./ChildDock.css";
 
 const TABS = [
@@ -24,12 +25,13 @@ const TABS = [
 ] as const;
 
 export function ChildDock() {
+  const familyTimeZone = useFamilyTimeZone();
   const navigate = useNavigate();
   const intl = useIntl();
   const { userId } = useAuth();
   const { data: family } = useMyFamily();
   const myMember = family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null;
-  const dateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
+  const dateKeys = useRecentDateKeys(7, familyTimeZone);
   const memoThread = useMemoThread(dateKeys, myMember?.id ?? null);
   const unread = unreadParentMemoCount(memoThread.data, userId);
 

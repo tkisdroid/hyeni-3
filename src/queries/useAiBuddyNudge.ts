@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 /**
  * 플로팅 AI 친구가 먼저 건넬 말의 재료(부모 메시지·다음 일정·못 챙긴 준비물).
  *
@@ -14,7 +15,7 @@ import { fetchEvents, fetchDailySupplies } from "@/lib/api/endpoints/schedule";
 import { fetchMemoReplies } from "@/lib/api/endpoints/memo";
 import { useMyFamily } from "./useFamily";
 import { useRecentDateKeys } from "@/app/useRecentDateKeys";
-import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+
 import { dateToDateKeyInTimeZone } from "@/transform/dateKey";
 import { useLocale } from "@/i18n/useLocale";
 import { filterEventsForChild } from "@/transform/eventScope";
@@ -32,6 +33,7 @@ import {
 const MEMO_DAYS = 2;
 
 export function useAiBuddyNudgeInput(enabled: boolean): AiBuddyNudgeInput {
+  const familyTimeZone = useFamilyTimeZone();
   const { familyId, userId, status } = useAuth();
   const { locale } = useLocale();
   const intl = useIntl();
@@ -41,8 +43,8 @@ export function useAiBuddyNudgeInput(enabled: boolean): AiBuddyNudgeInput {
     : null;
 
   const authed = enabled && status === "authenticated" && !!familyId;
-  const memoDateKeys = useRecentDateKeys(MEMO_DAYS, LEGACY_FAMILY_TIME_ZONE);
-  const todayKey = memoDateKeys[0] ?? dateToDateKeyInTimeZone(new Date(), LEGACY_FAMILY_TIME_ZONE);
+  const memoDateKeys = useRecentDateKeys(MEMO_DAYS, familyTimeZone);
+  const todayKey = memoDateKeys[0] ?? dateToDateKeyInTimeZone(new Date(), familyTimeZone);
 
   const memoQuery = useQuery({
     queryKey: qk.memoReplies(familyId ?? "", memoDateKeys.join(","), myMemberId),
@@ -71,7 +73,7 @@ export function useAiBuddyNudgeInput(enabled: boolean): AiBuddyNudgeInput {
       filterEventsForChild(events ?? [], myMemberId),
       new Date(),
       locale,
-      LEGACY_FAMILY_TIME_ZONE,
+      familyTimeZone,
     )[todayKey] ?? [];
     const nextEvent = todays.find((e) => !PAST_TAGS.has(e.tag)) ?? null;
     const pendingSupplies = (supplies ?? [])
@@ -84,5 +86,5 @@ export function useAiBuddyNudgeInput(enabled: boolean): AiBuddyNudgeInput {
       nextEventTime: nextEvent?.time ?? null,
       pendingSupplies,
     };
-  }, [enabled, events, locale, memos, myMemberId, supplies, todayKey, userId]);
+  }, [familyTimeZone, enabled, events, locale, memos, myMemberId, supplies, todayKey, userId]);
 }

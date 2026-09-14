@@ -42,7 +42,7 @@ const STAY_COOLDOWN_MS = 60 * 60 * 1000;
 const EPISODE_BUCKET_MS = 5 * 60 * 1000;
 const LEFT_GRACE_MS = 8 * 60 * 1000;
 const LEFT_AWAY_RADIUS_M = 120;
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+import { localDateTimeParts, readFamilyTimeZone } from "../lib/timeZone.ts";
 const SCHEDULE_SUGGESTION_LOOKBACK_MS = 28 * 24 * 60 * 60 * 1000;
 const SCHEDULE_SUGGESTION_MIN_DWELL_MS = 45 * 60 * 1000;
 const SCHEDULE_SUGGESTION_RADIUS_M = 100;
@@ -77,21 +77,22 @@ function parseGridKey(gridKey: string): { lat: number; lng: number } | null {
   return { lat, lng };
 }
 
-function kstDate(ms: number): Date {
-  return new Date(ms + KST_OFFSET_MS);
+function kstDate(ms: number, timeZone: string): Date {
+  const p = localDateTimeParts(ms, timeZone);
+  return new Date(Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute));
 }
 
-function kstWeekday(ms: number): number {
-  return kstDate(ms).getUTCDay();
+function kstWeekday(ms: number, timeZone: string): number {
+  return kstDate(ms, timeZone).getUTCDay();
 }
 
-function kstMinuteOfDay(ms: number): number {
-  const d = kstDate(ms);
+function kstMinuteOfDay(ms: number, timeZone: string): number {
+  const d = kstDate(ms, timeZone);
   return d.getUTCHours() * 60 + d.getUTCMinutes();
 }
 
-function weekBucket(ms: number): number {
-  return Math.floor((ms + KST_OFFSET_MS) / (7 * 24 * 60 * 60 * 1000));
+function weekBucket(ms: number, timeZone: string): number {
+  return Math.floor(kstDate(ms, timeZone).getTime() / (7 * 24 * 60 * 60 * 1000));
 }
 
 function minuteDistance(a: number, b: number): number {
@@ -135,8 +136,8 @@ function appDateKeyFromKstDate(d: Date): string {
   return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
 }
 
-function nextDateKeyForWeekday(weekday: number, nowMs: number): string {
-  const nowKst = kstDate(nowMs);
+function nextDateKeyForWeekday(weekday: number, nowMs: number, timeZone: string): string {
+  const nowKst = kstDate(nowMs, timeZone);
   const today = new Date(Date.UTC(nowKst.getUTCFullYear(), nowKst.getUTCMonth(), nowKst.getUTCDate()));
   const diff = (weekday - today.getUTCDay() + 7) % 7;
   today.setUTCDate(today.getUTCDate() + diff);
@@ -472,12 +473,13 @@ async function repeatedDwellWeeks(
     .map((r) => ({ lat: Number(r.lat), lng: Number(r.lng), recordedMs: pgToMs(r.recorded_at) }))
     .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng) && Number.isFinite(p.recordedMs));
   const dwells = buildServerDwellPlaces(points, { minDwellMs: SCHEDULE_SUGGESTION_MIN_DWELL_MS });
+  const timeZone = await readFamilyTimeZone(db, child.familyId);
   const weeks = new Set<number>();
   for (const dwell of dwells) {
     if (haversineM(dwell.lat, dwell.lng, center.lat, center.lng) > SCHEDULE_SUGGESTION_RADIUS_M) continue;
-    if (kstWeekday(dwell.startMs) !== weekday) continue;
-    if (minuteDistance(kstMinuteOfDay(dwell.startMs), minuteOfDay) > SCHEDULE_SUGGESTION_TIME_TOLERANCE_MIN) continue;
-    weeks.add(weekBucket(dwell.startMs));
+    if (kstWeekday(dwell.startMs, timeZone) !== weekday) continue;
+    if (minuteDistance(kstMinuteOfDay(dwell.startMs, timeZone), minuteOfDay) > SCHEDULE_SUGGESTION_TIME_TOLERANCE_MIN) continue;
+    weeks.add(weekBucket(dwell.startMs, timeZone));
   }
   return weeks;
 }
@@ -492,8 +494,9 @@ async function maybeDeliverScheduleSuggestion(
   nowMs: number,
 ): Promise<boolean> {
   if (dwell.durationMs < SCHEDULE_SUGGESTION_MIN_DWELL_MS) return false;
-  const weekday = kstWeekday(dwell.startMs);
-  const minuteOfDay = kstMinuteOfDay(dwell.startMs);
+  const timeZone = await readFamilyTimeZone(db, child.familyId);
+  const weekday = kstWeekday(dwell.startMs, timeZone);
+  const minuteOfDay = kstMinuteOfDay(dwell.startMs, timeZone);
   const center = { lat: dwell.lat, lng: dwell.lng };
   if (await hasMatchingSchedule(db, child, center, weekday, minuteOfDay)) return false;
   const weeks = await repeatedDwellWeeks(db, child, center, weekday, minuteOfDay, nowMs);
@@ -514,7 +517,7 @@ async function maybeDeliverScheduleSuggestion(
     childUserId: child.childUserId,
     childMemberId: child.memberId,
     title: `${weekdayLabel(weekday)} ${clockLabel(minuteOfDay)} 일정`,
-    dateKey: nextDateKeyForWeekday(weekday, nowMs),
+    dateKey: nextDateKeyForWeekday(weekday, nowMs, timeZone),
     time,
     durationMinutes: 60,
     weekday,
@@ -694,6 +697,7 @@ export async function run(env: Env): Promise<Record<string, unknown>> {
     const bucket = Math.floor(openStart / EPISODE_BUCKET_MS);
     const idempotencyKey = stayLeftEpisodeIdempotencyKey(child.childUserId, state.gridKey, bucket);
     const alert = buildUnregisteredStayLeftAlert(child.name, state.lastAreaLabel || "", {
+      timeZone: await readFamilyTimeZone(db, child.familyId),
       confirmedAtMs,
       detectedAtMs: nowMs,
     });

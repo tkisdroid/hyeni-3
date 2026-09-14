@@ -4,6 +4,7 @@
 //   GET /api/location/history    ← fetchLocationHistoryForDate (location_history)
 //
 // 날짜 경계(start/end)는 클라가 로컬 타임존으로 계산해 ISO로 전달한다(타임존 일치 보장).
+import { dayWindowAt, readFamilyTimeZone } from "../lib/timeZone.ts";
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import type { LocationAccessMode } from "../db/authz";
@@ -37,7 +38,7 @@ const LOCATION_INCIDENT_ALERT_TYPES = [
 const STANDARD_LOCATION_INTERVAL_MS = 10 * 60_000;
 const MANUAL_LOCATION_RESULT_WINDOW_MS = 5 * 60_000;
 const PREMIUM_LOCATION_HISTORY_MS = 30 * 24 * 60 * 60_000;
-const KST_OFFSET_MS = 9 * 60 * 60_000;
+
 const HISTORY_DAY_START_HOUR = 8;
 const LOCATION_AUDIT_PAGE_SIZE = 1_000;
 
@@ -80,16 +81,9 @@ export interface LocationHistoryReadWindow {
 }
 
 // 앱의 "오늘 경로" 정본과 동일하게 Asia/Seoul 오전 8시부터 다음 날 오전 8시까지다.
-export function standardLocationHistoryWindow(nowMs = Date.now()): LocationHistoryReadWindow {
-  const kst = new Date(nowMs + KST_OFFSET_MS);
-  let startMs = Date.UTC(
-    kst.getUTCFullYear(),
-    kst.getUTCMonth(),
-    kst.getUTCDate(),
-    HISTORY_DAY_START_HOUR,
-  ) - KST_OFFSET_MS;
-  if (nowMs < startMs) startMs -= 24 * 60 * 60_000;
-  return { startMs, endMs: startMs + 24 * 60 * 60_000 };
+export function standardLocationHistoryWindow(nowMs = Date.now(), timeZone = "Asia/Seoul"): LocationHistoryReadWindow {
+  const { startMs, endMs } = dayWindowAt(nowMs, timeZone, HISTORY_DAY_START_HOUR * 60);
+  return { startMs, endMs };
 }
 
 export function resolveLocationHistoryReadWindow(
@@ -97,6 +91,7 @@ export function resolveLocationHistoryReadWindow(
   start: string,
   end: string,
   nowMs = Date.now(),
+  timeZone = "Asia/Seoul",
 ): LocationHistoryReadWindow | null {
   const requestedStartMs = Date.parse(start);
   const requestedEndMs = Date.parse(end);
@@ -109,7 +104,7 @@ export function resolveLocationHistoryReadWindow(
   }
 
   if (mode === "standard") {
-    const allowed = standardLocationHistoryWindow(nowMs);
+    const allowed = standardLocationHistoryWindow(nowMs, timeZone);
     if (requestedStartMs < allowed.startMs || requestedEndMs > allowed.endMs) return null;
     const endMs = Math.min(requestedEndMs, nowMs);
     return requestedStartMs < endMs ? { startMs: requestedStartMs, endMs } : null;
@@ -510,7 +505,10 @@ location.get("/history", requireAuth, async (c) => {
     return c.json({ error: "location_entitlement_unavailable" }, 503);
   }
   if (!start || !end) return c.json([]);
-  const readWindow = resolveLocationHistoryReadWindow(mode, start, end);
+  let timeZone: string;
+  try { timeZone = await readFamilyTimeZone(c.env.DB, familyId); }
+  catch { return c.json({ error: "family_time_zone_unavailable" }, 503); }
+  const readWindow = resolveLocationHistoryReadWindow(mode, start, end, Date.now(), timeZone);
   if (!readWindow) return c.json([]);
 
   let sql = `SELECT user_id, lat, lng, recorded_at, is_estimated, accuracy_m

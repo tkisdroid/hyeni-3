@@ -26,7 +26,8 @@ class D1StatementAdapter {
 function createRecipientDb() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(`
-    CREATE TABLE families(id TEXT PRIMARY KEY, parent_id TEXT);
+    CREATE TABLE families(
+      time_zone TEXT NOT NULL DEFAULT 'Asia/Seoul',id TEXT PRIMARY KEY, parent_id TEXT);
     CREATE TABLE family_members(
       id TEXT PRIMARY KEY,
       family_id TEXT NOT NULL,
@@ -35,6 +36,8 @@ function createRecipientDb() {
       is_active INTEGER NOT NULL DEFAULT 1
     );
     CREATE TABLE notification_settings(
+      family_id TEXT,
+      time_zone TEXT DEFAULT 'Asia/Seoul',
       user_id TEXT PRIMARY KEY,
       registered_place_enabled INTEGER DEFAULT 1,
       location_enabled INTEGER DEFAULT 1,
@@ -99,7 +102,7 @@ test("일반 장소 알림은 공동부모별 quiet 설정을 적용해 허용·
     "부모 알림 수신자 분할 helper가 필요합니다",
   );
   const { sqlite, db } = createRecipientDb();
-  sqlite.prepare("INSERT INTO families VALUES (?,?)").run("family-1", "parent-a");
+  sqlite.prepare("INSERT INTO families(id,parent_id) VALUES (?,?)").run("family-1", "parent-a");
   sqlite.prepare("INSERT INTO family_members VALUES (?,?,?,?,?)")
     .run("parent-a-member", "family-1", "parent-a", "parent", 1);
   sqlite.prepare("INSERT INTO family_members VALUES (?,?,?,?,?)")
@@ -134,7 +137,7 @@ test("일반 장소 알림은 공동부모별 quiet 설정을 적용해 허용·
 test("모든 부모가 quiet여도 빈 허용 집합과 전체 억제 집합을 성공 결과로 반환한다", async () => {
   assert.equal(typeof parentAlertRecipients.loadParentAlertRecipients, "function");
   const { sqlite, db } = createRecipientDb();
-  sqlite.prepare("INSERT INTO families VALUES (?,?)").run("family-1", "parent-a");
+  sqlite.prepare("INSERT INTO families(id,parent_id) VALUES (?,?)").run("family-1", "parent-a");
   sqlite.prepare("INSERT INTO family_members VALUES (?,?,?,?,?)")
     .run("parent-a-member", "family-1", "parent-a", "parent", 1);
   sqlite.prepare("INSERT INTO family_members VALUES (?,?,?,?,?)")
@@ -161,7 +164,7 @@ test("모든 부모가 quiet여도 빈 허용 집합과 전체 억제 집합을 
 test("quiet 예외 안전 알림은 quiet 설정을 추가 조회하지 않고 모든 부모를 허용한다", async () => {
   assert.equal(typeof parentAlertRecipients.loadParentAlertRecipients, "function");
   const { sqlite, db } = createRecipientDb();
-  sqlite.prepare("INSERT INTO families VALUES (?,?)").run("family-1", "parent-a");
+  sqlite.prepare("INSERT INTO families(id,parent_id) VALUES (?,?)").run("family-1", "parent-a");
   sqlite.prepare("INSERT INTO family_members VALUES (?,?,?,?,?)")
     .run("parent-b-member", "family-1", "parent-b", "parent", 1);
   for (const userId of ["parent-a", "parent-b"]) {

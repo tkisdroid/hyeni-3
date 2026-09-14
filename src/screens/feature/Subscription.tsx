@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -81,7 +82,6 @@ import {
   formatDateTime,
   formatProviderPrice,
   formatRelativeTime,
-  LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
 import "./Subscription.css";
 
@@ -160,10 +160,10 @@ const GOOGLE_PLAY_FUNNEL_PROVIDER = "google_play" as const;
 const TOSS_FUNNEL_PROVIDER = "toss_payments" as const;
 
 /** 결제 주기 종료일 → "2026년 7월 4일" 형식. */
-function formatPeriodEnd(d: Date, locale: SupportedLocale): string {
+function formatPeriodEnd(d: Date, locale: SupportedLocale, familyTimeZone: string): string {
   return formatDateTime(d, {
     locale,
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeZone: familyTimeZone,
     dateStyle: BILLING_DATE_STYLE,
   });
 }
@@ -194,6 +194,7 @@ function shouldRetainWebBillingPending(error: unknown): boolean {
 
 /** 구독 · 페이월: 프리미엄 혜택 · 플랜 선택 · 결제 CTA. 실 티어로 활성 상태 표시. */
 export function Subscription() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -448,8 +449,7 @@ export function Subscription() {
       authKey: "",
       storage,
     });
-  }, [
-    billingRedirect.kind,
+  }, [billingRedirect.kind,
     familyId,
     finishWebBilling,
     isWebBillingChannel,
@@ -680,7 +680,7 @@ export function Subscription() {
     if (view.periodEnd) {
       return intl.formatMessage(
         { id: "billing.subscription.activeUntil" },
-        { date: formatPeriodEnd(view.periodEnd, locale) },
+        { date: formatPeriodEnd(view.periodEnd, locale, familyTimeZone) },
       );
     }
     return intl.formatMessage({ id: "billing.subscription.activeDefault" });
@@ -1027,7 +1027,7 @@ export function Subscription() {
               {view.periodEnd
                 ? intl.formatMessage(
                     { id: "billing.subscription.cancel.until" },
-                    { date: formatPeriodEnd(view.periodEnd, locale) },
+                    { date: formatPeriodEnd(view.periodEnd, locale, familyTimeZone) },
                   )
                 : intl.formatMessage({ id: "billing.subscription.cancel.currentPeriod" })}
             </p>
@@ -1071,7 +1071,7 @@ export function Subscription() {
                       { id: "billing.subscription.cancelledUntil" },
                       {
                         date: view.periodEnd
-                          ? formatPeriodEnd(view.periodEnd, locale)
+                          ? formatPeriodEnd(view.periodEnd, locale, familyTimeZone)
                           : intl.formatMessage({ id: "billing.subscription.currentPeriod" }),
                       },
                     )

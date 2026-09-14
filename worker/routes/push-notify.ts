@@ -19,6 +19,7 @@
 //  · jsonb(location/notif_override/data/subscription/metadata/delivery_status) ↔ parseJson/JSON.stringify.
 //  · boolean(is_family_event/parent_enabled/child_enabled/remote_listen_enabled) 0/1 ↔ toBool.
 //  · uuid[]/int[](minutes_before/read_by) ↔ pgArray. write timestamp pgNow(), 범위비교 substr(col,1,19).
+import { appDateKeyAt, addCalendarDays, wallTimeToEpoch, readFamilyTimeZone, normalizeTimeZone } from "../lib/timeZone.ts";
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import type { PushEnv } from "../lib/pushEnv";
@@ -1617,6 +1618,9 @@ async function handleNotificationQuietHoursUpdatedCommand(
   const tokens = [...new Set(
     (results ?? []).map((row) => String(row.fcm_token ?? "").trim()).filter(Boolean),
   )];
+  const storedZone = await db.prepare("SELECT time_zone FROM notification_settings WHERE user_id=? LIMIT 1")
+    .bind(targetUserId).first<{ time_zone: string | null }>();
+  const notificationTimeZone = normalizeTimeZone(storedZone?.time_zone) ?? await readFamilyTimeZone(db, familyId);
   const payload = {
     action: "notification_quiet_hours_updated",
     type: "notification_quiet_hours_updated",
@@ -1625,7 +1629,7 @@ async function handleNotificationQuietHoursUpdatedCommand(
     enabled: enabled ? "true" : "false",
     startMinute: String(startMinute),
     endMinute: String(endMinute),
-    timeZoneId: "Asia/Seoul",
+    timeZoneId: notificationTimeZone,
     updatedAt,
   };
 
@@ -2909,6 +2913,7 @@ export async function sendChildSafetyNotification(
 
 // ── cron notification (60/30/15/10/5/0분 일정 리마인더 + 미도착 긴급) ──────────────────
 interface CronEvent {
+  time_zone: string;
   id: string;
   family_id: string;
   title: string;
@@ -2925,7 +2930,7 @@ interface CronEvent {
 }
 
 function reminderPendingExpiresAt(
-  event: Pick<CronEvent, "date_key" | "time">,
+  event: Pick<CronEvent, "date_key" | "time" | "time_zone">,
   minsBefore: number,
 ): string {
   const [year, zeroBasedMonth, day] = event.date_key.split("-").map(Number);
@@ -2936,7 +2941,7 @@ function reminderPendingExpiresAt(
   // date_key 월은 앱 계약상 0-indexed다. 각 리마인더는 목표시각 뒤 cron 지연
   // 복구창(2분)+여유(1분)까지만 pending으로 남겨, 오프라인 복귀 때 60·30·15분
   // 알림이 한꺼번에 재생되지 않게 한다.
-  const startAtMs = Date.UTC(year, zeroBasedMonth, day, hour - 9, minute);
+  const startAtMs = wallTimeToEpoch(event.date_key, hour * 60 + minute, event.time_zone);
   return pgFromMs(startAtMs - minsBefore * 60_000 + 3 * 60_000);
 }
 
@@ -2945,12 +2950,13 @@ async function loadCronEvents(db: D1Database, dateSpecs: Array<{ key: string; of
   for (const spec of dateSpecs) {
     const { results } = await db
       .prepare(
-        "SELECT id, family_id, title, time, emoji, category, location, date_key, is_family_event, notif_override, updated_at FROM events WHERE date_key = ?",
+        "SELECT e.*, f.time_zone FROM events e JOIN families f ON f.id=e.family_id WHERE e.date_key = ?",
       )
       .bind(spec.key)
       .all<Record<string, any>>();
     for (const r of results ?? []) {
       all.push({
+        time_zone: r.time_zone,
         id: String(r.id),
         family_id: String(r.family_id),
         title: r.title,
@@ -3056,21 +3062,10 @@ async function acquirePushDispatchMutationLeases(
 
 export async function handleCronNotification(env: PushEnv, db: D1Database): Promise<Response> {
   const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const year = kst.getUTCFullYear();
-  const month = kst.getUTCMonth();
-  const day = kst.getUTCDate();
-  const dateKey = `${year}-${month}-${day}`;
-  const nowMinutes = kst.getUTCHours() * 60 + kst.getUTCMinutes();
-
-  // 자정 넘김 lookahead: 최대 리드타임(60분) 안에 있는 내일 새벽 이벤트를 오늘 밤에 미리 스캔.
-  // (예: 내일 00:30 이벤트의 1시간 전 알림은 오늘 23:30 에 발송돼야 함)
-  const dateSpecs: Array<{ key: string; offset: number }> = [{ key: dateKey, offset: 0 }];
-  if (nowMinutes >= 1440 - 60) {
-    const tomorrowKst = new Date(kst.getTime() + 24 * 60 * 60 * 1000);
-    const tomorrowKey = `${tomorrowKst.getUTCFullYear()}-${tomorrowKst.getUTCMonth()}-${tomorrowKst.getUTCDate()}`;
-    dateSpecs.push({ key: tomorrowKey, offset: 1440 });
-  }
+  const dateKey = appDateKeyAt(now.getTime(), "UTC");
+  const nowMinutes = Math.floor(now.getTime() / 60_000);
+  // UTC-12~UTC+14와 자정 전 리마인더를 모두 포함한다. due 판정은 절대 시각이다.
+  const dateSpecs = [-1, 0, 1].map(offset => ({ key: addCalendarDays(dateKey, offset), offset: 0 }));
 
   let events: CronEvent[];
   try {
@@ -3292,7 +3287,8 @@ export async function handleCronNotification(env: PushEnv, db: D1Database): Prom
       if (typeof event.time !== "string") continue;
       const [h, m] = event.time.split(":").map(Number);
       if (!Number.isFinite(h) || !Number.isFinite(m)) continue;
-      const eventMinutes = h * 60 + m;
+      if (h < 0 || h > 23 || m < 0 || m > 59 || !event.time_zone) continue;
+      const eventMinutes = Math.floor(wallTimeToEpoch(event.date_key, h * 60 + m, event.time_zone) / 60_000);
 
     // ── 활성 자녀 소유권 게이트(원칙: parent UI filterEventsForChild 와 동일) ──
     // 활성 자녀 목록(is_active=1 게이트, loadChildMembers). 소유권 판정에 재사용한다.
@@ -3756,7 +3752,7 @@ export async function handleCronNotification(env: PushEnv, db: D1Database): Prom
     notArrivedSent: totalNotArrivedSent,
     checked: events.length,
     dateKey,
-    time: `${String(kst.getUTCHours()).padStart(2, "0")}:${String(kst.getUTCMinutes()).padStart(2, "0")}`,
+    time: now.toISOString(),
   });
 }
 

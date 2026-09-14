@@ -194,6 +194,7 @@ function parseNotificationQuietHours(value: unknown): NotificationQuietHours {
     throw new Error("알림 조용한 시간 응답이 올바르지 않아요");
   }
   return {
+    ...(typeof value.time_zone === "string" ? { timeZone: value.time_zone } : {}),
     enabled: value.enabled,
     startMinute: value.start_minute,
     endMinute: value.end_minute,
@@ -395,6 +396,7 @@ export async function saveNotificationQuietHours(
     enabled: quietHours.enabled,
     start_minute: quietHours.startMinute,
     end_minute: quietHours.endMinute,
+    ...(quietHours.timeZone ? { time_zone: quietHours.timeZone } : {}),
   });
   const saved = parseFamilyNotificationQuietHoursRecipient(value);
   const expectedRole = targetUserId === expectedParentUserId ? "parent" : "child";

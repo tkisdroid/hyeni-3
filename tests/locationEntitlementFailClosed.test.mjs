@@ -72,10 +72,10 @@ test("위치 조회 범위가 닫히면 캐시된 경로로 일정 방문 여부
   assert.match(hook, /locationHistoryAllowed && !!range && hasTarget && dayStarted/);
   assert.match(hook, /locationHistoryAllowed \? history \?\? \[\] : \[\]/);
   assert.match(home, /const canVerifyVisits = !locationScopeUnavailable && locationMode === "realtime"/);
-  assert.match(home, /useVisitVerify\(\s*todayKey,\s*LEGACY_FAMILY_TIME_ZONE,\s*events,\s*activeChild\?\.user_id \?\? null,\s*canVerifyVisits/s);
+  assert.match(home, /useVisitVerify\(\s*todayKey,\s*familyTimeZone,\s*events,\s*activeChild\?\.user_id \?\? null,\s*canVerifyVisits/s);
   assert.match(calendar, /const entitlement = useEntitlement\(\)/);
   assert.match(calendar, /const canVerifyVisits = !entitlement\.isError && locationModeFor\(entitlement\.tier\) === "realtime"/);
-  assert.match(calendar, /useVisitVerify\(\s*selectedKey,\s*LEGACY_FAMILY_TIME_ZONE,\s*events,\s*childUserByMemberId,\s*canVerifyVisits/s);
+  assert.match(calendar, /useVisitVerify\(\s*selectedKey,\s*familyTimeZone,\s*events,\s*childUserByMemberId,\s*canVerifyVisits/s);
 });
 
 test("엔타이틀먼트 503은 영구 확인 중이 아니라 실패와 다시 시도로 일관되게 안내한다", () => {

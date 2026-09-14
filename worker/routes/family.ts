@@ -41,6 +41,7 @@ import {
   confirmServiceCountry,
   resolveInitialServiceCountry,
 } from "../lib/studyMarket";
+import { normalizeTimeZone } from "../lib/timeZone.ts";
 import { normalizeFamilyCountry, readFamilyRegion } from "../lib/region.ts";
 import {
   ReferralAttributionError,
@@ -488,6 +489,7 @@ family.post("/setup", requireAuth, async (c) => {
   const initialServiceCountry = countryDecision.initial;
   const hasRequestedCountryCode = Object.prototype.hasOwnProperty.call(body, "countryCode");
   const requestedCountryCode = normalizeFamilyCountry(body.countryCode);
+  const requestedTimeZone = normalizeTimeZone(body.timeZone);
   const referralLikeKeys = Object.keys(body).filter((key) => key.toLowerCase().includes("referral"));
   if (referralLikeKeys.some((key) => key !== "referralCode")) {
     return c.json({ error: "referral_code_invalid" }, 400);
@@ -594,6 +596,11 @@ family.post("/setup", requireAuth, async (c) => {
     // countryCode를 모르는 배포 전 앱은 한국 전용 제품이었다. 신규 앱의 사용자 확정값,
     // 기존 serviceCountry 확정값, legacy KR 순서로만 보완하며 IP/locale로 추정하지 않는다.
     const initialCountryCode = requestedCountryCode ?? initialServiceCountry?.country ?? "KR";
+    // 구버전 한국 전용 가입만 기본값을 보존한다. 해외 가입은 사용자가 시간대를 확인해야 한다.
+    if ((body.timeZone !== undefined || initialCountryCode !== "KR") && !requestedTimeZone) {
+      return c.json({ error: "invalid_family_time_zone" }, 400);
+    }
+    const initialTimeZone = requestedTimeZone ?? "Asia/Seoul";
     familyId = crypto.randomUUID();
     pairCode = genPairCode();
     const cap = await childCapForFamily(c.env.DB, familyId);
@@ -626,8 +633,8 @@ family.post("/setup", requireAuth, async (c) => {
     setupStatements.push(c.env.DB.prepare(
       `INSERT INTO families
          (id, parent_id, pair_code, planned_child_count, parent_name, name, created_at, referred_by_family_id,
-          service_country, service_country_source, service_country_confirmed_at, study_market, country_code)
-       SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?
+          service_country, service_country_source, service_country_confirmed_at, study_market, country_code, time_zone)
+       SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?
         WHERE EXISTS(SELECT 1 FROM users WHERE id=? AND is_anonymous=0)
           AND NOT EXISTS(SELECT 1 FROM families WHERE parent_id=?)
           AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
@@ -646,6 +653,7 @@ family.post("/setup", requireAuth, async (c) => {
         initialServiceCountry?.confirmedAt ?? null,
         initialServiceCountry?.studyMarket ?? null,
         initialCountryCode,
+        initialTimeZone,
         userId,
         userId,
         userId,
@@ -854,7 +862,7 @@ family.put("/service-country", requireAuth, async (c) => {
 // 지도·위치 공급자 선택용 가족 국가. 접속 IP/locale이 아니라 주 보호자가 확정한 값만 저장한다.
 family.patch("/region", requireAuth, async (c) => {
   const user = c.get("user");
-  let body: { familyId?: unknown; countryCode?: unknown };
+  let body: { familyId?: unknown; countryCode?: unknown; timeZone?: unknown };
   try {
     body = await c.req.json();
   } catch {
@@ -872,12 +880,15 @@ family.patch("/region", requireAuth, async (c) => {
   }
   const countryCode = normalizeFamilyCountry(body.countryCode);
   if (!countryCode) return c.json({ error: "invalid_family_country" }, 400);
+  const timeZone = normalizeTimeZone(body.timeZone);
+  if (!timeZone) return c.json({ error: "invalid_family_time_zone" }, 400);
   const result = await c.env.DB.prepare(
-    "UPDATE families SET country_code=? WHERE id=? AND parent_id=?",
-  ).bind(countryCode, familyId, user.sub).run();
+    "UPDATE families SET country_code=?,time_zone=? WHERE id=? AND parent_id=?",
+  ).bind(countryCode, timeZone, familyId, user.sub).run();
   if (Number(result.meta?.changes ?? 0) !== 1) {
     return c.json({ error: "primary_parent_required" }, 403);
   }
+  await notifyPg(c.env, familyId, "families", "UPDATE", { id: familyId, country_code: countryCode, time_zone: timeZone }, null);
   return c.json(await readFamilyRegion(c.env.DB, familyId));
 });
 

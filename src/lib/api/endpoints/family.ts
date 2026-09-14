@@ -120,6 +120,7 @@ export interface FamilyInfo {
   serviceCountryRowVersion: number | null;
   /** 지도·위치 공급자 선택에 사용하는 서버 정본 가족 국가. */
   countryCode: string;
+  timeZone: string;
   mapPolicy: MapPolicy;
 }
 
@@ -137,6 +138,7 @@ export interface FamilyMineResponse {
   serviceCountry?: string | null;
   serviceCountryRowVersion?: number | null;
   countryCode?: string;
+  timeZone?: string;
   mapPolicy?: MapPolicy;
 }
 
@@ -196,18 +198,21 @@ export function mapFamilyMineResponse(data: FamilyMineResponse | null): FamilyIn
       ? (data.serviceCountryRowVersion as number)
       : null,
     countryCode: typeof data.countryCode === "string" ? data.countryCode : "ZZ",
+    timeZone: data.timeZone ?? "Asia/Seoul",
     mapPolicy: data.mapPolicy ?? { provider: "unsupported", reason: "country_unresolved" },
   };
 }
 
 export interface FamilyRegion {
   countryCode: string;
+  timeZone: string;
 }
 
 export interface SetupFamilyInput {
   parentName: string;
   /** 신규 가족 생성에서는 필수. 기존 가족의 아이 추가 호출은 서버가 저장값을 유지한다. */
   countryCode?: string;
+  timeZone?: string;
   familyName?: string;
   plannedChildCount?: number;
   children?: Array<{ name: string; birthdate?: string; color_hex?: string; photo_url?: string }>;
@@ -262,6 +267,7 @@ export function buildSetupFamilyPayload(input: SetupFamilyInput): Record<string,
     parentPhone,
     parentGender: input.parentGender ?? "",
     referralCode: input.referralCode?.trim() || undefined,
+    ...(input.timeZone === undefined ? {} : { timeZone: input.timeZone }),
     ...(countryCode === undefined ? {} : { countryCode }),
     ...(serviceCountry === undefined ? {} : {
       serviceCountry,
@@ -280,7 +286,7 @@ export async function updateFamilyRegion(
 ): Promise<FamilyRegion & { mapPolicy: MapPolicy }> {
   const countryCode = input.countryCode.trim().toUpperCase();
   if (!/^[A-Z]{2}$/u.test(countryCode)) throw new ApiError("invalid_family_country", 400);
-  return apiPatch("/api/family/region", { countryCode });
+  return apiPatch("/api/family/region", { countryCode, timeZone: input.timeZone });
 }
 
 export interface ConfirmServiceCountryInput {

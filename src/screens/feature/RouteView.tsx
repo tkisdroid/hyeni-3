@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useIntl, type IntlShape } from "react-intl";
@@ -27,7 +28,7 @@ import {
   selectRouteDestinationForChild,
   type OwnedRouteDestination,
 } from "@/transform/routeDestinationScope";
-import { formatDurationUnit, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { formatDurationUnit } from "@/i18n/format";
 import { buildExternalMapUrl } from "@/transform/externalMapUrl";
 import { useLocale } from "@/i18n/useLocale";
 import "./RouteView.css";
@@ -75,6 +76,7 @@ function durationLabel(
 }
 
 export function RouteView() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const distanceLabel = useCallback(
@@ -180,8 +182,8 @@ export function RouteView() {
     [events, childMember?.id],
   );
   const nextEvent = useMemo(
-    () => pickRouteEvent(childEvents, requestedEventId, nowMs, LEGACY_FAMILY_TIME_ZONE),
-    [childEvents, nowMs, requestedEventId],
+    () => pickRouteEvent(childEvents, requestedEventId, nowMs, familyTimeZone),
+    [familyTimeZone, childEvents, nowMs, requestedEventId],
   );
   const [destinationState, setDestinationState] = useState<OwnedRouteDestination<DestPick> | null>(null);
   const destination = selectRouteDestinationForChild(destinationState, childMember?.id ?? null);

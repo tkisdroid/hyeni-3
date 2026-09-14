@@ -1,4 +1,7 @@
 {
+  "core.familyRegion.label": "Wilayah keluarga",
+  "core.recipientTimeZone.label": "Zon waktu penerima",
+  "core.familyTimeZone.label": "Zon waktu keluarga · jadual dan makluman lokasi",
   "core.action.back": "Kembali",
   "core.action.goHome": "Ke laman utama",
   "core.action.reload": "Muat semula",

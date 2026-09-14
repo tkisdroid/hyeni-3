@@ -1,4 +1,7 @@
 {
+  "core.familyRegion.label": "Family region",
+  "core.recipientTimeZone.label": "Recipient time zone",
+  "core.familyTimeZone.label": "Family time zone · schedules and location alerts",
   "core.action.back": "Back",
   "core.action.goHome": "Go home",
   "core.action.reload": "Reload",

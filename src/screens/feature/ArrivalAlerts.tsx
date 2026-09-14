@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useMemo } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft } from "lucide-react";
@@ -14,7 +15,7 @@ import {
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import { Loading } from "@/components/ui/Loading";
 import { useLocale } from "@/i18n/useLocale";
-import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+
 import { useIntl } from "react-intl";
 import "./ArrivalAlerts.css";
 
@@ -37,6 +38,7 @@ const TONE_BADGE_ID: Record<ArrivalAlertTone, string> = {
 };
 
 export function ArrivalAlerts() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -156,7 +158,7 @@ export function ArrivalAlerts() {
                         {intl.formatMessage({ id: TONE_BADGE_ID[tone] })}
                       </span>
                       <span className="aa-item__time">
-                        {relativeTime(a.created_at, now, locale, LEGACY_FAMILY_TIME_ZONE)}
+                        {relativeTime(a.created_at, now, locale, familyTimeZone)}
                       </span>
                       {!a.read && <span className="aa-item__dot" />}
                     </span>

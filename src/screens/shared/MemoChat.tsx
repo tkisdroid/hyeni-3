@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useIntl } from "react-intl";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
@@ -42,7 +43,7 @@ import {
 import type { MemoContentReportReason } from "@/lib/api/endpoints/contentSafety";
 import { Loading } from "@/components/ui/Loading";
 import { useLocale } from "@/i18n/useLocale";
-import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+
 import { latestDateKeyOrNull } from "@/transform/dateKey";
 import "@/styles/jua.css";
 import "./MemoChat.css";
@@ -236,6 +237,7 @@ function MemoImageBubble({
 
 
 export function MemoChat() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const goBack = useSafeBack();
@@ -276,7 +278,7 @@ export function MemoChat() {
 
   // 최근 7일 date_key 스레드 — 스코프 아이 한정. 오늘만 보이던 이전 방식은
   // 어제 대화가 사라져 보이는 실사용 혼란(주간 리포트 15건 vs 빈 대화 탭)을 만들었다.
-  const dateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
+  const dateKeys = useRecentDateKeys(7, familyTimeZone);
   const memoDateKey = latestDateKeyOrNull(dateKeys);
   const thread = useMemoThread(dateKeys, scopeChild?.id ?? null);
   const sendMemo = useSendMemo();
@@ -328,9 +330,9 @@ export function MemoChat() {
   const replies = useMemo(() => thread.data ?? [], [thread.data]);
   // 빈 content(빈 문자열/공백뿐)는 빈 흰 말풍선이 되므로 스레드에서 제외한다.
   const messages = useMemo(
-    () => mapRepliesToThread(replies, userId, locale, LEGACY_FAMILY_TIME_ZONE, intl)
+    () => mapRepliesToThread(replies, userId, locale, familyTimeZone, intl)
       .filter((m) => m.text.trim().length > 0),
-    [intl, locale, replies, userId],
+    [familyTimeZone, intl, locale, replies, userId],
   );
 
   // 내가 보낸 메시지 중 나 외 가족 구성원이 하나라도 읽은 것 → "읽음" 표기.
@@ -732,7 +734,7 @@ export function MemoChat() {
             <Fragment key={m.id}>
               {newDay && (
                 <div className="mc-daysep">
-                  <span>{formatMemoDayLabel(m.dayStamp, new Date(), locale, LEGACY_FAMILY_TIME_ZONE, intl)}</span>
+                  <span>{formatMemoDayLabel(m.dayStamp, new Date(), locale, familyTimeZone, intl)}</span>
                 </div>
               )}
               <div className={`mc-msg ${m.mine ? "mc-msg--mine" : "mc-msg--peer"}`}>

@@ -48,6 +48,8 @@ function readStored(familyId: string | null): string | null {
   }
 }
 
+import { FamilyTimeZoneContext } from "@/region/FamilyTimeZone";
+
 export function ActiveChildProvider({ children }: { children: ReactNode }) {
   const { familyId } = useAuth();
   const { data: family, isLoading: familyLoading, isError: familyError, refetch: refetchFamily } = useMyFamily();
@@ -100,7 +102,7 @@ export function ActiveChildProvider({ children }: { children: ReactNode }) {
     [activeChild, selectedActiveChild, childMembers, familyId, familyLoading, familyError, family?.mapPolicy, retryFamily],
   );
 
-  return <ActiveChildContext.Provider value={value}>{children}</ActiveChildContext.Provider>;
+  return <FamilyTimeZoneContext.Provider value={family?.familyId === familyId ? family.timeZone : "Asia/Seoul"}><ActiveChildContext.Provider value={value}>{children}</ActiveChildContext.Provider></FamilyTimeZoneContext.Provider>;
 }
 
 /** 활성 아이 컨텍스트. Provider 밖에서 호출하면 즉시 오류(배선 실수 조기 발견). */

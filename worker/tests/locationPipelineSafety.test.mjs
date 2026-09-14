@@ -170,7 +170,7 @@ test("현재 위치·오늘 경로 서버 계약은 단조 시각, rowid 자동�
   assert.doesNotMatch(rpc, /SELECT COALESCE\(MAX\(id\),0\) AS m FROM location_history/);
   assert.match(
     rpc,
-    /INSERT INTO location_history \(user_id, family_id, lat, lng, accuracy_m, recorded_at, is_estimated\)/,
+    /INSERT INTO location_history \(user_id, family_id, lat, lng, accuracy_m, recorded_at, is_estimated, ingest_date_key\)/,
   );
   assert.match(rpc, /const accuracyRaw = r\.accuracy_m \?\? r\.accuracy/);
   assert.match(rpc, /n\.accuracyM,/);

@@ -1,7 +1,8 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl, type IntlShape } from "react-intl";
 import { useLocale } from "@/i18n/useLocale";
-import { formatDateTime, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { formatDateTime } from "@/i18n/format";
 import { useNavigate, useSearchParams } from "react-router";
 import {
   AlertTriangle,
@@ -156,6 +157,7 @@ function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[], intl: IntlS
  * 계산은 `transform/locationHistoryScrub` 의 순수 함수가 담당한다(실측점만 · 8m 지터 압축).
  */
 export function ParentLocation() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -181,11 +183,11 @@ export function ParentLocation() {
   const premiumOpen = !locationScopePending && mode === "realtime";
 
   const now = useMemo(() => new Date(), [locations]);
-  const historyTodayKey = useMemo(() => getHistoryDayKey(now, LEGACY_FAMILY_TIME_ZONE), [now]);
+  const historyTodayKey = useMemo(() => getHistoryDayKey(now, familyTimeZone), [familyTimeZone, now]);
   const premiumHistoryDays = historyDaysFor(TIERS.PREMIUM);
   const premiumHistoryRange = useMemo(
-    () => getHistoryDayKeyRange(now, premiumHistoryDays, LEGACY_FAMILY_TIME_ZONE),
-    [now, premiumHistoryDays],
+    () => getHistoryDayKeyRange(now, premiumHistoryDays, familyTimeZone),
+    [familyTimeZone, now, premiumHistoryDays],
   );
   const requestedHistoryDayKey = dateInputValueToDateKey(searchParams.get("date") ?? "");
   const [rawHistoryDayKey, setRawHistoryDayKey] = useState(
@@ -193,11 +195,11 @@ export function ParentLocation() {
   );
   // Free/reviewed는 URL이나 이전 상태에 과거 날짜가 남아 있어도 서버 요청 전에 오늘로 고정한다.
   const historyDayKey = premiumOpen
-    ? clampHistoryDayKey(rawHistoryDayKey, now, premiumHistoryDays, LEGACY_FAMILY_TIME_ZONE)
+    ? clampHistoryDayKey(rawHistoryDayKey, now, premiumHistoryDays, familyTimeZone)
     : historyTodayKey;
   const historyWindow = useMemo(
-    () => getHistoryDayWindowForKey(historyDayKey, now, LEGACY_FAMILY_TIME_ZONE) ?? getHistoryDayWindow(now, LEGACY_FAMILY_TIME_ZONE),
-    [historyDayKey, now],
+    () => getHistoryDayWindowForKey(historyDayKey, now, familyTimeZone) ?? getHistoryDayWindow(now, familyTimeZone),
+    [familyTimeZone, historyDayKey, now],
   );
   const historyMinDateValue = dateKeyToDateInputValue(premiumHistoryRange.minDateKey);
   const historyMaxDateValue = dateKeyToDateInputValue(premiumHistoryRange.maxDateKey);
@@ -525,14 +527,14 @@ export function ParentLocation() {
             lng: historyChildPoint.lng,
             name: childName,
             avatar: childAvatar,
-            caption: followsLatest ? undefined : formatClockHM(scrubMs, locale, LEGACY_FAMILY_TIME_ZONE),
+            caption: followsLatest ? undefined : formatClockHM(scrubMs, locale, familyTimeZone),
           }
         : null,
-    [historyChildPoint, childName, childAvatar, followsLatest, scrubMs],
+    [familyTimeZone, historyChildPoint, childName, childAvatar, followsLatest, scrubMs],
   );
 
   const selectHistoryDay = (requestedDateKey: string): void => {
-    const nextDateKey = clampHistoryDayKey(requestedDateKey, now, premiumHistoryDays, LEGACY_FAMILY_TIME_ZONE);
+    const nextDateKey = clampHistoryDayKey(requestedDateKey, now, premiumHistoryDays, familyTimeZone);
     if (!premiumOpen) {
       if (requestedDateKey !== historyTodayKey) {
         setHistoryUpsellDayKey(nextDateKey);
@@ -575,7 +577,7 @@ export function ParentLocation() {
     stayCount: stayPoints.length,
   });
   const journeyRangeLabel = journeyRange
-    ? `${formatClockHM(journeyRange.startMs, locale, LEGACY_FAMILY_TIME_ZONE)}–${formatClockHM(journeyRange.endMs, locale, LEGACY_FAMILY_TIME_ZONE)}`
+    ? `${formatClockHM(journeyRange.startMs, locale, familyTimeZone)}–${formatClockHM(journeyRange.endMs, locale, familyTimeZone)}`
     : null;
   const journeyStayItems = useMemo<StayTimelineItem[]>(
     () =>
@@ -583,11 +585,11 @@ export function ParentLocation() {
         id: `${stay.arrivalMs}-${index}`,
         order: index + 1,
         placeLabel: stayLabels[index] ?? intl.formatMessage({ id: "parent.location.unverifiedPlace" }),
-        timeLabel: `${formatClockHM(stay.arrivalMs, locale, LEGACY_FAMILY_TIME_ZONE)}–${formatClockHM(stay.departureMs, locale, LEGACY_FAMILY_TIME_ZONE)}`,
+        timeLabel: `${formatClockHM(stay.arrivalMs, locale, familyTimeZone)}–${formatClockHM(stay.departureMs, locale, familyTimeZone)}`,
         dwellLabel: formatDwell(stay.dwellMs, locale),
         selected: index === activeStayIdx,
       })),
-    [activeStayIdx, stayLabels, visibleStayPoints],
+    [familyTimeZone, activeStayIdx, stayLabels, visibleStayPoints],
   );
   const mapZones: MapZone[] = (zones ?? []).map((z) => ({
     lat: z.lat,
@@ -648,8 +650,7 @@ export function ParentLocation() {
         setRefreshState("idle");
       }
     }
-  }, [
-    canShowLocation,
+  }, [canShowLocation,
     familyId,
     isFetching,
     isRefreshingLocation,
@@ -674,8 +675,7 @@ export function ParentLocation() {
     if (autoRefreshKeyRef.current === refreshTargetKey) return;
     autoRefreshKeyRef.current = refreshTargetKey;
     void refreshLocation(false);
-  }, [
-    activeView,
+  }, [activeView,
     canShowLocation,
     isFetched,
     isFetching,
@@ -874,7 +874,7 @@ export function ParentLocation() {
           expanded={historyPanelExpanded}
           recordedRangeLabel={journeyRangeLabel}
           stayCount={visibleStayPoints.length}
-          currentTimeLabel={formatClockHM(scrubMs, locale, LEGACY_FAMILY_TIME_ZONE)}
+          currentTimeLabel={formatClockHM(scrubMs, locale, familyTimeZone)}
           currentWhere={scrubWhere}
           sliderMin={journeyRange?.startMs ?? 0}
           sliderMax={journeyRange?.endMs ?? 0}

@@ -1,3 +1,4 @@
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useIntl, type IntlShape } from "react-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
@@ -54,7 +55,7 @@ import {
 import { resolveParentHomeSubscriptionCard } from "@/transform/parentHomeSubscriptionCard";
 import { resolveParentHomeDeviceFinder } from "@/transform/parentHomeShortcut";
 import { useLocale } from "@/i18n/useLocale";
-import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { formatCalendarDay } from "@/i18n/format";
 import {
   PARENT_HOME_SECTION_IDS,
   moveParentHomeSection,
@@ -309,6 +310,7 @@ const shortcutIconPaths: Readonly<Record<string, string>> = {
 };
 
 export function ParentHome() {
+  const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
@@ -321,8 +323,8 @@ export function ParentHome() {
     return () => window.clearInterval(id);
   }, []);
   const todayKey = useMemo(
-    () => dateToDateKeyInTimeZone(now, LEGACY_FAMILY_TIME_ZONE),
-    [now],
+    () => dateToDateKeyInTimeZone(now, familyTimeZone),
+    [familyTimeZone, now],
   );
 
   const [referralOpen, setReferralOpen] = useState(false);
@@ -803,7 +805,7 @@ export function ParentHome() {
   const canVerifyVisits = !locationScopeUnavailable && locationMode === "realtime";
   const visitMap = useVisitVerify(
     todayKey,
-    LEGACY_FAMILY_TIME_ZONE,
+    familyTimeZone,
     events,
     activeChild?.user_id ?? null,
     canVerifyVisits,
@@ -816,7 +818,7 @@ export function ParentHome() {
       events ?? [],
       now,
       locale,
-      LEGACY_FAMILY_TIME_ZONE,
+      familyTimeZone,
       visitMap,
       places,
       intl,
@@ -830,7 +832,7 @@ export function ParentHome() {
       ).map((e) => e.id),
     );
     return all.filter((v) => allowedIds.has(v.id));
-  }, [events, locale, now, todayKey, activeChild, visitMap, places, intl]);
+  }, [familyTimeZone, events, locale, now, todayKey, activeChild, visitMap, places, intl]);
 
   const childName = activeChild?.name || intl.formatMessage({ id: "parent.parentHome.copy004" }); // 히어로·상단 스티커 대상 = 활성 아이
 
@@ -845,7 +847,7 @@ export function ParentHome() {
       events ?? [],
       now,
       locale,
-      LEGACY_FAMILY_TIME_ZONE,
+      familyTimeZone,
       undefined,
       places,
       intl,
@@ -904,7 +906,7 @@ export function ParentHome() {
         next,
       };
     });
-  }, [
+  }, [familyTimeZone,
     family,
     events,
     locale,
@@ -939,8 +941,7 @@ export function ParentHome() {
           : "loading",
       intl,
     ),
-    [
-      activeChild,
+    [activeChild,
       childNotifSettingsQuery.data,
       childNotifSettingsQuery.isError,
       childNotifSettingsQuery.isSuccess,
@@ -952,7 +953,7 @@ export function ParentHome() {
 
   const todayLabel = formatCalendarDay(now, {
     locale,
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeZone: familyTimeZone,
     weekday: "long",
   });
 

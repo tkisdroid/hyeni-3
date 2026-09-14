@@ -340,7 +340,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 || startMinute == null
                 || endMinute == null
                 || startMinute.equals(endMinute)
-                || !NotificationQuietHoursStore.SEOUL_TIME_ZONE_ID.equals(timeZoneId)
+                || !NotificationQuietHoursStore.isValidTimeZone(timeZoneId)
                 || updatedAtMs <= 0L) {
             Log.w(TAG, "Quiet-hours control payload rejected");
             return;

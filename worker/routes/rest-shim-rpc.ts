@@ -11,6 +11,7 @@
 //   · 복합 unique 미이관 → select-then-write(fcm_tokens·child_locations·location_history·link_state).
 //   · jsonb(data/location) ↔ parseJson, boolean ↔ 0/1, timestamp 는 pgNow()/substr(,1,19).
 //   · SECURITY DEFINER 의 family_members 멤버십/role 게이트를 코드로 복제(D1 엔 RLS 없음).
+import { isoDateAt, normalizeTimeZone } from "../lib/timeZone.ts";
 import type { Context } from "hono";
 import type { Env, Vars } from "../types";
 import type { PushEnv } from "../lib/pushEnv";
@@ -70,7 +71,7 @@ const LOCATION_HISTORY_MAX_AGE_MS = 31 * 24 * 60 * 60_000;
 const LOCATION_HISTORY_DAILY_MAX_ROWS = 7_200;
 const LOCATION_HISTORY_MAX_DAILY_SCOPES = 4;
 const D1_MAX_BIND_PARAMS = 100;
-const LOCATION_HISTORY_INSERT_BINDS_PER_ROW = 7;
+const LOCATION_HISTORY_INSERT_BINDS_PER_ROW = 8;
 const LOCATION_HISTORY_INSERT_CHUNK_SIZE = Math.floor(
   D1_MAX_BIND_PARAMS / LOCATION_HISTORY_INSERT_BINDS_PER_ROW,
 );
@@ -83,10 +84,6 @@ function chunkValues<T>(values: T[], size: number): T[][] {
     chunks.push(values.slice(start, start + size));
   }
   return chunks;
-}
-
-function kstDateKey(atMs: number): string {
-  return new Date(atMs + 9 * 60 * 60_000).toISOString().slice(0, 10);
 }
 
 function voidOk(c: Ctx): Response {
@@ -329,7 +326,7 @@ export async function dispatchRpc(c: Ctx, fn: string, caller: ShimCaller): Promi
             accuracyM,
             recordedAt,
             recordedAtMs: fixTime.atMs,
-            dateKey: kstDateKey(fixTime.atMs),
+            dateKey: "",
             isEstimated,
             key,
           });
@@ -341,21 +338,28 @@ export async function dispatchRpc(c: Ctx, fn: string, caller: ShimCaller): Promi
         // 2) 멤버십 일괄 확인(고유 user_id IN) → 허용 (user|family) 쌍 Set.
         const userIds = [...new Set(norm.map((n) => n.userId))];
         const memberOk = new Set<string>();
+        const familyZones = new Map<string, string>();
         for (const userIdChunk of chunkValues(userIds, LOCATION_HISTORY_MEMBER_CHUNK_SIZE)) {
           const ph = userIdChunk.map(() => "?").join(",");
           const { results } = await db
             // 활성기기 격리: superseded(is_active=0) 자녀 기기의 오프라인 버퍼 flush 차단.
             // 위치 이력은 자녀만 기록하므로 role='child' 로 한정(부모/비활성 멤버 제외).
-            .prepare(`SELECT user_id, family_id FROM family_members WHERE user_id IN (${ph}) AND role = 'child' AND is_active = 1`)
+            .prepare(`SELECT fm.user_id, fm.family_id, f.time_zone FROM family_members fm JOIN families f ON f.id=fm.family_id WHERE fm.user_id IN (${ph}) AND fm.role = 'child' AND fm.is_active = 1`)
             .bind(...userIdChunk)
-            .all<{ user_id: string; family_id: string }>();
-          for (const m of results ?? []) memberOk.add(`${m.user_id}|${m.family_id}`);
+            .all<{ user_id: string; family_id: string; time_zone: string }>();
+          for (const m of results ?? []) {
+            memberOk.add(`${m.user_id}|${m.family_id}`);
+            const zone = normalizeTimeZone(m.time_zone);
+            if (!zone) return c.json({ error: "family_time_zone_unavailable" }, 503);
+            familyZones.set(m.family_id, zone);
+          }
         }
         if (!caller.serviceRole && norm.some((n) => !memberOk.has(`${n.userId}|${n.familyId}`))) {
           return c.json({ error: "forbidden" }, 403);
         }
         const authed = norm.filter((n) => memberOk.has(`${n.userId}|${n.familyId}`));
         if (!authed.length) return voidOk(c);
+        for (const point of authed) point.dateKey = isoDateAt(point.recordedAtMs, familyZones.get(point.familyId)!);
 
         // 31일보다 오래된 오프라인 fix는 어느 티어에서도 새로 보존할 실익이 없다.
         // 2xx로 폐기해야 Android가 낡은 버퍼에 막히지 않고 최신 fix를 계속 전송한다.
@@ -397,7 +401,7 @@ export async function dispatchRpc(c: Ctx, fn: string, caller: ShimCaller): Promi
         if (!fresh.length) return voidOk(c);
 
         // Android 15초 이동 주기의 이론상 하루 최대(5,760)보다 여유 있는 7,200행으로
-        // 고정한다. 기록일(KST)별 quota라 정상 오프라인 재전송은 현재 요청일에 몰리지 않는다.
+        // 고정한다. 가족 현지 기록일별 quota라 정상 오프라인 재전송은 현재 요청일에 몰리지 않는다.
         const dailyScopes = new Map<string, { userId: string; dateKey: string; count: number }>();
         for (const row of fresh) {
           const scopeKey = `${row.userId}|${row.dateKey}`;
@@ -438,14 +442,14 @@ export async function dispatchRpc(c: Ctx, fn: string, caller: ShimCaller): Promi
 
         // 5) INTEGER PRIMARY KEY id는 SQLite rowid 자동 할당. MAX+1을 앱에서 계산하면
         // 동시 RPC가 같은 MAX를 읽어 PK 충돌(500)하므로 id를 INSERT에서 제외한다.
-        // 행당 7 bind를 가진 SELECT UNION ALL로 14행(98 bind)씩 묶는다.
-        // Android 정본 400행은 membership 1 + dup 1 + quota read 1 + insert 29로
-        // RPC 내부 최대 32 query다. 실제 신규 INSERT마다 DB trigger가 같은 transaction에서
+        // 행당 8 bind를 가진 SELECT UNION ALL로 12행(96 bind)씩 묶는다.
+        // Android 정본 400행은 membership 1 + dup 1 + quota read 1 + insert 34로
+        // RPC 내부 최대 37 query다. 실제 신규 INSERT마다 DB trigger가 같은 transaction에서
         // quota를 1 증가시키므로 stale prefetch 뒤 중복된 행은 quota를 소모하지 않는다.
         const insertStatements = chunkValues(fresh, LOCATION_HISTORY_INSERT_CHUNK_SIZE).map((rows) => {
           const incomingSelect = rows.map((_, index) => index === 0
-            ? "SELECT ? AS user_id, ? AS family_id, ? AS lat, ? AS lng, ? AS accuracy_m, ? AS recorded_at, ? AS is_estimated"
-            : "UNION ALL SELECT ?,?,?,?,?,?,?"
+            ? "SELECT ? AS user_id, ? AS family_id, ? AS lat, ? AS lng, ? AS accuracy_m, ? AS recorded_at, ? AS is_estimated, ? AS ingest_date_key"
+            : "UNION ALL SELECT ?,?,?,?,?,?,?,?"
           ).join("\n");
           const bindings = rows.flatMap((n) => [
             n.userId,
@@ -455,11 +459,12 @@ export async function dispatchRpc(c: Ctx, fn: string, caller: ShimCaller): Promi
             n.accuracyM,
             n.recordedAt,
             n.isEstimated,
+            n.dateKey,
           ]);
           return db.prepare(
-            `INSERT INTO location_history (user_id, family_id, lat, lng, accuracy_m, recorded_at, is_estimated)
+            `INSERT INTO location_history (user_id, family_id, lat, lng, accuracy_m, recorded_at, is_estimated, ingest_date_key)
              SELECT incoming.user_id, incoming.family_id, incoming.lat, incoming.lng,
-                    incoming.accuracy_m, incoming.recorded_at, incoming.is_estimated
+                    incoming.accuracy_m, incoming.recorded_at, incoming.is_estimated, incoming.ingest_date_key
                FROM (
                  ${incomingSelect}
                ) AS incoming

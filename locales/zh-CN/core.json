@@ -1,4 +1,7 @@
 {
+  "core.familyRegion.label": "家庭地区",
+  "core.recipientTimeZone.label": "接收通知的账号时区",
+  "core.familyTimeZone.label": "家庭时区 · 日程和位置通知",
   "core.action.back": "返回",
   "core.action.goHome": "返回首页",
   "core.action.reload": "重新加载",

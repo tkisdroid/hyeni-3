@@ -34,6 +34,7 @@ function createDb() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(`
     CREATE TABLE families(
+      time_zone TEXT NOT NULL DEFAULT 'Asia/Seoul',
       id TEXT PRIMARY KEY,
       parent_id TEXT NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -48,6 +49,7 @@ function createDb() {
       last_selected_at TEXT
     );
     CREATE TABLE notification_settings(
+      time_zone TEXT DEFAULT 'Asia/Seoul',
       user_id TEXT PRIMARY KEY,
       family_id TEXT,
       child_enabled INTEGER NOT NULL DEFAULT 1,
@@ -158,6 +160,7 @@ test("가족 quiet 조회는 호출 부모 본인과 같은 가족 활성 아이
         end_minute: 420,
         updated_at: null,
         configured: false,
+      time_zone: 'Asia/Seoul',
       },
       {
         target_user_id: "child-active",
@@ -167,6 +170,7 @@ test("가족 quiet 조회는 호출 부모 본인과 같은 가족 활성 아이
         end_minute: 420,
         updated_at: "2026-07-19T12:00:00.000Z",
         configured: true,
+      time_zone: 'Asia/Seoul',
       },
     ],
   );

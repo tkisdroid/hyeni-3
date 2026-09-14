@@ -1,4 +1,7 @@
 {
+  "core.familyRegion.label": "家族の地域",
+  "core.recipientTimeZone.label": "通知を受けるアカウントのタイムゾーン",
+  "core.familyTimeZone.label": "家族のタイムゾーン · 予定と位置通知",
   "core.action.back": "戻る",
   "core.action.goHome": "ホームへ",
   "core.action.reload": "もう一度読み込む",
