@@ -72,7 +72,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "bcryptjs": "^3.0.3",
-    "hono": "4.12.34",
+    "hono": "4.13.7",
     "jose": "^6.2.3",
     "sharp": "^0.35.3",
     "typescript": "^5.7.3",

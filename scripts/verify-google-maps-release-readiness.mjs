@@ -41,6 +41,7 @@ check("Android 가족 시간대·수신자 시간대 분리", /refreshFamilyTime
 
 const failedChecks = checks.filter((item) => !item.passed);
 const externalBlockers = [
+  "BLOCKED_BY_RELEASE_CI_EVIDENCE",
   "BLOCKED_BY_NOTIFICATION_CONTENT_LOCALIZATION",
   "BLOCKED_BY_ANDROID_TIMEZONE_RELEASE",
   "BLOCKED_BY_GOOGLE_ROUTES_OAUTH_SCOPE_PROOF",

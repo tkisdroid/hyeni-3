@@ -51,7 +51,21 @@
   새 quota 컬럼/trigger는 존재하나 배포 직후 10분 이내 새 계약으로 들어온 위치 행은 0개였다.
   따라서 실사용 위치 업로드 성공이나 해외 위치 수집을 입증한 것으로 기록하지 않는다.
 - ADB 연결 기기는 0대다. 새 AAB 서명·설치·Play 업로드 및 실제 알림 수신 ACK는 수행하지 않았다.
-- 최종 자동 준비 검사는 14/14 통과, 전체 출시 명령은 위 네 가지 남은 gate 때문에 의도대로 HOLD/exit 1이다.
+- 최종 자동 준비 검사는 14/14 통과, 전체 출시 명령은 위 기능 gate 및 CI gate 때문에 의도대로 HOLD/exit 1이다.
+
+## 2026-09-14 최종 보완 검증
+
+- GitHub Actions는 `9a87f18`의 앱 run `34805505934` 및 Worker run `34805506032` 모두
+  작업 시작 전 Actions budget 제한으로 차단됐다. 테스트 실패가 아니며 CI 통과 증거로 대체할 수 없다.
+  예산/결제 설정은 변경하지 않았다.
+- Android `lintDebug` 통과. 최종 의존성 감사에서 발견한 호환 가능한 패치를 lockfile에 반영하고,
+  Hono는 보안 패치 `4.13.7`로 정확히 고정했다. `npm audit`는 취약점 0건이다.
+  Google SDK 두 개의 고정 버전과 Capacitor 시스템바 패치는 유지한다.
+- 의존성 패치 후 앱 2,149/2,149 및 Worker 1,510/1,510 재검증, 앱/Worker 타입 검사, 10개 locale 검사,
+  운영 브라우저 키 보존 빌드가 통과했다. 웹 entry와 SHA-256은 위 검증본과 동일하다.
+- 패치 근거: [Hono 4.13.7](https://github.com/honojs/hono/releases/tag/v4.13.7),
+  [sharp 보안 공지](https://github.com/advisories/GHSA-rgj7-g3m4-5g8c).
+- 최종 출시 gate에 CI 실행 증거를 포함한다. 로컬 회귀 통과·웹/Worker 운영 반영과 Play 공개 출시는 분리한다.
 
 ## 2026-09-01 운영 반영 증거
 
