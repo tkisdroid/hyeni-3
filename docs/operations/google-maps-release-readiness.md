@@ -36,6 +36,23 @@
 - 남은 출시 gate: 알림 본문 현지화, Google Routes 최소 권한 실호출, 신규 Android AAB 서명/배포, 비한국 부모 PWA↔아이 Android 실제 위치·푸시 ACK.
   자동검사 성공이나 운영 스키마 반영을 해외 전체 출시 GO로 해석하지 않는다.
 
+## 2026-09-14 운영 배포 readback
+
+- 기능 source commit: `9b8758d`. Worker version `81163732-fa83-4c68-8296-433708c626ef`가 100% 활성이다.
+- Pages deployment: https://416e5b1b.hyeni-calendar.pages.dev .
+  배포별 URL·고정 Pages·브랜드 apex·www가 모두 HTTP 200과 `assets/index-Pda_Im53.js`를 반환한다.
+  실제 entry의 SHA-256은 `199a05e067826411a1a8975d2cd49c8befbbcf4a8905b1867a12d91bf7d40b42`이며 로컬 빌드와 일치한다.
+- 기존 운영 공개 Kakao/Google 브라우저 키 두 값을 프로세스 환경으로만 주입해 빌드했다. 값은 파일·로그에 저장하지 않았다.
+  후속 CI가 Google 키 없이 빌드하지 않도록 두 job의 환경/필수 gate를 추가하고 GitHub 공개 Actions variable
+  `VITE_GOOGLE_MAPS_WEB_KEY`를 기존 공개 운영 값으로 설정·동일성 readback했다. 비공개 Secret은 변경하지 않았다.
+- Worker health는 HTTP 200·ready·no-store, access-region은 HTTP 200·KR·private/no-store,
+  인증 없는 POST maps/search는 HTTP 401·unauthorized다. GET search의 404는 POST 전용 route이므로 정상이다.
+- 운영 D1 재확인은 모두 rows_written=0. 가족 113/113 및 수신자 설정 135/135의 기존 서울 시간대가 보존됐다.
+  새 quota 컬럼/trigger는 존재하나 배포 직후 10분 이내 새 계약으로 들어온 위치 행은 0개였다.
+  따라서 실사용 위치 업로드 성공이나 해외 위치 수집을 입증한 것으로 기록하지 않는다.
+- ADB 연결 기기는 0대다. 새 AAB 서명·설치·Play 업로드 및 실제 알림 수신 ACK는 수행하지 않았다.
+- 최종 자동 준비 검사는 14/14 통과, 전체 출시 명령은 위 네 가지 남은 gate 때문에 의도대로 HOLD/exit 1이다.
+
 ## 2026-09-01 운영 반영 증거
 
 - Google Cloud 프로젝트 `hyeni-496213`에서 Maps JavaScript API, Maps SDK for Android,

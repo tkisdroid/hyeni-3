@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+
+test("앱·Android CI는 Google 웹 키를 전달하고 누락을 차단한다", () => {
+  const workflow = readFileSync(new URL("../.github/workflows/release-candidate.yml", import.meta.url), "utf8");
+  assert.equal(workflow.match(/VITE_GOOGLE_MAPS_WEB_KEY: \$\{\{ vars\.VITE_GOOGLE_MAPS_WEB_KEY \|\| secrets\.VITE_GOOGLE_MAPS_WEB_KEY \}\}/g)?.length, 2);
+  assert.equal(workflow.match(/if \[ -z "\$VITE_GOOGLE_MAPS_WEB_KEY" \]; then/g)?.length, 2);
+});
 
 test("준비 검사는 Google 지원 ISO 248개국과 남은 출시 외부 게이트를 명시한다", () => {
   const result = spawnSync(process.execPath, ["scripts/verify-google-maps-release-readiness.mjs"], {

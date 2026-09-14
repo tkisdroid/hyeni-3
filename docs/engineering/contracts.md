@@ -6,6 +6,16 @@
 
 ## 아키텍처 핵심 (어기면 다자녀에서 데이터가 섞인다)
 
+- **해외 가족 시간대 정본(2026-09-14)**: `families.time_zone`은 주 보호자가 국가와 함께 확정한 IANA 시간대다.
+  접속 국가·브라우저 언어·여행 위치로 자동 변경하지 않는다. 기존 가족은 `Asia/Seoul`을 보존한다.
+  일정·도착 판정·오전 8시 무료 위치 경계·retention·업로드 날짜 quota는 가족 시간대로 계산하고 저장 timestamp는 UTC다.
+  `shared/timeZone.ts`는 DST 누락 시각을 전환 간격 뒤로, 중복 시각을 첫 발생으로 결정한다.
+  `notification_settings.time_zone`은 별개 수신자 설정이며 NULL이면 가족 시간대를 상속한다. SOS/긴급 bypass는 유지한다.
+  Android는 인증된 동일 사용자/가족의 정본을 캐시하며 조회 실패를 서울 시간대로 추정하지 않는다.
+  운영 migration은 `global-family-time-zone.sql` → `global-location-ingest-time-zone.sql` → Worker 순서다.
+  두 migration의 적용 여부를 PRAGMA/trigger로 먼저 확인하고 중복 실행하지 않는다.
+  `ingest_date_key`는 서버가 확정하며 구버전 INSERT는 nullable 컬럼+기존 한국 날짜 trigger 폴백으로 호환한다.
+  248개국 지도 활성과 해외 전체 출시는 별개다. [현재 출시 게이트](../operations/google-maps-release-readiness.md)를 확인한다.
 - **Worker 운영 보존·출시 게이트(2026-08-31, 구현·로컬 검증 완료/운영 미적용)**:
   만료 `pending_notifications`는 `expires_at` 뒤 24시간 grace를 둔 뒤 hourly 40분 slot에서 한 번에 최대 5,000행만
   멱등 삭제한다. 혼재 timestamp(`T`/공백)를 같은 기준으로 비교하는 expression index 정본은
