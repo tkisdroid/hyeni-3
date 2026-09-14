@@ -299,11 +299,14 @@ function Get-ViteReleaseEnvironmentState {
     }
 
     $kakaoName = 'VITE_KAKAO_APP_KEY'
+    $googleMapsName = 'VITE_GOOGLE_MAPS_WEB_KEY'
     $naverName = 'VITE_NAVER_CLIENT_ID'
     return [pscustomobject]@{
         Values = $values
         VariableNames = @($values.Keys | Sort-Object)
         KakaoConfigured = $values.ContainsKey($kakaoName)
+        GoogleMapsConfigured = $values.ContainsKey($googleMapsName)
+        GoogleMapsSource = if ($sources.ContainsKey($googleMapsName)) { $sources[$googleMapsName] } else { 'missing' }
         KakaoSource = if ($sources.ContainsKey($kakaoName)) { $sources[$kakaoName] } else { 'missing' }
         NaverClientIdConfigured = $values.ContainsKey($naverName)
         NaverClientIdSource = if ($sources.ContainsKey($naverName)) { $sources[$naverName] } else { 'missing' }
@@ -469,6 +472,8 @@ $preflight = [ordered]@{
     forbiddenGradlePropertyNames = $forbiddenProperties
     legacyCredentialFilePresent = Test-Path -LiteralPath $legacyCredentialFile -PathType Leaf
     viteKakaoKeyConfigured = $viteReleaseEnvironmentState.KakaoConfigured
+    viteGoogleMapsKeyConfigured = $viteReleaseEnvironmentState.GoogleMapsConfigured
+    viteGoogleMapsKeySource = $viteReleaseEnvironmentState.GoogleMapsSource
     viteKakaoKeySource = $viteReleaseEnvironmentState.KakaoSource
     viteNaverClientIdConfigured = $viteReleaseEnvironmentState.NaverClientIdConfigured
     viteNaverClientIdSource = $viteReleaseEnvironmentState.NaverClientIdSource
@@ -481,7 +486,8 @@ if ($PreflightOnly) {
     if (-not $gitState.Clean `
         -or -not $preflight.keystorePresent `
         -or -not $playUploadCertificatePresent `
-        -or -not $viteReleaseEnvironmentState.KakaoConfigured) {
+        -or -not $viteReleaseEnvironmentState.KakaoConfigured `
+        -or -not $viteReleaseEnvironmentState.GoogleMapsConfigured) {
         exit 2
     }
     exit 0
@@ -498,6 +504,9 @@ if (-not $playUploadCertificatePresent) {
 }
 if (-not $viteReleaseEnvironmentState.KakaoConfigured) {
     throw 'production release에 필요한 VITE_KAKAO_APP_KEY를 현재 또는 기본 worktree의 .env에서 찾지 못했습니다.'
+}
+if (-not $viteReleaseEnvironmentState.GoogleMapsConfigured) {
+    throw 'production release에 필요한 VITE_GOOGLE_MAPS_WEB_KEY가 없습니다. 공개 웹 키를 현재 프로세스 환경에 먼저 설정하세요.'
 }
 if (-not (Test-Path -LiteralPath $gradleWrapper -PathType Leaf)) {
     throw "Gradle wrapper가 없습니다: $gradleWrapper"

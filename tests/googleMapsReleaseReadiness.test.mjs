@@ -45,3 +45,21 @@ test("release 모드는 외부 출시 증거가 완료되기 전까지 HOLD exit
   assert.equal(result.status, 1);
   assert.equal(JSON.parse(result.stdout).status, "HOLD");
 });
+
+test("사용자 승인 기기 생략은 통과로 표시하지 않고 다른 제출 gate를 유지한다", () => {
+  const result = spawnSync(process.execPath, ["scripts/verify-google-maps-release-readiness.mjs", "--release", "--device-e2e-waived"], { cwd: new URL("..", import.meta.url), encoding: "utf8" });
+  const report = JSON.parse(result.stdout);
+  assert.equal(result.status, 1);
+  assert.deepEqual(report.waivedChecks, ["LIVE_NON_KR_DEVICE_E2E_NOT_PERFORMED"]);
+  assert.ok(!report.blockers.includes("BLOCKED_BY_LIVE_NON_KR_DEVICE_E2E"));
+  assert.ok(report.blockers.includes("BLOCKED_BY_ANDROID_TIMEZONE_RELEASE"));
+});
+
+test("Android 출시 빌드는 Google 웹 키 누락을 사전 검사와 실제 빌드에서 차단한다", () => {
+  const source = readFileSync(new URL("../scripts/build-android-release.ps1", import.meta.url), "utf8");
+  assert.match(source, /GoogleMapsConfigured = \$values\.ContainsKey\(\$googleMapsName\)/);
+  assert.match(source, /viteGoogleMapsKeyConfigured/);
+  assert.match(source, /-or -not \$viteReleaseEnvironmentState\.GoogleMapsConfigured/);
+  assert.match(source, /if \(-not \$viteReleaseEnvironmentState\.GoogleMapsConfigured\)/);
+  assert.ok(source.indexOf("if (-not $viteReleaseEnvironmentState.GoogleMapsConfigured)") < source.indexOf("Write-Host '1/6"));
+});

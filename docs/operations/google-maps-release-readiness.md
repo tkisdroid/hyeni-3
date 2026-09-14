@@ -10,6 +10,15 @@
 이 allowlist는 지도 공급자 선택만 연다. 가족 현지 시간대/DST, Google Routes OAuth 실호출,
 비한국 부모 PWA↔아이 Android 실기기 E2E와 새 Android AAB Play 배포가 완료됐다는 의미가 아니다.
 
+## 2026-09-14 Play 검토 신청 지시
+
+- 사용자 지시: 실기기 검증은 별도로 하지 않고 Play 검토 신청까지 진행한다.
+- 이번 후보의 실기기 E2E는 **사용자 승인 생략/미검증**이다. 성공 증거로 바꾸지 않는다.
+  준비 판정은 `npm run verify:google-maps:release -- --device-e2e-waived`로 이 항목만 분리한다.
+- Console 로그인과 현재 전체 트랙 최대 versionCode 확인, 새 release AAB 사용자 서명, 업로드·검토 신청 readback은 여전히 필요하다.
+  구 AAB 재사용·서명 비밀번호 자동 읽기·검토 신청을 공개 게시 완료로 표현하는 것은 하지 않는다.
+- Android release 스크립트에도 Google 웹 키 필수 gate를 추가했다. 키 없는 해외 지도 AAB 빌드를 차단한다.
+
 ## 2026-09-14 남은 항목: 위치·안전 알림 현지화
 
 - 표시 전용 `notificationCopy={v,id,args,occurredAt?,timeZone?,delayed?}`를 구현했다.
@@ -24,7 +33,7 @@
   Android는 앱의 선택 언어를 표시 전용 preference로 동기화하며 계정/세션을 건드리지 않는다.
 - 원래 이름·주소는 그대로 표시하고 실제 사건 시각은 가족 IANA 시간대와 DST로 표시한다.
   지연 출발은 늦게 확인된 과거 기록임을 별도 표기하며 해외 긴급 안내에 한국 전화번호를 추정해서 넣지 않는다.
-- 검증: Worker 1,513개, Android 196개 및 lint 통과. 앱 전체 회귀와 마지막 배포 결과는 아래 후속 readback에 기록한다.
+- 검증: 앱 2,165개, Worker 1,513개, Android 196개 및 lint 통과. 마지막 배포 결과는 후속 readback에 기록한다.
   SQLite+FCM 전송 fixture에서 표시 계약·수신자·사건 시각·30분 TTL 보존을 함께 검증했다.
 - `scripts/qa-notification-localization.mjs`: 390×844 격리 브라우저 알림센터 10개 언어 및 도착·위험 상세 검사.
   `scripts/qa-notification-service-worker.mjs`: 로컬 dist 실제 SW의 번역 표시·stableId/route·타 가족 거부·만료 거부·한국어 보존 통과.

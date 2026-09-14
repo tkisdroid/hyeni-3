@@ -56,6 +56,8 @@ const externalBlockers = [
   "BLOCKED_BY_LIVE_NON_KR_DEVICE_E2E",
 ];
 const releaseMode = process.argv.includes("--release");
+// 사용자 승인에 따른 생략은 통과 증거가 아니다. 이번 제출 판단에서만 명시적으로 분리한다.
+const deviceE2eWaived = process.argv.includes("--device-e2e-waived");
 const result = {
   status: failedChecks.length > 0 ? "FAIL" : releaseMode ? "HOLD" : "READY_FOR_EXTERNAL_VALIDATION",
   checks,
@@ -63,7 +65,8 @@ const result = {
   enabledCountryCount: GOOGLE_MAP_RELEASE_COUNTRIES.length,
   coverageReviewedAt: GOOGLE_MAPS_CORE_COVERAGE_REVIEWED_AT,
   coverageSource: GOOGLE_MAPS_CORE_COVERAGE_SOURCE,
-  blockers: failedChecks.length > 0 ? [] : externalBlockers,
+  blockers: failedChecks.length > 0 ? [] : externalBlockers.filter(item => !deviceE2eWaived || item !== "BLOCKED_BY_LIVE_NON_KR_DEVICE_E2E"),
+  waivedChecks: deviceE2eWaived ? ["LIVE_NON_KR_DEVICE_E2E_NOT_PERFORMED"] : [],
 };
 
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
