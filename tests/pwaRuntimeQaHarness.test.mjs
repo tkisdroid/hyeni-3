@@ -175,11 +175,13 @@ test("PWA 런타임 QA는 localhost 외 통신과 사용자 브라우저 상태�
   assert.match(source, /Fetch\.failRequest/);
   assert.match(source, /BlockedByClient/);
   assert.match(source, /url\.pathname === "\/api\/access-region"/);
-  assert.match(source, /JSON\.stringify\(\{ country: "KR" \}\)/);
+  assert.match(source, /JSON\.stringify\(\{ country: "JP" \}\)/);
   assert.match(source, /return nativeFetch\(input, init\)/);
   assert.match(source, /externalNetwork:\s*false/);
-  // 앱 이름 등 한국어 정본 문구를 검사하므로 표시 언어를 고정한다.
-  // 고정하지 않으면 Linux CI(en-US)에서 영어 화면을 한국어로 검사해 항상 실패한다(2026-08-19 실사고).
+  // 브라우저 기본값은 고정하고 앱 문서는 일본어로 덮어써 지연 카탈로그를 검증한다.
+  assert.match(source, /Object\.defineProperty\(navigator, "languages"/);
+  assert.match(source, /const PWA_QA_LOCALE = "ja"/);
+  assert.match(source, /if \(!serviceWorkerOnly\) throw new Error/);
   assert.match(source, /"--lang=ko-KR"/);
   // navigator.languages 는 --lang 이 아니라 --accept-lang 이 정한다.
   // 이걸 빼면 Linux CI 에서 여전히 영어로 렌더된다(2026-08-19 실측).

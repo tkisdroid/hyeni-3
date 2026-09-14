@@ -44,6 +44,15 @@ bucket_name = "child-photos"
 # preview_bucket_name 제거(R2 점검 I-5): prod 와 동일 버킷이면 `wrangler dev --remote` preview 가
 # prod 객체를 직접 read/write 할 위험. 로컬 dev(--local)는 R2 를 시뮬레이션하므로 불필요.
 
+# 피드백은 D1에 먼저 내구 저장한 뒤 Cloudflare Email Service로 운영자 주소 한 곳에만 전달한다.
+# 2026-09-13 운영 readback: 발신 도메인과 수신 주소가 아직 등록되지 않았다.
+# 인증 완료 전에는 binding을 활성화하지 않으며, 피드백 API는 D1 접수 후 queued를 반환한다.
+# 인증 완료 후 아래 binding을 활성화한다.
+# [[send_email]]
+# name = "FEEDBACK_EMAIL"
+# destination_address = "tkisdroid@gmail.com"
+# allowed_sender_addresses = ["feedback@hyenicalendar.com"]
+
 # M3 Realtime — FamilyRoom Durable Object (idFromName(familyId), WebSocket Hibernation).
 # write 라우트가 변경을 /notify 로 통지 → DO 가 구독 클라에 broadcast (postgres_changes 대체).
 [[durable_objects.bindings]]

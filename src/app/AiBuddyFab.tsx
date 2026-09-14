@@ -95,12 +95,13 @@ function aiBuddyFabFaceClassName(baseClass: "abf__face", face: AiBuddyChatFace):
 /**
  * AI 친구 화면 안에서는 버튼을 띄우지 않는다.
  * 이미 친구와 이야기하는 중인데 얼굴이 두 개 떠 있으면 무엇을 눌러야 할지 헷갈린다.
- * SOS·온보딩은 다른 것에 집중해야 하는 화면이라 함께 제외한다.
+ * SOS·온보딩과 영단어 카드는 내용·조작 영역을 가리지 않도록 함께 제외한다.
  */
 const HIDDEN_PATHS = new Set([
   "/child/ai-friend",
   "/child/ai-friend-setup",
   "/child/sos",
+  "/study/vocabulary/learn",
   "/onboarding",
 ]);
 

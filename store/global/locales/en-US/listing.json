@@ -5,11 +5,11 @@
   "sourceLocale": "ko-KR",
   "appName": "Hyeni Calendar: Family Safety",
   "shortDescription": "Family calendar and safety, built by a dad for his child. Core features free.",
-  "fullDescription": null,
+  "fullDescription": "Hyeni Calendar is a family calendar and safety app built by a dad for his own child. It brings schedules, school supplies, family messages, a child’s location, and safety alerts together in one place.\n\nStart with essential features for free\n• Share family schedules and manage school supplies and homework.\n• Use family messages, stickers, SOS, and essential emergency alerts without a subscription.\n• We show no ads and do not sell location or family data.\n\nFamily schedules and school preparation\n• Check each child’s schedule in one family calendar.\n• Speak, type, or select a school notice photo, and AI organizes a schedule suggestion for you to review before saving.\n• Use checklists for school supplies and homework.\n\nChild location and movement history (when connected to a child’s Android device)\n• When location permission and sharing are enabled on the child’s device, view the latest location and today’s movement flow.\n• Receive arrival and departure alerts for saved places such as home, school, and academies.\n• Supported regions outside Korea use Google Maps; Korea continues to use Kakao Maps. If a region is not supported, the app shows coordinates and the measurement time instead of loading the wrong map provider.\n\nSOS and essential safety alerts\n• When a child holds the SOS button for three seconds, the app attempts to send the location and an emergency signal to the parent.\n• Depending on device settings, alerts may appear full screen or as high-priority notifications.\n• SOS and essential emergency alerts are available regardless of subscription status.\n\nFamily messages for each child\n• Share messages, photos, and locations in a separate conversation for each child.\n• Children can quickly send updates such as “I’m here” or “Please pick me up.”\n• Encourage their day with praise stickers.\n\nAI friend and AI schedule organizer\n• Within limits set by a parent, the AI friend can refer to the child’s schedules and school supplies.\n• Parents control usage limits, available hours, and blocked topics.\n• AI answers and schedule suggestions can be inaccurate, so a parent should review important information.\n\nHyeni Premium\n• Includes real-time location, up to 30 days of movement history, multiple-child management, emergency ambient listening, AI daily summaries, and weekly reports.\n• Available trials, current prices, and renewal terms are shown in the Google Play purchase screen.\n\nEmergency ambient listening (Premium, child Android device)\n• When a parent requests it for an emergency check, it can connect for up to one minute without requiring the child to tap first.\n• While listening is active, it remains visible on the child’s screen and lock-screen notification, where it can be stopped.\n• Request, start, and end records are kept, but ambient audio content is not stored long term.\n\nLocation and notifications may be delayed or unavailable depending on permissions, network, battery, GPS accuracy, and operating-system settings. In an urgent situation, contact the child directly and use local public emergency services.\n\nPrivacy Policy: https://hyeni-calendar-api.tkisdroid.workers.dev/privacy",
   "translationStatus": {
     "appName": "translated",
     "shortDescription": "translated",
-    "fullDescription": "pending"
+    "fullDescription": "translated"
   },
   "reviewStatus": "draft",
   "reviewEvidence": null,
@@ -19,6 +19,7 @@
     "ai_schedule",
     "parent_child_location",
     "arrival_alert",
+    "study_miniapp",
     "sos",
     "memo",
     "ai_friend",

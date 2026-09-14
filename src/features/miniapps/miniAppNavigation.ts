@@ -11,3 +11,9 @@ export function resolveMathMiniAppDestination(role: AuthRole): string | null {
   if (role === "child") return "/study/learn";
   return null;
 }
+
+export function resolveVocabularyMiniAppDestination(role: AuthRole): string | null {
+  if (role === "parent") return "/study/vocabulary";
+  if (role === "child") return "/study/vocabulary/learn";
+  return null;
+}

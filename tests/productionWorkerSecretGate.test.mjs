@@ -16,8 +16,6 @@ const requiredSecretNames = [
   "LOCATION_AUDIT_CURSOR_SECRET",
   "PREMIUM_FUNNEL_HASH_SECRET",
   "WEB_BILLING_KEY_ENCRYPTION_SECRET",
-  "RESEND_API_KEY",
-  "FEEDBACK_FROM_EMAIL",
 ];
 
 function runGate(inventory) {
@@ -52,24 +50,24 @@ function runGateThroughWrangler(inventory) {
   }
 }
 
-test("Android 전용 결제 정책의 프로덕션 Worker 게이트는 필수 secret 이름 10개가 모두 있을 때만 성공한다", () => {
+test("Android 전용 결제 정책의 프로덕션 Worker 게이트는 필수 secret 이름 8개가 모두 있을 때만 성공한다", () => {
   const result = runGate(
     requiredSecretNames.map((name) => ({ name, type: "secret_text" })),
   );
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /프로덕션 Worker 필수 secret 10개 확인 완료/);
+  assert.match(result.stdout, /프로덕션 Worker 필수 secret 8개 확인 완료/);
 });
 
 test("프로덕션 Worker 게이트는 누락 이름만 알리고 secret 값은 출력하지 않는다", () => {
   const inventory = requiredSecretNames
-    .filter((name) => !["RESEND_API_KEY", "FEEDBACK_FROM_EMAIL"].includes(name))
+    .filter((name) => !["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"].includes(name))
     .map((name) => ({ name, type: "secret_text", value: "절대-출력-금지" }));
   const result = runGateThroughWrangler(inventory);
 
   assert.equal(result.status, 2);
-  assert.match(result.stderr, /RESEND_API_KEY/);
-  assert.match(result.stderr, /FEEDBACK_FROM_EMAIL/);
+  assert.match(result.stderr, /VAPID_PUBLIC_KEY/);
+  assert.match(result.stderr, /VAPID_PRIVATE_KEY/);
   assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /절대-출력-금지/);
 });
 

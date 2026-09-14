@@ -1,7 +1,7 @@
 # 피드백·오류 대응 운영 가이드
 
 앱의 `문제 신고 · 문의`에서 접수한 내용은 이메일 성공 여부와 무관하게 운영 D1의
-`user_feedback`에 먼저 저장된다. `status='sent'`는 Resend 전달 완료,
+`user_feedback`에 먼저 저장된다. `status='sent'`는 Cloudflare Email Service 전달 완료,
 `status='queued'`는 D1 접수 완료·이메일 미전달을 뜻한다. 두 값 모두 문제 해결 여부와는
 무관하므로 `sent`만 확인하고 접수를 닫으면 안 된다.
 

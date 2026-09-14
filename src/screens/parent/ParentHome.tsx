@@ -7,7 +7,7 @@ import type {
   ReactNode,
 } from "react";
 import { useNavigate } from "react-router";
-import { AlertTriangle, Check, RefreshCw } from "lucide-react";
+import { AlertTriangle, Check, ChevronRight, RefreshCw } from "lucide-react";
 import settings3dIcon from "../../../assets/01-runtime-3d/ui/settings.webp";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
@@ -290,7 +290,7 @@ const shortcutLabelIds: Readonly<Record<string, string>> = {
   sc2: "parent.home.shortcut.location",
   sc3: "parent.home.shortcut.playdate",
   sc4: "parent.home.shortcut.places",
-  sc5: "parent.home.shortcut.remoteAudio",
+  sc5: "parent.location.action.remoteAudio",
   sc6: "parent.home.shortcut.safetyReport",
   // sc7 은 "아이 기기 찾기"(/remote-ring)다 — 예전 라벨 id 는 "구독"이라 눌러야 하는 곳과 이름이 달랐다.
   sc7: "parent.home.shortcut.deviceFinder",
@@ -1571,6 +1571,22 @@ export function ParentHome() {
         ))}
 
         {/* 바로가기 */}
+        <button
+          type="button"
+          className="ph-device-finder ph-neu-control hy-press"
+          style={{ order: sectionOrder.indexOf("shortcuts") + 1 }}
+          onClick={() => openShortcut("sc7")}
+        >
+          <img className="ph-device-finder__icon" src={asset("ui/phone-lavender.webp")} alt="" />
+          <span className="ph-device-finder__copy">
+            <span className="ph-device-finder__label">
+              {intl.formatMessage({ id: "parent.home.shortcut.deviceFinder" })}
+            </span>
+            {activeChild?.name && <span className="ph-device-finder__child">{activeChild.name}</span>}
+          </span>
+          <ChevronRight size={20} strokeWidth={2.2} aria-hidden="true" />
+        </button>
+
         {renderHomeSection("shortcuts", (
         <section className="ph-section-shell ph-glass">
           <SectionHeader

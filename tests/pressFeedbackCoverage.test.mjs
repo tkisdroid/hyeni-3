@@ -21,9 +21,10 @@ test("눌림 피드백 기본 도구는 토큰과 최소 터치 크기를 함께
   assert.match(rule(components, ".hy-press"), /min-height: var\(--control-min-size\)/);
   assert.match(
     rule(components, ".hy-press"),
-    /transition: transform var\(--duration-fast\) var\(--easing-standard\)/,
+    /transition:\s*transform var\(--duration-fast\) var\(--easing-standard\)/,
   );
-  assert.match(rule(components, ".hy-press:active"), /transform: scale\(var\(--press, 0\.96\)\)/);
+  const enabledPress = '.hy-press:active:not(:disabled):not([aria-disabled="true"]):not([aria-busy="true"])';
+  assert.match(rule(components, enabledPress), /transform: scale\(var\(--press, 0\.98\)\)/);
   assert.match(tokens, /--duration-fast:/);
   assert.match(tokens, /--easing-standard:/);
 });

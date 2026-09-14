@@ -44,15 +44,20 @@
 
 /* ── 프로필 카드 ────────────────────────────────────────────────────────── */
 .ps-profile {
-  display: flex;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  padding: 16px;
-  border-radius: var(--radius-16);
-  background: linear-gradient(120deg, var(--blue-soft), var(--lav-soft));
-  box-shadow: var(--shadow-soft);
+  padding: 8px 0 24px;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--control-border);
+  box-shadow: none;
 }
 .ps-profile__avatar {
+  grid-row: span 2;
+  align-self: start;
   width: 56px;
   height: 56px;
   border-radius: var(--radius-16);
@@ -95,6 +100,8 @@
   color: var(--fg-tertiary);
 }
 .ps-profile__edit {
+  grid-column: 2;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -123,9 +130,14 @@
 }
 .ps-list {
   background: var(--bg-card);
-  border-radius: var(--radius-16);
-  padding: 4px;
+  border-radius: var(--radius-24);
+  padding: 4px 16px;
   box-shadow: var(--shadow-soft);
+}
+
+/* 설정 목록은 한 장의 면 안에서 얇은 구분선으로 읽는다. */
+.ps-list > button + button {
+  border-top: 1px solid var(--line-hair);
 }
 
 /* ── 알림 토글 행 ───────────────────────────────────────────────────────── */
@@ -493,4 +505,33 @@
 }
 .ps-back {
   min-width: var(--control-min-size);
+}
+
+/* 레퍼런스의 프로필 목록: 원형 조작 면과 여유 있는 한 줄 행. */
+.hy-adult .ps-head {
+  padding-inline: 20px;
+  justify-content: space-between;
+}
+.hy-adult .ps-head-title {
+  order: 0;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+}
+.hy-adult .ps-back {
+  order: 1;
+  margin-left: auto;
+}
+.hy-adult :is(.ps-nav, .ps-feature, .ps-account, .ps-notif) {
+  min-height: 72px;
+  padding: 16px 0;
+  gap: 16px;
+}
+.hy-adult :is(.ps-nav__chip, .ps-feature__icon, .ps-account__chip)[data-tone] {
+  border-radius: var(--radius-pill);
+  background: var(--control-fill);
+  box-shadow: var(--control-rim);
+}
+.hy-adult :is(.ps-nav__chev, .ps-feature__chev) {
+  color: var(--fg-primary);
 }

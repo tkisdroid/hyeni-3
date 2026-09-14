@@ -112,6 +112,7 @@ test("화면이 쓰는 모든 message namespace를 그 라우트가 싣는다", 
   ];
 
   const offenders = [];
+  const descriptions = JSON.parse(readSource("locales/descriptions.json"));
   let checked = 0;
   for (const [, screen, group] of app.matchAll(/routeElement\(<(\w+)\s*\/>,\s*(\w+_NAMESPACES)\)/g)) {
     const file = screenFiles.get(screen);
@@ -124,13 +125,13 @@ test("화면이 쓰는 모든 message namespace를 그 라우트가 싣는다", 
       continue;
     }
     checked += 1;
-    const used = new Set([...source.matchAll(/id: "([a-z][a-zA-Z]*)\./g)].map(([, namespace]) => namespace));
+    // 표시 ID의 접두사와 실제 카탈로그가 다를 수 있어 번역 정본의 namespace를 따른다.
+    const used = new Set([...source.matchAll(/id: "([a-z][a-zA-Z]*\.[^"]+)"/g)]
+      .map(([, id]) => descriptions[id]?.namespace ?? id.split(".")[0]));
     for (const [module, namespace] of sharedCopyModules) {
       if (source.includes(module)) used.add(namespace);
     }
     for (const namespace of used) {
-      // Study message ID는 화면 역할에 따라 onboarding/parent/child 카탈로그에 분할 저장한다.
-      if (namespace === "study" && ["CHILD_NAMESPACES", "PARENT_STUDY_NAMESPACES", "CHILD_STUDY_NAMESPACES"].includes(group)) continue;
       if (!groups.has(`${namespace.toUpperCase()}_NAMESPACES`) && !namespace.match(/^[a-z]+$/)) continue;
       if (!namespaces.includes(namespace)) offenders.push(`${screen} (${group}) → ${namespace}.*`);
     }

@@ -125,7 +125,8 @@ v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로�
 - [ ] AI balance migration은 실제 production 사본/Time Travel 격리 clone에서 삭제 전후 잔액·원장 불변식과 전체 7단계 dress rehearsal을 다시 통과
 - [ ] 실제 적용은 AI 크레딧 쓰기를 멈추거나 최소화한 유지보수 창에서 직전 중복 재진단 → 보호된 행 단위 복구 자료와 Time Travel bookmark 확보 → unique migration → readback → 새 Worker 연속 배포 순서로 실행하고 구 Worker가 UNIQUE 위반을 만나는 간격을 최소화
 - [ ] 사용자 쓰기를 다시 연 뒤에는 Time Travel 전체 복원으로 정상 쓰기를 되감지 않음. 재오픈 전 실패일 때만 승인된 전체 복원을 사용하고, 재오픈 뒤 문제는 검토된 additive/행 단위 복구로 처리
-- [ ] Android 전용 결제 정책의 필수 Worker secret 10개를 값 노출 없이 확인: `PREMIUM_FUNNEL_HASH_SECRET`, `LOCATION_AUDIT_CURSOR_SECRET`, `WEB_BILLING_KEY_ENCRYPTION_SECRET`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `GOOGLE_PLAY_RTDN_AUDIENCE`, `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `RESEND_API_KEY`, `FEEDBACK_FROM_EMAIL`. Toss client/secret·가격 환경값은 신규로 설정하지 않는다
+- [ ] Android 전용 결제 정책의 필수 Worker secret 8개를 값 노출 없이 확인: `PREMIUM_FUNNEL_HASH_SECRET`, `LOCATION_AUDIT_CURSOR_SECRET`, `WEB_BILLING_KEY_ENCRYPTION_SECRET`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `GOOGLE_PLAY_RTDN_AUDIENCE`, `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`. Toss client/secret·가격 환경값은 신규로 설정하지 않는다
+- [ ] Cloudflare Email Service에 `hyenicalendar.com` sender domain과 `tkisdroid@gmail.com` destination을 인증하고 `FEEDBACK_EMAIL` 바인딩의 실제 `sent` E2E를 확인
 - [ ] secret 값은 파일·명령 인자·셸 history·로그·보고서에 남기지 않고 `wrangler secret put`의 대화형 입력만 사용
 - [ ] 대화형 입력 후 저장소 루트에서 `npm run verify:production:worker-secrets`를 실행해 exit 0 확인. 이 게이트는 Wrangler inventory의 이름·설정 유형만 읽고 값은 출력하지 않으며, 하나라도 누락되면 Worker 배포 `HOLD`
 - [ ] migration과 secret readback이 모두 끝난 뒤 Worker를 먼저 배포하고 새 API 404·503·health·cron·환불 모니터를 확인한 다음 Pages를 배포
@@ -173,8 +174,8 @@ try {
 - [ ] 앱 설치 ID, FCM 토큰, 세션 ID, 구매 내역·구독 상태를 신고
 - [ ] 주변 소리 음성 본문은 일시 처리, 감사 메타데이터는 저장된다는 차이를 표시
 - [ ] Android `SpeechRecognizer`와 Web Speech의 외부 처리 가능성을 개인정보처리방침에 반영
-- [ ] Cloudflare, Firebase/FCM, Google Play, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, Google Maps Platform, 공개 OSRM, Resend, NCP SENS, 음성 인식 제공자의 실제 전송 필드를 Data Safety에 반영. 비활성 레거시 Toss 경로를 현재 운영 처리업체로 신고하지 않는다
-- [ ] Resend의 `senderName`·`senderEmail`·`senderRole`·`senderUserId`·`familyId`·`content`, NCP SENS의 전화번호·6자리 OTP, 공개 OSRM의 출발·도착 좌표 전송을 반영
+- [ ] Cloudflare Worker/D1/R2/AI Gateway/Email Service, Firebase/FCM, Google Play, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, Google Maps Platform, 공개 OSRM, NCP SENS, 음성 인식 제공자의 실제 전송 필드를 Data Safety에 반영. 비활성 레거시 Toss 경로를 현재 운영 처리업체로 신고하지 않는다
+- [ ] Cloudflare Email Service의 `senderName`·`senderEmail`·`senderRole`·`senderUserId`·`familyId`·`content`, NCP SENS의 전화번호·6자리 OTP, 공개 OSRM의 출발·도착 좌표 전송을 반영
 - [ ] 각 외부 흐름의 계약·DPA, 실제 설정, 보관·삭제 기간, 2차 이용 증거가 모두 확보되기 전에는 서비스 제공자 예외를 적용하지 않음
 - [ ] 개인정보처리방침에 AI 친구뿐 아니라 AI 일정 사진·텍스트, AI 요약, 음성 인식 처리를 모두 포함
 - [ ] Play 지원 이메일과 개인정보처리방침 연락처를 `mail@hyenicalendar.com`으로 일치시키고 실제 수신 확인

@@ -80,6 +80,20 @@ async function readAppName(appLocale) {
   return name;
 }
 
+async function readAuthoredFullDescription(listingLocale) {
+  const path = join(storeDir, "locales", listingLocale, "listing.json");
+  if (!existsSync(path)) return null;
+  const current = JSON.parse(await readFile(path, "utf8"));
+  if (
+    current.translationStatus?.fullDescription !== "translated"
+    || typeof current.fullDescription !== "string"
+    || current.fullDescription.trim().length === 0
+  ) {
+    return null;
+  }
+  return current.fullDescription;
+}
+
 /** 소스 섹션을 Play 전체 설명 텍스트로 조립한다. */
 export function renderFullDescription({ intro, sections, disclosures, privacyPolicyUrl }) {
   const blocks = [intro];
@@ -97,7 +111,9 @@ export async function buildListingFiles() {
   const files = [];
   for (const { listing, app } of LISTING_LOCALES) {
     const isSource = listing === source.sourceLocale;
-    const shortDescription = SHORT_DESCRIPTION[listing];
+    const authoredFullDescription = isSource ? null : await readAuthoredFullDescription(listing);
+    const fullDescription = isSource ? koFullDescription : authoredFullDescription;
+    const shortDescription = isSource ? source.shortDescription : SHORT_DESCRIPTION[listing];
     if (typeof shortDescription !== "string") throw new Error(`짧은 설명 누락: ${listing}`);
     files.push({
       listingLocale: listing,
@@ -110,12 +126,13 @@ export async function buildListingFiles() {
         // 런처 이름과 스토어 이름을 하나로 유지한다.
         appName: await readAppName(app),
         shortDescription,
-        // 전체 설명은 섹션 번역이 끝난 locale 만 값을 갖는다. 미번역을 한국어로 채우지 않는다.
-        fullDescription: isSource ? koFullDescription : null,
+        // 번역문은 locale listing 파일에서 명시적으로 authored 상태로 관리한다.
+        // 값·상태가 함께 없으면 한국어로 채우지 않고 pending 으로 남긴다.
+        fullDescription,
         translationStatus: {
           appName: "translated",
           shortDescription: "translated",
-          fullDescription: isSource ? "source" : "pending",
+          fullDescription: isSource ? "source" : fullDescription ? "translated" : "pending",
         },
         // Tier B 는 원어민 검수 evidence 가 있어야 승격한다. 생성기는 항상 draft 로 둔다.
         reviewStatus: "draft",

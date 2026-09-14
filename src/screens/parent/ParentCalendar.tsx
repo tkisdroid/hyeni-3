@@ -1,7 +1,7 @@
 import { useIntl, type IntlShape } from "react-intl";
-import { useId, useMemo, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
-import { useNavigate } from "react-router";
+import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Bell, Pencil, Trash2, StickyNote } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -13,7 +13,7 @@ import { useSavedPlaces } from "@/queries/useLocation";
 import { eventToView, formatTimeLabel, groupEventsByDateKey } from "@/transform/scheduleView";
 import { useVisitVerify } from "@/queries/useVisitVerify";
 import { useEntitlement } from "@/queries/useEntitlement";
-import { dateTimeScopeInTimeZone, parseAppDateKey, ymdToDateKey } from "@/transform/dateKey";
+import { addDaysToDateKey, addMonthsToDateKey, dateTimeScopeInTimeZone, parseAppDateKey, ymdToDateKey } from "@/transform/dateKey";
 import { locationModeFor } from "@/transform/tierPolicy";
 import { eventChildMemberIds, eventNeedsChildAssignment, eventScopeLabel } from "@/transform/eventScope";
 import { notifOverrideToReminderMinutes, type CalendarEvent } from "@/lib/api/endpoints/schedule";
@@ -36,8 +36,6 @@ function reminderLabel(minutes: number, locale: SupportedLocale, intl: IntlShape
 }
 import "./ParentCalendar.css";
 
-type ViewMonth = { year: number; month: number };
-type SelDate = { year: number; month: number; day: number };
 type SwipeSide = "edit" | "delete";
 
 /** 카테고리 한국어 라벨(태그 표시용 — 색은 이벤트 뷰의 tag 색을 재사용). */
@@ -70,6 +68,7 @@ export function ParentCalendar() {
   const { locale } = useLocale();
   const { show } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const now = useMemo(() => new Date(), []);
   const weekdayLabels = useMemo(
     () => Array.from({ length: 7 }, (_, index) => formatWeekday(
@@ -85,8 +84,20 @@ export function ParentCalendar() {
       : { year: 1970, month: 1, day: 1 };
   }, [now]);
 
-  const [view, setView] = useState<ViewMonth>({ year: TODAY.year, month: TODAY.month });
-  const [selected, setSelected] = useState<SelDate>({ ...TODAY });
+  const dateParam = searchParams.get("date");
+  const selectedDate = dateParam ? parseAppDateKey(dateParam) : null;
+  const selected = selectedDate
+    ? { year: selectedDate.getFullYear(), month: selectedDate.getMonth() + 1, day: selectedDate.getDate() }
+    : TODAY;
+  // 표시한 달과 일정 작성 날짜는 같은 선택일을 사용한다. URL에 남겨 폼에서 돌아와도 복원한다.
+  const view = selected;
+  const selectDate = (dateKey: string) => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set("date", dateKey);
+      return next;
+    }, { replace: true, preventScrollReset: true });
+  };
 
   const { data: events, isLoading, isError, refetch: refetchEvents } = useEvents();
   const { data: family } = useMyFamily();
@@ -96,6 +107,15 @@ export function ParentCalendar() {
   // 선택 날짜의 지난 일정 "다녀옴"을 위치 이력로 검증(미확인=확인 필요).
   // 캘린더는 여러 아이 일정이 섞이므로 이벤트 배정 아이의 user_id 로 정확히 대조한다.
   const selectedKey = ymdToDateKey(selected.year, selected.month, selected.day);
+  const calendarTitleId = useId();
+  const calendarGridRef = useRef<HTMLDivElement>(null);
+  const pendingDateFocus = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (pendingDateFocus.current !== selectedKey) return;
+    calendarGridRef.current?.querySelector<HTMLButtonElement>(`[data-date-key="${selectedKey}"]`)
+      ?.focus({ preventScroll: true });
+    pendingDateFocus.current = null;
+  }, [selectedKey]);
   const childUserByMemberId = useMemo(() => {
     const map = new Map<string, string>();
     for (const member of family?.members ?? []) {
@@ -129,7 +149,7 @@ export function ParentCalendar() {
     return map;
   }, [events]);
 
-  const cells = useMemo(() => buildCells(view.year, view.month), [view]);
+  const cells = useMemo(() => buildCells(view.year, view.month), [view.year, view.month]);
 
   // ── 일정 상세 바텀시트(P-08) ──
   const [sheetEvent, setSheetEvent] = useState<CalendarEvent | null>(null);
@@ -266,7 +286,6 @@ export function ParentCalendar() {
   };
 
   const isCurrentMonth = view.year === TODAY.year && view.month === TODAY.month;
-  const selInView = selected.year === view.year && selected.month === view.month;
   const selIsToday =
     selected.year === TODAY.year && selected.month === TODAY.month && selected.day === TODAY.day;
   const selEvents = byKey[ymdToDateKey(selected.year, selected.month, selected.day)] ?? [];
@@ -296,19 +315,29 @@ export function ParentCalendar() {
     { locale, timeZone: "UTC", weekday: "long" },
   );
 
-  const shiftMonth = (delta: number) =>
-    setView((v) => {
-      const m = v.month + delta;
-      if (m < 1) return { year: v.year - 1, month: 12 };
-      if (m > 12) return { year: v.year + 1, month: 1 };
-      return { year: v.year, month: m };
-    });
+  const shiftMonth = (delta: number) => selectDate(addMonthsToDateKey(selectedKey, delta));
+  const onDateKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, dateKey: string) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    const dayOffsets: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+    let nextKey: string;
+    if (event.key in dayOffsets) nextKey = addDaysToDateKey(dateKey, dayOffsets[event.key]);
+    else if (event.key === "PageUp" || event.key === "PageDown") {
+      nextKey = addMonthsToDateKey(dateKey, event.key === "PageUp" ? -1 : 1);
+    } else if (event.key === "Home" || event.key === "End") {
+      const weekday = parseAppDateKey(dateKey)?.getDay() ?? 0;
+      nextKey = addDaysToDateKey(dateKey, event.key === "Home" ? -weekday : 6 - weekday);
+    } else return;
+    event.preventDefault();
+    if (nextKey === selectedKey) return;
+    pendingDateFocus.current = nextKey;
+    selectDate(nextKey);
+  };
 
   return (
     <div className="hy-rise-in">
       {/* 월 헤더 */}
       <header className="pc-header">
-        <div>
+        <div id={calendarTitleId} aria-live="polite" aria-atomic="true">
           <div className="pc-year">{view.year}</div>
           <div className="pc-month">
             {formatCalendarMonth(Date.UTC(view.year, view.month - 1, 1, 12), {
@@ -318,6 +347,13 @@ export function ParentCalendar() {
           </div>
         </div>
         <div className="pc-header__nav">
+          <button
+            type="button"
+            className="pc-navbtn pc-todaybtn hy-press"
+            onClick={() => selectDate(ymdToDateKey(TODAY.year, TODAY.month, TODAY.day))}
+          >
+            {intl.formatMessage({ id: "parent.parentCalendar.copy006" })}
+          </button>
           <button type="button" aria-label={intl.formatMessage({ id: "parent.parentCalendar.copy003" })} className="pc-navbtn hy-press" onClick={() => shiftMonth(-1)}>
             <ChevronLeft size={18} strokeWidth={2.4} color="#6D6469" />
           </button>
@@ -352,39 +388,45 @@ export function ParentCalendar() {
               </div>
             ))}
           </div>
-          <div className="pc-grid">
+          <div className="pc-grid" ref={calendarGridRef} role="group" aria-labelledby={calendarTitleId}>
             {cells.map((d, i) => {
               if (d === null) {
                 return <div key={`e${i}`} className="pc-cell-empty" aria-hidden="true" />;
               }
               const dow = new Date(view.year, view.month - 1, d).getDay();
               const isToday = isCurrentMonth && d === TODAY.day;
-              const isSel = selInView && selected.day === d;
-              const dayViews = byKey[ymdToDateKey(view.year, view.month, d)] ?? [];
+              const isSel = selected.day === d;
+              const dayKey = ymdToDateKey(view.year, view.month, d);
+              const dayViews = byKey[dayKey] ?? [];
               const dots = dayViews.slice(0, 3);
               const extra = dayViews.length - dots.length;
               const numStyle = isSel
                 ? {
-                    // 흰 숫자를 올리므로 두 stop 모두 4.5:1 을 넘는 채움을 쓴다
-                    // (accent-light stop 은 2.0:1 이라 선택한 날짜가 가장 안 읽혔다).
-                    color: "#fff",
-                    background: "linear-gradient(135deg, var(--hy-accent-cta), var(--hy-accent-text))",
-                    boxShadow: "0 6px 14px -4px rgba(240,81,143,.5)",
+                    color: "var(--hy-accent-text)",
+                    background: "transparent",
                   }
                 : isToday
-                  ? { color: "var(--hy-accent-text)", background: "var(--hy-accent-soft)" }
+                  ? { color: "var(--hy-accent-text)", background: "transparent" }
                   : { color: weekendColor(dow), background: "transparent" };
               return (
                 <button
                   key={d}
                   type="button"
                   className="pc-day hy-press"
-                  onClick={() => setSelected({ year: view.year, month: view.month, day: d })}
+                  data-date-key={dayKey}
+                  tabIndex={isSel ? 0 : -1}
+                  aria-label={intl.formatDate(Date.UTC(view.year, view.month - 1, d, 12), {
+                    timeZone: "UTC", year: "numeric", month: "long", day: "numeric", weekday: "long",
+                  })}
+                  aria-pressed={isSel}
+                  aria-current={isToday ? "date" : undefined}
+                  onClick={() => selectDate(dayKey)}
+                  onKeyDown={(event) => onDateKeyDown(event, dayKey)}
                 >
                   <span className="pc-day__num" style={numStyle}>
                     {d}
                   </span>
-                  <span className="pc-day__dots">
+                  <span className="pc-day__dots" aria-hidden="true">
                     {dots.map((ev) => (
                       <span key={ev.id} className="pc-dot" style={{ background: ev.color }} />
                     ))}

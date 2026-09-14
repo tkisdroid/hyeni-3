@@ -63,6 +63,10 @@
   margin: 32px auto 0;
 }
 
+.mini-app-card.mini-app-card--vocabulary { background: var(--hy-accent-soft); }
+.mini-app-card--vocabulary .mini-app-card__art { place-items: center; background: var(--bg-card); color: var(--hy-accent-text); }
+.mini-app-card--vocabulary .mini-app-card__art > svg { width: 52px; height: 52px; }
+
 .mini-app-card {
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr) 28px;

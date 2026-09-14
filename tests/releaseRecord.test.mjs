@@ -27,6 +27,7 @@ import {
   assertArchiveEntriesSafe,
   assertCapacitorWebAssetsMatchDist,
   assertNoCapacitorGeneratedFileCollisions,
+  redactManifestApiKeys,
 } from "../scripts/create-aab-evidence.mjs";
 import { hashDirectory, hashFile, sha256 } from "../scripts/release-evidence.mjs";
 import {
@@ -36,6 +37,24 @@ import {
 
 const realAppRoot = resolve(import.meta.dirname, "..");
 const realWorkerRoot = realAppRoot; // worker/ 정본이 앱 저장소 안으로 이관됨
+
+test("AAB 검증 로그는 Android 지도 키를 가리고 소스와 권한 증거는 보존한다", () => {
+  const key = "sample-google-maps-client-key";
+  const source = '<meta-data android:name="com.hyeni.calendar.RELEASE_SOURCE_SHA" android:value="source-proof" />';
+  const permission = '<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />';
+  for (const metadata of [
+    `<meta-data android:name="com.google.android.geo.API_KEY" android:value="${key}" />`,
+    `<meta-data android:value='${key}'\n android:name='com.google.android.geo.API_KEY'></meta-data>`,
+  ]) {
+    const input = `<manifest>${permission}<application>${source}${metadata}</application></manifest>`;
+    const output = redactManifestApiKeys(input);
+    assert.ok(input.includes(key));
+    assert.ok(!output.includes(key));
+    assert.ok(output.includes("[REDACTED]"));
+    assert.ok(output.includes(source));
+    assert.ok(output.includes(permission));
+  }
+});
 
 function write(path, value) {
   mkdirSync(resolve(path, ".."), { recursive: true });

@@ -181,14 +181,14 @@
   border-top: 1px solid var(--ph-hairline);
 }
 
-/* 행: 68px 두 칸 그리드 → 44px 한 줄. 시각은 고정폭 숫자로 왼쪽에 정렬한다. */
+/* 긴 시간 범위와 장소명이 겹치지 않도록 시간 아래에 장소를 표시한다. */
 .pl-root .pl-visited__list li + li {
   border-top: 1px solid var(--ph-hairline);
 }
 
 .pl-root .pl-visited__row {
-  grid-template-columns: 104px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
   min-height: 44px;
   padding: 8px 4px;
   border-radius: var(--radius-12);
@@ -203,7 +203,7 @@
   font-weight: var(--type-caption-weight);
   color: var(--ph-ink-3);
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .pl-root .pl-visited__row strong {

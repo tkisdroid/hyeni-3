@@ -33,9 +33,8 @@ export interface Env {
   PHOTOS: R2Bucket;
   // M4 Edge Functions → Worker Secrets (wrangler secret / .dev.vars)
   KAKAO_REST_KEY?: string; // kakao-proxy 도보 길찾기
-  RESEND_API_KEY?: string; // feedback-email 발송
-  FEEDBACK_FROM_EMAIL?: string;
-  FEEDBACK_TO_EMAIL?: string;
+  /** 인증된 운영자 수신 주소로만 보내는 Cloudflare Email Service 바인딩. */
+  FEEDBACK_EMAIL?: SendEmail;
   // M4 AI 함수군 (ai-child-chat / ai-proactive / ai-day-summary / ai-voice-parse / ai-child-monitor)
   // 운영자(관리자) 계정 화이트리스트 — 콤마/공백 구분 user_id 목록.
   // 전역 AI 프롬프트 등 모든 가족에 적용되는 설정을 바꿀 수 있는 유일한 통로다.

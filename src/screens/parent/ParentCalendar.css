@@ -11,6 +11,8 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .pc-year {
   font-size: var(--type-label);
@@ -32,6 +34,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
+}
+.pc-navbtn.pc-todaybtn {
+  width: auto;
+  min-width: var(--control-min-size);
+  min-height: var(--control-min-size);
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  color: var(--hy-accent-text);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
 }
 .pc-navbtn {
   width: 38px;
@@ -61,12 +75,12 @@
   padding: 0 12px calc(120px + env(safe-area-inset-bottom, 0px));
 }
 
-/* ── 월간 그리드 카드 ───────────────────────────────────────────────────── */
+/* ── 월간 그리드 — 날짜 면을 바닥 위에 직접 배치한다 ────────────────────── */
 .pc-card {
-  background: #fff;
-  border-radius: var(--radius-16);
+  background: transparent;
+  border-radius: 0;
   padding: 16px 8px 8px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 .pc-weekdays {
   display: grid;
@@ -143,6 +157,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 0 4px;
 }
 .pc-sel__label {
@@ -571,7 +586,41 @@
   min-width: var(--control-min-size);
 }
 
-@media (max-width: 348px) {
+.hy-adult .pc-body {
+  padding-inline: 20px;
+}
+.hy-adult .pc-card {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.pc-grid,
+.pc-weekdays {
+  gap: 4px;
+}
+.pc-day {
+  border-radius: var(--radius-8);
+  background: var(--control-fill);
+  box-shadow: var(--control-rim);
+}
+.pc-day[aria-pressed="true"] {
+  background: var(--control-fill-hover);
+  box-shadow: var(--control-shadow);
+}
+.pc-day[aria-current="date"] .pc-day__num {
+  font-weight: var(--weight-bold);
+}
+
+@media (max-width: 380px) {
+  .pc-grid,
+  .pc-weekdays {
+    gap: 4px 0;
+  }
+
+  .hy-adult .pc-body,
   .pc-body {
     padding: 0 4px calc(120px + env(safe-area-inset-bottom, 0px));
   }

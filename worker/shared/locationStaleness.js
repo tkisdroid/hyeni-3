@@ -3,6 +3,10 @@
 // while the edge function imports the same module under Deno.
 
 export const STALENESS_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+// 등록장소 부근의 짧은 끊김은 자동 웨이크 두 번을 먼저 시도한다.
+// 마지막 좌표를 현재 위치로 간주하거나 실제 전원·배터리 경고를 늦추지는 않는다.
+export const POWER_SAVE_ALERT_DELAY_MS = 20 * 60 * 1000;
+export const POWER_SAVE_REPEAT_ALERT_AGE_MS = 30 * 60 * 1000;
 export const RECENT_LOCATION_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // 위치가 끊긴 직후에는 5분 간격으로 빠르게 복구하고, 무진전이 길어지면
@@ -15,7 +19,9 @@ export function shouldAutoWakeForStaleAge(ageMs, cronTickMs = 5 * 60 * 1000) {
   else if (ageMs <= 3 * 60 * 60 * 1000) intervalMs = 30 * 60 * 1000;
   else intervalMs = 60 * 60 * 1000;
 
-  const previousAgeMs = Math.max(STALENESS_THRESHOLD_MS, ageMs - cronTickMs);
+  // 첫 10분 초과 점검도 즉시 복구를 요청한다. 이전 나이를 임계값으로 올리면
+  // 10~15분 구간의 첫 웨이크가 빠져 부모 경고 뒤에야 복구가 시작된다.
+  const previousAgeMs = Math.max(0, ageMs - cronTickMs);
   return Math.floor(ageMs / intervalMs) > Math.floor(previousAgeMs / intervalMs);
 }
 
@@ -30,14 +36,23 @@ export function computeAgeMs(lastLocationAtIso, nowMs) {
 // Decide the link-state transition for one child.
 // currentState: 'connected' | 'stale' | undefined (no row yet → treated as connected).
 // Strict `>` so exactly-at-threshold is still connected.
-export function decideLinkTransition({ currentState, ageMs, thresholdMs = STALENESS_THRESHOLD_MS }) {
-  const isStaleNow = ageMs > thresholdMs;
+export function decideLinkTransition({ currentState, ageMs, reason = "unknown", notified = true, thresholdMs = STALENESS_THRESHOLD_MS }) {
   const normalized = currentState === "stale" ? "stale" : "connected";
+  // 이미 경고한 끊김의 회복은 신선한 fix가 와야 확정한다.
+  const effectiveThresholdMs = normalized === "connected" && reason === "power_save"
+    ? Math.max(thresholdMs, POWER_SAVE_ALERT_DELAY_MS)
+    : thresholdMs;
+  const isStaleNow = ageMs > effectiveThresholdMs;
   if (normalized === "connected" && isStaleNow) {
     return { action: "alert", nextState: "stale" };
   }
   if (normalized === "stale" && !isStaleNow) {
     return { action: "recover", nextState: "connected" };
+  }
+  // 반복 경고 유예 중이어도 30분 이상 지속하거나 전원·배터리 이상이 확인되면 알린다.
+  if (normalized === "stale" && !notified && isStaleNow
+    && (reason !== "power_save" || ageMs > POWER_SAVE_REPEAT_ALERT_AGE_MS)) {
+    return { action: "alert", nextState: "stale" };
   }
   return { action: "none", nextState: normalized };
 }

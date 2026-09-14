@@ -166,7 +166,14 @@ test("모서리 반경은 8/12/16/20/24px·pill 만 쓴다", () => {
 test("선택 가능한 칩의 미선택 상태는 하드코딩 hex 대신 중립 토큰을 쓴다", () => {
   for (const file of ["src/screens/parent/EventForm.tsx", "src/screens/feature/PlaceForm.tsx"]) {
     const src = readFileSync(file, "utf8");
-    assert.match(src, /const IDLE_BG = "var\(--bg-chip-idle\)"/, `${file} 의 미선택 채움은 토큰이어야 한다`);
+    if (file.endsWith("EventForm.tsx")) {
+      // 일정 칩은 공통 CSS가 채움을 정하고 화면은 상태 글자색만 정한다.
+      const css = readFileSync("src/screens/parent/EventForm.css", "utf8");
+      assert.match(css, /\.ef-chip \{[^}]*background: var\(--control-fill\)/, "일정 칩은 공통 유리 채움 토큰을 사용해야 한다");
+      assert.doesNotMatch(src, /background: IDLE_BG/);
+    } else {
+      assert.match(src, /const IDLE_BG = "var\(--bg-chip-idle\)"/, `${file} 의 미선택 채움은 토큰이어야 한다`);
+    }
     assert.match(src, /const IDLE_COLOR = "var\(--fg-tertiary\)"/, `${file} 의 미선택 라벨은 토큰이어야 한다`);
   }
 });

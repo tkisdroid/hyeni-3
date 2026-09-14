@@ -101,6 +101,7 @@ test("명시적인 third-party runtime preload는 자체 JS 그래프 예산에�
   )]);
   const result = inspectRouteEntryBundle({ distDir, limitBytes: 500_000 });
   assert.equal(result.bytes, 300_000);
+  assert.throws(() => inspectRouteEntryBundle({ distDir, totalLimitBytes: 600_000 }), /초기 전체 JS/);
   assert.deepEqual(result.excludedFiles, [{
     file: "assets/i18n-runtime-fixture.js",
     bytes: 300_000,

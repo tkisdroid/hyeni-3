@@ -5,11 +5,11 @@
   "sourceLocale": "ko-KR",
   "appName": "Lịch Hyeni - An toàn gia đình",
   "shortDescription": "Lịch và an toàn gia đình, bố làm cho con. Tính năng cơ bản miễn phí.",
-  "fullDescription": null,
+  "fullDescription": "Lịch Hyeni là ứng dụng lịch gia đình và an toàn do một người bố tạo ra cho chính con mình. Ứng dụng tập hợp lịch, đồ dùng học tập, tin nhắn gia đình, vị trí của trẻ và cảnh báo an toàn ở một nơi.\n\nBắt đầu miễn phí với các tính năng thiết yếu\n• Chia sẻ lịch gia đình và quản lý lịch, đồ dùng học tập, bài tập về nhà.\n• Tin nhắn gia đình, nhãn dán, SOS và cảnh báo khẩn cấp cơ bản không cần đăng ký.\n• Không hiển thị quảng cáo và không bán dữ liệu vị trí hoặc gia đình.\n\nLịch gia đình và chuẩn bị đi học\n• Xem lịch của từng trẻ trong lịch gia đình.\n• Nói, nhập văn bản hoặc chọn ảnh thông báo của trường để AI sắp xếp đề xuất lịch; người dùng kiểm tra trước khi lưu.\n• Dùng danh sách kiểm tra đồ dùng học tập và bài tập về nhà.\n\nVị trí và lịch sử di chuyển của trẻ (khi kết nối thiết bị Android của trẻ)\n• Khi quyền vị trí và chia sẻ được bật trên thiết bị của trẻ, bạn có thể xem vị trí mới nhất và hành trình trong ngày.\n• Nhận cảnh báo đến và rời khỏi các địa điểm đã lưu như nhà, trường học và trung tâm học thêm.\n• Các khu vực được hỗ trợ ngoài Hàn Quốc sử dụng Google Maps; Hàn Quốc tiếp tục sử dụng Kakao Maps. Ở khu vực chưa được hỗ trợ, ứng dụng hiển thị tọa độ và thời gian đo thay vì tải sai nhà cung cấp bản đồ.\n\nSOS và cảnh báo an toàn cơ bản\n• Khi trẻ giữ nút SOS trong 3 giây, ứng dụng cố gắng gửi vị trí và tín hiệu khẩn cấp tới phụ huynh.\n• Tùy cài đặt thiết bị, cảnh báo có thể xuất hiện toàn màn hình hoặc dưới dạng thông báo ưu tiên cao.\n• SOS và cảnh báo khẩn cấp cơ bản có thể dùng bất kể trạng thái đăng ký.\n\nTin nhắn gia đình theo từng trẻ\n• Chia sẻ tin nhắn, ảnh và vị trí trong cuộc trò chuyện riêng của từng trẻ.\n• Trẻ có thể nhanh chóng gửi trạng thái như “Con đã đến” hoặc “Hãy đến đón con”.\n• Động viên trẻ bằng nhãn dán khen ngợi.\n\nBạn AI và sắp xếp lịch bằng AI\n• Trong phạm vi phụ huynh cho phép, bạn AI có thể tham khảo lịch và đồ dùng học tập của trẻ.\n• Phụ huynh quản lý số lần sử dụng, giờ hoạt động và chủ đề bị chặn.\n• Câu trả lời và đề xuất lịch của AI có thể không chính xác; phụ huynh nên kiểm tra thông tin quan trọng.\n\nHyeni Premium\n• Bao gồm vị trí thời gian thực, lịch sử di chuyển tối đa 30 ngày, quản lý nhiều trẻ, nghe âm thanh xung quanh trong tình huống khẩn cấp, bản tóm tắt AI hằng ngày và báo cáo hằng tuần.\n• Bản dùng thử khả dụng, giá hiện tại và điều kiện gia hạn được hiển thị trên màn hình mua hàng của Google Play.\n\nNghe âm thanh xung quanh khi khẩn cấp (Premium, thiết bị Android của trẻ)\n• Khi phụ huynh yêu cầu để kiểm tra tình huống khẩn cấp, kết nối có thể kéo dài tối đa 1 phút mà trẻ không cần chạm trước.\n• Trong khi đang nghe, trạng thái luôn hiển thị trên màn hình và thông báo màn hình khóa của trẻ, nơi có thể dừng lại.\n• Lưu bản ghi yêu cầu, bắt đầu và kết thúc, nhưng không lưu lâu dài nội dung âm thanh.\n\nVị trí và thông báo có thể chậm hoặc không khả dụng tùy theo quyền, mạng, pin, độ chính xác GPS và cài đặt hệ điều hành. Khi khẩn cấp, hãy liên hệ trực tiếp với trẻ và sử dụng dịch vụ khẩn cấp công cộng tại địa phương.\n\nChính sách quyền riêng tư: https://hyeni-calendar-api.tkisdroid.workers.dev/privacy",
   "translationStatus": {
     "appName": "translated",
     "shortDescription": "translated",
-    "fullDescription": "pending"
+    "fullDescription": "translated"
   },
   "reviewStatus": "draft",
   "reviewEvidence": null,
@@ -19,6 +19,7 @@
     "ai_schedule",
     "parent_child_location",
     "arrival_alert",
+    "study_miniapp",
     "sos",
     "memo",
     "ai_friend",

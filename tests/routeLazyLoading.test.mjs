@@ -22,6 +22,8 @@ const lazyScreens = [
   { component: "AiFriendChat", module: "@/screens/child/AiFriendChat", namedExport: "AiFriendChat" },
   { component: "ParentStudy", module: "@/screens/study/ParentStudy", namedExport: "ParentStudy" },
   { component: "ChildStudy", module: "@/screens/study/ChildStudy", namedExport: "ChildStudy" },
+  { component: "ChildVocabulary", module: "@/screens/study/ChildVocabulary", namedExport: "ChildVocabulary" },
+  { component: "ParentVocabulary", module: "@/screens/study/ParentVocabulary", namedExport: "ParentVocabulary" },
   { component: "MiniApps", module: "@/screens/miniapps/MiniApps", namedExport: "MiniApps" },
   { component: "TeacherHome", module: "@/screens/teacher/TeacherHome", namedExport: "TeacherHome" },
   { component: "TeacherStudents", module: "@/screens/teacher/TeacherStudents", namedExport: "TeacherStudents" },
@@ -130,6 +132,7 @@ const routes = [
   route("remote-ring", "RemoteRing", "parent"),
   route("sos-receive", "SosReceive", "parent"),
   route("study", "ParentStudy", "parent"),
+  route("study/vocabulary", "ParentVocabulary", "parent"),
   route("child/sos", "ChildSos", "child"),
   route("child/ai-friend", "AiFriendChat", "child"),
   route("child/location-status", "ChildLocationStatus", "child"),
@@ -137,6 +140,7 @@ const routes = [
   route("child/ai-friend-setup", "AiFriendSetup", "child"),
   route("playdate-accept", "PlaydateAccept", "child"),
   route("study/learn", "ChildStudy", "child"),
+  route("study/vocabulary/learn", "ChildVocabulary", "child"),
   route("teacher/notice", "TeacherNotice", "teacher", "teacher-enabled"),
   route("feedback", "Feedback", "authenticated"),
   route("admin/ai-prompt", "AdminAiPrompt", "authenticated"),
@@ -155,13 +159,13 @@ function assertMutationRejected(replacement, message) {
   assert.throws(() => assertAppRouteContract(mutated, expected), message);
 }
 
-test("62개 지연 화면의 component·module·named export 정본을 AST로 고정한다", () => {
-  assert.equal(lazyScreens.length, 62);
+test("64개 지연 화면의 component·module·named export 정본을 AST로 고정한다", () => {
+  assert.equal(lazyScreens.length, 64);
   assert.deepEqual(parseAppRouteContract(app).lazyScreens, lazyScreens);
 });
 
-test("63개 경로의 component·guard·출시 조건 정본을 AST로 고정한다", () => {
-  assert.equal(routes.length, 63);
+test("65개 경로의 component·guard·출시 조건 정본을 AST로 고정한다", () => {
+  assert.equal(routes.length, 65);
   assert.deepEqual(parseAppRouteContract(app).routes, routes);
   assert.doesNotThrow(() => assertAppRouteContract(app, expected));
 });

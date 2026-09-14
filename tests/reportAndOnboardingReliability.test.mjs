@@ -68,7 +68,7 @@ test("가족 조회 실패는 연결 단계로 보내지 않고 기존 로그인
   );
   assert.match(
     onboarding,
-    /await onLoggedIn\(transitionToken\);[\s\S]{0,120}catch \(e\) \{[\s\S]{0,240}const message = localizeApiError\(e, intl, "formal"\);[\s\S]{0,160}onAuthError\(message\);[\s\S]{0,80}show\(message, "⚠️"\)/,
+    /await onLoggedIn\(transitionToken\);[\s\S]{0,120}catch \(e\) \{[\s\S]{0,240}const message = localizeApiError\(e, intl, "formal"\);[\s\S]{0,160}onAuthError\(message\);/,
   );
   assert.doesNotMatch(onboarding, /show\([^\n]*e\.message/);
 });

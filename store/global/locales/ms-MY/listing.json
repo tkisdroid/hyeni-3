@@ -5,11 +5,11 @@
   "sourceLocale": "ko-KR",
   "appName": "Kalendar Hyeni: Keluarga Aman",
   "shortDescription": "Jadual & keselamatan keluarga, dibina bapa untuk anaknya. Ciri asas percuma.",
-  "fullDescription": null,
+  "fullDescription": "Kalendar Hyeni ialah aplikasi kalendar dan keselamatan keluarga yang dibina oleh seorang bapa untuk anaknya sendiri. Jadual, kelengkapan sekolah, mesej keluarga, lokasi anak dan amaran keselamatan dihimpunkan di satu tempat.\n\nMulakan secara percuma dengan ciri penting\n• Kongsi kalendar keluarga serta urus jadual, kelengkapan sekolah dan kerja rumah.\n• Mesej keluarga, pelekat, SOS dan amaran kecemasan asas boleh digunakan tanpa langganan.\n• Kami tidak memaparkan iklan dan tidak menjual data lokasi atau keluarga.\n\nJadual keluarga dan persediaan sekolah\n• Lihat jadual setiap anak dalam kalendar keluarga.\n• Bercakap, menaip atau memilih foto notis sekolah supaya AI menyusun cadangan jadual; pengguna menyemaknya sebelum disimpan.\n• Gunakan senarai semak kelengkapan sekolah dan kerja rumah.\n\nLokasi dan sejarah pergerakan anak (apabila disambungkan kepada peranti Android anak)\n• Apabila kebenaran lokasi dan perkongsian dihidupkan pada peranti anak, lihat lokasi terkini dan pergerakan hari ini.\n• Terima amaran tiba dan keluar bagi tempat yang disimpan seperti rumah, sekolah dan pusat tuisyen.\n• Rantau yang disokong di luar Korea menggunakan Google Maps; Korea terus menggunakan Kakao Maps. Di rantau yang belum disokong, aplikasi memaparkan koordinat dan masa pengukuran dan tidak memuatkan penyedia peta yang salah.\n\nSOS dan amaran keselamatan asas\n• Apabila anak menekan butang SOS selama 3 saat, aplikasi cuba menghantar lokasi dan isyarat kecemasan kepada ibu bapa.\n• Mengikut tetapan peranti, amaran boleh muncul pada skrin penuh atau sebagai pemberitahuan keutamaan tinggi.\n• SOS dan amaran kecemasan asas tersedia tanpa mengira status langganan.\n\nMesej keluarga untuk setiap anak\n• Kongsi mesej, foto dan lokasi dalam perbualan berasingan bagi setiap anak.\n• Anak boleh menghantar status seperti “Dah sampai” atau “Tolong jemput” dengan cepat.\n• Beri galakan dengan pelekat pujian.\n\nRakan AI dan penyusun jadual AI\n• Dalam had yang dibenarkan ibu bapa, rakan AI boleh merujuk jadual dan kelengkapan sekolah anak.\n• Ibu bapa mengurus had penggunaan, waktu tersedia dan topik yang disekat.\n• Jawapan dan cadangan jadual AI mungkin tidak tepat; ibu bapa perlu menyemak maklumat penting.\n\nHyeni Premium\n• Merangkumi lokasi masa nyata, sejarah pergerakan sehingga 30 hari, pengurusan berbilang anak, dengar bunyi persekitaran ketika kecemasan, ringkasan harian AI dan laporan mingguan.\n• Percubaan yang tersedia, harga semasa dan syarat pembaharuan dipaparkan pada skrin pembelian Google Play.\n\nDengar bunyi persekitaran ketika kecemasan (Premium, peranti Android anak)\n• Apabila diminta ibu bapa untuk pemeriksaan kecemasan, ciri boleh bersambung sehingga 1 minit tanpa anak perlu mengetik dahulu.\n• Ketika aktif, status sentiasa dipaparkan pada skrin anak dan pemberitahuan skrin kunci, dan boleh dihentikan melalui pemberitahuan.\n• Rekod permintaan, mula dan tamat disimpan, tetapi kandungan audio persekitaran tidak disimpan untuk jangka panjang.\n\nLokasi dan pemberitahuan mungkin lewat atau tidak tersedia bergantung pada kebenaran, rangkaian, bateri, ketepatan GPS dan tetapan sistem operasi. Dalam keadaan mendesak, hubungi anak secara terus dan gunakan perkhidmatan kecemasan awam tempatan.\n\nDasar Privasi: https://hyeni-calendar-api.tkisdroid.workers.dev/privacy",
   "translationStatus": {
     "appName": "translated",
     "shortDescription": "translated",
-    "fullDescription": "pending"
+    "fullDescription": "translated"
   },
   "reviewStatus": "draft",
   "reviewEvidence": null,
@@ -19,6 +19,7 @@
     "ai_schedule",
     "parent_child_location",
     "arrival_alert",
+    "study_miniapp",
     "sos",
     "memo",
     "ai_friend",

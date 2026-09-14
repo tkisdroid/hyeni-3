@@ -537,6 +537,7 @@ if (-not $postSyncGit.Clean -or $postSyncGit.Head -ne $gitState.Head) {
 }
 
 Write-Host '2/6 서명 값은 화면에 표시하거나 파일에 저장하지 않습니다.'
+$mapsApiKeySecure = Read-Host 'Google Maps Android API 키' -AsSecureString
 $keystorePasswordSecure = Read-Host '키스토어 비밀번호' -AsSecureString
 $keyPasswordSecure = $null
 $keyAlias = $null
@@ -548,12 +549,19 @@ $originalGradleState = if (Test-Path -LiteralPath $gradleProperties -PathType Le
 }
 $gradlePropertiesSanitized = $false
 $releaseBuildSucceeded = $false
+$plainMapsApiKey = $null
 $plainKeystorePassword = $null
 $plainKeyPassword = $null
 $selectedCertificateSha1 = $null
 $uploadCertificateSha256 = $null
 
 try {
+    $plainMapsApiKey = Convert-SecureStringToPlainText -Value $mapsApiKeySecure
+    if ([string]::IsNullOrWhiteSpace($plainMapsApiKey)) {
+        throw '빈 Google Maps Android API 키는 허용하지 않습니다.'
+    }
+    $env:ORG_GRADLE_PROJECT_MAPS_API_KEY = $plainMapsApiKey
+
     $plainKeystorePassword = Convert-SecureStringToPlainText -Value $keystorePasswordSecure
     if ([string]::IsNullOrEmpty($plainKeystorePassword)) {
         throw '빈 키스토어 비밀번호는 허용하지 않습니다.'
@@ -751,10 +759,13 @@ try {
 } finally {
     Clear-SigningEnvironment
     Clear-ReleaseEvidenceEnvironment
+    Remove-Item -LiteralPath 'Env:ORG_GRADLE_PROJECT_MAPS_API_KEY' -ErrorAction SilentlyContinue
+    $plainMapsApiKey = $null
     $plainKeystorePassword = $null
     $plainKeyPassword = $null
     $selectedCertificateSha1 = $null
     $uploadCertificateSha256 = $null
+    $mapsApiKeySecure = $null
     $keystorePasswordSecure = $null
     $keyPasswordSecure = $null
 

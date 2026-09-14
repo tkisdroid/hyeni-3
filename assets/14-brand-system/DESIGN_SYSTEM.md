@@ -154,5 +154,5 @@ Verified on 2026-07-02 against `src/App.css` and `src/styles/tokens.css`.
 ### How to use this during redesign
 
 1. For spacing, radius core, and font: use the tokens as-is — they already match the code.
-2. For the color palette: the target vocabulary (`--hyeni-rose/mint/lavender` scales, mint-led parent) is **not yet in the code**. Adopting it is a deliberate migration step, not a drop-in. Do not hard-code these hexes into components (CLAUDE.md hard rule #1) — introduce them into `src/App.css` / `src/styles/tokens.css` first, then reference via `var(--*)`.
+2. For the color palette: the target vocabulary (`--hyeni-rose/mint/lavender` scales, mint-led parent) is **not yet in the code**. Adopting it is a deliberate migration step, not a drop-in. Do not hard-code these hexes into components (AGENTS.md의 디자인 토큰 규칙) — introduce them into `src/App.css` / `src/styles/tokens.css` first, then reference via `var(--*)`.
 3. When code and this folder disagree, that gap is a redesign TODO, not a bug in either file. Resolve it explicitly with the owner before changing values.

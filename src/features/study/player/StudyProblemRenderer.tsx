@@ -3,11 +3,7 @@ import { useIntl } from "react-intl";
 import type { StudyAttemptResultDto, StudyMissionItemDto } from "../contracts";
 import { StudyAnswerInput } from "./StudyAnswerInput";
 import { serializeStudyAnswer, type StudyAnswerDraft } from "./studyPlayerState";
-import { BarModelVisual } from "./visuals/BarModelVisual";
-import { FractionVisual } from "./visuals/FractionVisual";
-import { GenericStudyVisual } from "./visuals/GenericStudyVisual";
-import { NumberLineVisual } from "./visuals/NumberLineVisual";
-import { supportsStudyVisual } from "./visuals/visualRegistry";
+import { StudyProblemVisual } from "./StudyProblemVisual";
 import "./study-player.css";
 
 type Props = Readonly<{
@@ -20,24 +16,6 @@ type Props = Readonly<{
   onTryAgain?: () => void;
   disabled?: boolean;
 }>;
-
-function ProblemVisual({ item }: Readonly<{ item: StudyMissionItemDto }>) {
-  const intl = useIntl();
-  if (!item.visual) return null;
-  if (!supportsStudyVisual(item.visual)) {
-    return <p className="study-content-error" role="alert">{intl.formatMessage({ id: "study.problem.unsupportedVisual" })}</p>;
-  }
-  const ariaLabel = intl.formatMessage(
-    { id: "study.problem.visualDescription" },
-    { domain: item.domainLabel, concept: item.conceptTitle },
-  );
-  switch (item.visual.kind) {
-    case "fraction_bar": return <FractionVisual visual={item.visual} ariaLabel={ariaLabel} />;
-    case "number_line": return <NumberLineVisual visual={item.visual} ariaLabel={ariaLabel} />;
-    case "line_diagram": return <BarModelVisual visual={item.visual} ariaLabel={ariaLabel} />;
-    default: return <GenericStudyVisual visual={item.visual} ariaLabel={ariaLabel} />;
-  }
-}
 
 function ResultPanel({ result, onNext, onTryAgain }: Readonly<{
   result: StudyAttemptResultDto;
@@ -93,7 +71,7 @@ export function StudyProblemRenderer({
       </header>
       <h2 ref={headingRef} tabIndex={-1}>{item.prompt}</h2>
       <p className="study-problem-objective">{intl.formatMessage({ id: "study.problem.objective" }, { objective: item.childObjective })}</p>
-      <ProblemVisual item={item} />
+      <StudyProblemVisual item={item} />
       <StudyAnswerInput item={item} value={draft} onChange={onDraftChange} disabled={disabled || !!result} />
       {!result && (
         <button

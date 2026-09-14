@@ -262,52 +262,40 @@
   --glass-lift:
     0 2px 8px -4px rgba(60, 55, 90, 0.16),
     0 20px 40px -22px rgba(60, 55, 90, 0.42);
-  /* ── Neumorphism · 조작 면의 촉감 ──
-     유리(큰 면)와 역할이 다르다. 유리는 '떠 있는 판', 뉴모피즘은 '눌리는 물체'다.
-     ⚠️ 두 스타일은 바닥 요구가 정반대다 — 유리는 색이 있어야 굴절하고, 뉴모피즘은
-     밝은 그림자가 보이려면 바닥이 near-neutral 이어야 한다. 그래서 뉴모피즘은
-     **바닥이 아니라 카드(near-white) 위에만** 얹는다. 색 바닥 위에 두면 흰 그림자가
-     사라지고 어두운 그림자만 남아 때가 탄 것처럼 보인다.
-     light 는 좌상단(빛), dark 는 우하단(그늘) — 광원은 화면 전체에서 하나다. */
-  --neu-light: rgba(255, 255, 255, 0.95);
-  --neu-dark: rgba(96, 88, 122, 0.3);
-  /* 볼록 — 아이콘 타일·칩처럼 '누를 수 있는' 작은 면 */
-  --neu-raised:
-    -4px -4px 10px var(--neu-light),
-    5px 7px 16px var(--neu-dark);
-  /* 얕은 볼록 — 카드 안에서 여러 개가 반복될 때(그림자가 겹쳐 지저분해지지 않게) */
-  --neu-raised-soft:
-    -3px -3px 7px var(--neu-light),
-    3px 4px 10px var(--neu-dark);
-  /* 오목 — 값이 들어가는 면(입력칸·요약 우물). 눌린 자리는 그늘이 좌상단이다. */
-  --neu-pressed:
-    inset 3px 4px 8px var(--neu-dark),
-    inset -3px -3px 7px var(--neu-light);
-  /* 뉴모피즘 면은 **자기 배경과 같은 색**이어야 한다 — 배경에서 솟아오른 한 덩어리로 보여야 하기
-     때문이다. 흰색을 채우면 그건 뉴모피즘이 아니라 그냥 흰 버튼이다.
-     transparent 로 두면 바닥 위에서도 유리 카드 위에서도 자동으로 그 면의 색을 그대로 쓴다. */
-  --neu-surface: transparent;
-  /* 배경과 같은 색이 필요한데 투명을 쓸 수 없을 때(겹친 그림자 격리)만 쓰는 대체값. */
-  --neu-surface-solid: #F2F0F4;
+  /* ── 공통 조작 면 · 얇은 유리 윤곽과 짧은 그림자 ──
+     작은 버튼마다 blur를 중첩하지 않는다. 투명 채움과 윤곽만으로 재질을 이어 준다. */
+  --interface-ground: #DADBE0;
+  --interface-ground-light: #EDEDEE;
+  --interface-ink: #161719;
+  --interface-ink-secondary: #4D4E54;
+  --interface-ink-muted: #595A61;
+  --interface-orb: 127, 135, 162;
+  --control-fill: rgba(255, 255, 255, 0.24);
+  --control-fill-hover: rgba(255, 255, 255, 0.48);
+  --control-border: rgba(255, 255, 255, 0.88);
+  --control-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.9), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  --control-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    0 4px 7px -4px rgba(32, 40, 60, 0.28);
+  --control-shadow-pressed:
+    inset 0 2px 4px rgba(32, 40, 60, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.82);
 
-  /* 실제 조작 버튼 전용 뉴모피즘.
-     큰 유리판과 섞이지 않도록 밝은 냉백색 물체로 분리하고, 화면 전체 광원은 좌상단 하나로 맞춘다. */
-  --neu-control-surface: color-mix(in srgb, var(--bg-card) 91%, var(--blue-soft));
-  --neu-control-selected-surface: color-mix(in srgb, var(--bg-card) 76%, var(--blue-soft));
-  --neu-control-border: rgba(255, 255, 255, 0.9);
-  --neu-control-raised:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.98),
-    inset -1px -1px 0 rgba(77, 111, 125, 0.08),
-    -5px -5px 11px rgba(255, 255, 255, 0.92),
-    6px 8px 15px rgba(72, 104, 118, 0.24);
-  --neu-control-raised-soft:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.96),
-    -3px -3px 7px rgba(255, 255, 255, 0.88),
-    4px 5px 10px rgba(72, 104, 118, 0.2);
-  --neu-control-pressed:
-    inset 3px 4px 8px rgba(72, 104, 118, 0.22),
-    inset -3px -3px 7px rgba(255, 255, 255, 0.94),
-    0 1px 0 rgba(255, 255, 255, 0.7);
+  /* 기존 화면의 뉴모피즘 이름도 같은 조작 면을 사용한다. */
+  --neu-light: rgba(255, 255, 255, 0.82);
+  --neu-dark: rgba(32, 40, 60, 0.12);
+  --neu-raised: var(--control-shadow);
+  --neu-raised-soft: var(--control-shadow);
+  --neu-pressed: var(--control-shadow-pressed);
+  --neu-surface: var(--control-fill);
+  --neu-surface-solid: #F2F0F4;
+  --neu-control-surface: var(--control-fill);
+  --neu-control-selected-surface: var(--hy-accent-soft);
+  --neu-control-border: var(--control-border);
+  --neu-control-raised: var(--control-shadow);
+  --neu-control-raised-soft: var(--control-shadow);
+  --neu-control-pressed: var(--control-shadow-pressed);
 
   /* ── Elevation ── */
   --shadow-soft: 0 2px 8px rgba(32, 26, 29, 0.08);
@@ -372,6 +360,7 @@
    아래로 상속되고, .hy-app 의 [data-accent] override 는 이미 늦다.
    (2026-08-19 실사고: 어른 accent 를 lavender 로 바꿨는데 히어로만 로즈로 남았다.) */
 [data-accent] {
+  --neu-control-selected-surface: var(--hy-accent-soft);
   --hy-accent-on-ground: color-mix(in srgb, var(--hy-accent-text) 70%, #2A1520);
   --cta-grad-accent: linear-gradient(120deg, var(--hy-accent-cta), var(--hy-accent-text));
 }

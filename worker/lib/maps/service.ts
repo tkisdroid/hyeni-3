@@ -18,6 +18,9 @@ import type {
   WalkingRouteResponse,
 } from "./types.ts";
 import type { FamilyMapContext } from "./familyContext.ts";
+import { resolveLocationAccessMode, type LocationAccessMode } from "../../db/authz.ts";
+import { loadStandardChildLocations, resolveLocationHistoryReadWindow } from "../../routes/location.ts";
+import { pgToMs, pgTs } from "../time.ts";
 
 export class MapServiceError extends Error {
   readonly code: string;
@@ -54,28 +57,50 @@ function pointFromLocation(value: unknown): LatLngPoint | null {
 
 export async function resolveMapPoint(
   db: D1Database,
-  familyId: string,
+  context: FamilyMapContext,
   ref: MapBiasRef,
+  nowMs = Date.now(),
 ): Promise<ResolvedMapPoint> {
+  const { familyId } = context;
   if (ref.kind === "child_location") {
+    if (context.role === "child" && ref.childUserId !== context.userId) {
+      throw new MapServiceError("map_object_not_found", 404);
+    }
     const child = await db.prepare(
       `SELECT 1 AS ok FROM family_members
         WHERE family_id=? AND user_id=? AND role='child' AND is_active=1 LIMIT 1`,
     ).bind(familyId, ref.childUserId).first<{ ok: number }>();
     if (!child) throw new MapServiceError("map_object_not_found", 404);
-    if (ref.recordedAt) {
-      const row = await db.prepare(
-        `SELECT lat,lng,recorded_at FROM location_history
-          WHERE family_id=? AND user_id=? AND recorded_at=? LIMIT 1`,
-      ).bind(familyId, ref.childUserId, ref.recordedAt).first<{ lat: number; lng: number; recorded_at: string }>();
-      if (!row || !validPoint(row)) throw new MapServiceError("map_object_not_found", 404);
-      return { point: { lat: Number(row.lat), lng: Number(row.lng) }, measuredAt: row.recorded_at };
+    let mode: LocationAccessMode = "realtime";
+    if (context.role === "parent") {
+      try { mode = await resolveLocationAccessMode(db, familyId); }
+      catch { throw new MapServiceError("location_entitlement_unavailable", 503); }
     }
+    if (mode === "locked") throw new MapServiceError("map_object_not_found", 404);
+    const current = mode === "standard"
+      ? (await loadStandardChildLocations(db, familyId, nowMs)).find(row => row.user_id === ref.childUserId)
+      : await db.prepare("SELECT lat,lng,updated_at FROM child_locations WHERE family_id=? AND user_id=? LIMIT 1")
+        .bind(familyId, ref.childUserId).first<{ lat: number; lng: number; updated_at: string }>();
+    const requestedMs = ref.recordedAt ? pgToMs(ref.recordedAt) : null;
+    if (ref.recordedAt && !Number.isFinite(requestedMs)) throw new MapServiceError("map_reference_time_invalid", 400);
+    if (current && validPoint(current) && (requestedMs == null || pgToMs(current.updated_at) === requestedMs)) {
+      return { point: { lat: current.lat, lng: current.lng }, measuredAt: current.updated_at };
+    }
+    if (requestedMs == null || context.role !== "parent") throw new MapServiceError("map_object_not_found", 404);
+    const at = new Date(requestedMs);
+    const readWindow = resolveLocationHistoryReadWindow(mode, at.toISOString(), new Date(requestedMs + 1).toISOString(), nowMs);
+    if (!readWindow || requestedMs < readWindow.startMs || requestedMs >= readWindow.endMs) {
+      throw new MapServiceError("map_object_not_found", 404);
+    }
+    // 화면에 표시한 시각의 실측점만 조회한다. 이력이 없으면 현재 위치로 바꿔 붙이지 않는다.
     const row = await db.prepare(
-      "SELECT lat,lng,updated_at FROM child_locations WHERE family_id=? AND user_id=? LIMIT 1",
-    ).bind(familyId, ref.childUserId).first<{ lat: number; lng: number; updated_at: string }>();
+      `SELECT lat,lng,recorded_at FROM location_history
+        WHERE family_id=? AND user_id=? AND recorded_at IN (?,?,?)
+          AND (is_estimated IS NULL OR is_estimated=0) LIMIT 1`,
+    ).bind(familyId, ref.childUserId, ref.recordedAt, pgTs(at), at.toISOString())
+      .first<{ lat: number; lng: number; recorded_at: string }>();
     if (!row || !validPoint(row)) throw new MapServiceError("map_object_not_found", 404);
-    return { point: { lat: Number(row.lat), lng: Number(row.lng) }, measuredAt: row.updated_at };
+    return { point: { lat: row.lat, lng: row.lng }, measuredAt: row.recorded_at };
   }
 
   const table = ref.kind === "saved_place" ? "saved_places" : ref.kind === "academy" ? "academies" : "events";
@@ -160,7 +185,7 @@ export class MapService {
       const length = [...query].length;
       if (length < 2 || length > 100) throw new MapServiceError("map_search_query_invalid", 400);
       const bias = request.bias
-        ? (await resolveMapPoint(this.input.db, this.input.context.familyId, request.bias)).point
+        ? (await resolveMapPoint(this.input.db, this.input.context, request.bias, this.nowMs())).point
         : null;
       await this.quota("autocomplete");
       const candidates = await this.input.adapter.search(query, normalizeLocale(request.locale), bias, providerSessionToken);
@@ -188,7 +213,7 @@ export class MapService {
       resolved = { point: { lat: source.lat, lng: source.lng }, measuredAt: null };
       await this.quota("reverse_raw");
     } else {
-      resolved = await resolveMapPoint(this.input.db, this.input.context.familyId, source);
+      resolved = await resolveMapPoint(this.input.db, this.input.context, source, this.nowMs());
       await this.quota("reverse_object");
     }
     const label = await this.input.adapter.reverse(resolved.point, normalizeLocale(locale));
@@ -197,8 +222,8 @@ export class MapService {
 
   async directions(request: MapDirectionsRequest, locale: string): Promise<WalkingRouteResponse> {
     const [origin, destination] = await Promise.all([
-      resolveMapPoint(this.input.db, this.input.context.familyId, request.origin),
-      resolveMapPoint(this.input.db, this.input.context.familyId, request.destination),
+      resolveMapPoint(this.input.db, this.input.context, request.origin, this.nowMs()),
+      resolveMapPoint(this.input.db, this.input.context, request.destination, this.nowMs()),
     ]);
     if (request.origin.kind === "child_location" && !request.origin.recordedAt) {
       const measuredMs = Date.parse(origin.measuredAt ?? "");

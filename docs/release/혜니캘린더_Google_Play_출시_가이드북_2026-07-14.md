@@ -206,9 +206,9 @@ realtime은 45초·1회용 ticket에 더해 Family/Teacher room 모두 live 8/us
 
 2026-08-02 Luna 검증에 사용한 로컬 OpenAI 키는 병렬 감사 도구의 내부 로그에 원문이 1회 노출됐다. 값은 코드·Git·이 문서에 기록하지 않지만 해당 키는 더 이상 운영에 사용할 수 없다. OpenAI에서 기존 키를 폐기하고 새 키를 발급한 뒤 Worker secret에 반영하고 `npm run verify:openai-luna`의 child safety text·schedule JSON·vision schedule JSON·day summary text 4종이 모두 HTTP 200과 `model=gpt-5.6-luna`인지 다시 확인한다. 로컬 업데이트 키 canary는 이 4종 모두 통과했지만 production secret readback과 운영 Worker 호출을 대신하지 않는다. 키 값이나 응답 원문은 승인 기록에 남기지 않는다.
 
-| 미설정 이름 | 영향·필수 검증 |
+| 미설정 항목 | 영향·필수 검증 |
 |---|---|
-| `RESEND_API_KEY` | 기능 제안은 D1 `queued`로만 접수된다. 운영자가 큐를 처리하거나 secret 설정 뒤 실제 메일 `sent` E2E 필요 |
+| Cloudflare `FEEDBACK_EMAIL` 바인딩 | sender domain과 destination 주소 인증 전에는 기능 제안이 D1 `queued`로만 접수된다. Email Service 설정 뒤 실제 메일 `sent` E2E 필요 |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | 브라우저 Web Push 구독·백그라운드 표시·ACK 불가. 두 key 설정과 실제 브라우저 E2E 필요 |
 | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | Play 구독 검증·복원·acknowledge 정본 호출 불가 |
 | `GOOGLE_PLAY_PACKAGE_NAME` | 패키지 설정을 Console의 `com.hyeni.calendar`와 일치시켜야 함 |
@@ -440,7 +440,7 @@ v1.3.0 프로덕션 등록정보에는 아직 미완성인 선생님 모드를 �
 
 ### 7.2 외부 처리와 서비스 제공자 예외
 
-Cloudflare, Firebase/FCM, Google Play, Toss Payments, Google·Kakao·Naver OAuth, Kakao 지도·모빌리티, 공개 OSRM, OpenAI, Resend, NCP SENS, Android `SpeechRecognizer`·Web Speech 제공자가 데이터를 처리할 수 있다. Toss에는 주문번호·금액·통화·상태와 customer/billing/payment 식별자가 전달되며 카드번호·유효기간·CVC는 Worker가 받지 않는다. “판매하지 않음”과 “외부 처리가 없음”은 다르다.
+Cloudflare Worker/D1/R2/AI Gateway/Email Service, Firebase/FCM, Google Play, Toss Payments, Google·Kakao·Naver OAuth, Kakao 지도·모빌리티, 공개 OSRM, OpenAI, NCP SENS, Android `SpeechRecognizer`·Web Speech 제공자가 데이터를 처리할 수 있다. Toss에는 주문번호·금액·통화·상태와 customer/billing/payment 식별자가 전달되며 카드번호·유효기간·CVC는 Worker가 받지 않는다. “판매하지 않음”과 “외부 처리가 없음”은 다르다.
 
 각 업체의 DPA, 보관, 삭제, 국외 이전, 2차 이용, 학습 설정, 개발자 지시 범위를 확인해 Play의 서비스 제공자 예외 적용 여부를 결정한다. 예외가 확인되지 않은 데이터 유형은 “공유하지 않음”으로 확정하지 않는다. 코드에 업체명이 있다는 사실만으로 계약 증거를 대신하지 않는다.
 
@@ -722,7 +722,7 @@ targetSdk 36 앱은 Android 16의 `sw600dp` 이상 대화면에서 manifest의 �
 
 위 문단은 당시 적용 이력이다. 2026-08-02 12:02 KST의 최신 v1.3.0 출시 preflight는 운영 D1을 변경하지 않는 단일 SQL로 다시 측정했다. 출시 필수 객체 25개 중 2개만 존재하고 23개가 누락됐으며, `ai_credit_balances` 중복은 1그룹·6행이라 migration 병합 시 5행 삭제가 필요하다. `ai_parent_settings` 중복은 0이지만 exact unique index가 없고, 퍼널 source readback은 `has_ai_friend_limit_source=0`, `has_ai_schedule_limit_source=0`이다. `google_play_purchase_events.debt_applied`, `web_billing_charge_attempts.refund_status`, `web_billing_charge_attempts.customer_key`, `web_ai_credit_orders.record_scope`도 모두 없었다. 응답 메타는 `changes=0`, `changed_db=false`, `rows_written=0`이며 원본 집계 증거는 `artifacts/release-evidence/d1-readonly-preflight-20260802-120214.json`이다. 기존 퍼널 테이블은 전용 forward migration을 정확히 1회 적용하고 최종 두 source readback이 모두 1인지 확인해야 하며, 그 전에는 HOLD다. 이는 쓰기 승인이나 migration 완료 증거가 아니다.
 
-`queued=0`은 자동 재전송기가 있다는 뜻이 아니다. `RESEND_API_KEY`가 없는 현재 상태에서 새 기능 제안은 durable D1 큐로 202 접수되므로 운영 담당자·확인 주기·처리 SLA를 정하기 전에는 출시 운영 게이트를 닫는다.
+`queued=0`은 자동 재전송기가 있다는 뜻이 아니다. Cloudflare Email Service sender domain·destination 인증 또는 `FEEDBACK_EMAIL` 바인딩이 없으면 새 기능 제안은 durable D1 큐로 202 접수되므로 운영 담당자·확인 주기·처리 SLA를 정하기 전에는 출시 운영 게이트를 닫는다.
 
 ## 13. 출시 당일·단계적 출시·롤백
 

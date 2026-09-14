@@ -13,8 +13,6 @@ const REQUIRED_WORKER_SECRETS = Object.freeze([
   "LOCATION_AUDIT_CURSOR_SECRET",
   "PREMIUM_FUNNEL_HASH_SECRET",
   "WEB_BILLING_KEY_ENCRYPTION_SECRET",
-  "RESEND_API_KEY",
-  "FEEDBACK_FROM_EMAIL",
 ]);
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -75,4 +73,4 @@ if (missing.length > 0) {
   process.exit(2);
 }
 
-console.log("프로덕션 Worker 필수 secret 10개 확인 완료.");
+console.log(`프로덕션 Worker 필수 secret ${REQUIRED_WORKER_SECRETS.length}개 확인 완료.`);

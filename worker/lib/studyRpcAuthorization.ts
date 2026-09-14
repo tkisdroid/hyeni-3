@@ -13,6 +13,10 @@ const MAX_FUTURE_SKEW_MS = 30_000;
 export type StudyAuthorizationRole = CalendarStudyRole;
 
 export type StudyAuthorizationOperation =
+  | "guardian.history"
+  | "guardian.vocabulary"
+  | "learner.vocabulary.read"
+  | "learner.vocabulary.review"
   | "guardian.children"
   | "guardian.overview"
   | "guardian.report"
@@ -55,6 +59,10 @@ type StudyAuthorizationPolicy = Readonly<{
 }>;
 
 export const STUDY_ROUTE_AUTHORIZATION_OPERATIONS = {
+  history: "guardian.history",
+  vocabularyProgress: "guardian.vocabulary",
+  vocabularyDeck: "learner.vocabulary.read",
+  vocabularyReview: "learner.vocabulary.review",
   children: "guardian.children",
   overview: "guardian.overview",
   report: "guardian.report",
@@ -70,6 +78,10 @@ export const STUDY_ROUTE_AUTHORIZATION_OPERATIONS = {
 
 const POLICIES: Readonly<Record<StudyAuthorizationOperation, StudyAuthorizationPolicy>> = {
   "guardian.children": { role: "guardian", memberRequired: false, gradeMode: "forbidden" },
+  "guardian.history": { role: "guardian", memberRequired: true, gradeMode: "optional" },
+  "guardian.vocabulary": { role: "guardian", memberRequired: true, gradeMode: "optional" },
+  "learner.vocabulary.read": { role: "learner", memberRequired: true, gradeMode: "optional" },
+  "learner.vocabulary.review": { role: "learner", memberRequired: true, gradeMode: "optional" },
   "guardian.overview": { role: "guardian", memberRequired: true, gradeMode: "required" },
   "guardian.report": { role: "guardian", memberRequired: true, gradeMode: "optional" },
   "guardian.grade": { role: "guardian", memberRequired: true, gradeMode: "required" },

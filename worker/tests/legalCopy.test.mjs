@@ -109,7 +109,7 @@ test("처리방침은 실제 외부 전송업체·필드를 열거하고 증거 
     "Google OAuth",
     "Kakao OAuth",
     "Naver OAuth",
-    "Resend",
+    "Cloudflare Email Service",
     "NCP SENS",
     "공개 OSRM",
     "SpeechRecognizer",

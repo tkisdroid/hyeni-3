@@ -199,6 +199,14 @@ function textEvidence(value) {
   };
 }
 
+export function redactManifestApiKeys(manifest) {
+  // 정책 검사는 원본 manifest로 수행하고, 보관 로그에서만 공개 클라이언트 키를 가린다.
+  return manifest.replace(/<meta-data\b[^>]*>/g, (tag) => {
+    if (!/\bandroid:name\s*=\s*(["'])com\.google\.android\.geo\.API_KEY\1/.test(tag)) return tag;
+    return tag.replace(/(\bandroid:value\s*=\s*)(["'])[\s\S]*?\2/g, "$1$2[REDACTED]$2");
+  });
+}
+
 function archiveEntries(commandRunner, jarToolPath, archivePath, kind) {
   const output = commandRunner(jarToolPath, ["tf", archivePath]).stdout;
   const entries = output.split(/\r?\n/);
@@ -713,7 +721,7 @@ export function buildAabEvidence({
 
   const javaVersion = commandRunner(resolvedJavaPath, ["-version"]).combined.trim();
   const readelfVersion = commandRunner(resolvedReadelfPath, ["--version"]).stdout.trim().split(/\r?\n/, 1)[0];
-  const manifestText = textEvidence(manifestDump);
+  const manifestText = textEvidence(redactManifestApiKeys(manifestDump));
   const configText = textEvidence(configDump);
   const jarsignerText = textEvidence(jarsignerResult.combined);
   const certificateText = textEvidence(keytoolResult.combined);

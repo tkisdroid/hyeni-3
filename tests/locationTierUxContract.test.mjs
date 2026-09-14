@@ -20,7 +20,7 @@ test("Free 화면 진입은 수동 위치 요청 횟수를 소모하지 않고 �
 
   assert.match(source, /if \([\s\S]*!premiumOpen[\s\S]*\) return;[\s\S]*void refreshLocation\(false\)/);
   assert.match(source, /parent\.parentLocation\.copy053[\s\S]*onClick=\{\(\) => navigate\("\/route"\)\}/);
-  assert.match(source, /parent\.parentLocation\.copy055[\s\S]*onClick=\{\(\) => navigate\("\/remote-audio"\)\}/);
+  assert.match(source, /parent\.location\.action\.remoteAudio[\s\S]*onClick=\{\(\) => navigate\("\/remote-audio"\)\}/);
 });
 
 test("위치 설정은 보관기간을 오해시키지 않고 실제 티어 조회 범위를 표시한다", () => {
