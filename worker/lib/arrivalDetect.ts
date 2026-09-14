@@ -5,6 +5,7 @@
 // 추적해, 반경 150m 안에서 5분 이상 머물면 역지오코딩한 주소로 부모에게 도착 알림을 보낸다.
 // 같은 장소(200m)는 2시간 쿨다운, 등록 장소 근처(150m)는 skip(네이티브 지오펜스와 중복 방지).
 // upsert_child_location 의 waitUntil 로 실행 — 실패해도 위치 저장에는 영향 없다(fire-and-forget).
+import { makeNotificationCopy } from "../../shared/notificationCopy.ts";
 import { readFamilyTimeZone } from "./timeZone.ts";
 import { handleInstantNotification, insertParentAlertV2 } from "../routes/push-notify";
 import { episodeIdempotencyKey } from "../shared/locationStaleness.js";
@@ -279,11 +280,13 @@ export async function detectArbitraryArrival(
 
     // 부모 알림센터 기록.
     const alertType = "arrived";
+    const notificationCopy = scheduledAlert?.metadata.notificationCopy ?? makeNotificationCopy("arrived", { child: childName, place: placeLabel });
     const alertId = await insertParentAlertV2(env, db, {
       familyId,
       alertType,
       title,
       message,
+      metadata: { notificationCopy },
       severity: "info",
       eventId: scheduleAssociation?.occurrenceId ?? idempotencyKey,
       childUserId: userId,
@@ -317,6 +320,7 @@ export async function detectArbitraryArrival(
         familyId,
         senderUserId: userId,
         severity: "info",
+        notificationCopy,
         alertType,
         title,
         message,

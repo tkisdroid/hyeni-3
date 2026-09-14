@@ -2858,6 +2858,10 @@ public class LocationService extends Service {
                         Log.d(TAG, "Skipping pending notification for another device role: " + id);
                         continue;
                     }
+                    String[] displayCopy = NotificationCopyLocalizer.localize(this,
+                        data != null ? data.opt("notificationCopy") : null, title, notifBody);
+                    title = displayCopy[0];
+                    notifBody = displayCopy[1];
                     if ("remote_listen".equals(type)) {
                         publishDeviceStatusFromPending(data);
                         RemoteListenNotification.Result result = RemoteListenNotification.show(

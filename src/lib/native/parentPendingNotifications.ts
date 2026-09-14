@@ -1,3 +1,4 @@
+import { formatNotificationCopy } from "../../../shared/notificationCopy.ts";
 import type { PendingDeviceNotification } from "../api/endpoints/notifications";
 
 export const PARENT_PENDING_POLL_INTERVAL_MS = 30_000;
@@ -25,8 +26,12 @@ export type PendingToastAnnouncer = (text: string, emoji?: string) => boolean;
 export function presentWebPendingNotification(
   input: ParentPendingPresentation,
   announce: PendingToastAnnouncer,
+  locale = "ko",
 ): ParentPendingDisplayResult {
-  const text = input.body ? `${input.title} — ${input.body}` : input.title;
+  const translated = formatNotificationCopy(input.notificationCopy, locale);
+  const title = translated?.title ?? input.title;
+  const body = translated?.body ?? input.body;
+  const text = body ? `${title} — ${body}` : title;
   const displayed = announce(text, input.urgent ? "🚨" : "🔔");
   return { displayed, acknowledged: displayed };
 }
@@ -85,6 +90,7 @@ export function pendingPresentation(notification: PendingDeviceNotification): Pa
     severity: firstText(data.severity),
     alertType: firstText(data.alertType, data.alert_type),
     route: firstText(data.route),
+    ...(data.notificationCopy ? { notificationCopy: data.notificationCopy } : {}),
   };
 }
 

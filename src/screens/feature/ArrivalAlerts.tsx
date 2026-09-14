@@ -8,6 +8,7 @@ import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";
 import {
   arrivalAlertTone,
   cleanAlertTitle,
+  localizeParentAlert,
   isArrivalAlertType,
   relativeTime,
   type ArrivalAlertTone,
@@ -22,7 +23,7 @@ import "./ArrivalAlerts.css";
 /**
  * 도착 알림(P-22): parent-alerts 에서 도착·미도착/이탈 계열만 필터해 상세 표시.
  * 도착=민트, 출발=라벤더(정상 이동), 미도착·지연=앰버(신호색 고정). 탭 시 읽음 처리 후 위치 지도로 이동.
- * 부모 존댓말. 상세(일정명·장소·시간)는 서버 title/message 그대로 표기.
+ * 부모 존댓말. 정본 상세 매개변수는 보존하고 표시 계약이 있는 새 알림만 현재 언어로 변환한다.
  */
 
 const TONE_ICON: Record<ArrivalAlertTone, string> = {
@@ -48,8 +49,8 @@ export function ArrivalAlerts() {
 
   // 알림이 바뀔 때만 now 재계산(상대시간 안정화).
   const list = useMemo<ParentAlert[]>(
-    () => (data ?? []).filter((a) => isArrivalAlertType(a.alert_type)),
-    [data],
+    () => (data ?? []).filter((a) => isArrivalAlertType(a.alert_type)).map(a => localizeParentAlert(a, locale)),
+    [data, locale],
   );
   const now = useMemo(() => new Date(), [list]);
   const arrivedCount = useMemo(

@@ -454,6 +454,7 @@ export function buildPlaceArrivedAlert(childName, placeName, fromPlaceName) {
     const from = typeof fromPlaceName === "string" ? fromPlaceName.trim() : "";
     return {
         alertType: "place_arrived",
+        metadata: { notificationCopy: { v: 1, id: from && from !== place ? "arrivedFrom" : "arrived", args: { child: childName || "", place: placeName || "", from } } },
         severity: "info",
         title: `✅ ${place} 도착`,
         message: from && from !== place
@@ -467,6 +468,7 @@ export function buildPlaceLeftAlert(childName, placeName) {
     const place = (placeName || "등록된 장소").trim() || "등록된 장소";
     return {
         alertType: "place_left",
+        metadata: { notificationCopy: { v: 1, id: "left", args: { child: childName || "", place: placeName || "" } } },
         severity: "info",
         title: `🚶 ${place} 출발`,
         message: `${name}가 ${place}에서 출발했어요.`,

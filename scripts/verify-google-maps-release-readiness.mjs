@@ -7,6 +7,8 @@ import {
 } from "../shared/mapPolicy.ts";
 import { dayWindowAt, wallTimeToEpoch } from "../shared/timeZone.ts";
 import { SERVICE_COUNTRY_CODES } from "../shared/serviceCountries.ts";
+import { definitions } from "../shared/notificationDefinitions.ts";
+import { formatNotificationCopy, makeNotificationCopy } from "../shared/notificationCopy.ts";
 
 const root = resolve(import.meta.dirname, "..");
 const read = (path) => readFileSync(resolve(root, path), "utf8");
@@ -39,10 +41,16 @@ check("DST 23·25시간 날짜 경계", spring.endMs - spring.startMs === 23 * 3
 check("DST 반복 시각은 첫 발생으로 고정", wallTimeToEpoch("2026-10-1",90,"America/Los_Angeles") === Date.parse("2026-11-01T08:30Z"));
 check("Android 가족 시간대·수신자 시간대 분리", /refreshFamilyTimeZone/u.test(read("android/app/src/main/java/com/hyeni/calendar/LocationService.java")) && /isValidTimeZone/u.test(read("android/app/src/main/java/com/hyeni/calendar/NotificationQuietHoursPolicy.java")));
 
+const notificationLocales = JSON.parse(read("locales/manifest.json")).locales.map(item => item.code);
+check("위치·안전 알림 10개 언어 표시 계약", notificationLocales.length === 10 && notificationLocales.every(locale => Object.keys(definitions).every(id => {
+  const copy = makeNotificationCopy(id, { child: "M", place: "P", from: "H", event: "E", minutes: 15, hours: 24 });
+  const display = formatNotificationCopy(copy, locale);
+  return locale === "ko" ? display === null : Boolean(display?.title && display?.body);
+})));
+check("Android FCM·부모/아이 pending·플러그인 번역 연결", ["MyFirebaseMessagingService", "ParentPendingRecoveryWorker", "LocationService", "NotificationPlugin"].every(name => read(`android/app/src/main/java/com/hyeni/calendar/${name}.java`).includes("NotificationCopyLocalizer.localize")));
 const failedChecks = checks.filter((item) => !item.passed);
 const externalBlockers = [
   "BLOCKED_BY_RELEASE_CI_EVIDENCE",
-  "BLOCKED_BY_NOTIFICATION_CONTENT_LOCALIZATION",
   "BLOCKED_BY_ANDROID_TIMEZONE_RELEASE",
   "BLOCKED_BY_GOOGLE_ROUTES_OAUTH_SCOPE_PROOF",
   "BLOCKED_BY_LIVE_NON_KR_DEVICE_E2E",

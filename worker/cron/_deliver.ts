@@ -6,6 +6,7 @@
 //
 // FCM 키 미설정(현 dev) → 발송은 graceful 실패(handleInstantNotification 은 200 반환,
 // sent=0). 그래도 insert_parent_alert_v2 는 수행 → 알림 행은 DB 에 남아 검증 가능.
+import { normalizeNotificationCopy } from "../../shared/notificationCopy.ts";
 import { readFamilyTimeZone } from "../lib/timeZone.ts";
 import type { PushEnv } from "../lib/pushEnv";
 import { parentAlertDeliveryKey } from "../lib/parentAlertDedupe";
@@ -109,18 +110,23 @@ export async function deliverParentAlert(
   }
 
   // ── 기록 절반: insert_parent_alert_v2 (event_id+alert_type 멱등) ──
-  const baseMetadata = args.metadata ?? alert.metadata ?? null;
+  const baseMetadata = args.metadata || alert.metadata ? { ...alert.metadata, ...args.metadata } : null;
   const scopeMetadata = presenceMetadata ?? stayMetadata ?? null;
+  const familyTimeZone = await readFamilyTimeZone(db, familyId);
   const occurrence = prepareRegisteredPlaceAlertOccurrence({
-    timeZone: await readFamilyTimeZone(db, familyId),
+    timeZone: familyTimeZone,
     alertType: alert.alertType,
     message: alert.message,
     occurredAt: args.occurredAtMs,
     nowMs: Date.now(),
   });
+  const baseCopy = normalizeNotificationCopy(baseMetadata?.notificationCopy);
+  const copyTime = occurrence.occurredAt ?? baseMetadata?.event_at;
+  const notificationCopy = baseCopy ? normalizeNotificationCopy({ ...baseCopy, occurredAt: copyTime, timeZone: familyTimeZone }) : null;
   const mergedMetadata = baseMetadata || scopeMetadata || occurrence.occurredAt
     ? {
       ...(baseMetadata ?? {}),
+      ...(notificationCopy ? { notificationCopy } : {}),
       ...(scopeMetadata ?? {}),
       ...(occurrence.occurredAt ? { occurredAt: occurrence.occurredAt } : {}),
     }
@@ -180,6 +186,7 @@ export async function deliverParentAlert(
         alertType: alert.alertType,
         title: alert.title,
         message: occurrence.message,
+        notificationCopy,
         urgent: pushPolicy?.urgent ?? false,
         route: targetRoute,
         alertId,

@@ -422,6 +422,7 @@ test("등록장소 pending·FCM·Web Push는 실제 episode 시각부터 30분�
         alertType: "place_arrived",
         occurredAt: "2026-08-30T23:39:05.000Z",
         idempotency_key: "place-arrived-occurrence-runtime",
+        notificationCopy: { v: 1, id: "arrived", args: { child: "민서", place: "School" }, occurredAt: "2026-08-30T23:39:05.000Z", timeZone: "America/New_York" },
       },
       "child-a",
       "service_role",
@@ -452,6 +453,11 @@ test("등록장소 pending·FCM·Web Push는 실제 episode 시각부터 30분�
       },
     ]);
     assert.ok(capture.fcmPayloads.length >= 1);
+    const copy = JSON.parse(capture.fcmPayloads[0].message.data.notificationCopy);
+    assert.deepEqual(copy, { v: 1, id: "arrived", args: { child: "민서", place: "School" }, occurredAt: "2026-08-30T23:39:05.000Z", timeZone: "America/New_York" });
+    for (const row of sqlite.prepare("SELECT data FROM pending_notifications").all()) {
+      assert.deepEqual(JSON.parse(JSON.parse(row.data).notificationCopy), copy);
+    }
     assert.equal(capture.fcmPayloads[0].message.data.occurredAt, "2026-08-30T23:39:05.000Z");
     assert.equal(capture.fcmPayloads[0].message.data.expiresAt, "2026-08-31 00:09:05.000+00");
     assert.ok(capture.webEndpoints.length >= 1);

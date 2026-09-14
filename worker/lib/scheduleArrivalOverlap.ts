@@ -96,10 +96,11 @@ function nearestCandidate(
 export function buildScheduledArrivalAlert(
   childName: string,
   event: ScheduleArrivalCandidate,
-): { alertType: "arrived"; severity: "info"; title: string; message: string } {
+): { alertType: "arrived"; severity: "info"; title: string; message: string; metadata: Record<string, unknown> } {
   const eventTitle = event.title?.trim() || "일정";
   return {
     alertType: "arrived",
+    metadata: { notificationCopy: { v: 1, id: "scheduleArrived", args: { child: childName || "", event: event.title || "" } } },
     severity: "info",
     title: `✅ ${eventTitle} 도착`,
     message: `${childName}님이 ${eventTitle} 장소에 도착했어요.`,

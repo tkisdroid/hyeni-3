@@ -12,7 +12,7 @@ import { useMarkAlertRead } from "@/queries/useNotifications";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { parseServerTimestamp } from "@/transform/locationView";
-import { cleanAlertTitle } from "@/transform/notificationsView";
+import { cleanAlertTitle, localizeParentAlert } from "@/transform/notificationsView";
 import { placePhoneCall } from "@/lib/native/phone";
 import { childAvatarPath } from "@/lib/avatar";
 import { useEntitlement } from "@/queries/useEntitlement";
@@ -70,7 +70,7 @@ export function SosReceive() {
   const { tier } = useEntitlement();
   const markRead = useMarkAlertRead();
 
-  const list = useMemo(() => sosList ?? [], [sosList]);
+  const list = useMemo(() => (sosList ?? []).map(alert => localizeParentAlert(alert, locale)), [sosList, locale]);
   const requestedAlertId = searchParams.get("alert")?.trim() || null;
   const latest = requestedAlertId
     ? list.find((alert) => alert.id === requestedAlertId) ?? null

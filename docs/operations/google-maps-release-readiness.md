@@ -10,6 +10,33 @@
 이 allowlist는 지도 공급자 선택만 연다. 가족 현지 시간대/DST, Google Routes OAuth 실호출,
 비한국 부모 PWA↔아이 Android 실기기 E2E와 새 Android AAB Play 배포가 완료됐다는 의미가 아니다.
 
+## 2026-09-14 남은 항목: 위치·안전 알림 현지화
+
+- 표시 전용 `notificationCopy={v,id,args,occurredAt?,timeZone?,delayed?}`를 구현했다.
+  서버가 활성 아이·같은 가족 장소/일정의 정본 이름을 조회하며 공개 요청의 임의 번역 객체는 수용하지 않는다.
+  권한·수신자·긴급도·TTL·중복 키·라우트·ACK는 기존 정책을 유지한다. D1 스키마/Secret 변경은 필요하지 않다.
+- 등록장소 도착/출발·병합 도착, 일정 도착/지연/미도착, 위험구역 진입/이탈, 위치 끊김/복구·장기 끊김,
+  미등록 장소 출발, SOS·저전력·일정 리마인더와 긴급 신호 5분 재확인에 표시 계약을 연결했다.
+  한국어 원문 및 구버전/알 수 없는 계약의 원문은 보존한다. 과거 기록을 문장 파싱으로 임의 번역하거나 재작성하지 않는다.
+- `locales/notification-messages.json` 한 정본에서 웹/PWA·Android 카탈로그를 생성한다.
+  `npm run i18n:verify`는 10개 언어 키/매개변수와 생성물 최신성을 검사한다.
+  부모 알림센터·도착/위험/SOS 상세·foreground pending·PWA Service Worker·Android FCM/부모·아이 pending에 반영한다.
+  Android는 앱의 선택 언어를 표시 전용 preference로 동기화하며 계정/세션을 건드리지 않는다.
+- 원래 이름·주소는 그대로 표시하고 실제 사건 시각은 가족 IANA 시간대와 DST로 표시한다.
+  지연 출발은 늦게 확인된 과거 기록임을 별도 표기하며 해외 긴급 안내에 한국 전화번호를 추정해서 넣지 않는다.
+- 검증: Worker 1,513개, Android 196개 및 lint 통과. 앱 전체 회귀와 마지막 배포 결과는 아래 후속 readback에 기록한다.
+  SQLite+FCM 전송 fixture에서 표시 계약·수신자·사건 시각·30분 TTL 보존을 함께 검증했다.
+- `scripts/qa-notification-localization.mjs`: 390×844 격리 브라우저 알림센터 10개 언어 및 도착·위험 상세 검사.
+  `scripts/qa-notification-service-worker.mjs`: 로컬 dist 실제 SW의 번역 표시·stableId/route·타 가족 거부·만료 거부·한국어 보존 통과.
+  `qa:pwa-runtime`의 설치·오프라인·업데이트 문제 0건. 모두 로컬 증거이며 실제 FCM/Web Push receipt를 대신하지 않는다.
+- 현지화 구현 gate는 해소했다. 기존 설치 Android는 새 버전 배포 전까지 한국어 원문을 표시할 수 있다.
+  남은 전체 출시 gate는 CI, 새 Android 서명/Play 배포, Google Routes 최소 OAuth 증거, 비한국 실제 가족·기기 E2E다.
+- Google Console은 Orca 브라우저로 다시 열었으나 로그인 화면이다.
+  [표준 Routes v2 reference](https://developers.google.com/maps/documentation/routes/reference/rest/v2/TopLevel/computeRoutes)를 재확인해도
+  최소 OAuth 범위의 실호출 증거는 얻지 못했다. Routes Preferred 전용 scope를 표준 Routes에 전용하거나 광범위 권한을 추가하지 않는다.
+- GitHub run `34805964154` annotation 재확인: Actions budget 때문에 job이 시작되지 않았다.
+  비용/결제 설정은 변경하지 않았다. ADB 0대이며 실제 세션 조작·재페어링·스토어 업로드는 하지 않았다.
+
 ## 2026-09-14 출시 구현 및 선행 운영 반영
 
 - 최신 `origin/main bd55190`의 1.4.8 안정화를 현재 지도 브랜치에 병합했다. 248개국 정책은 유지한다.
@@ -31,9 +58,8 @@
   아직 입증하지 못했으므로 길찾기 stub/게이트를 강제로 열지 않는다.
 - 공개 운영 웹 키와 허용된 브랜드 origin의 격리 문서에서 실제 Google SDK/뉴욕 Central Park 타일을 로드했다.
   인증 오류·지도 오류 overlay 없음. `scripts/qa-google-maps-web-canary.mjs`는 실제 Google 웹 SDK 증거지만 가족 위치/검색/푸시 E2E는 아니다.
-- 서버 생성 알림의 title/body 일부는 한국어 원문이며 PWA/Android가 원문을 표시한다. 시간대와 알림 본문 현지화는 별개다.
-  서버 알림 message ID/매개변수 및 수신 기기별 번역 계약이 완료되기 전까지 본문 현지화 gate를 유지한다.
-- 남은 출시 gate: 알림 본문 현지화, Google Routes 최소 권한 실호출, 신규 Android AAB 서명/배포, 비한국 부모 PWA↔아이 Android 실제 위치·푸시 ACK.
+- 선행 반영 당시에는 서버 알림 원문 현지화가 미완성이었다. 위 후속 구현에서 새 위치·안전 알림의 표시 계약을 연결했다.
+- 남은 출시 gate: Google Routes 최소 권한 실호출, 신규 Android AAB 서명/배포, 비한국 부모 PWA↔아이 Android 실제 위치·푸시 ACK.
   자동검사 성공이나 운영 스키마 반영을 해외 전체 출시 GO로 해석하지 않는다.
 
 ## 2026-09-14 운영 배포 readback

@@ -1,3 +1,4 @@
+import { makeNotificationCopy, normalizeNotificationCopy, type NotificationCopy } from "../../shared/notificationCopy.ts";
 // POST /api/push-notify  ← supabase/functions/push-notify/index.ts (직역, M5 핵심).
 // FCM(네이티브) + VAPID(웹) 푸시 발송 + cron 일정알림 스캔. 2개 모드:
 //   1. instant: POST body.action (parent_alert/new_event/new_memo/kkuk/sos/emergency/
@@ -1454,6 +1455,7 @@ export async function handleForceRingReminder(env: PushEnv, db: D1Database, call
     const reminderBody = "아이 응답이 없습니다. 직접 통화나 119를 고려하세요";
     const reminderData = {
       action: "force_ring_reminder",
+      notificationCopy: JSON.stringify(makeNotificationCopy("forceReminder")),
       event_id: eventId,
       familyId,
       targetUserId: initiatorId,
@@ -1518,6 +1520,7 @@ interface QuietHoursRecipientPartition {
 }
 
 interface InstantNotificationOptions {
+  notificationCopy?: NotificationCopy | null;
   atMs?: number;
   quietHoursPartition?: QuietHoursRecipientPartition;
 }
@@ -1906,7 +1909,9 @@ async function handleInstantNotificationCore(
     }
   }
 
+  const notificationCopy = normalizeNotificationCopy(options?.notificationCopy ?? (callerRole === "service_role" ? body.notificationCopy : null));
   const fcmExtraData: Record<string, string> = { pushId, urgent: urgent ? "true" : "false" };
+  if (notificationCopy) fcmExtraData.notificationCopy = JSON.stringify(notificationCopy);
   if (severity) fcmExtraData.severity = severity;
   if (alertType) fcmExtraData.alertType = alertType;
   if (registeredPlaceTiming.occurredAt) {
@@ -2241,6 +2246,7 @@ async function handleInstantNotificationCore(
         title,
         body: message,
         data: {
+          ...(notificationCopy ? { notificationCopy: JSON.stringify(notificationCopy) } : {}),
           senderUserId: senderUserId || "",
           familyId,
           type: action,
@@ -2381,6 +2387,7 @@ async function handleInstantNotificationCore(
         ? { occurredAt: registeredPlaceTiming.occurredAt }
         : {}),
       ...(webPushExpiresAt ? { expiresAt: webPushExpiresAt } : {}),
+      ...(notificationCopy ? { notificationCopy: JSON.stringify(notificationCopy) } : {}),
     },
   };
 
@@ -2677,6 +2684,7 @@ function memoPushPreview(content: string): string {
 }
 
 type StoredParentAlertForPush = {
+  metadata: string | null;
   id: string;
   alert_type: string;
   title: string;
@@ -2710,7 +2718,7 @@ async function handleVerifiedLegacyParentAlertNotification(
   const recentCutoff = pgFromMs(Date.now() - 10 * 60_000);
   const childConstraint = membership.role === "child" ? " AND child_user_id = ?" : "";
   const query = db.prepare(
-    `SELECT id, alert_type, title, message, severity, event_id, child_user_id
+    `SELECT id, alert_type, title, message, severity, event_id, child_user_id, metadata
        FROM parent_alerts
       WHERE family_id = ? AND alert_type = ? AND title = ? AND message = ?
         AND substr(created_at,1,19) >= substr(?,1,19)${childConstraint}
@@ -2759,7 +2767,7 @@ async function handleVerifiedLegacyParentAlertNotification(
     if (!insertedId) return jsonResponse({ error: "parent_alert_insert_failed" }, 503);
     alert = await db
       .prepare(
-        `SELECT id, alert_type, title, message, severity, event_id, child_user_id
+        `SELECT id, alert_type, title, message, severity, event_id, child_user_id, metadata
            FROM parent_alerts WHERE id = ? AND family_id = ? LIMIT 1`,
       )
       .bind(insertedId, familyId)
@@ -2772,6 +2780,8 @@ async function handleVerifiedLegacyParentAlertNotification(
     urgent: false,
     route: "/notifications" as const,
   };
+  let notificationCopy: NotificationCopy | null = null;
+  try { notificationCopy = normalizeNotificationCopy(JSON.parse(alert.metadata || "{}").notificationCopy); } catch { /* 구버전 metadata는 원문을 유지한다. */ }
   const pushId = parentAlertDeliveryKey(alert.alert_type, alert.event_id || alert.id);
   const route = parentAlertTargetRoute(policy.route, alert.id, alert.child_user_id);
   const delivery = await handleInstantNotification(
@@ -2783,6 +2793,7 @@ async function handleVerifiedLegacyParentAlertNotification(
       senderUserId: callerUserId,
       title: alert.title,
       message: alert.message,
+      notificationCopy,
       alertType: alert.alert_type,
       severity: alert.severity,
       urgent: policy.urgent,
@@ -2894,6 +2905,7 @@ export async function sendChildSafetyNotification(
     db,
     {
       action: "child_safety",
+      notificationCopy: makeNotificationCopy(args.alertType === "danger_exit" ? "childDangerExit" : "childDangerEnter"),
       familyId: args.familyId,
       targetUserId: args.childUserId,
       title: copy.title,
@@ -3424,6 +3436,9 @@ export async function handleCronNotification(env: PushEnv, db: D1Database): Prom
 
       for (const group of deliveryGroups) {
         const reminderExpiresAt = reminderPendingExpiresAt(event, window.minsBefore);
+        const reminderCopy = makeNotificationCopy(group.targetRole === "child"
+          ? (window.minsBefore === 0 ? "childReminderNow" : "childReminder")
+          : (window.minsBefore === 0 ? "reminderNow" : "reminder"), { event: event.title, minutes: window.minsBefore });
         const groupPayload = {
           title: group.title,
           body: group.body,
@@ -3438,6 +3453,7 @@ export async function handleCronNotification(env: PushEnv, db: D1Database): Prom
             targetRole: group.targetRole,
             route: group.route,
             expiresAt: reminderExpiresAt,
+            notificationCopy: JSON.stringify(reminderCopy),
           },
         };
 
@@ -3499,6 +3515,7 @@ export async function handleCronNotification(env: PushEnv, db: D1Database): Prom
             groupPayload.body,
             window.key,
             {
+              notificationCopy: JSON.stringify(reminderCopy),
               eventId: String(event.id),
               pushId,
               urgent: "false",
@@ -3605,7 +3622,9 @@ export async function handleCronNotification(env: PushEnv, db: D1Database): Prom
     const notArrivedLeaseKey = `cron:not-arrived:${event.family_id}:${event.id}:${notArrivedClaimKey}`;
     const notArrivedLeaseAction = "cron_not_arrived";
 
+    const missingCopy = makeNotificationCopy("scheduleMissing", { child: missingNames.join(", "), event: event.title });
     const alertData: Record<string, unknown> = {
+      notificationCopy: JSON.stringify(missingCopy),
       eventId: String(event.id),
       occurrenceId: occurrenceAlertId,
       type: "parent_alert",
@@ -3629,7 +3648,7 @@ export async function handleCronNotification(env: PushEnv, db: D1Database): Prom
       severity: naSeverity,
       eventId: occurrenceAlertId,
       childUserId: alertChildUserId,
-      metadata: { pushId, targetChildUserIds: notArrivedChildUserIds, radiusM: ARRIVAL_RADIUS_M, staleOnly: arrivalUnknownOnly },
+      metadata: { notificationCopy: missingCopy, pushId, targetChildUserIds: notArrivedChildUserIds, radiusM: ARRIVAL_RADIUS_M, staleOnly: arrivalUnknownOnly },
     });
     if (!alertId) {
       continue;
@@ -3690,6 +3709,7 @@ export async function handleCronNotification(env: PushEnv, db: D1Database): Prom
         senderUserId: alertChildUserId ?? "",
         title,
         message: naBody,
+        notificationCopy: missingCopy,
         alertType: "not_arrived",
         severity: naSeverity,
         urgent: !arrivalUnknownOnly,

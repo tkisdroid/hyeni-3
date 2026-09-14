@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import { formatNotificationCopy } from "../shared/notificationCopy.ts";
 
 import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
@@ -293,9 +294,10 @@ self.addEventListener("push", (event) => {
 
     const route = routeForRole(data.route, context.role);
     const pushId = stringValue(data.pushId) || crypto.randomUUID();
-    const title = stringValue(payload.title)
-      || localizedBrandName(await readServiceWorkerLocale().catch(() => null) ?? "ko");
-    const body = stringValue(payload.body);
+    const locale = await readServiceWorkerLocale().catch(() => null) ?? "ko";
+    const translated = formatNotificationCopy(data.notificationCopy, locale);
+    const title = translated?.title ?? (stringValue(payload.title) || localizedBrandName(locale));
+    const body = translated?.body ?? stringValue(payload.body);
     const familyId = context.familyId;
     const targetUserId = context.userId;
     const targetRole = context.role;

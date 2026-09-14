@@ -120,6 +120,7 @@ export function buildStaleAlert(childName, ageMinutes, reason = "unknown", place
   if (reason === "power_save") {
     return {
       alertType: "location_stale",
+      metadata: { notificationCopy: { v: 1, id: reason === "power_off" ? "powerOff" : "stale", args: { child: childName || "", minutes: mins } } },
       severity: "info",
       title: "아이 위치가 업데이트되지 않아요",
       message: place
@@ -134,6 +135,7 @@ export function buildStaleAlert(childName, ageMinutes, reason = "unknown", place
   if (reason === "power_off") {
     return {
       alertType: "location_stale",
+      metadata: { notificationCopy: { v: 1, id: reason === "power_off" ? "powerOff" : "stale", args: { child: childName || "", minutes: mins } } },
       severity: "warning",
       title: "아이가 기기 전원을 껐어요",
       message: place
@@ -144,6 +146,7 @@ export function buildStaleAlert(childName, ageMinutes, reason = "unknown", place
   if (reason === "device_off") {
     return {
       alertType: "location_stale",
+      metadata: { notificationCopy: { v: 1, id: reason === "power_off" ? "powerOff" : "stale", args: { child: childName || "", minutes: mins } } },
       severity: "warning",
       title: "아이 기기 연결이 끊겼어요",
       message: `${subject} ${mins}분째 위치가 끊겼어요. 배터리가 부족했던 것 같아요.`,
@@ -152,6 +155,7 @@ export function buildStaleAlert(childName, ageMinutes, reason = "unknown", place
   if (reason === "unstable") {
     return {
       alertType: "location_stale",
+      metadata: { notificationCopy: { v: 1, id: reason === "power_off" ? "powerOff" : "stale", args: { child: childName || "", minutes: mins } } },
       severity: "warning",
       title: "아이 위치 연결이 불안정해요",
       message: `${subject} ${mins}분째 위치가 업데이트되지 않아요. 기기를 확인해 주세요.`,
@@ -159,6 +163,7 @@ export function buildStaleAlert(childName, ageMinutes, reason = "unknown", place
   }
   return {
     alertType: "location_stale",
+      metadata: { notificationCopy: { v: 1, id: reason === "power_off" ? "powerOff" : "stale", args: { child: childName || "", minutes: mins } } },
     severity: "warning",
     title: "아이 위치가 끊겼어요",
     message: `${subject} ${mins}분째 위치가 업데이트되지 않아요. 기기를 확인해 주세요.`,
@@ -169,6 +174,7 @@ export function buildRecoveredAlert(childName) {
   const name = (childName || "아이").trim() || "아이";
   return {
     alertType: "location_recovered",
+    metadata: { notificationCopy: { v: 1, id: "recovered", args: { child: childName || "" } } },
     severity: "info",
     title: "아이 위치가 다시 연결됐어요",
     message: `${name}의 위치가 다시 정상적으로 업데이트되고 있어요.`,
@@ -213,6 +219,7 @@ export function buildUnpairSuspectedAlert(childName, hoursStale) {
   const hours = Math.max(24, Math.round(Number(hoursStale) || 24));
   return {
     alertType: "child_unpair_suspected",
+    metadata: { notificationCopy: { v: 1, id: "unpair", args: { child: childName || "", hours } } },
     severity: "warning",
     title: "아이 기기 끊김이 길어지고 있어요",
     message: `${name}의 기기와 ${hours}시간 이상 연결되지 않았어요. 기기가 정상인지 확인해 주세요.`,

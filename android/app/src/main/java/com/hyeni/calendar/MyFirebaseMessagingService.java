@@ -162,6 +162,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             type + ":" + title + ":" + body
         );
 
+        String[] displayCopy = NotificationCopyLocalizer.localize(this, data.get("notificationCopy"), title, body);
+        title = displayCopy[0];
+        body = displayCopy[1];
+
         // Skip if this notification was sent by me
         String senderUserId = data.get("senderUserId");
         if (senderUserId != null && !senderUserId.isEmpty()) {

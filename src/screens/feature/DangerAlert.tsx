@@ -5,7 +5,7 @@ import { ChevronLeft, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";
 import { useSafeBack } from "@/app/useSafeBack";
-import { cleanAlertTitle, isDangerAlert, relativeTime } from "@/transform/notificationsView";
+import { cleanAlertTitle, isDangerAlert, localizeParentAlert, relativeTime } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import { Loading } from "@/components/ui/Loading";
 import { useLocale } from "@/i18n/useLocale";
@@ -36,7 +36,7 @@ export function DangerAlert() {
   const markRead = useMarkAlertRead();
 
   // 히어로 앵커 = 알림센터에서 탭한 알림(?alert=) 우선, 없으면 최신(list[0]).
-  const list = useMemo<ParentAlert[]>(() => (data ?? []).filter(isDangerAlert), [data]);
+  const list = useMemo<ParentAlert[]>(() => (data ?? []).filter(isDangerAlert).map(a => localizeParentAlert(a, locale)), [data, locale]);
   const now = useMemo(() => new Date(), [list]);
   const [searchParams] = useSearchParams();
   const anchorId = searchParams.get("alert");

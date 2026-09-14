@@ -30,7 +30,8 @@ test("준비 검사는 Google 지원 ISO 248개국과 남은 출시 외부 게�
   }
   assert.ok(!report.blockers.includes("BLOCKED_BY_USER_CREDENTIALS"));
   assert.ok(report.blockers.includes("BLOCKED_BY_RELEASE_CI_EVIDENCE"));
-  assert.ok(report.blockers.includes("BLOCKED_BY_NOTIFICATION_CONTENT_LOCALIZATION"));
+  assert.ok(!report.blockers.includes("BLOCKED_BY_NOTIFICATION_CONTENT_LOCALIZATION"));
+  assert.ok(report.checks.some(item => item.name === "위치·안전 알림 10개 언어 표시 계약" && item.passed));
   assert.ok(report.blockers.includes("BLOCKED_BY_ANDROID_TIMEZONE_RELEASE"));
   assert.ok(report.blockers.includes("BLOCKED_BY_GOOGLE_ROUTES_OAUTH_SCOPE_PROOF"));
   assert.ok(report.blockers.includes("BLOCKED_BY_LIVE_NON_KR_DEVICE_E2E"));

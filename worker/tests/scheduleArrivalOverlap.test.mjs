@@ -36,6 +36,7 @@ test("등록장소와 겹친 일정은 일반 장소 알림을 버리지 않고 
     severity: "info",
     title: "✅ 피아노 도착",
     message: "혜니님이 피아노 장소에 도착했어요.",
+    metadata: { notificationCopy: { v: 1, id: "scheduleArrived", args: { child: "혜니", event: "피아노" } } },
   });
 });
 

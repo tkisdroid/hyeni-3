@@ -1,3 +1,4 @@
+import { formatNotificationCopy } from "../../shared/notificationCopy.ts";
 /**
  * 부모 알림(ParentAlert) → 알림 센터 뷰모델 매핑(순수).
  * 도메인 데이터(title/message/read/created_at)는 실값,
@@ -280,6 +281,12 @@ export function cleanAlertTitle(raw: string | null | undefined): string {
   return cleaned || text;
 }
 
+/** 공유 query 원본을 변경하지 않고 현재 화면 언어로만 표시한다. */
+export function localizeParentAlert(alert: ParentAlert, locale: SupportedLocale): ParentAlert {
+  const translated = formatNotificationCopy(alert.metadata?.notificationCopy, locale);
+  return translated ? { ...alert, title: translated.title, message: translated.body } : alert;
+}
+
 function toItemView(
   alert: ParentAlert,
   now: Date,
@@ -287,8 +294,9 @@ function toItemView(
   timeZone: string,
   intl: IntlShape,
 ): AlertItemView {
-  const title = cleanAlertTitle(alert.title);
-  const detail = cleanAlertTitle(alert.message);
+  const translated = formatNotificationCopy(alert.metadata?.notificationCopy, locale);
+  const title = translated?.title ?? cleanAlertTitle(alert.title);
+  const detail = translated?.body ?? cleanAlertTitle(alert.message);
   return {
     id: alert.id,
     alertType: alert.alert_type || "",

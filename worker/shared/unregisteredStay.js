@@ -66,6 +66,7 @@ export function buildUnregisteredStayAlert(childName, areaLabel, durationLabel) 
     const durationPart = duration ? `${duration} 째 ` : "";
     return {
         alertType: "unregistered_stay",
+        metadata: { notificationCopy: { v: 1, id: "stay", args: { child: childName || "", place: area } } },
         severity: "info",
         title: area ? `📍 ${area} 근처 도착` : "📍 새로운 장소 도착",
         message: `${name}가 ${place} 근처에 ${durationPart}머물고 있어요.`,
@@ -139,14 +140,15 @@ export function buildUnregisteredStayLeftAlert(childName, areaLabel, options = {
         message: delayed
             ? `${name}가 ${formatKstClock(confirmedAtMs, options.timeZone)}경 ${fromPart} 출발한 것으로 확인됐어요. 위치 연결이 복구된 뒤 늦게 확인된 기록이에요.`
             : `${name}가 ${fromPart} 출발했어요.`,
-        ...(hasEventTime ? {
-            metadata: {
+        metadata: {
+            notificationCopy: { v: 1, id: "leftNear", args: { child: childName || "", place: area }, delayed },
+            ...(hasEventTime ? {
                 event_at: formatPgTimestamp(confirmedAtMs),
                 detected_at: Number.isFinite(detectedAtMs) ? formatPgTimestamp(detectedAtMs) : null,
                 delayed,
                 event_time_kind: "first_confirmed_away_fix",
-            },
-        } : {}),
+            } : {}),
+        },
     };
 }
 

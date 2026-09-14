@@ -223,10 +223,12 @@ public final class ParentPendingRecoveryWorker extends Worker {
             );
             boolean fullScreen = urgent || "kkuk".equalsIgnoreCase(type);
             String channel = NotificationChannelPolicy.channelFor(type, alertType, urgent);
+            String[] display = NotificationCopyLocalizer.localize(appContext, data.opt("notificationCopy"),
+                item.optString("title", "혜니캘린더"), item.optString("body", ""));
             NotificationHelper.DeliveryReceipt receipt = NotificationHelper.showNotification(
                 appContext,
-                item.optString("title", "혜니캘린더"),
-                item.optString("body", ""),
+                display[0],
+                display[1],
                 channel,
                 fullScreen,
                 fullScreen,

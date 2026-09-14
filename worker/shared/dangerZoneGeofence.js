@@ -63,6 +63,7 @@ export function buildDangerZoneAlert(childName, zoneName) {
     const subject = `${name}${subjectParticle(name)}`;
     return {
         alertType: "danger_zone",
+        metadata: { notificationCopy: { v: 1, id: "dangerEnter", args: { child: childName || "", place: zoneName || "" } } },
         severity: "emergency",
         title: "⚠️ 조심할 곳 접근 알림",
         message: `${subject} '${zone}' 근처에 있어요!`,
@@ -75,6 +76,7 @@ export function buildDangerZoneExitAlert(childName, zoneName) {
     const subject = `${name}${subjectParticle(name)}`;
     return {
         alertType: "danger_exit",
+        metadata: { notificationCopy: { v: 1, id: "dangerExit", args: { child: childName || "", place: zoneName || "" } } },
         severity: "info",
         title: "✅ 조심할 곳 벗어남",
         message: `${subject} '${zone}' 근처에서 벗어났어요.`,

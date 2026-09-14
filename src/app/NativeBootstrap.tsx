@@ -72,8 +72,9 @@ const nativeAppLocaleScheduler = createNativeLocaleSyncScheduler(
   async (locale) => {
     if (!isNativePlatform()) return;
     const plugin = getNativePlugin<AppLocalePlugin>("AppLocale");
-    if (!plugin) return;
-    await plugin.setLocale({ locale });
+    const notifications = getNativePlugin<AppLocalePlugin>("NativeNotification");
+    if (notifications) await notifications.setLocale({ locale });
+    if (plugin) await plugin.setLocale({ locale });
   },
   () => {
     console.warn("native_locale_sync_failed");
@@ -366,12 +367,12 @@ export function NativeBootstrap() {
             return { acknowledged: true, displayed: false };
           }
           if (signal.aborted) return { acknowledged: false, displayed: false };
-          return presentWebPendingNotification(input, announceGlobalToast);
+          return presentWebPendingNotification(input, announceGlobalToast, locale);
         },
         markDelivered: markPendingNotificationsDelivered,
       });
     });
-  }, [status, role, familyId, userId]);
+  }, [status, role, familyId, userId, locale]);
 
   // 아이 네이티브 위치 서비스 — 부모가 저장한 가족 위치 주기 설정을 읽어 반영한다.
   useEffect(() => {

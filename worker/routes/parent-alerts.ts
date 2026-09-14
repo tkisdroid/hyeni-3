@@ -1,6 +1,8 @@
 // 부모 알림 read API. get_parent_alerts(p_family_id, p_limit=20) RPC를 D1 SQL로 직역.
 // 핵심: read 는 가족 전역 boolean → 사용자별로 (pa.read OR 호출자 ∈ read_by) 계산.
 //   레거시 행(read=true)은 "전원 읽음"으로 유지, 신규 행은 호출자 기준.
+import { normalizeNotificationCopy, type NotificationCopy } from "../../shared/notificationCopy.ts";
+import { resolvePublicParentAlertCopy } from "../lib/notificationCopy.ts";
 import { readFamilyTimeZone } from "../lib/timeZone.ts";
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
@@ -56,6 +58,7 @@ async function queueParentAlertPending(
     parentIds: Set<string>;
     title: string;
     message: string;
+    notificationCopy?: NotificationCopy | null;
     alertType: string;
     severity: string;
     sourceEventId: string | null;
@@ -94,6 +97,7 @@ async function queueParentAlertPending(
       familyId: args.familyId,
       pushId: args.pushId,
       alertType: args.alertType,
+      ...(args.notificationCopy ? { notificationCopy: JSON.stringify(args.notificationCopy) } : {}),
       severity: args.severity,
       urgent: args.pushPolicy.urgent,
       route: args.route,
@@ -285,21 +289,25 @@ parentAlerts.post("/", requireAuth, async (c) => {
     return c.json(presenceDedupe.duplicateAlertId);
   }
   const notificationAtMs = Date.now();
+  const familyTimeZone = await readFamilyTimeZone(c.env.DB, familyId);
   const occurrence = prepareRegisteredPlaceAlertOccurrence({
-    timeZone: await readFamilyTimeZone(c.env.DB, familyId),
+    timeZone: familyTimeZone,
     alertType,
     message,
     occurredAt: b.occurred_at,
     nowMs: notificationAtMs,
   });
   message = occurrence.message;
+  const baseCopy = await resolvePublicParentAlertCopy(c.env.DB, { familyId, childUserId: writeScope.childUserId, alertType, placeKey: presenceDedupe?.placeKey ?? b.place_key, sourceEventId });
+  const notificationCopy = baseCopy ? normalizeNotificationCopy({ ...baseCopy, occurredAt: occurrence.occurredAt, timeZone: familyTimeZone }) : null;
   const baseMetadata = aiCreditRequestMetadata
     ?? (presenceDedupe
       ? registeredPlacePresenceMetadata(presenceDedupe.placeKey, presenceDedupe.kind)
       : null);
-  const alertMetadata = baseMetadata || occurrence.occurredAt
+  const alertMetadata = baseMetadata || occurrence.occurredAt || notificationCopy
     ? {
       ...(baseMetadata ?? {}),
+      ...(notificationCopy ? { notificationCopy } : {}),
       ...(occurrence.occurredAt ? { occurredAt: occurrence.occurredAt } : {}),
     }
     : null;
@@ -347,6 +355,7 @@ parentAlerts.post("/", requireAuth, async (c) => {
         pushId,
         familyId,
         parentIds: allowed,
+        notificationCopy,
         title,
         message,
         alertType,
@@ -381,6 +390,7 @@ parentAlerts.post("/", requireAuth, async (c) => {
         writeScope.callerRole,
         null,
         {
+          notificationCopy,
           atMs: notificationAtMs,
           quietHoursPartition: { allowed, suppressed },
         },

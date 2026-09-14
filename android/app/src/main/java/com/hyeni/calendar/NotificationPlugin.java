@@ -49,6 +49,13 @@ public class NotificationPlugin extends Plugin {
     }
 
     @PluginMethod()
+    public void setLocale(PluginCall call) {
+        String locale = call.getString("locale");
+        boolean saved = NotificationCopyLocalizer.saveLocale(getContext(), locale);
+        call.resolve(new JSObject().put("saved", saved).put("locale", saved ? locale : ""));
+    }
+
+    @PluginMethod()
     public void setQuietHours(PluginCall call) {
         String userId = call.getString("userId");
         Boolean enabled = call.getBoolean("enabled");
@@ -89,6 +96,9 @@ public class NotificationPlugin extends Plugin {
     public void show(PluginCall call) {
         String title = call.getString("title", "혜니캘린더");
         String body = call.getString("body", "");
+        String[] display = NotificationCopyLocalizer.localize(getContext(), call.getData().opt("notificationCopy"), title, body);
+        title = display[0];
+        body = display[1];
         String channel = call.getString("channel", "schedule");
         boolean wakeScreen = call.getBoolean("wakeScreen", false);
         boolean fullScreen = call.getBoolean("fullScreen", false);
@@ -161,6 +171,9 @@ public class NotificationPlugin extends Plugin {
         boolean fullScreen = shouldPendingUseFullScreen(urgent);
         String title = call.getString("title", "혜니캘린더");
         String body = call.getString("body", "");
+        String[] display = NotificationCopyLocalizer.localize(context, call.getData().opt("notificationCopy"), title, body);
+        title = display[0];
+        body = display[1];
         String route = call.getString("route", null);
         String type = call.getString("type", "schedule");
         String alertType = call.getString("alertType", call.getString("alert_type", ""));

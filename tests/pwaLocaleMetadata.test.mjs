@@ -185,6 +185,7 @@ test("Service Worker locale 채널은 locale 코드만 받고 계정 정보를 �
     assert.ok(!handler.includes(forbidden), `locale 메시지에 ${forbidden} 가 섞였습니다`);
   }
   // 서버가 title 을 주지 않은 push 의 브랜드 폴백이 사용자 언어여야 한다.
-  assert.match(source, /localizedBrandName\(await readServiceWorkerLocale\(\)/);
+  assert.match(source, /const locale = await readServiceWorkerLocale\(\)/);
+  assert.match(source, /localizedBrandName\(locale\)/);
   assert.ok(!source.includes('|| "혜니캘린더"'), "브랜드 폴백이 한국어로 하드코딩돼 있습니다");
 });
