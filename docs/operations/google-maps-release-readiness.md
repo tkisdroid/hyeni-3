@@ -10,6 +10,24 @@
 이 allowlist는 지도 공급자 선택만 연다. 가족 현지 시간대/DST, Google Routes OAuth 실호출,
 비한국 부모 PWA↔아이 Android 실기기 E2E와 새 Android AAB Play 배포가 완료됐다는 의미가 아니다.
 
+## 2026-09-14 현지화 운영 반영 readback
+
+- 실행 source: `730c7286fe4e6c2490874216050dec6c5ac9fa66` (`def5156` 현지화 구현 포함), main/지도 브랜치 푸시 완료.
+- Worker version `73dc9ba7-352d-4d34-ae22-c4e28beb6914`가 100% 활성이다.
+  deployment `95f4c48f-ffd9-4374-a2bd-239d28af9762`, UTC `2026-09-14T05:10:37Z` readback.
+- Pages https://fbf16999.hyeni-calendar.pages.dev 배포 완료. 브랜드/apex·www·고정 Pages 모두 HTTP 200,
+  entry `assets/index-U-otyb7I.js` SHA-256 `0e74d3e38e044bc1ffc6ee011dba0373f75e8d3e3e6770b164e6da20e8d8666d` 로컬 일치.
+  운영 `sw.js`도 로컬 SHA-256과 일치한다.
+- Worker health 200·ok/no-store, 무인증 POST maps/search 401·private/no-store 확인.
+  이번 알림 변경에는 D1 migration과 Secret 변경이 없었다.
+- 최종 앱 2,167/2,167, Worker 1,513/1,513, Android 196/196·lint, 타입 검사·10개 언어·빌드 통과.
+  새 dist의 SW 표시 QA도 재통과했다. CI는 Actions budget으로 실행되지 않아 로컬 결과를 CI 성공으로 표시하지 않는다.
+- 동일 source의 새 debug APK 생성 완료, SHA-256 `50d77e4b7a881bb276748b329292bf936f19d267864e3619dc4ba2839f3ba9f5`.
+  기기에 설치하지 않았고 Play 업로드용 서명 AAB가 아니다.
+- 공개 운영 웹 키를 프로세스로만 전달한 AAB 사전 검사에서 clean source·키스토어·공개 업로드 인증서·Google 웹 키 확인.
+  서명은 실행하지 않았으며 Play 로그인 화면에서 대기 중이다. 현재 트랙 최대 versionCode 미확인으로 버전을 추정해 올리지 않았다.
+  Play 업로드/검토 신청/공개 게시 모두 미실행이다.
+
 ## 2026-09-14 Play 검토 신청 지시
 
 - 사용자 지시: 실기기 검증은 별도로 하지 않고 Play 검토 신청까지 진행한다.
