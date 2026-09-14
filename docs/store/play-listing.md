@@ -1,4 +1,4 @@
-# Play Store 등록정보 — 혜니캘린더 (v1.4.8 / versionCode 20)
+# Play Store 등록정보 — 혜니캘린더 (v1.4.9 / versionCode 21)
 
 ## 기본 정보
 

@@ -99,7 +99,7 @@ android {
         applicationId "com.hyeni.calendar"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 20
+        versionCode 21
         versionName hyeniPackageVersion
         manifestPlaceholders = [hyeniReleaseSourceSha: hyeniReleaseSourceSha, MAPS_API_KEY: hyeniMapsApiKey]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
