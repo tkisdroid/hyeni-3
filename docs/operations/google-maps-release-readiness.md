@@ -55,6 +55,10 @@
 
 ## 2026-09-14 최종 보완 검증
 
+- 최종 실행 source는 `4d5b756`이다. 보안 패치 포함 Worker `fa1e483b-4fb1-4f37-a7ec-c0e15cea6931`을 배포했다.
+  Pages 최종 배포는 https://1d3d765d.hyeni-calendar.pages.dev 이며, 새 배포/브랜드/www/고정 Pages 모두 위 entry 해시와 일치한다.
+  Worker health 200·ready·no-store 및 무인증 POST maps/search 401을 다시 확인했다.
+
 - GitHub Actions는 `9a87f18`의 앱 run `34805505934` 및 Worker run `34805506032` 모두
   작업 시작 전 Actions budget 제한으로 차단됐다. 테스트 실패가 아니며 CI 통과 증거로 대체할 수 없다.
   예산/결제 설정은 변경하지 않았다.
