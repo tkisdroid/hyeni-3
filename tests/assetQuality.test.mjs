@@ -93,7 +93,7 @@ test("사용 중 장소·안전 자산은 512px 투명 캔버스와 72~90% optic
   }
 });
 
-test("정적 이미지에는 SHA-256 완전 중복 파일이 없다", () => {
+test("설치 아이콘 호환 별칭 외에 정적 이미지 완전 중복은 없다", () => {
   const byHash = new Map();
   for (const file of walk(publicDir)) {
     if (!new Set([".webp", ".png", ".svg"]).has(extname(file).toLowerCase())) continue;
@@ -102,7 +102,13 @@ test("정적 이미지에는 SHA-256 완전 중복 파일이 없다", () => {
     paths.push(relative(publicDir, file).replaceAll("\\", "/"));
     byHash.set(hash, paths);
   }
-  const duplicates = [...byHash.values()].filter((paths) => paths.length > 1);
+  // iOS 기본 탐색 경로와 새 캐시 주소, PWA purpose별 주소는 같은 3D 정본을 공유한다.
+  const iconAliases = new Set([
+    "apple-touch-icon-hyeni-3d.png|apple-touch-icon.png",
+    "pwa-512x512.png|pwa-maskable-512x512.png",
+  ]);
+  const duplicates = [...byHash.values()].filter((paths) =>
+    paths.length > 1 && !iconAliases.has([...paths].sort().join("|")));
   assert.deepEqual(duplicates, [], `중복 이미지:\n${duplicates.map((paths) => paths.join(" = ")).join("\n")}`);
 });
 

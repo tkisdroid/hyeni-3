@@ -251,3 +251,14 @@
 
 운영 웹을 배포하기 전에 최신 `origin/main`이 현재 소스에 포함됐는지 확인한다. 지도 기능이 없는 과거 작업 폴더에서 UI 파일 하나만 고쳐 배포하면 Google 지도·국가·시간대 기능 전체가 함께 빠진다.
 `npm run deploy:pages`는 원격 main 선조 검사 → 새 build → `verify:pages-maps` → `.env` 없는 임시 폴더의 Wrangler 순서다. 로컬 build 성공만으로 배포 가능하다고 보지 않는다. 상세 증거는 [해외 지도 점검 보고서](../reports/2026-09-20-google-maps-audit.md)에 있다.
+
+## iPhone 홈 화면 3D 아이콘 (2026-09-20)
+
+설치 아이콘 정본은 기존 3D 혜니·달력 디자인 `output/play-store-final-v1/play-icon-512.png`다.
+`node scripts/generate-home-screen-icons.mjs`로 iPhone 180px·PWA 192/512px PNG를 재생성한다.
+HTML은 캐시 갱신을 위한 `apple-touch-icon-hyeni-3d.png`와 `sizes="180x180"`을 지정하고,
+기본 탐색용 `apple-touch-icon.png`도 같은 그림을 유지한다. 새 주소는 includeAssets와 globIgnores에
+함께 등록해 precache URL 중복을 막는다. PWA any/maskable은 안전 여백이 있는 같은 정본을 쓴다.
+기존 홈 화면 아이콘이 그대로면 Safari에서 사이트를 다시 열어 홈 화면에 새로 추가해 확인한다.
+앱 데이터·사이트 데이터 삭제를 해결책으로 안내하지 않는다. 실제 iPhone 설치 검증은 별도다.
+규격 참고: [Apple Web Clip 아이콘 안내](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html).

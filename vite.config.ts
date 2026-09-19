@@ -69,7 +69,7 @@ export default defineConfig({
       filename: "sw.ts",
       // 새 Worker는 받되 결제·원격청취·미저장 편집이 끝난 뒤에만 활성화한다.
       registerType: "prompt",
-      includeAssets: ["apple-touch-icon.png", "favicon-32x32.png", "assets/logo.webp"],
+      includeAssets: ["apple-touch-icon-hyeni-3d.png", "apple-touch-icon.png", "favicon-32x32.png", "assets/logo.webp"],
       manifest: {
         name: "혜니캘린더 - 우리아이 일정&안전 한번에",
         short_name: "혜니캘린더",
@@ -105,6 +105,7 @@ export default defineConfig({
           // 아래 파일은 includeAssets/manifest 아이콘 경로가 revision 포함 항목으로 따로 주입한다.
           // glob에서도 다시 수집하면 같은 URL이 두 revision으로 겹쳐 Service Worker 평가가 실패한다.
           "**/apple-touch-icon.png",
+          "**/apple-touch-icon-hyeni-3d.png",
           "**/favicon-32x32.png",
           "**/pwa-192x192.png",
           "**/pwa-512x512.png",

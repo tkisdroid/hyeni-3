@@ -19,6 +19,7 @@ export function inspectPwaPrecacheBudget({ distDir, limitBytes = PWA_PRECACHE_LI
 }
 const ADDITIONAL_PRECACHE_URLS = new Set([
   "apple-touch-icon.png",
+  "apple-touch-icon-hyeni-3d.png",
   "favicon-32x32.png",
   "pwa-192x192.png",
   "pwa-512x512.png",
