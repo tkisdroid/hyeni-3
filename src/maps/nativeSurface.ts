@@ -1,36 +1,44 @@
 interface SurfaceLease { release(): void }
-interface SavedStyle { element: HTMLElement; background: string; backgroundColor: string }
+interface SavedStyle {
+  count: number;
+  hadClass: boolean;
+  declarations: Array<{ name: string; value: string; priority: string }>;
+}
 
-let leaseCount = 0;
-let savedStyles: SavedStyle[] = [];
+const surfaces = new WeakMap<HTMLElement, SavedStyle>();
 
+/** WebView 아래 native 지도까지 모든 조상 배경을 열고, 중첩 지도는 요소별로 복구한다. */
 export function acquireNativeMapTransparency(host: HTMLElement): SurfaceLease {
-  if (leaseCount === 0) {
-    const candidates = [document.getElementById("root"), host.closest<HTMLElement>(".hy-app"), host.closest<HTMLElement>(".hy-screen"), host]
-      .filter((element): element is HTMLElement => Boolean(element));
-    savedStyles = [...new Set(candidates)].map((element) => ({
-      element,
-      background: element.style.background,
-      backgroundColor: element.style.backgroundColor,
-    }));
-    for (const item of savedStyles) {
-      item.element.style.background = "transparent";
-      item.element.style.backgroundColor = "transparent";
+  const elements: HTMLElement[] = [];
+  for (let element: HTMLElement | null = host; element; element = element.parentElement) {
+    elements.push(element);
+    const saved = surfaces.get(element);
+    if (saved) saved.count += 1;
+    else {
+      surfaces.set(element, {
+        count: 1,
+        hadClass: element.classList.contains("hy-native-map-surface"),
+        declarations: Array.from(element.style).filter((name) => name === "background" || name.startsWith("background-")).map((name) => ({
+          name, value: element.style.getPropertyValue(name), priority: element.style.getPropertyPriority(name),
+        })),
+      });
+      element.style.setProperty("background", "transparent", "important");
+      element.classList.add("hy-native-map-surface");
     }
   }
-  leaseCount += 1;
   let released = false;
   return {
     release() {
       if (released) return;
       released = true;
-      leaseCount = Math.max(0, leaseCount - 1);
-      if (leaseCount !== 0) return;
-      for (const item of savedStyles) {
-        item.element.style.background = item.background;
-        item.element.style.backgroundColor = item.backgroundColor;
+      for (const element of elements) {
+        const saved = surfaces.get(element);
+        if (!saved || --saved.count > 0) continue;
+        element.style.removeProperty("background");
+        for (const { name, value, priority } of saved.declarations) element.style.setProperty(name, value, priority);
+        if (!saved.hadClass) element.classList.remove("hy-native-map-surface");
+        surfaces.delete(element);
       }
-      savedStyles = [];
     },
   };
 }

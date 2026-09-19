@@ -166,3 +166,23 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 }
+
+/* 전체 화면을 막지 않고 해당 영역에서 조회 상태와 재시도를 제공한다. */
+.sqs-screen--embedded {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+.sqs-screen--embedded .sqs-card {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 24px 20px;
+}
+.sqs-screen--embedded .sqs-card h1 {
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}

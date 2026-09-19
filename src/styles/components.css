@@ -564,40 +564,6 @@
   background: linear-gradient(135deg, #eaf3fb, #f3ecff);
   pointer-events: none;
 }
-.km-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 24px;
-  text-align: center;
-  background: linear-gradient(135deg, var(--blue-soft), var(--lav-soft));
-  color: var(--fg-secondary);
-}
-.km-error__title {
-  font-size: var(--type-body-lg);
-  line-height: var(--type-body-lg-line-height);
-  font-weight: var(--type-body-lg-weight);
-}
-.km-error__detail {
-  color: var(--fg-muted);
-  font-size: var(--type-body-sm);
-  line-height: var(--type-body-sm-line-height);
-  font-weight: var(--type-body-sm-weight);
-}
-.km-error__retry {
-  min-height: 44px;
-  margin-top: 4px;
-  padding: 0 20px;
-  border: 1px solid var(--lav-line);
-  border-radius: 999px;
-  background: var(--bg-card);
-  color: var(--lav-text);
-  font-size: var(--type-label);
-  line-height: var(--type-label-line-height);
-  font-weight: var(--type-label-weight);
-}
 @keyframes km-shimmer {
   to {
     transform: translateX(100%);

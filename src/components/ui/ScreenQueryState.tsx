@@ -7,6 +7,7 @@ export type ScreenQueryStateKind = "loading" | "error" | "empty";
 
 interface ScreenQueryStateProps {
   screenTitle: string;
+  embedded?: boolean;
   state: ScreenQueryStateKind;
   heading: string;
   description: string;
@@ -20,6 +21,7 @@ interface ScreenQueryStateProps {
 /** 조회 화면의 로딩·오류·빈 상태를 같은 간격과 터치 크기로 표시한다. */
 export function ScreenQueryState({
   screenTitle,
+  embedded = false,
   state,
   heading,
   description,
@@ -35,8 +37,8 @@ export function ScreenQueryState({
   // 로딩은 공용 로딩 마크(그림)를 쓰고, 오류·빈 상태만 lucide 글리프 칩을 쓴다.
   const Icon = state === "error" ? AlertTriangle : Inbox;
   return (
-    <div className="sqs-screen">
-      <header className="sqs-header">
+    <div className={embedded ? "sqs-screen sqs-screen--embedded" : "sqs-screen"}>
+      {!embedded && <header className="sqs-header">
         {onBack ? (
           <button type="button" className="sqs-back hy-press" aria-label={intl.formatMessage({ id: "core.action.back" })} onClick={onBack}>
             <ChevronLeft size={22} strokeWidth={2.2} aria-hidden="true" />
@@ -46,7 +48,7 @@ export function ScreenQueryState({
         )}
         <span className="sqs-title">{screenTitle}</span>
         <span className="sqs-header-spacer" aria-hidden="true" />
-      </header>
+      </header>}
 
       <section
         className={`sqs-card sqs-card--${state}`}

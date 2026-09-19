@@ -40,7 +40,10 @@
     "typecheck": "tsc -b --noEmit",
     "i18n:android": "node scripts/i18n/generate-android-locales.mjs",
     "store:listing": "node scripts/store/build-global-listing.mjs",
-    "store:listing:check": "node scripts/store/build-global-listing.mjs --check"
+    "store:listing:check": "node scripts/store/build-global-listing.mjs --check",
+    "verify:pages-maps": "node scripts/verify-pages-map-bundle.mjs",
+    "deploy:pages": "node scripts/deploy-pages.mjs",
+    "qa:map-adapters": "node scripts/qa-google-map-adapters.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",

@@ -3,21 +3,27 @@ import { useIntl } from "react-intl";
 import { LoaderMark } from "@/components/ui/LoaderMark";
 import { loadGoogleMaps } from "@/lib/googleMaps";
 import type { FamilyMapProps } from "@/maps/contracts";
+import { getMapFocusPanOffset, normalizeMapViewportPadding } from "@/transform/mapViewportPadding";
 
 type Overlay = google.maps.Marker | google.maps.Circle | google.maps.Polyline;
+const EMPTY_ZONES: NonNullable<FamilyMapProps["zones"]> = [];
+const EMPTY_PLACES: NonNullable<FamilyMapProps["places"]> = [];
+const EMPTY_ROUTE: NonNullable<FamilyMapProps["route"]> = [];
+const EMPTY_STAYS: NonNullable<FamilyMapProps["stays"]> = [];
 
 export function GoogleMapAdapter({
   countryCode,
   child,
-  zones = [],
-  places = [],
-  route = [],
-  stays = [],
+  zones = EMPTY_ZONES,
+  places = EMPTY_PLACES,
+  route = EMPTY_ROUTE,
+  stays = EMPTY_STAYS,
   destination = null,
   picked = null,
   center = null,
   centerLevel = null,
   recenterKey = 0,
+  viewportPadding,
   onPick,
   className,
   interactive = true,
@@ -29,6 +35,8 @@ export function GoogleMapAdapter({
   const overlaysRef = useRef<Overlay[]>([]);
   const listenerRef = useRef<google.maps.MapsEventListener | null>(null);
   const onPickRef = useRef(onPick);
+  const focusRef = useRef("");
+  const routeRef = useRef("");
   const [retryKey, setRetryKey] = useState(0);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
@@ -59,9 +67,17 @@ export function GoogleMapAdapter({
           disableDefaultUI: !interactive,
           gestureHandling: interactive ? "auto" : "none",
         });
-        mapRef.current.setCenter(desired);
-        if (centerLevel != null) mapRef.current.setZoom(Math.max(2, 20 - centerLevel));
-        void recenterKey;
+        // 핀·주소 응답만 바뀌어도 사용자가 이동·확대한 지도를 되돌리지 않는다.
+        const padding = normalizeMapViewportPadding(viewportPadding);
+        const focusKey = JSON.stringify([desired.lat, desired.lng, recenterKey, centerLevel, padding]);
+        if (focusRef.current !== focusKey) {
+          mapRef.current.setCenter(desired);
+          const zoom = centerLevel == null ? null : Math.max(2, 20 - centerLevel);
+          if (zoom != null && (mapRef.current.getZoom() ?? 0) < zoom) mapRef.current.setZoom(zoom);
+          const offset = getMapFocusPanOffset(padding);
+          if (center && (offset.x || offset.y)) mapRef.current.panBy(offset.x, offset.y);
+          focusRef.current = focusKey;
+        }
         for (const overlay of overlaysRef.current) overlay.setMap(null);
         overlaysRef.current = [];
         const addMarker = (point: { lat: number; lng: number }, title?: string) => {
@@ -95,40 +111,43 @@ export function GoogleMapAdapter({
             map: mapRef.current,
           });
           overlaysRef.current.push(polyline);
-          if (!center) {
+          if (!center && routeRef.current !== JSON.stringify(route)) {
             const bounds = new google.maps.LatLngBounds();
             route.forEach((point) => bounds.extend(point));
-            mapRef.current.fitBounds(bounds);
+            mapRef.current.fitBounds(bounds, padding);
           }
         }
+        routeRef.current = JSON.stringify(route);
         setFailed(false);
         setReady(true);
       })
       .catch(() => { if (!cancelled) setFailed(true); });
     return () => { cancelled = true; };
-  }, [child, zones, places, route, stays, destination, picked, center, centerLevel, recenterKey, interactive, countryCode, intl.locale, retryKey]);
+  }, [child, zones, places, route, stays, destination, picked, center, centerLevel, recenterKey, viewportPadding, interactive, countryCode, intl.locale, retryKey]);
 
   useEffect(() => () => {
     listenerRef.current?.remove();
     for (const overlay of overlaysRef.current) overlay.setMap(null);
     overlaysRef.current = [];
     mapRef.current = null;
+    focusRef.current = "";
+    routeRef.current = "";
   }, []);
 
-  if (failed) {
-    return (
-      <div className={[className, "km-error"].filter(Boolean).join(" ")} role="status">
-        <strong className="km-error__title">{intl.formatMessage({ id: "shared.map.providerUnavailable" })}</strong>
-        <button type="button" className="km-error__retry hy-press" onClick={() => setRetryKey((value) => value + 1)}>
-          {tone === "child" ? intl.formatMessage({ id: "shared.kakaoMap.copy005" }) : intl.formatMessage({ id: "shared.map.retry" })}
-        </button>
-      </div>
-    );
-  }
+  // 실패 안내 중에도 SDK host를 유지한다. host가 사라지면 재시도 성공 후에도 지도를 만들 수 없다.
   return (
     <div className={[className, "km-host"].filter(Boolean).join(" ")}>
       <div ref={hostRef} className="km-canvas" />
-      {!ready && <div className="km-skeleton" aria-hidden="true"><LoaderMark variant="location" /></div>}
+      {failed ? <div className="km-error" role="status">
+        <strong className="km-error__title">{intl.formatMessage({ id: "shared.map.providerUnavailable" })}</strong>
+        <button type="button" className="km-error__retry hy-press" onClick={() => {
+          setFailed(false);
+          setReady(false);
+          setRetryKey((value) => value + 1);
+        }}>
+          {tone === "child" ? intl.formatMessage({ id: "shared.kakaoMap.copy005" }) : intl.formatMessage({ id: "shared.map.retry" })}
+        </button>
+      </div> : !ready && <div className="km-skeleton" aria-hidden="true"><LoaderMark variant="location" /></div>}
     </div>
   );
 }

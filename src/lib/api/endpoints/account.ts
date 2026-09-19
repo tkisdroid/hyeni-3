@@ -48,6 +48,11 @@ function toRole(value: string | null | undefined): AccountInfo["myRole"] {
 /** 현재 사용자의 계정 정보. 비로그인/가족없음이면 null. */
 export async function getMyAccount(): Promise<AccountInfo | null> {
   const data = await apiGet<FamilyMineAccountResponse | null>("/api/family/mine");
+  return toAccountInfo(data);
+}
+
+/** 같은 가족 조회 결과를 설정·계정 화면에서도 재사용한다. */
+export function toAccountInfo(data: FamilyMineAccountResponse | null): AccountInfo | null {
   if (!data) return null;
   return {
     familyId: data.familyId,

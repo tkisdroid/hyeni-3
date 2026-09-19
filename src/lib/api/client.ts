@@ -1,3 +1,4 @@
+import { classifyRefreshFailure } from "@/transform/refreshFailure";
 /**
  * Cloudflare Worker API 클라이언트(fetch 래퍼).
  * 모든 백엔드 호출은 Worker 를 경유한다. 세션/토큰 상태는 session.ts 가 관리하고,
@@ -98,7 +99,7 @@ async function doRefreshAccess(): Promise<RefreshResult> {
       } catch {
         /* non-json body */
       }
-      return code === "device_session_inactive" ? "inactive" : "rejected";
+      return classifyRefreshFailure(code);
     }
     if (!res.ok) return "error"; // 5xx 등 일시 오류 — 세션 유지
     const data = (await res.json()) as RefreshResponse;

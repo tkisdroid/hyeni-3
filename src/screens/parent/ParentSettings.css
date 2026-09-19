@@ -548,3 +548,71 @@
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 }
+
+/* 프로필 응답을 기다리는 동안에도 실제 설정과 같은 폭·간격을 유지한다. */
+.ps-profile-pending {
+  padding: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-16);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+}
+.ps-profile-pending__preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ps-profile-pending__avatar {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: var(--radius-16);
+  background: var(--lav-soft);
+}
+.ps-profile-pending__lines {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+.ps-profile-pending__lines span {
+  width: 70%;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--line-soft);
+}
+.ps-profile-pending__lines span:last-child { width: 45%; }
+.ps-profile-pending__status {
+  --loader-mark-size: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--fg-secondary);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.ps-entitlement-retry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  color: var(--fg-muted);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  word-break: keep-all;
+}
+.ps-entitlement-retry span { flex: 1; min-width: 0; }
+.ps-entitlement-retry button {
+  flex: none;
+  min-height: var(--control-min-size);
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--fg-primary);
+  background: var(--bg-page);
+}

@@ -26,6 +26,7 @@ test("Google CSP는 필요한 지도 호스트만 기존 정책에 추가한다"
   const headers = read("public/_headers");
   assert.match(headers, /script-src[^\n]+https:\/\/maps\.googleapis\.com[^\n]+https:\/\/maps\.gstatic\.com/);
   assert.match(headers, /connect-src[^\n]+https:\/\/maps\.googleapis\.com[^\n]+https:\/\/maps\.gstatic\.com/);
+  assert.match(headers, /style-src[^;]+https:\/\/fonts\.googleapis\.com/);
   assert.match(headers, /font-src[^\n]+https:\/\/fonts\.gstatic\.com/);
   assert.doesNotMatch(headers, /\*\.googleapis\.com/);
 });

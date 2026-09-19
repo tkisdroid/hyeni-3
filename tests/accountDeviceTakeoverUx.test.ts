@@ -51,7 +51,7 @@ test("자동 세션 종료는 캐시와 위치 세션을 지우고 온보딩에 
   const onboarding = read("src/screens/onboarding/Onboarding.tsx");
   const korean = JSON.parse(read("locales/ko/onboarding.json"));
 
-  assert.match(client, /code === "device_session_inactive" \? "inactive" : "rejected"/);
+  assert.match(client, /return classifyRefreshFailure\(code\)/);
   assert.match(client, /rememberSessionEndReason\("device_session_inactive"\)/);
   assert.equal((client.match(/endRejectedApiSession\(\w+\)/g) ?? []).length >= 2, true);
   assert.match(provider, /if \(!tokens\.access\)[\s\S]{0,180}queryClient\.clear\(\)[\s\S]{0,180}stopLocationTracking/);

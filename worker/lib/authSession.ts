@@ -51,14 +51,16 @@ export async function issueAccountSession(
   const device = requireDeviceDescriptor(input);
   const boundUser: AuthUser = { ...user, device_id: device.deviceId };
   const accessToken = await signAccessToken(env, boundUser);
+  const persistentParent = user.role === "parent" && !user.is_anonymous;
   const refreshToken = await issueRefreshToken(
     env.DB,
     user.sub,
     user.family_id,
     device.deviceId,
+    persistentParent,
   );
   try {
-    await takeOverAccountDeviceSession(env.DB, user.sub, device, refreshToken);
+    await takeOverAccountDeviceSession(env.DB, user.sub, device, refreshToken, new Date(), persistentParent);
   } catch (error) {
     await env.DB.prepare("DELETE FROM refresh_tokens WHERE token=? AND user_id=?")
       .bind(refreshToken, user.sub)

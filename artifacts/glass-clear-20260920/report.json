@@ -1,0 +1,66 @@
+[
+  {
+    "engine": "webkit",
+    "route": "parent/home",
+    "text": 556,
+    "overflow": false,
+    "glass": [
+      {
+        "fill": "linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1) 42%, rgba(255, 255, 255, 0.18))",
+        "blur": "blur(12px) saturate(1.45)"
+      }
+    ],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "width": 320,
+    "overflow": false
+  },
+  {
+    "engine": "webkit",
+    "route": "parent/settings",
+    "text": 233,
+    "overflow": false,
+    "glass": [],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "route": "parent/home",
+    "text": 556,
+    "overflow": false,
+    "glass": [
+      {
+        "fill": "linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1) 42%, rgba(255, 255, 255, 0.18))",
+        "blur": "blur(12px) saturate(1.45)"
+      }
+    ],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "width": 320,
+    "overflow": false
+  },
+  {
+    "engine": "chromium",
+    "route": "parent/settings",
+    "text": 233,
+    "overflow": false,
+    "glass": [],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "reducedTransparency": {
+      "image": "none",
+      "color": "rgb(255, 255, 255)",
+      "blur": "none"
+    }
+  }
+]

@@ -1960,6 +1960,7 @@ const semanticSurfaceManifest = [
     ["src/screens/parent/ParentFamily.css", "pf-paircode__card", "card"],
     ["src/screens/parent/ParentFamily.css", "pf-paircode__target", "card"],
     ["src/screens/parent/ParentSettings.css", "ps-list", "list-card"],
+    ["src/screens/parent/ParentSettings.css", "ps-profile-pending", "card"],
     ["src/screens/parent/ParentSettings.css", "ps-modal__card", "modal"],
     ["src/screens/shared/MemoChat.css", "mc-photo-preview__panel", "modal"],
     ["src/screens/child/overlays/ChildSheet.css", "ks-sheet", "sheet"],
@@ -2306,7 +2307,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/styles/global.css", ".hy-app"],
   // 버튼과 액션 컨트롤 — exact path + selector만 허용
   ["src/styles/components.css", ".hy-iconbtn"],
-  ["src/styles/components.css", ".km-error__retry"],
+  ["src/maps/FamilyMap.css", ".km-error__retry"],
   ["src/styles/components.css", ".hy-crash__btn"],
   ["src/styles/components.css", ".hy-crash__ghost"],
   ["src/components/ui/ScreenQueryState.css", ".sqs-retry"],
@@ -2564,6 +2565,10 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/ParentFamily.css", ".pf-parent__badge"],
   ["src/screens/parent/ParentFamily.css", ".pf-chip__dot"],
   ["src/screens/parent/ParentSettings.css", ".ps-account__badge"],
+  // 로딩 자리표시자와 재시도 조작 면은 독립 콘텐츠 카드가 아니다.
+  ["src/screens/parent/ParentSettings.css", ".ps-profile-pending__avatar"],
+  ["src/screens/parent/ParentSettings.css", ".ps-profile-pending__lines span"],
+  ["src/screens/parent/ParentSettings.css", ".ps-entitlement-retry button"],
   ["src/screens/shared/MemoChat.css", ".mc-status-dot"],
   ["src/screens/shared/MemoChat.css", ".mc-daysep span"],
   ["src/screens/child/overlays/ChildSheet.css", ".ks-head__badge"],

@@ -1,3 +1,5 @@
+import { PERSISTENT_PARENT_SESSION_EXPIRY } from "./sessionLifetime";
+
 const DEVICE_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type AccountDevicePlatform = "android" | "ios" | "web";
@@ -98,7 +100,13 @@ export async function claimAccountDeviceSession(
            ELSE excluded.claimed_at
          END,
          last_seen_at=excluded.last_seen_at,
-         expires_at=excluded.expires_at,
+         expires_at=CASE
+           WHEN account_device_sessions.device_id=excluded.device_id
+             AND account_device_sessions.revoked_at IS NULL
+             AND account_device_sessions.expires_at='${PERSISTENT_PARENT_SESSION_EXPIRY}'
+             THEN account_device_sessions.expires_at
+           ELSE excluded.expires_at
+         END,
          revoked_at=NULL
        WHERE account_device_sessions.device_id=excluded.device_id
           OR account_device_sessions.revoked_at IS NOT NULL
@@ -130,9 +138,12 @@ export async function takeOverAccountDeviceSession(
   device: AccountDeviceDescriptor,
   newRefreshToken: string,
   now = new Date(),
+  persistentParent = false,
 ): Promise<void> {
   const nowIso = now.toISOString();
-  const expiresAt = new Date(now.getTime() + DEVICE_SESSION_TTL_MS).toISOString();
+  const expiresAt = persistentParent
+    ? PERSISTENT_PARENT_SESSION_EXPIRY
+    : new Date(now.getTime() + DEVICE_SESSION_TTL_MS).toISOString();
   const results = await db.batch([
     db
       .prepare(

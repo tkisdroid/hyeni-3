@@ -246,3 +246,8 @@
 
 - 앱: https://github.com/tkisdroid/hyeni-3 (main) · 백엔드/레거시: https://github.com/tkisdroid/hyeni.
 - 커밋 = conventional commits(`feat:`/`fix:`/`docs:`…) 한국어. `.env`(키)·빌드 산출물·180MB+ 에셋은 커밋 금지.
+
+## Pages 지도 배포 재발 방지 (2026-09-20)
+
+운영 웹을 배포하기 전에 최신 `origin/main`이 현재 소스에 포함됐는지 확인한다. 지도 기능이 없는 과거 작업 폴더에서 UI 파일 하나만 고쳐 배포하면 Google 지도·국가·시간대 기능 전체가 함께 빠진다.
+`npm run deploy:pages`는 원격 main 선조 검사 → 새 build → `verify:pages-maps` → `.env` 없는 임시 폴더의 Wrangler 순서다. 로컬 build 성공만으로 배포 가능하다고 보지 않는다. 상세 증거는 [해외 지도 점검 보고서](../reports/2026-09-20-google-maps-audit.md)에 있다.

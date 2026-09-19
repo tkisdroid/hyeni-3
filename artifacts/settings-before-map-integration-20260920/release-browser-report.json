@@ -1,0 +1,122 @@
+[
+  {
+    "engine": "webkit",
+    "scenario": "profile-slow",
+    "familyRequests": 1,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "scenario": "subscription-slow",
+    "familyRequests": 1,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "scenario": "profile-error",
+    "familyRequests": 4,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "scenario": "subscription-error",
+    "familyRequests": 1,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "scenario": "profile-empty",
+    "familyRequests": 1,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "scenario": "cached-navigation",
+    "familyRequests": 2,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "scenario": "profile-slow",
+    "familyRequests": 1,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "scenario": "subscription-slow",
+    "familyRequests": 1,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "scenario": "profile-error",
+    "familyRequests": 4,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "scenario": "subscription-error",
+    "familyRequests": 1,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "scenario": "profile-empty",
+    "familyRequests": 1,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "scenario": "cached-navigation",
+    "familyRequests": 2,
+    "widths": [
+      390,
+      320
+    ],
+    "errors": []
+  }
+]

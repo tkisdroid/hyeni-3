@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { parentAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
+import { LoaderMark } from "@/components/ui/LoaderMark";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { ReferralRewardPanel } from "@/components/ReferralRewardPanel";
 import { LanguageSelector, languageNativeName } from "@/components/LanguageSelector";
@@ -100,14 +101,12 @@ export function ParentSettings() {
   const entitlementQuery = useEntitlement();
   const { ready, tier } = entitlementQuery;
   const settingsQueryState = resolveQueryTruthState([
-    { isLoading: accountQuery.isLoading, isError: accountQuery.isError },
-    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
-    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+    { isLoading: accountQuery.isLoading, isError: accountQuery.isError && !account },
   ]);
-  const settingsDataEmpty = settingsQueryState === "ready" && (!account || !entitlementQuery.view);
-  const settingsRefetching = accountQuery.isFetching || entitlementQuery.isFetching || familyQuery.isFetching;
+  const settingsDataEmpty = settingsQueryState === "ready" && !account;
+  const settingsRefetching = accountQuery.isFetching || entitlementQuery.isFetching;
   const retryParentSettings = async (): Promise<void> => {
-    await Promise.all([accountQuery.refetch(), entitlementQuery.refetch(), familyQuery.refetch()]);
+    await Promise.all([accountQuery.refetch(), entitlementQuery.refetch()]);
   };
   const reviewRewardNotice = !ready
     ? null
@@ -175,47 +174,6 @@ export function ParentSettings() {
     window.open(PRIVACY_POLICY_URL, "_blank", "noopener");
   };
 
-  if (settingsQueryState === "loading") {
-    return (
-      <ScreenQueryState
-        screenTitle={intl.formatMessage({ id: "parent.parentHome.copy009" })}
-        state="loading"
-        heading={intl.formatMessage({ id: "parent.parentSettings.copy010" })}
-        description={intl.formatMessage({ id: "parent.parentSettings.copy011" })}
-        onBack={() => navigate(-1)}
-      />
-    );
-  }
-
-  if (settingsQueryState === "error") {
-    return (
-      <ScreenQueryState
-        screenTitle={intl.formatMessage({ id: "parent.parentHome.copy009" })}
-        state="error"
-        heading={intl.formatMessage({ id: "parent.parentSettings.copy012" })}
-        description={intl.formatMessage({ id: "parent.parentSettings.copy013" })}
-        onBack={() => navigate(-1)}
-        onRetry={() => void retryParentSettings()}
-        retrying={settingsRefetching}
-      />
-    );
-  }
-
-  if (settingsDataEmpty) {
-    return (
-      <ScreenQueryState
-        screenTitle={intl.formatMessage({ id: "parent.parentHome.copy009" })}
-        state="empty"
-        heading={intl.formatMessage({ id: "parent.parentSettings.copy014" })}
-        description={intl.formatMessage({ id: "parent.parentSettings.copy015" })}
-        onBack={() => navigate(-1)}
-        onRetry={() => void retryParentSettings()}
-        retrying={settingsRefetching}
-        retryLabel={intl.formatMessage({ id: "parent.parentSettings.copy016" })}
-      />
-    );
-  }
-
   return (
     <div className="hy-rise-in">
       <header className="ps-head">
@@ -231,25 +189,48 @@ export function ParentSettings() {
       </header>
 
       <div className="ps-content">
-        {/* 프로필 (실 로그인 사용자) */}
-        <div className="ps-profile">
-          <div className="ps-profile__avatar" data-photo={hasProfilePhoto ? "true" : "false"}>
-            <img className="hy-network-avatar" src={profileAvatar} alt="" loading="eager" decoding="async" />
-          </div>
-          <div className="ps-profile__info">
-            <div className="ps-profile__name">{displayName}</div>
-            <div className="ps-profile__meta">
-              {providerLabel} · {roleLabel}
+        {/* 설정 메뉴는 즉시 열고, 프로필 조회 상태만 이 자리에 표시한다. */}
+        {settingsQueryState === "loading" ? (
+          <section className="ps-profile-pending" role="status" aria-live="polite" aria-busy="true">
+            <div className="ps-profile-pending__preview" aria-hidden="true">
+              <span className="ps-profile-pending__avatar" />
+              <span className="ps-profile-pending__lines"><span /><span /></span>
             </div>
+            <div className="ps-profile-pending__status">
+              <LoaderMark />
+              <span>{intl.formatMessage({ id: "parent.parentSettings.copy010" })}</span>
+            </div>
+          </section>
+        ) : settingsQueryState === "error" || settingsDataEmpty ? (
+          <ScreenQueryState
+            embedded
+            screenTitle={intl.formatMessage({ id: "parent.parentHome.copy009" })}
+            state={settingsQueryState === "error" ? "error" : "empty"}
+            heading={intl.formatMessage({ id: settingsQueryState === "error" ? "parent.parentSettings.copy012" : "parent.parentSettings.copy014" })}
+            description={intl.formatMessage({ id: "parent.parentSettings.copy015" })}
+            onRetry={() => void retryParentSettings()}
+            retrying={settingsRefetching}
+          />
+        ) : (
+          <div className="ps-profile">
+            <div className="ps-profile__avatar" data-photo={hasProfilePhoto ? "true" : "false"}>
+              <img className="hy-network-avatar" src={profileAvatar} alt="" loading="eager" decoding="async" />
+            </div>
+            <div className="ps-profile__info">
+              <div className="ps-profile__name">{displayName}</div>
+              <div className="ps-profile__meta">
+                {providerLabel} · {roleLabel}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="ps-profile__edit hy-press"
+              onClick={() => navigate("/account")}
+            >
+              {intl.formatMessage({ id: "parent.parentHome.copy051" })}
+            </button>
           </div>
-          <button
-            type="button"
-            className="ps-profile__edit hy-press"
-            onClick={() => navigate("/account")}
-          >
-            {intl.formatMessage({ id: "parent.parentHome.copy051" })}
-          </button>
-        </div>
+        )}
 
         {/* 언어 — 계정 프로필 바로 아래 한 줄. 지금 언어를 보여주고 눌러서 펼친다. */}
         <div className="ps-list ps-language">
@@ -364,6 +345,14 @@ export function ParentSettings() {
                 </span>
                 {chevronIcon}
               </button>
+            )}
+            {entitlementQuery.isError && !ready && (
+              <div className="ps-entitlement-retry" role="status">
+                <span>{intl.formatMessage({ id: "parent.daySummary.entitlementErrorTitle" })}</span>
+                <button type="button" className="hy-press" onClick={() => void entitlementQuery.refetch()} disabled={entitlementQuery.isFetching} aria-busy={entitlementQuery.isFetching}>
+                  {intl.formatMessage({ id: "core.action.reload" })}
+                </button>
+              </div>
             )}
             {reviewRewardNotice && (
               <div className="ps-nav" role="status">

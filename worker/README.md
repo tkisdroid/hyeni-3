@@ -530,3 +530,19 @@ Supabase가 권위 백엔드. Worker는 M0~M5 점진 구축·검증(로컬 D1). 
 cron 정의 원본: `supabase/migrations/*cron*.sql` (force_ring·friend_playdate·push_notify·ai_proactive·location_staleness 등). 클라 시임: Edge Function 호출부(`supabase.functions.invoke`/fetch) → `apiClient`.
 
 전체 로드맵·M4 상세: `~/.claude/plans/cheerful-bouncing-hopper.md`. 진행: M0~M3 ✅ (이 README 상단 진행 상황 참조).
+
+
+### 부모 로그인 유지 정책 (2026-09-20, 운영 적용 전)
+
+부모 계정의 새 로그인은 `sessionLifetime.ts`의 지속 만료 표식을 refresh와 활성 설치에 함께 저장한다.
+같은 기기 갱신에도 표식을 유지하며 access JWT는 기존 1시간 주기로 갱신한다. 시간 경과만으로 부모를
+로그아웃시키지 않는다. 직접 로그아웃·다른 기기 로그인·계정 삭제·가족 권한 철회는 기존대로 세션을 종료한다.
+아이·선생님·익명 및 기기 미바인딩 토큰의 수명은 변경하지 않는다.
+
+기존 부모 세션 전환 SQL은 `db/persistent-parent-sessions.sql`이다. 활성 부모의 동일 설치에 속하는
+미만료·미철회 refresh만 전환한다. 이미 만료된 토큰·회전된 과거 토큰·다른 설치는 되살리지 않는다.
+스키마 변경은 없으며 운영 적용 순서는 Worker → 해당 SQL → 웹 클라이언트다. 구 Worker가 표식을 30일로
+되돌리지 않도록 Worker를 먼저 배포한다. Android의 프록시 오류 보완은 앱 업데이트가 필요하다.
+현재 세션 보호 지침에 따라 이번 점검에서는 운영 SQL 실행·토큰 접근·배포를 수행하지 않았다.
+회귀 검증은 `tests/accountDeviceSession.test.mjs`의 31일·1년·10년 경과, 직접 로그아웃,
+다른 기기 인계, 전환 SQL 재실행 및 비부모 제외 시나리오다.

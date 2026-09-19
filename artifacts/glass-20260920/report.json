@@ -1,0 +1,102 @@
+[
+  {
+    "engine": "webkit",
+    "route": "parent/home",
+    "text": 556,
+    "overflow": false,
+    "glass": [
+      {
+        "fill": "linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24) 42%, rgba(255, 255, 255, 0.36))",
+        "blur": "blur(18px) saturate(1.5)"
+      }
+    ],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "width": 320,
+    "overflow": false
+  },
+  {
+    "engine": "webkit",
+    "route": "parent/calendar",
+    "text": 170,
+    "overflow": false,
+    "glass": [],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "route": "parent/settings",
+    "text": 233,
+    "overflow": false,
+    "glass": [],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "route": "notifications",
+    "text": 41,
+    "overflow": false,
+    "glass": [],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "route": "parent/home",
+    "text": 556,
+    "overflow": false,
+    "glass": [
+      {
+        "fill": "linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24) 42%, rgba(255, 255, 255, 0.36))",
+        "blur": "blur(18px) saturate(1.5)"
+      }
+    ],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "width": 320,
+    "overflow": false
+  },
+  {
+    "engine": "chromium",
+    "route": "parent/calendar",
+    "text": 170,
+    "overflow": false,
+    "glass": [],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "route": "parent/settings",
+    "text": 233,
+    "overflow": false,
+    "glass": [],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "route": "notifications",
+    "text": 41,
+    "overflow": false,
+    "glass": [],
+    "crash": false,
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "reducedTransparency": {
+      "image": "none",
+      "color": "rgb(255, 255, 255)",
+      "blur": "none"
+    }
+  }
+]

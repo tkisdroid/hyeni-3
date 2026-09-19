@@ -1,3 +1,4 @@
+import { PERSISTENT_PARENT_SESSION_EXPIRY } from "./sessionLifetime";
 // 불투명 refresh 토큰 발급/회전. D1 refresh_tokens 테이블에 저장.
 import {
   claimAccountDeviceSession,
@@ -32,6 +33,7 @@ export async function issueRefreshToken(
   userId: string,
   familyId: string | null,
   deviceId: string | null = null,
+  persistentParent = false,
 ): Promise<string> {
   const token = newOpaqueToken();
   const now = new Date();
@@ -52,7 +54,9 @@ export async function issueRefreshToken(
       familyId,
       deviceId,
       now.toISOString(),
-      new Date(now.getTime() + REFRESH_TTL_MS).toISOString(),
+      persistentParent && deviceId
+        ? PERSISTENT_PARENT_SESSION_EXPIRY
+        : new Date(now.getTime() + REFRESH_TTL_MS).toISOString(),
       userId,
       userId,
       familyId,
@@ -226,7 +230,9 @@ export async function rotateRefreshToken(
   const newToken = newOpaqueToken();
   const now = new Date();
   const nowIso = now.toISOString();
-  const expiresAt = new Date(now.getTime() + REFRESH_TTL_MS).toISOString();
+  const expiresAt = row.expires_at === PERSISTENT_PARENT_SESSION_EXPIRY
+    ? PERSISTENT_PARENT_SESSION_EXPIRY
+    : new Date(now.getTime() + REFRESH_TTL_MS).toISOString();
   const results = await db.batch([
     db
       .prepare(

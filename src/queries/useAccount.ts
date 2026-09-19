@@ -14,9 +14,9 @@ import {
 } from "./memberPhotos";
 import { useAuth } from "@/auth/AuthContext";
 import type { MessageId } from "@/i18n/generated/messageIds";
-import type { FamilyMember } from "@/lib/api/endpoints/family";
+import { getMyFamily, type FamilyMember } from "@/lib/api/endpoints/family";
 import {
-  getMyAccount,
+  toAccountInfo,
   setChildTheme,
   changePassword,
   buildFamilyDataExport,
@@ -63,10 +63,17 @@ export interface UseAccountResult {
 export function useAccount(): UseAccountResult {
   const { familyId, userId, status, user } = useAuth();
   const intl = useIntl();
+  const qc = useQueryClient();
   const query = useQuery({
     queryKey: qk.account(familyId),
-    queryFn: getMyAccount,
+    // 셸·홈과 동일한 가족 query를 공유해 설정 첫 진입의 중복 요청을 합친다.
+    queryFn: async () => toAccountInfo(await qc.fetchQuery({
+      queryKey: qk.family(familyId),
+      queryFn: getMyFamily,
+    })),
     enabled: status === "authenticated",
+    // 실패 재시도도 가족 query 한 곳에서 맡아 중첩 재시도로 대기를 늘리지 않는다.
+    retry: false,
   });
 
   // 멤버 사진은 서버 객체 키라 그대로는 표시되지 않는다 — 가족 조회와 같은 lease 규칙으로 해석한다.

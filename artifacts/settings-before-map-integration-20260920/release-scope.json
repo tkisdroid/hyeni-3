@@ -1,0 +1,24 @@
+{
+  "baseCommit": "1e59801f7bce0a85a9a1f0e1167fb2defed0e829",
+  "files": [
+    "src/components/ui/ScreenQueryState.css",
+    "src/components/ui/ScreenQueryState.tsx",
+    "src/lib/api/endpoints/account.ts",
+    "src/queries/useAccount.ts",
+    "src/screens/parent/ParentSettings.css",
+    "src/screens/parent/ParentSettings.tsx",
+    "src/styles/glass.css",
+    "scripts/verify-settings-loading.mjs"
+  ],
+  "buildDirectory": "/var/folders/8k/j8_vf7tx4bl1j8hwqck11cnc0000gn/T/hyeni-settings-release-ch4ufcge",
+  "sourceSha256": {
+    "src/components/ui/ScreenQueryState.css": "8e01e3529c1763c7aef82e81eb69f58d227a32a9a5d5953f5b6fd67195cf226a",
+    "src/components/ui/ScreenQueryState.tsx": "82ccac95bf681d4a6b6c85020ddf1d4593e6de49bb91e6031d6ca166df656a2c",
+    "src/lib/api/endpoints/account.ts": "f12261bd5641e21cbea13368a2bb24938296056ccfdc7e86fde896986b22d333",
+    "src/queries/useAccount.ts": "765c7794ea19299032e23f05279a2229150736eac9a826f02f6528d4631b7430",
+    "src/screens/parent/ParentSettings.css": "d371c3af51b96c227b8bd1bba12f060b160e509760150ab210785031eece3fd1",
+    "src/screens/parent/ParentSettings.tsx": "750c71528736ebe2be11a398a3c3f27c785da7d59dd61bdffd6deb85415d707e",
+    "src/styles/glass.css": "5b03ac83f5d80cc0dfd8cd04a1da67808b69cf626c67e2fe9d258fd8a112b590",
+    "scripts/verify-settings-loading.mjs": "56a3e14b1fa8d628e40244d11477f0105da89ba57be6f4ee2253c09fbae26210"
+  }
+}

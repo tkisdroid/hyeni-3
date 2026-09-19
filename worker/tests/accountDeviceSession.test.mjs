@@ -11,7 +11,7 @@ const {
   releaseAccountDeviceSession,
   takeOverAccountDeviceSession,
 } = await import("../lib/accountDeviceSession.ts");
-const { rotateRefreshToken } = await import("../lib/refresh.ts");
+const { issueRefreshToken, rotateRefreshToken } = await import("../lib/refresh.ts");
 
 class Statement {
   constructor(db, sql, bindings = []) {
@@ -254,4 +254,87 @@ test("로그인·페어링·미들웨어·로그아웃이 활성 설치 정본�
   }
   assert.match(runbook, /--file=db\/account-device-sessions\.sql/);
   assert.match(runbook, /idx_account_device_sessions_expiry/);
+});
+
+
+test("부모 세션은 30일·1년·10년 미사용 뒤에도 갱신되고 명시 로그아웃은 유지된다", async (t) => {
+  const { sqlite, db } = fixture();
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-09-20T00:00:00Z") });
+  let token = await issueRefreshToken(db, "user-a", null, "device-a", true);
+  await takeOverAccountDeviceSession(db, "user-a", { deviceId: "device-a" }, token, new Date(), true);
+  for (const days of [31, 365, 3650]) {
+    t.mock.timers.tick(days * 86400_000);
+    assert.equal(await checkAccountDeviceSession(db, "user-a", "device-a"), "active");
+    const rotated = await rotateRefreshToken(db, token, "device-a");
+    assert.ok(rotated);
+    token = rotated.newToken;
+    assert.equal(sqlite.prepare("SELECT expires_at FROM refresh_tokens WHERE token=?").get(token).expires_at,
+      "9999-12-31T23:59:59.999Z");
+  }
+  // 실제 로그아웃 route와 같은 batch로 현재 토큰과 활성 설치를 함께 철회한다.
+  await db.batch([
+    db.prepare("UPDATE refresh_tokens SET revoked=1 WHERE user_id=? AND device_id=? AND revoked=0").bind("user-a", "device-a"),
+    db.prepare("UPDATE account_device_sessions SET revoked_at=? WHERE user_id=? AND device_id=?").bind(new Date().toISOString(), "user-a", "device-a"),
+  ]);
+  assert.equal(await rotateRefreshToken(db, token, "device-a"), null);
+  assert.equal(await checkAccountDeviceSession(db, "user-a", "device-a"), "inactive");
+});
+
+test("지속 부모 세션도 다른 기기 로그인 뒤에는 기존 체인으로 복귀하지 못한다", async () => {
+  const { db } = fixture();
+  const old = await issueRefreshToken(db, "user-a", null, "device-a", true);
+  await takeOverAccountDeviceSession(db, "user-a", { deviceId: "device-a" }, old, new Date(), true);
+  const rotated = await rotateRefreshToken(db, old, "device-a");
+  const next = await issueRefreshToken(db, "user-a", null, "device-b", true);
+  await takeOverAccountDeviceSession(db, "user-a", { deviceId: "device-b" }, next, new Date(), true);
+  assert.equal(await rotateRefreshToken(db, old, "device-a"), null);
+  assert.equal(await rotateRefreshToken(db, rotated.newToken, "device-a"), null);
+  assert.equal(await checkAccountDeviceSession(db, "user-a", "device-a"), "inactive");
+  assert.equal(await checkAccountDeviceSession(db, "user-a", "device-b"), "active");
+  assert.equal(await rotateRefreshToken(db, next, "device-a"), null);
+});
+
+test("기존 부모 전환 SQL은 활성 설치의 미만료 토큰만 연장하고 재실행해도 같다", async () => {
+  const { sqlite, db } = fixture();
+  sqlite.exec(`
+    ALTER TABLE users ADD COLUMN is_anonymous INTEGER DEFAULT 0;
+    CREATE TABLE family_members(user_id TEXT, role TEXT, is_active INTEGER);
+    INSERT INTO family_members VALUES ('user-a','parent',1);
+  `);
+  const live = await issueRefreshToken(db, "user-a", null, "device-a");
+  await takeOverAccountDeviceSession(db, "user-a", { deviceId: "device-a" }, live);
+  const expired = await issueRefreshToken(db, "user-a", null, "device-a");
+  sqlite.prepare("UPDATE refresh_tokens SET expires_at='2000-01-01T00:00:00.000Z' WHERE token=?").run(expired);
+  const revoked = await issueRefreshToken(db, "user-a", null, "device-a");
+  sqlite.prepare("UPDATE refresh_tokens SET revoked=1 WHERE token=?").run(revoked);
+  const other = await issueRefreshToken(db, "user-a", null, "device-b");
+  const migration = readFileSync(new URL("../db/persistent-parent-sessions.sql", import.meta.url), "utf8");
+  sqlite.exec(migration);
+  sqlite.exec(migration);
+  const expiry = (token) => sqlite.prepare("SELECT expires_at FROM refresh_tokens WHERE token=?").get(token).expires_at;
+  assert.equal(expiry(live), "9999-12-31T23:59:59.999Z");
+  for (const token of [expired, revoked, other]) assert.notEqual(expiry(token), expiry(live));
+  assert.equal(await checkAccountDeviceSession(db, "user-a", "device-a", new Date("2040-01-01")), "active");
+});
+
+
+test("아이·익명·설치 미바인딩 세션은 부모 지속 정책을 적용하지 않는다", async () => {
+  const { sqlite, db } = fixture();
+  const ordinary = await issueRefreshToken(db, "user-a", null, "device-a");
+  const unbound = await issueRefreshToken(db, "user-a", null, null, true);
+  for (const token of [ordinary, unbound]) {
+    const row = sqlite.prepare("SELECT issued_at,expires_at FROM refresh_tokens WHERE token=?").get(token);
+    assert.equal(Date.parse(row.expires_at) - Date.parse(row.issued_at), 30 * 86400_000);
+  }
+  const sessionSource = readFileSync(new URL("../lib/authSession.ts", import.meta.url), "utf8");
+  assert.match(sessionSource, /user.role === "parent" && !user.is_anonymous/);
+  sqlite.exec(`
+    ALTER TABLE users ADD COLUMN is_anonymous INTEGER DEFAULT 0;
+    CREATE TABLE family_members(user_id TEXT, role TEXT, is_active INTEGER);
+    INSERT INTO family_members VALUES ('user-a','child',1);
+  `);
+  await takeOverAccountDeviceSession(db, "user-a", { deviceId: "device-a" }, ordinary);
+  sqlite.exec(readFileSync(new URL("../db/persistent-parent-sessions.sql", import.meta.url), "utf8"));
+  assert.notEqual(sqlite.prepare("SELECT expires_at FROM refresh_tokens WHERE token=?").get(ordinary).expires_at,
+    "9999-12-31T23:59:59.999Z");
 });

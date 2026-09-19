@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": [
+    "web: 실패 재시도·핀 선택·확대·여백·해외 좌표·화면 이탈 통과",
+    "native: 실패 재시도·핀 선택·확대·여백·해외 좌표·화면 이탈 통과",
+    "native: marker 갱신 중 화면 이탈 후 순차 해제 통과",
+    "native: 생성 중 화면 이탈 후 늦은 surface 제거 통과",
+    "native: 중첩 지도 배경 참조계수·원래 개별 CSS·중복 해제 통과"
+  ],
+  "liveFamilyApi": false
+}
