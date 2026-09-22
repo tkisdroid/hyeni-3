@@ -93,6 +93,10 @@
   line-height: var(--type-label-line-height);
   color: rgba(255, 255, 255, 0.8);
   font-weight: var(--type-label-weight);
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .qrs-error {
   margin-top: 12px;

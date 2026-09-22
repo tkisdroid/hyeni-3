@@ -256,7 +256,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(90deg, #46d19b 0 14px, transparent 14px 26px);
+  background: repeating-linear-gradient(90deg, var(--mint-400) 0 14px, transparent 14px 26px);
   opacity: 0.8;
 }
 .ks-route__steps {
@@ -297,6 +297,10 @@
 
   color: var(--fg-body);
 
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* 친구랑 놀기 */
@@ -402,6 +406,10 @@
 
   color: var(--fg-muted);
 
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* 전화 시트 */

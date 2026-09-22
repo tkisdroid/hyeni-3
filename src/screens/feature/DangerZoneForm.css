@@ -2,7 +2,7 @@
 
 .dzf-screen {
   min-height: 100%;
-  background: linear-gradient(180deg, #fdf1f2, #f7f4f3);
+  background: linear-gradient(180deg, #fdf1f2, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -53,7 +53,7 @@
   height: 160px;
   border-radius: var(--radius-20);
   overflow: hidden;
-  background: linear-gradient(135deg, #eaf6ee 0%, #e6f2fb 60%, #fce6f1 100%);
+  background: linear-gradient(135deg, #eaf6ee 0%, var(--blue-soft) 60%, #fce6f1 100%);
   box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
@@ -118,7 +118,7 @@
   font-weight: 600;
 }
 .dzf-input:focus {
-  border-color: #e5484d;
+  border-color: var(--danger-500);
   box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.14);
 }
 
@@ -147,7 +147,7 @@
 }
 .dzf-range {
   width: 100%;
-  accent-color: #e5484d;
+  accent-color: var(--danger-500);
 }
 
 /* ── 진입/이탈 알림 토글 ────────────────────────────────────────────────── */
@@ -186,7 +186,7 @@
   transition: background 0.18s ease;
 }
 .dzf-toggle[data-on="true"] {
-  background-color: #31c48d;
+  background-color: var(--mint-500);
 }
 .dzf-toggle__knob {
   position: absolute;

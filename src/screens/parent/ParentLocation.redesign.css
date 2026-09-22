@@ -282,6 +282,12 @@
   opacity: 0.6;
 }
 
+/* 실제 초점은 안쪽 투명 input 이 받는다 — 보이는 링은 바깥 라벨에 그린다. */
+.pl-root .pl-history-toolbar__date:focus-within {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
 .pl-root .pl-history-toolbar__day {
   color: inherit;
   font: inherit;
@@ -327,7 +333,7 @@
 }
 
 /* ── 실시간 / 이동 기록 전환 ─────────────────────────────────────────────
-   선택된 쪽이 하드코딩 민트(#087653)라 어른 모드 강조색(라벤더)과 따로 놀았다.
+   선택된 쪽이 하드코딩 민트(var(--mint-text))라 어른 모드 강조색(라벤더)과 따로 놀았다.
    전환은 '어디를 보고 있는지'를 말하는 조작이므로 테마 강조색을 그대로 쓴다. */
 .pl-root .pl-viewtog {
   padding: 4px;

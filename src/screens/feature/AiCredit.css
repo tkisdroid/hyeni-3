@@ -2,8 +2,8 @@
 
 .ac-screen {
   min-height: 100%; /* 848px 하드코딩 → 큰 기기에서 배경 그라디언트 끊김 */
-  background: radial-gradient(120% 44% at 50% 0%, #efe8ff 0%, rgba(239, 232, 255, 0) 55%),
-    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  background: radial-gradient(120% 44% at 50% 0%, var(--lav-soft2) 0%, rgba(239, 232, 255, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -224,7 +224,7 @@
   width: 48px;
   height: 48px;
   border-radius: var(--radius-16);
-  background: #f1ecff;
+  background: var(--lav-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -249,7 +249,7 @@
   line-height: var(--type-title-line-height);
   font-weight: var(--type-title-weight);
 
-  color: #201a1d;
+  color: var(--fg-primary);
   letter-spacing: -0.01em;
 }
 .ac-pack__tag {
@@ -259,8 +259,8 @@
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  color: #6d4e9c;
-  background: #efe8ff;
+  color: var(--lav-text);
+  background: var(--lav-soft2);
 }
 .ac-pack__per {
   display: block;
@@ -309,7 +309,7 @@
   width: 42px;
   height: 42px;
   border-radius: var(--radius-12);
-  background: #e7f8f0;
+  background: var(--mint-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -331,7 +331,7 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: #201a1d;
+  color: var(--fg-primary);
 }
 .ac-auto__sub {
   display: block;

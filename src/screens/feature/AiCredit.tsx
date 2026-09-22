@@ -85,7 +85,7 @@ const CREDIT_PACKS: CreditPack[] = [
     backendAmount: 80,
     tagId: "billing.aiCredit.pack.p80.tag",
     descriptionId: "billing.aiCredit.pack.p80.description",
-    ring: "2px solid #B79DFB",
+    ring: "2px solid var(--lav-300)",
   },
   {
     id: "p200",

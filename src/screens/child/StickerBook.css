@@ -49,7 +49,7 @@
 }
 
 .sb-progress {
-  background: linear-gradient(120deg, #fff3d6, #ffe9ef);
+  background: linear-gradient(120deg, var(--cream-soft), #ffe9ef);
   border-radius: var(--radius-16);
   padding: 16px 16px;
   border: 1px solid rgba(224, 161, 30, 0.15);

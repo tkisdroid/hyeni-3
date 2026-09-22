@@ -45,7 +45,7 @@
 
 /* ── 동기화 상태 카드 ─────────────────────────────────────────────────────── */
 .ds-sync {
-  background: linear-gradient(135deg, #e7f8f0, #e6f2fb);
+  background: linear-gradient(135deg, var(--mint-soft), var(--blue-soft));
   border-radius: var(--radius-16);
   padding: 16px;
   box-shadow: var(--shadow-soft);
@@ -153,8 +153,8 @@
   object-fit: contain;
 }
 .ds-card__icon--blue {
-  background: #e6f2fb;
-  color: #2e6da4;
+  background: var(--blue-soft);
+  color: var(--blue-text);
 }
 .ds-card__icon--rose {
   background: var(--danger-soft);

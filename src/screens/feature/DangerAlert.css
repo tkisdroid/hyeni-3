@@ -2,7 +2,7 @@
 
 .da-screen {
   min-height: 100%;
-  background: linear-gradient(180deg, #fdf1f2, #f7f4f3);
+  background: linear-gradient(180deg, #fdf1f2, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -156,6 +156,10 @@
   font-weight: var(--type-body-sm-weight);
 
   color: var(--fg-body);
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .da-hero__cta {
   margin-top: 16px;

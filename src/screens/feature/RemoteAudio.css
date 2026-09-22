@@ -15,8 +15,8 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 8px;
   overflow: hidden;
-  background: radial-gradient(120% 46% at 50% 0%, #efe8ff 0%, rgba(239, 232, 255, 0) 55%),
-    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  background: radial-gradient(120% 46% at 50% 0%, var(--lav-soft2) 0%, rgba(239, 232, 255, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -106,7 +106,7 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
-  color: #6d4e9c;
+  color: var(--lav-text);
 }
 
 .ra-trust-grid {
@@ -351,7 +351,7 @@
   height: 34%;
   opacity: 0.42;
   animation-play-state: paused;
-  background: linear-gradient(180deg, #d9c9ff, #8b6bec);
+  background: linear-gradient(180deg, #d9c9ff, var(--lav-500));
 }
 
 .ra-timer {
@@ -385,7 +385,7 @@
   color: #d9c9ff;
 }
 .ra-listen[data-receiving="false"] .ra-live-dot {
-  background: #b79dfb;
+  background: var(--lav-300);
 }
 .ra-time {
   font-size: var(--type-display);

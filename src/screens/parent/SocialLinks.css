@@ -44,7 +44,7 @@
 .sl-unlink--confirm {
   border-color: transparent;
   background: var(--danger-soft, #ffe9e9);
-  color: var(--danger, #d94a4a);
+  color: var(--danger-text);
 }
 
 .sl-unlink:disabled {

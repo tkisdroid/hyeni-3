@@ -58,6 +58,34 @@ test("히어로 소식 슬라이드는 실제 마스코트 이미지를 쓴다",
   }
 });
 
+test("표에서 조립되는 icon 필드도 public/assets 에 실제로 존재한다", () => {
+  // 이런 아이콘은 표에 `icon: "…"` 로 적히고 화면이 `asset(option.icon)` 로 조립하므로
+  // 위 정적 스캐너가 잡지 못한다. 2026-09-22 R3CN400MGNW 실기기 E2E 에서 피드백
+  // '사용 방법 질문' 타일만 깨진 상자로 보였고(naturalWidth 0 · settings-faq.svg 404 3회),
+  // DOM 텍스트만 보는 CDP 스모크는 통과했다. 같은 실수를 한 파일에 묶어 막지 않는다 —
+  // src 전체를 훑어 새 표가 생겨도 자동으로 걸리게 한다.
+  const missing = [];
+  let checked = 0;
+  for (const path of sources) {
+    const source = readFileSync(path, "utf8");
+    for (const match of source.matchAll(/\bicon:\s*"([^"]+)"/g)) {
+      const reference = match[1];
+      checked += 1;
+      const line = source.slice(0, match.index).split("\n").length;
+      const where = `${relative(repoRoot, path).replaceAll("\\", "/")}:${line}`;
+      if (reference.endsWith(".svg")) {
+        missing.push(`${where} → SVG 원본이 아니라 webp 슬러그를 씁니다: assets/${reference}`);
+        continue;
+      }
+      if (existsSync(join(publicAssets, reference))) continue;
+      missing.push(`${where} → assets/${reference}`);
+    }
+  }
+  // 표가 줄어 스캐너가 무력해지면 통과처럼 보인다 — 하한을 둔다.
+  assert.ok(checked >= 20, `icon: 참조를 ${checked}건만 찾았습니다 — 스캐너가 깨졌는지 확인해 주세요.`);
+  assert.deepEqual(missing, [], `존재하지 않는 icon 자산 ${missing.length}건:\n${missing.join("\n")}`);
+});
+
 // 참고: 런타임에 조립되는 `asset(변수)` 경로는 여기서 판정하지 않는다. 그런 경로는 각 기능이
 // 자기 자산 목록 테스트로 지킨다(AI 친구 표정 = tests/aiBuddyCharacterAssets.test.mjs,
 // 3D 아이콘 = tests/iconConsistency.test.mjs, 장소 이미지 = resolvePlaceVisual 정적 매핑).

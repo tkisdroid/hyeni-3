@@ -41,7 +41,7 @@ const FEEDBACK_TYPES: readonly FeedbackTypeOption[] = [
   },
   {
     id: "question",
-    icon: "ui/settings-faq.svg",
+    icon: "ui/settings-faq.webp",
     labelId: "shared.feedback.type.question.formal",
     childLabelId: "shared.feedback.type.question.child",
     detailId: "shared.feedback.type.questionDetail.formal",

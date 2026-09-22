@@ -44,7 +44,7 @@
   align-items: center;
   gap: 16px;
   background: linear-gradient(135deg, var(--hy-accent-soft), #fff);
-  border: 1px solid var(--hy-accent-line, rgba(0, 0, 0, 0.05));
+  border: 1px solid var(--line-card);
   border-radius: var(--radius-20);
   padding: 16px;
   box-shadow: var(--shadow-floating);
@@ -209,6 +209,10 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-muted);
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* ── 상태/토글/부탁 칩 ──────────────────────────────────────────────────── */

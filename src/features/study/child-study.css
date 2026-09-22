@@ -2,7 +2,7 @@
   display: grid;
   gap: 16px;
   padding: max(48px, calc(env(safe-area-inset-top, 0px) + 28px)) 16px 24px;
-  color: var(--hy-text, #342c30);
+  color: var(--fg-body);
 }
 .child-study-header { display: flex; align-items: center; gap: 12px; }
 .child-study-header h1,
@@ -17,7 +17,7 @@
   height: 48px;
   border: 0;
   border-radius: 12px;
-  background: var(--hy-surface-muted, #f4eef1);
+  background: var(--bg-chip-idle);
   font-size: 1.4rem;
 }
 .child-study-start,
@@ -29,8 +29,8 @@
   gap: 12px;
   padding: 20px;
   border-radius: 20px;
-  background: var(--hy-surface, #fff);
-  border: 1px solid var(--hy-border-subtle, #e7dfe3);
+  background: var(--bg-card);
+  border: 1px solid var(--line-soft);
 }
 .child-study-resume > div:first-child {
   display: grid;
@@ -46,15 +46,15 @@
   min-height: 52px;
   border: 0;
   border-radius: 16px;
-  background: var(--hy-primary, #ef5e9d);
+  background: var(--hy-accent-cta);
   color: #fff;
   font: inherit;
   font-weight: 900;
 }
 .child-study-resume-actions button.is-secondary {
-  border: 1px solid var(--hy-border-subtle, #e7dfe3);
-  background: var(--hy-surface-muted, #f4eef1);
-  color: var(--hy-text, #342c30);
+  border: 1px solid var(--line-soft);
+  background: var(--bg-chip-idle);
+  color: var(--fg-body);
 }
 .child-study-start > span {
   justify-self: start;
@@ -96,7 +96,7 @@
   min-height: 48px;
   border: 0;
   border-radius: 12px;
-  background: var(--hy-primary, #ef5e9d);
+  background: var(--hy-accent-cta);
   color: #fff;
   font: inherit;
   font-weight: 800;
@@ -131,10 +131,10 @@
   min-height: 72px;
   padding: 16px;
   overflow: hidden;
-  border: 1px solid var(--hy-border-subtle, #e7dfe3);
+  border: 1px solid var(--line-soft);
   border-radius: 16px;
-  background: var(--hy-surface, #fff);
-  color: var(--hy-text, #342c30);
+  background: var(--bg-card);
+  color: var(--fg-body);
   font: inherit;
   text-align: left;
 }
@@ -146,22 +146,22 @@
 .child-study-topic-list strong { font-size: 1rem; }
 .child-study-adaptive-topic > span:not(.child-study-topic-loader),
 .child-study-topic-list button > span:not(.child-study-topic-loader) {
-  color: var(--hy-text-muted, #766b70);
+  color: var(--fg-muted);
   font-size: .88rem;
 }
 .child-study-topic-loader {
   width: 42%;
-  color: var(--hy-primary, #ef5e9d);
+  color: var(--hy-accent);
 }
 .child-study-topic-unit { display: grid; gap: 10px; }
 .child-study-topic-unit h3 { padding-inline: 4px; font-size: 1rem; }
 .child-study-topic-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .child-study-change-grade {
   min-height: 48px;
-  border: 1px solid var(--hy-border-subtle, #e7dfe3);
+  border: 1px solid var(--line-soft);
   border-radius: 16px;
-  background: var(--hy-surface-muted, #f4eef1);
-  color: var(--hy-text, #342c30);
+  background: var(--bg-chip-idle);
+  color: var(--fg-body);
   font: inherit;
   font-weight: 800;
 }
@@ -171,9 +171,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid var(--hy-border-subtle, #e7dfe3);
+  border: 1px solid var(--line-soft);
   border-radius: 16px;
-  background: var(--hy-surface, #fff);
+  background: var(--bg-card);
 }
 .study-mission-context > div { display: grid; gap: 3px; min-width: 0; }
 .study-mission-context strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -185,8 +185,8 @@
   padding: 0 12px;
   border: 0;
   border-radius: 12px;
-  background: var(--hy-surface-muted, #f4eef1);
-  color: var(--hy-text, #342c30);
+  background: var(--bg-chip-idle);
+  color: var(--fg-body);
   font: inherit;
   font-weight: 800;
 }
@@ -195,11 +195,11 @@
   display: grid;
   gap: 10px;
   padding: 24px;
-  border: 1px solid var(--hy-border-subtle, #e7dfe3);
+  border: 1px solid var(--line-soft);
   border-radius: 20px;
-  background: var(--hy-surface, #fff);
+  background: var(--bg-card);
 }
-.study-continuous-loader { width: 48%; color: var(--hy-primary, #ef5e9d); }
+.study-continuous-loader { width: 48%; color: var(--hy-accent); }
 .study-mission-progress { display: grid; gap: 8px; font-weight: 800; }
 .study-mission-progress progress { width: 100%; min-height: 14px; }
 .study-complete-icon {
@@ -215,8 +215,8 @@
 }
 .study-result-actions { display: grid; gap: 10px; }
 .study-mission-result button.is-secondary {
-  background: var(--hy-surface-muted, #f4eef1);
-  color: var(--hy-text, #342c30);
+  background: var(--bg-chip-idle);
+  color: var(--fg-body);
 }
 
 @keyframes study-loading-slide {
@@ -228,4 +228,12 @@
   .child-study-grade-loader,
   .child-study-topic-loader,
   .study-continuous-loader { animation: none; }
+}
+
+/* 프레스 피드백 — 디자인 계약(모든 인터랙티브 요소). hy-press 버튼과 같은 동작을 CSS 로 준다. */
+.child-study-screen button {
+  transition: transform var(--duration-fast) var(--easing-standard);
+}
+.child-study-screen button:not(:disabled):active {
+  transform: scale(var(--press, 0.98));
 }

@@ -148,7 +148,7 @@
   line-height: var(--type-display-line-height);
   font-weight: var(--type-display-weight);
 
-  color: #f04770;
+  color: var(--danger-strong);
 
 }
 .cs-hold__hint {
@@ -219,6 +219,10 @@
   color: #fff;
   text-align: center;
 
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 .cs-checks {

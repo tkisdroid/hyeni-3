@@ -153,7 +153,7 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: #2a2327;
+  color: var(--ink-2);
 }
 .afs-name-field::placeholder {
   color: var(--fg-placeholder);

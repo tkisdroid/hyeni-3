@@ -27,6 +27,19 @@ test("부모 대화 탭 점은 parent_alert가 아니라 실제 아이별 memo r
   assert.match(query, /!\(r\.read_by \?\? \[\]\)\.includes\(userId\)/);
 });
 
+test("아이 세션은 탭바 렌더 여부와 무관하게 다른 아이 스레드를 조회하지 않는다", () => {
+  // 2026-09-22 R3CN400MGNW 실기기 E2E 실측: 아이 기기가 push 상세 화면(`#/supplies`·`#/route`)에
+  // 들어가면 `/api/memos/replies?...child_id=<다른 아이>` 가 403 이었다. PushShell 이 탭바
+  // **렌더**만 role 로 막고 useUnreadMemoForChildren 조회는 막지 않아 children[0] 스레드까지
+  // 받아오려 했다. 조회 스코프(enabled)와 렌더 조건은 별개로 유지한다.
+  const shell = read("src/app/AppShell.tsx");
+  assert.match(shell, /function useMemoDotTabs\(baseTabs: TabItem\[\], memoPath: string, enabled: boolean\)/);
+  assert.match(shell, /enabled[\s\S]{0,120}\?\s*\(family\?\.members \?\? \[\]\)[\s\S]{0,80}:\s*\[\]\)/);
+  assert.match(shell, /useMemoDotTabs\(useParentTabs\(\), "\/parent\/memo", true\)/);
+  assert.match(shell, /useMemoDotTabs\(useParentTabs\(\), "\/parent\/memo", role === "parent"\)/);
+  assert.doesNotMatch(shell, /useMemoDotTabs\(useParentTabs\(\), "\/parent\/memo"\)/);
+});
+
 test("부모·아이 대화 표시는 최근 7일을 조회하고 자정·화면 복귀에 맞춰 갱신한다", () => {
   const shell = read("src/app/AppShell.tsx");
   const chat = read("src/screens/shared/MemoChat.tsx");

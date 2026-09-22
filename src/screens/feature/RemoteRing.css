@@ -13,7 +13,7 @@
   display: flex;
   flex-direction: column;
   background: radial-gradient(120% 46% at 50% 0%, #ffe9d6 0%, rgba(255, 233, 214, 0) 55%),
-    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+    linear-gradient(180deg, #fdf4f1, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 

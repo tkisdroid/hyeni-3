@@ -172,7 +172,9 @@ test("360px 메모 화면에서는 빠른 답장 칩을 줄바꿈해 잘린 칩�
     css,
     /@media\s*\(max-width:\s*380px\)[\s\S]*?\.mc-quick\s*\{[\s\S]*?flex-wrap:\s*wrap;[\s\S]*?overflow-x:\s*visible;/,
   );
-  assert.match(css, /\.mc-header\s*\{[^}]*background:\s*#fbf7f4;/);
+  // 헤더는 스티키라 뒤 내용이 비치지 않도록 불투명 배경이어야 한다. 값은 그대로 두고
+  // 표기만 hex → 토큰으로 바뀔 수 있다 2026-09-22(`--bg-app` = #FBF7F4 동일값, hex 직접 사용 금지 계약).
+  assert.match(css, /\.mc-header\s*\{[^}]*background:\s*(?:var\(--bg-app\)|#fbf7f4);/i);
   assert.doesNotMatch(css, /\.mc-header\s*\{[^}]*background:\s*rgba\(/);
 });
 

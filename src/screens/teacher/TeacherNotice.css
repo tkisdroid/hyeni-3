@@ -2,7 +2,7 @@
 
 .tn-screen {
   min-height: 100%;
-  background: linear-gradient(180deg, #f3f0fb, #f7f4f3);
+  background: linear-gradient(180deg, #f3f0fb, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 

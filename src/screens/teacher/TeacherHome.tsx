@@ -268,7 +268,7 @@ export function TeacherHome() {
             {/* 출석 현황 */}
             <section>
               <SectionHeader
-                iconBg="#E7F8F0"
+                iconBg="var(--mint-soft)"
                 icon={<img src={asset("ui/pin-heart.webp")} alt="" />}
                 title={intl.formatMessage({ id: "shared.teacherHome.attendance.title" })}
                 action={
@@ -310,7 +310,7 @@ export function TeacherHome() {
             {/* 하단 2열 바로가기 */}
             <div className="th-grid">
               <button type="button" className="th-tile hy-press" onClick={openInvite}>
-                <span className="th-tile__icon" style={{ background: "#E7F8F0" }}>
+                <span className="th-tile__icon" style={{ background: "var(--mint-soft)" }}>
                   <img src={asset("ui/friend-pair.webp")} alt="" />
                 </span>
                 <span className="th-tile__label">
@@ -322,7 +322,7 @@ export function TeacherHome() {
                 className="th-tile hy-press"
                 onClick={() => navigate("/teacher/timetable")}
               >
-                <span className="th-tile__icon" style={{ background: "#FDE7F1" }}>
+                <span className="th-tile__icon" style={{ background: "var(--rose-soft)" }}>
                   <img src={asset("ui/calendar-heart.webp")} alt="" />
                 </span>
                 <span className="th-tile__label">

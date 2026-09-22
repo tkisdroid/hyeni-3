@@ -24,7 +24,7 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #e7f8f0;
+  background: var(--mint-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,7 +137,7 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: #201a1d;
+  color: var(--fg-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -254,7 +254,7 @@
   line-height: var(--type-body-lg-line-height);
   font-weight: var(--type-body-lg-weight);
 
-  color: #201a1d;
+  color: var(--fg-primary);
 }
 .ts-empty__sub {
   font-size: var(--type-label);
@@ -326,6 +326,10 @@
 
   color: var(--fg-muted);
 
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .ts-sheet__label {
   font-size: var(--type-caption);

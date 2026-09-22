@@ -5,7 +5,7 @@
   min-height: 100%;
   background:
     radial-gradient(120% 40% at 50% 0%, #fff0d6 0%, rgba(255, 240, 214, 0) 55%),
-    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+    linear-gradient(180deg, #fdf4f1, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -79,7 +79,7 @@
   gap: 12px;
   padding: 16px 16px;
   border-radius: var(--radius-20);
-  background: linear-gradient(120deg, #fff3d6, #ffe4ef);
+  background: linear-gradient(120deg, var(--cream-soft), #ffe4ef);
   box-shadow: var(--shadow-floating);
 }
 .sub-active__badge {

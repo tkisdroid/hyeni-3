@@ -3,10 +3,10 @@
   gap: 18px;
   min-width: 0;
   padding: 20px;
-  border: 1px solid var(--hy-border-subtle, #e7dfe3);
+  border: 1px solid var(--line-soft);
   border-radius: 24px;
-  background: var(--hy-surface, #fff);
-  color: var(--hy-text, #342c30);
+  background: var(--bg-card);
+  color: var(--fg-body);
 }
 
 .study-problem h2,
@@ -24,20 +24,20 @@
 .study-problem-meta span {
   padding: 6px 10px;
   border-radius: 999px;
-  background: var(--hy-surface-muted, #f4eef1);
+  background: var(--bg-chip-idle);
   font-size: .82rem;
   font-weight: 700;
 }
 
 .study-problem-objective {
-  color: var(--hy-text-muted, #6f6269);
+  color: var(--fg-muted);
 }
 
 .study-svg-visual {
   width: 100%;
   max-height: 280px;
   overflow: visible;
-  color: var(--hy-text, #342c30);
+  color: var(--fg-body);
 }
 
 .study-visual-line,
@@ -150,7 +150,7 @@
   padding: 0 18px;
   border: 0;
   border-radius: 12px;
-  background: var(--hy-primary, #ef5e9d);
+  background: var(--hy-accent-cta);
   color: #fff;
   font: inherit;
   font-weight: 800;
@@ -177,4 +177,17 @@
   .study-fraction-input,
   .study-coordinate-input,
   .study-measurement-input { align-items: stretch; flex-direction: column; }
+}
+
+/* 프레스 피드백 — 디자인 계약(모든 인터랙티브 요소). */
+.study-submit,
+.study-order-list button {
+  transition: transform var(--duration-fast) var(--easing-standard);
+}
+.study-submit:not(:disabled):active,
+.study-order-list button:not(:disabled):active {
+  transform: scale(var(--press, 0.98));
+}
+.study-choice:active {
+  background: var(--bg-press);
 }

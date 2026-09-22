@@ -40,14 +40,24 @@ function useParentTabs(): TabItem[] {
   ], [intl]);
 }
 
-/** 대화 탭 빨간 점 — 모든 아이의 실제 1:1 스레드 read_by 기준. */
-function useMemoDotTabs(baseTabs: TabItem[], memoPath: string): TabItem[] {
+/**
+ * 대화 탭 빨간 점 — 모든 아이의 실제 1:1 스레드 read_by 기준.
+ *
+ * ⚠️ `enabled` 는 "탭바를 그리는가"가 아니라 **"모든 아이 스레드를 조회해도 되는가"**다.
+ *    아이 세션은 자기 스레드만 보므로 여기서 꺼야 한다 — 2026-09-22 R3CN400MGNW 실기기 E2E 에서
+ *    아이 기기가 push 상세 화면(`#/supplies`·`#/route`)에 들어갈 때 `child_id=<다른 아이>` 로
+ *    403 이 났다. PushShell 이 탭바 **렌더**만 role 로 막고 이 조회는 막지 않아, 아이 기기가
+ *    `children[0]`(다른 아이) 스레드를 받아오려 했다(AGENTS.md: children[0] 폴백 금지).
+ */
+function useMemoDotTabs(baseTabs: TabItem[], memoPath: string, enabled: boolean): TabItem[] {
   const familyTimeZone = useFamilyTimeZone();
   const { data: family } = useMyFamily();
   const dateKeys = useRecentDateKeys(7, familyTimeZone);
   const childIds = useMemo(
-    () => (family?.members ?? []).filter((member) => member.role === "child").map((member) => member.id),
-    [family],
+    () => (enabled
+      ? (family?.members ?? []).filter((member) => member.role === "child").map((member) => member.id)
+      : []),
+    [family, enabled],
   );
   const hasUnreadMemo = useUnreadMemoForChildren(dateKeys, childIds);
   return useMemo(
@@ -69,7 +79,8 @@ function useTeacherTabs(): TabItem[] {
 /** 부모 모드 셸: 폰 프레임 + 스크롤 + 부모 탭바. */
 export function ParentShell() {
   const { accent } = useAccent();
-  const tabs = useMemoDotTabs(useParentTabs(), "/parent/memo");
+  // 이 셸은 부모 전용이라 모든 아이 스레드를 조회해도 된다.
+  const tabs = useMemoDotTabs(useParentTabs(), "/parent/memo", true);
   const scrolledRef = useScrolledShell();
   return (
     <div className="hy-app hy-adult" data-role="parent" data-accent={accent}>
@@ -139,7 +150,8 @@ export function PushShell() {
   const { role } = useAuth();
   const scrolledRef = useScrolledShell();
   const { pathname } = useLocation();
-  const parentTabs = useMemoDotTabs(useParentTabs(), "/parent/memo");
+  // 탭바를 그리는 것과 남의 스레드를 조회하는 것은 다르다 — 아이 세션은 두 다 하지 않는다.
+  const parentTabs = useMemoDotTabs(useParentTabs(), "/parent/memo", role === "parent");
   const teacherTabs = useTeacherTabs();
   const showNav = !NAVLESS_PUSH_PATHS.has(pathname);
   const isChild = role === "child";

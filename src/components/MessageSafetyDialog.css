@@ -78,6 +78,10 @@
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 .msd-reasons {
@@ -116,6 +120,11 @@
   border-color: var(--lav-400);
   background: var(--lav-soft);
   color: var(--lav-text);
+}
+
+/* 라디오를 감싼 조작 행 — 눌림 피드백(디자인 계약). */
+.msd-reason:active {
+  background: var(--bg-press);
 }
 
 .msd-reason input {

@@ -25,7 +25,7 @@ function avatarFor(gender: string | null | undefined): string {
 }
 
 function softFor(gender: string | null | undefined): string {
-  return gender === "dad" ? "#E6F2FB" : "#FDE7F1";
+  return gender === "dad" ? "var(--blue-soft)" : "var(--rose-soft)";
 }
 
 /** 전화번호 설정: 실 보호자 목록 표시. 본인 번호만 편집(백엔드는 본인 프로필만 수정 가능). */

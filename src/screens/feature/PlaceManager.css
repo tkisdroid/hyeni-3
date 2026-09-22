@@ -130,7 +130,7 @@
 .pm-zone-add {
   padding: 4px 12px;
   border-radius: 999px;
-  background: #ffecee;
+  background: var(--danger-soft);
   color: #c0334c;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -300,7 +300,7 @@
   width: var(--control-min-size);
   height: var(--control-min-size);
   border-radius: var(--radius-12);
-  background: #ffecee;
+  background: var(--danger-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -314,7 +314,7 @@
   width: 48px;
   height: 48px;
   border-radius: var(--radius-16);
-  background: #ffecee;
+  background: var(--danger-soft);
   display: flex;
   align-items: center;
   justify-content: center;

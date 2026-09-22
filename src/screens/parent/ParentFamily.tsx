@@ -194,7 +194,7 @@ export function ParentFamily() {
                       {c.info && <span className="pf-child__info">{c.info}</span>}
                       <span className="pf-child__chips">
                         {c.battery != null && (
-                          <span className="pf-chip" style={{ background: "#E7F8F0", color: "#087653" }}>
+                          <span className="pf-chip" style={{ background: "var(--mint-soft)", color: "var(--mint-text)" }}>
                             <Battery size={12} strokeWidth={2.2} aria-hidden="true" />
                             {c.battery}%
                           </span>

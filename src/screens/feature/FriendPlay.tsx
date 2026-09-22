@@ -30,7 +30,7 @@ const STEP_IDS = [
 
 /** 후보에 캐릭터/배경색 부여(도메인엔 이름만 있어 표현은 index 파생). */
 const FRIEND_ANIMALS = ["animal/rabbit.webp", "animal/bear.webp", "animal/fox.webp", "animal/cat.webp"];
-const FRIEND_SOFTS = ["#FDE7F1", "#E7F8F0", "#FFF3D6", "#E6F2FB"];
+const FRIEND_SOFTS = ["var(--rose-soft)", "var(--mint-soft)", "var(--cream-soft)", "var(--blue-soft)"];
 
 function ParentPlaydateQueryState({
   loading,

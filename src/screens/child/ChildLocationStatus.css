@@ -125,6 +125,10 @@
 
   color: var(--fg-tertiary);
   max-width: 300px;
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* ── 상태 상세 행 ───────────────────────────────────────────────────────── */

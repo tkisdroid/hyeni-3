@@ -14,7 +14,7 @@
   top: 0;
   z-index: 40;
   padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px 12px;
-  background: #fbf7f4;
+  background: var(--bg-app);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -216,7 +216,7 @@
 .mc-msg--peer .mc-bubble {
   border-radius: var(--radius-8) 20px 20px 20px;
   background: #fff;
-  color: #2a2327;
+  color: var(--ink-2);
 }
 .mc-msg--mine .mc-bubble {
   border-radius: 20px var(--radius-8) 20px 20px;
@@ -410,7 +410,7 @@
   font-weight: var(--type-body-weight);
 
   font-family: inherit;
-  color: #2a2327;
+  color: var(--ink-2);
   min-width: 0;
 }
 /* 입력 중 색 테두리는 표시하지 않는다. 투명 outline은 유지하고, 입력줄 전체의

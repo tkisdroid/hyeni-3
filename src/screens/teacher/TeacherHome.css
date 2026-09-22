@@ -21,7 +21,7 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-12);
-  background: #e7f8f0;
+  background: var(--mint-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -104,7 +104,7 @@
   overflow: hidden;
   border-radius: var(--radius-16);
   padding: 16px;
-  background: linear-gradient(135deg, #f1ecff, #e6f2fb);
+  background: linear-gradient(135deg, var(--lav-soft), var(--blue-soft));
   box-shadow: var(--shadow-soft);
   border: 1px solid rgba(255, 255, 255, 0.6);
   display: flex;
@@ -187,7 +187,7 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: #201a1d;
+  color: var(--fg-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -247,7 +247,7 @@
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
 
-  color: #201a1d;
+  color: var(--fg-primary);
 }
 
 /* ── 로딩 / 빈 상태 (백엔드 연동) ───────────────────────────────────── */
@@ -280,7 +280,7 @@
   line-height: var(--type-body-lg-line-height);
   font-weight: var(--type-body-lg-weight);
 
-  color: #201a1d;
+  color: var(--fg-primary);
 }
 .th-empty__sub {
   font-size: var(--type-label);
@@ -365,6 +365,10 @@
 
   color: var(--fg-muted);
 
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .th-sheet__label {
   font-size: var(--type-caption);

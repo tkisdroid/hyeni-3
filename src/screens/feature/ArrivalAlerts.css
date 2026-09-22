@@ -2,7 +2,7 @@
 
 .aa-screen {
   min-height: 100%;
-  background: linear-gradient(180deg, #f2fbf6, #f7f4f3);
+  background: linear-gradient(180deg, #f2fbf6, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -107,7 +107,7 @@
 .aa-summary {
   padding: 12px 12px;
   border-radius: var(--radius-16);
-  background: #e7f8f0;
+  background: var(--mint-soft);
   box-shadow: none;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
@@ -148,7 +148,7 @@
   flex: none;
 }
 .aa-item__icon--arrived {
-  background: #e7f8f0;
+  background: var(--mint-soft);
 }
 .aa-item__icon--left {
   background: var(--lav-soft);
@@ -204,7 +204,7 @@
 
 }
 .aa-badge[data-tone="arrived"] {
-  background: #e7f8f0;
+  background: var(--mint-soft);
   color: #1f7a56;
 }
 .aa-badge[data-tone="left"] {

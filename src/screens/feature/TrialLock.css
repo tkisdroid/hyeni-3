@@ -102,6 +102,10 @@
   font-weight: var(--type-label-weight);
 
   color: #fff;
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* ── 잠금(무료/만료) ──────────────────────────────────────────────────────── */

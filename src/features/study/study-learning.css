@@ -511,3 +511,15 @@
     transition: none;
   }
 }
+
+/* 프레스 피드백 — 디자인 계약(모든 인터랙티브 요소). */
+.vocabulary-screen button,
+.study-history-section button,
+.study-learning-state button {
+  transition: transform var(--duration-fast) var(--easing-standard);
+}
+.vocabulary-screen button:not(:disabled):active,
+.study-history-section button:not(:disabled):active,
+.study-learning-state button:not(:disabled):active {
+  transform: scale(var(--press, 0.98));
+}

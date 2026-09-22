@@ -1709,7 +1709,7 @@ function LoginStep({
           type="button"
           role="tab"
           aria-selected={!signingUp}
-          className={!signingUp ? "ob-auth-intent__tab ob-auth-intent__tab--active" : "ob-auth-intent__tab"}
+          className={!signingUp ? "ob-auth-intent__tab hy-press ob-auth-intent__tab--active" : "ob-auth-intent__tab hy-press"}
           onClick={() => onIntentChange("login")}
           disabled={loginNavigationLocked}
         >
@@ -1719,7 +1719,7 @@ function LoginStep({
           type="button"
           role="tab"
           aria-selected={signingUp}
-          className={signingUp ? "ob-auth-intent__tab ob-auth-intent__tab--active" : "ob-auth-intent__tab"}
+          className={signingUp ? "ob-auth-intent__tab hy-press ob-auth-intent__tab--active" : "ob-auth-intent__tab hy-press"}
           onClick={() => onIntentChange("signup")}
           disabled={loginNavigationLocked}
         >

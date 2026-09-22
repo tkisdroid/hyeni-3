@@ -1,0 +1,112 @@
+{
+  "round": "6",
+  "at": "2026-09-22T03:21:16.379Z",
+  "target": {
+    "url": "https://localhost/#/child/home",
+    "title": "혜니캘린더"
+  },
+  "session": {
+    "present": true,
+    "role": "child",
+    "familyId": "f9a75cb4-07e5-4597-b090-526e9ea4ab4e",
+    "userId": "c0a69ae9-ec72-46fc-96e3-6021d264ebd1",
+    "hasAccess": true,
+    "hasRefresh": true
+  },
+  "homeAfterReload": true,
+  "homeData": {
+    "present": true,
+    "nodes": 0,
+    "textLen": 352,
+    "textHead": "9월 22일 화요일0시간표테스트의 오늘오늘은 등록된 일정이 없어. 신나게 시작해 볼까?오늘 일정 다 끝났어! 푹 쉬어도 돼 🎈오늘은 쉬는 날일정이 없어새 일정이 생기면 여기에 보여줄게 🌈가방 챙기기0/0추가아직 챙길 게 없어 🎒바로 할 수 있어미니앱학습 앱을 골라 시작해요부모님과 "
+  },
+  "familyCheck": {
+    "ok": true,
+    "mineFamilyId": "f9a75cb4-07e5-4597-b090-526e9ea4ab4e",
+    "localFamilyId": "f9a75cb4-07e5-4597-b090-526e9ea4ab4e",
+    "match": true
+  },
+  "routes": [
+    {
+      "route": "#/child/home",
+      "name": "아이 홈",
+      "visible": true,
+      "newConsoleErrors": 0,
+      "textLen": 352
+    },
+    {
+      "route": "#/child/sticker",
+      "name": "스티커북",
+      "visible": true,
+      "newConsoleErrors": 0,
+      "textLen": 139
+    },
+    {
+      "route": "#/child/memo",
+      "name": "대화",
+      "visible": true,
+      "newConsoleErrors": 0,
+      "textLen": 79
+    },
+    {
+      "route": "#/supplies",
+      "name": "준비물",
+      "visible": true,
+      "newConsoleErrors": 0,
+      "textLen": 68
+    },
+    {
+      "route": "#/child/ai-friend",
+      "name": "AI 친구",
+      "visible": true,
+      "newConsoleErrors": 0,
+      "textLen": 117
+    },
+    {
+      "route": "#/child/location-status",
+      "name": "내 위치",
+      "visible": true,
+      "newConsoleErrors": 0,
+      "textLen": 90
+    },
+    {
+      "route": "#/child/settings",
+      "name": "내 정보",
+      "visible": true,
+      "newConsoleErrors": 0,
+      "textLen": 230
+    },
+    {
+      "route": "#/feedback",
+      "name": "피드백",
+      "visible": true,
+      "newConsoleErrors": 0,
+      "textLen": 322
+    },
+    {
+      "route": "#/child/sos",
+      "name": "SOS 화면(진입만)",
+      "visible": true,
+      "newConsoleErrors": 0,
+      "textLen": 93
+    },
+    {
+      "route": "#/route",
+      "name": "길찾기",
+      "visible": true,
+      "newConsoleErrors": 0,
+      "textLen": 45
+    }
+  ],
+  "consoleErrors": [],
+  "exceptions": [],
+  "logEntries": [],
+  "netFailures": [
+    {
+      "url": "https://hyeni-calendar-api.tkisdroid.workers.dev/rest/v1/rpc/upsert_fcm_token",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "netHttpErrors": [],
+  "verdict": "PASS"
+}

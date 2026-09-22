@@ -236,7 +236,7 @@
   width: 3px;
   height: 100%;
   border-radius: 999px;
-  background: #b79dfb;
+  background: var(--lav-300);
   transform-origin: bottom;
   animation: hy-wave 1s ease-in-out infinite;
 }
@@ -521,7 +521,7 @@
   width: 44px;
   height: 44px;
   border-radius: var(--radius-12);
-  background: #e7f8f0;
+  background: var(--mint-soft);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -5,7 +5,7 @@
   inset: 0;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, var(--danger-soft), var(--bg-base, #f7f4f3));
+  background: linear-gradient(180deg, var(--danger-soft), var(--bg-page));
 }
 
 .sr-header {
@@ -76,6 +76,10 @@
 
   color: var(--fg-muted);
 
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* ── 긴급 위치 지도 ───────────────────────────────────────────────────── */

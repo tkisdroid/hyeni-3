@@ -2,7 +2,7 @@
 
 .fc-root {
   min-height: 100%;
-  background: radial-gradient(120% 40% at 50% 0%, #e7f8f0 0%, rgba(231, 248, 240, 0) 55%),
+  background: radial-gradient(120% 40% at 50% 0%, var(--mint-soft) 0%, rgba(231, 248, 240, 0) 55%),
     linear-gradient(180deg, #fdf4f1, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
@@ -45,7 +45,7 @@
   gap: 12px;
   padding: 16px 16px;
   border-radius: var(--radius-20);
-  background: linear-gradient(135deg, #fff, #f7f4f3);
+  background: linear-gradient(135deg, #fff, var(--bg-page));
   border: 1px solid var(--line-card);
   box-shadow: var(--shadow-floating);
 }

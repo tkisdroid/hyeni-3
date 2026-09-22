@@ -9,10 +9,10 @@
   display: grid;
   gap: 12px;
   padding: 20px;
-  border: 1px solid var(--hy-border-subtle, #e7dfe3);
+  border: 1px solid var(--line-soft);
   border-radius: 20px;
-  background: var(--hy-surface, #fff);
-  color: var(--hy-text, #342c30);
+  background: var(--bg-card);
+  color: var(--fg-body);
 }
 
 .study-access-status h2,
@@ -24,7 +24,7 @@
 .study-country-input {
   min-height: 48px;
   padding: 0 14px;
-  border: 1px solid var(--hy-border, #cfc4ca);
+  border: 1px solid var(--line-strong);
   border-radius: 12px;
   font: inherit;
   text-transform: uppercase;
@@ -42,7 +42,7 @@
   padding: 0 18px;
   border: 0;
   border-radius: 12px;
-  background: var(--hy-primary, #ef5e9d);
+  background: var(--hy-accent-cta);
   color: #fff;
   font: inherit;
   font-weight: 700;
@@ -53,6 +53,14 @@
 }
 
 .study-access-secondary {
-  background: var(--hy-surface-muted, #f4eef1);
-  color: var(--hy-text, #342c30);
+  background: var(--bg-chip-idle);
+  color: var(--fg-body);
+}
+
+/* 프레스 피드백 — 디자인 계약(모든 인터랙티브 요소). */
+.study-access-screen button {
+  transition: transform var(--duration-fast) var(--easing-standard);
+}
+.study-access-screen button:not(:disabled):active {
+  transform: scale(var(--press, 0.98));
 }

@@ -3,7 +3,7 @@
 .fp-screen {
   min-height: 100%;
   background: radial-gradient(120% 44% at 50% 0%, #fff0d6 0%, rgba(255, 240, 214, 0) 55%),
-    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+    linear-gradient(180deg, #fdf4f1, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -76,6 +76,10 @@
 
   color: var(--fg-muted);
 
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* ── 근처 친구 카드 ─────────────────────────────────────────────────────── */
@@ -238,7 +242,7 @@
   border-radius: var(--radius-16);
   background: #f3eef0;
   box-shadow: none;
-  color: #6d6469;
+  color: var(--fg-tertiary);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -450,7 +454,7 @@
   flex: none;
   border-radius: 16px;
   background: #f3eef0;
-  color: #6d6469;
+  color: var(--fg-tertiary);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);

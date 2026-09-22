@@ -52,7 +52,7 @@
   gap: 12px;
   padding: 16px;
   border-radius: var(--radius-20);
-  background: linear-gradient(120deg, #e6f2fb, #f1ecff);
+  background: linear-gradient(120deg, var(--blue-soft), var(--lav-soft));
   box-shadow: var(--shadow-soft);
 }
 .pa-profile__avatar {
@@ -310,7 +310,7 @@
 }
 .pa-action__ic--neutral {
   background: #f1ecf5;
-  color: #6d6469;
+  color: var(--fg-tertiary);
 }
 .pa-action__ic--danger {
   background: var(--danger-soft);

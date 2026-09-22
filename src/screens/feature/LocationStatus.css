@@ -2,7 +2,7 @@
 
 .ls-screen {
   min-height: 100%;
-  background: linear-gradient(180deg, #f2f7fb, #f7f4f3);
+  background: linear-gradient(180deg, #f2f7fb, var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -76,13 +76,13 @@
   flex: none;
 }
 .ls-card__icon--mint {
-  background: #e7f8f0;
+  background: var(--mint-soft);
 }
 .ls-card__icon--caution {
   background: #fdf0da;
 }
 .ls-card__icon--neutral {
-  background: #e6f2fb;
+  background: var(--blue-soft);
 }
 .ls-card__main {
   flex: 1;
@@ -102,6 +102,10 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-tertiary);
+
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* ── 마지막 확인 위치 ───────────────────────────────────────────────────── */
@@ -128,7 +132,7 @@
   width: 44px;
   height: 44px;
   border-radius: var(--radius-16);
-  background: #e7f8f0;
+  background: var(--mint-soft);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -57,7 +57,7 @@ const TRUST_CARDS = [
     textId: "notifications.remoteAudio.visibleToChild",
   },
   {
-    icon: "ui/clock.webp",
+    icon: "ui/clock-3d.webp",
     titleId: "notifications.remoteAudio.oneMinuteLimit",
     textId: "notifications.remoteAudio.oneMinuteDetail",
   },

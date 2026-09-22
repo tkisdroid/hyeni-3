@@ -26,7 +26,8 @@
   text-align: start;
 }
 .fm-search-results button:hover, .fm-search-results button:focus-visible { background: var(--bg-chip-idle); }
-.fm-search-results button span { color: var(--fg-secondary); font-size: var(--type-12); }
+.fm-search-results button:active { background: var(--bg-press); }
+.fm-search-results button span { color: var(--fg-secondary); font-size: var(--type-caption); }
 
 /* 지도에서만 쓰는 오류 UI는 지도 청크와 함께 로드한다. */
 .km-error {
