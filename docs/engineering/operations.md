@@ -218,6 +218,9 @@
   ★**배포 전 migration 선행 확인(런북)**: `worker/db/*.sql` 이 만드는 테이블·인덱스·`ADD COLUMN` 을 프로덕션
   `sqlite_master`·`pragma_table_info` 와 대조한다. D1 은 `UNION ALL` 항 수 제한이 있어(5개 이상 실패) 테이블별로
   나눠 조회하고, `--json` 실패 응답은 `[` 로 시작하지 않으니 stderr 를 버리면 "컬럼 누락" 오진이 난다.
+  ⚠️ 원격 D1 은 `sqlite_master JOIN pragma_table_info(...)` 를 `SQLITE_AUTH`(7500)로 거부한다(2026-09-25 실측).
+  컬럼 존재 확인은 `SELECT (SELECT COUNT(*) FROM (SELECT 컬럼 FROM 테이블 LIMIT 0)) a, ...` 처럼 0행 조회로 하고,
+  응답 meta 의 `rows_written=0`·`changed_db=false` 를 함께 확인한다(컬럼이 없으면 쿼리 자체가 실패한다).
 
 - 기기(2026-08-19 최신 사용자 지시): **A17(RFKL40DP73J)=부모 · razr(ZY22H9VTQD)=아이 ·
   S25(R5CY521CFNZ, SM-S937N)=역할 미고정** 상시 실기기 검증기 3대다. 세 기기 모두 현재 역할·세션을 유지하고
@@ -251,6 +254,8 @@
 
 운영 웹을 배포하기 전에 최신 `origin/main`이 현재 소스에 포함됐는지 확인한다. 지도 기능이 없는 과거 작업 폴더에서 UI 파일 하나만 고쳐 배포하면 Google 지도·국가·시간대 기능 전체가 함께 빠진다.
 `npm run deploy:pages`는 원격 main 선조 검사 → 새 build → `verify:pages-maps` → `.env` 없는 임시 폴더의 Wrangler 순서다. 로컬 build 성공만으로 배포 가능하다고 보지 않는다. 상세 증거는 [해외 지도 점검 보고서](../reports/2026-09-20-google-maps-audit.md)에 있다.
+
+지도 키(`VITE_KAKAO_APP_KEY`·`VITE_GOOGLE_MAPS_WEB_KEY`)는 빌드 프로세스 환경변수로만 들어간다. `.env`가 없는 작업 머신에서 그냥 빌드하면 두 키가 빈 값인 번들이 만들어지고, 그대로 배포하면 운영 지도가 전부 멈춘다(Google 키는 `verify:pages-maps`가 막지만 Kakao 키는 검사하지 않는다). 키가 따로 전달되지 않았다면 현재 운영 진입 청크의 공개 값을 값 출력 없이 추출해 배포 명령의 환경변수로만 넣고, 배포 뒤 새 번들의 두 값이 이전 운영 값과 같은지 확인한다(2026-09-25 배포 절차). 로컬 QA용 `.env.local`(`VITE_API_BASE=http://localhost:8787`)은 Vite가 우선 적용하므로 배포 빌드 전에 반드시 지운다.
 
 ## iPhone 홈 화면 3D 아이콘 (2026-09-20)
 
