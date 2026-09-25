@@ -927,5 +927,15 @@
   "study.vocabulary.subtitle": "뒤집어서 뜻을 확인해 봐",
   "study.vocabulary.title": "영단어 카드",
   "study.vocabulary.total": "5단계 · {count, number}단어",
-  "study.vocabulary.wiktionarySource": "위키낱말사전 · CC BY-SA 4.0"
+  "study.vocabulary.wiktionarySource": "위키낱말사전 · CC BY-SA 4.0",
+  "shared.schedule.allDay": "하루 종일",
+  "shared.schedule.event": "일정",
+  "shared.location.unverifiedPlace": "확인되지 않은 장소",
+  "shared.location.addressLoading": "주소 확인 중",
+  "shared.location.noInformation": "위치 정보 없음",
+  "shared.location.justUpdated": "방금 업데이트",
+  "shared.schedule.tag.ongoing": "진행 중",
+  "shared.schedule.tag.upcoming": "예정",
+  "shared.schedule.tag.verify": "확인 필요",
+  "shared.schedule.tag.visited": "다녀옴"
 }

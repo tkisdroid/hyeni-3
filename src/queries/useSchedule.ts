@@ -103,9 +103,11 @@ export function useDeleteEvent() {
   const qc = useQueryClient();
   const { familyId } = useAuth();
   return useMutation({
-    mutationFn: (id: string) => deleteEvent(id),
-    onSuccess: (_res, id) => {
-      removeCachedEvent(qc, familyId, id);
+    // 문자열 id 는 한 건 삭제, { id, scope: "following" } 은 반복 묶음의 이후 일정까지 삭제한다.
+    mutationFn: (target: string | { id: string; scope: "following" }) =>
+      typeof target === "string" ? deleteEvent(target) : deleteEvent(target.id, { scope: target.scope }),
+    onSuccess: (_res, target) => {
+      removeCachedEvent(qc, familyId, typeof target === "string" ? target : target.id);
       void qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") });
     },
   });

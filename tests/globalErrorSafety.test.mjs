@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { isNoiseError, announceGlobalToast } from "../src/lib/globalToast.ts";
+import { isNoiseError, announceGlobalToast, announceFallbackToast, markToastShown } from "../src/lib/globalToast.ts";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => readFileSync(resolve(rootDir, p), "utf8");
@@ -125,4 +125,27 @@ test("잠금해제 횟수 라벨 — 숫자만 N회, 미보고·잘못된 값은
   assert.equal(unlockCountLabel(undefined), "0회");
   assert.equal(unlockCountLabel(-1), "0회");
   assert.equal(unlockCountLabel(NaN), "0회");
+});
+
+test("화면 토스트가 폴백과 같은 밀리초에 떠도 폴백은 양보한다", async () => {
+  // mutation 캐시 onError 와 mutate() 콜사이트 onError 는 같은 틱에 연달아 돈다.
+  // 시각(ms) 비교였을 때는 같은 밀리초라 화면의 구체적 안내를 일반 폴백이 덮었다(2026-09-25 브라우저 QA).
+  const dispatched = [];
+  const previousWindow = globalThis.window;
+  globalThis.window = {
+    setTimeout: (fn, ms) => setTimeout(fn, ms),
+    dispatchEvent: (event) => dispatched.push(event.detail?.text),
+  };
+  try {
+    announceFallbackToast("폴백", "⚠️", 5);
+    markToastShown(); // 같은 틱 — 화면이 구체적 토스트를 띄움
+    await new Promise((resolveWait) => setTimeout(resolveWait, 20));
+    assert.deepEqual(dispatched, []);
+
+    announceFallbackToast("폴백", "⚠️", 5);
+    await new Promise((resolveWait) => setTimeout(resolveWait, 20));
+    assert.deepEqual(dispatched, ["폴백"]);
+  } finally {
+    globalThis.window = previousWindow;
+  }
 });

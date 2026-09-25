@@ -160,8 +160,9 @@ export function ChildHome() {
       familyTimeZone,
       undefined,
       places,
+      intl,
     )[todayKey] ?? [],
-    [familyTimeZone, locale, myEvents, now, todayKey, places],
+    [familyTimeZone, intl, locale, myEvents, now, todayKey, places],
   );
   const rawById = useMemo(() => {
     const map = new Map<string, CalendarEvent>();
@@ -181,8 +182,8 @@ export function ChildHome() {
     [todayViews, rawById],
   );
   const adventure = useMemo(
-    () => buildAdventureMap(adventureInput, nowMinutes, locale),
-    [adventureInput, locale, nowMinutes],
+    () => buildAdventureMap(adventureInput, nowMinutes, locale, intl),
+    [adventureInput, intl, locale, nowMinutes],
   );
 
   const nextView = todayViews.find((v) => v.id === adventure.next?.id) ?? null;
@@ -329,8 +330,8 @@ export function ChildHome() {
     [userId],
   );
   const book = useMemo(
-    () => buildStickerBook(receivedStickers.data ?? [], now.getTime(), seenStickers),
-    [receivedStickers.data, now, seenStickers],
+    () => buildStickerBook(receivedStickers.data ?? [], now.getTime(), seenStickers, intl),
+    [intl, receivedStickers.data, now, seenStickers],
   );
   const totalStickers = useMemo(
     () => (stickerSummary ?? []).find((r) => r.user_id === userId)?.total_count ?? 0,
@@ -361,6 +362,9 @@ export function ChildHome() {
 
   // ── AI 친구 ──────────────────────────────────────────────────────────
   const aiEnabled = aiFriend.data?.ai_enabled !== false;
+  // 설정이 없으면(null) 서버는 가족 단위 옛 설정을 따르므로 켜짐인지 알 수 없다. 남은 횟수는
+  // 켜짐이 확인됐을 때만 보여 준다(꺼진 친구에게 "20번 남았어"라고 말하지 않는다).
+  const aiConfirmedEnabled = aiFriend.data?.ai_enabled === true;
   // 포함분·구매분·부모 상한을 모두 반영한 Worker 정본만 숫자로 보여 준다.
   const aiRemaining = aiCreditStatus.data?.availableRemaining ?? null;
   const aiFriendSavedName = aiFriend.data?.ai_friend_name?.trim() ?? "";
@@ -537,7 +541,11 @@ export function ChildHome() {
             id: adventure.next ? "child.home.nextRouteAria" : "child.home.todayTimetableAria",
           })}
         >
-          <span className="kd-hyeni__bubble">{adventure.bubble}</span>
+          {/* 일정이 없거나 불러오는 중에는 지도 상태 문구가 이미 안내한다. 이때 "다 끝났어" 말풍선을
+              함께 띄우면 두 말풍선이 겹치고 내용도 서로 모순된다. */}
+          {!homeLoading && !homeError && adventure.nodes.length > 0 && (
+            <span className="kd-hyeni__bubble">{adventure.bubble}</span>
+          )}
           <img className="kd-hyeni__mascot" src={asset("mascot/wave.webp")} alt={intl.formatMessage({ id: "child.home.hyeniAlt" })} />
         </button>
       </div>
@@ -792,7 +800,7 @@ export function ChildHome() {
                 <span className="kd-tile__sub">
                   {!aiEnabled
                     ? intl.formatMessage({ id: "child.home.aiNeedsParent" })
-                    : aiRemaining != null
+                    : aiConfirmedEnabled && aiRemaining != null
                       ? intl.formatMessage({ id: "child.home.aiRemaining" }, { count: aiRemaining })
                       : intl.formatMessage({ id: "child.home.talkToday" })}
                 </span>

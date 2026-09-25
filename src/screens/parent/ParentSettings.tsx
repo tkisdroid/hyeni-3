@@ -1,6 +1,6 @@
 import { TimeZoneSelect, suggestedTimeZone } from "@/region/TimeZoneSelect";
 import { useIntl } from "react-intl";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -146,7 +146,18 @@ export function ParentSettings() {
   };
 
   const logoutBusyRef = useRef(false);
+  // 로그아웃은 설정 맨 아래라 스크롤 중 잘못 눌리기 쉽다. 첫 탭은 확인 상태로만 바꾸고 두 번째 탭에 로그아웃한다.
+  const [logoutArmed, setLogoutArmed] = useState(false);
+  useEffect(() => {
+    if (!logoutArmed) return;
+    const timer = window.setTimeout(() => setLogoutArmed(false), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [logoutArmed]);
   const handleLogout = async () => {
+    if (!logoutArmed) {
+      setLogoutArmed(true);
+      return;
+    }
     if (logoutBusyRef.current) return; // 이중 탭 가드
     logoutBusyRef.current = true;
     try {
@@ -391,7 +402,7 @@ export function ParentSettings() {
             {([
               { id: "privacy", icon: "ui/clay/privacy.webp", tone: "neutral", label: intl.formatMessage({ id: "parent.parentSettings.copy021" }), onClick: openPrivacy, chevron: true },
               { id: "feedback", icon: "ui/clay/feedback.webp", tone: "blue", label: intl.formatMessage({ id: "parent.parentSettings.copy022" }), onClick: () => navigate("/feedback"), chevron: true },
-              { id: "logout", icon: "ui/clay/logout.webp", tone: "danger", label: intl.formatMessage({ id: "parent.parentSettings.copy023" }), onClick: () => void handleLogout() },
+              { id: "logout", icon: "ui/clay/logout.webp", tone: "danger", label: intl.formatMessage({ id: logoutArmed ? "parent.parentSettings.logoutConfirm" : "parent.parentSettings.copy023" }), onClick: () => void handleLogout() },
             ] satisfies AccountRow[]).map((r) => (
               <button key={r.id} type="button" className="ps-account hy-press" onClick={r.onClick}>
                 <AccountIcon icon={r.icon} tone={r.tone} />

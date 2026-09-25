@@ -79,7 +79,7 @@ async function postParentSosAlert(body: Record<string, unknown>): Promise<void> 
  * hyeni-1 saveChildLocation/saveLocationHistory 를 그대로 이관(rest-shim-rpc 계약).
  * 내부에서 모든 에러를 catch 해 항상 boolean 을 resolve — reject 되지 않는다.
  */
-async function upsertChildLocation(
+export async function upsertChildLocation(
   childUserId: string,
   familyId: string,
   lat: number,

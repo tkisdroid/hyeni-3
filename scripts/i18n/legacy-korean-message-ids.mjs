@@ -121,10 +121,11 @@ export const defaultIntlDynamicUsages = Object.freeze([
     reason: "사용량 표시가 있는 Premium upsell source만 포함합니다.",
   },
   {
-    importer: "src/transform/scheduleView.ts",
-    pattern: '`parent.schedule.tag.${tag.tag === "진행 중" ? "ongoing" : tag.tag === "다녀옴" ? "visited" : tag.tag === "확인 필요" ? "verify" : "upcoming"}`',
-    ids: ["ongoing", "visited", "verify", "upcoming"].map((tag) => `parent.schedule.tag.${tag}`),
-    reason: "일정 상태 태그의 네 분기만 message ID로 선택합니다.",
+    importer: "src/transform/stickerBook.ts",
+    pattern: "c.labelId",
+    ids: ["best", "love", "brave", "friend", "study", "early", "play", "ready", "self", "sports", "cool", "rest"]
+      .map((key) => `shared.stickerSend.sticker.${key}`),
+    reason: "스티커 도감 12칸은 보내기 화면과 같은 shared 스티커 이름 ID를 칸마다 고정해 둡니다.",
   },
 ]);
 

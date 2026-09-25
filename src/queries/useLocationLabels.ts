@@ -59,7 +59,7 @@ export function useLocationLabels(
       const label = labelForMeasuredLocation(loc, queries[index]?.data);
       if (label) map.set(key, label);
       else if (queries[index]?.isError || queries[index]?.isSuccess || provider === "unsupported") {
-        map.set(key, options?.fallback ?? intl.formatMessage({ id: "parent.location.unverifiedPlace" }));
+        map.set(key, options?.fallback ?? intl.formatMessage({ id: "shared.location.unverifiedPlace" }));
       }
     });
     return map;
@@ -70,7 +70,7 @@ export function useLocationLabels(
       savedPlaceLabel(loc, places)
       ?? addressByKey.get(locationLabelReferenceKey(loc))
       ?? options?.fallback
-      ?? intl.formatMessage({ id: "parent.location.addressLoading" }),
+      ?? intl.formatMessage({ id: "shared.location.addressLoading" }),
     [addressByKey, intl, places, options?.fallback],
   );
 }

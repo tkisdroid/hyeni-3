@@ -927,5 +927,15 @@
   "study.vocabulary.subtitle": "翻卡片看看意思",
   "study.vocabulary.title": "英语单词卡",
   "study.vocabulary.total": "5个阶段 · {count, number}个单词",
-  "study.vocabulary.wiktionarySource": "维基词典 · CC BY-SA 4.0"
+  "study.vocabulary.wiktionarySource": "维基词典 · CC BY-SA 4.0",
+  "shared.schedule.allDay": "一整天",
+  "shared.schedule.event": "日程",
+  "shared.location.unverifiedPlace": "未确认的地点",
+  "shared.location.addressLoading": "验证地址",
+  "shared.location.noInformation": "无位置信息",
+  "shared.location.justUpdated": "刚刚更新",
+  "shared.schedule.tag.ongoing": "进行中",
+  "shared.schedule.tag.upcoming": "预期的",
+  "shared.schedule.tag.verify": "需要确认",
+  "shared.schedule.tag.visited": "我去了"
 }

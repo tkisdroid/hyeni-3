@@ -94,8 +94,10 @@ export function updateEvent(eventId: string, fields: Partial<NewEventRow>): Prom
 }
 
 /** 일정 삭제. */
-export function deleteEvent(eventId: string): Promise<unknown> {
-  return apiDelete(`/api/events/${encodeURIComponent(eventId)}`);
+/** scope "following": 같은 반복 묶음에서 이 일정과 그 이후 날짜의 일정을 함께 지운다. */
+export function deleteEvent(eventId: string, options: { scope?: "following" } = {}): Promise<unknown> {
+  const query = options.scope === "following" ? "?scope=following" : "";
+  return apiDelete(`/api/events/${encodeURIComponent(eventId)}${query}`);
 }
 
 // ── 다자녀 배정 저장(events + events_children 단일 트랜잭션) ──

@@ -338,3 +338,12 @@ test("부모 최신 메시지 미리보기 — 마커는 사람 말로 바꾸고
     "가장 최근 것",
   );
 });
+
+test("스티커 도감 이름은 보내기 화면과 같은 번역 ID를 써서 언어마다 번역되고 이름이 어긋나지 않는다", () => {
+  for (const entry of STICKER_CATALOG) {
+    assert.equal(entry.labelId, `shared.stickerSend.sticker.${entry.key}`);
+  }
+  const view = buildStickerBook([], Date.parse("2026-09-25T12:00:00Z"), new Set());
+  assert.equal(view.slots.find((slot) => slot.key === "early")?.label, "일찍 왔어");
+  assert.equal(view.slots.find((slot) => slot.key === "study")?.label, "공부왕");
+});

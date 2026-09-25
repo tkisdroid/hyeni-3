@@ -178,12 +178,11 @@ export function FriendPlay() {
     }
   };
 
-  const notice = playdateCandidateNotice(
-    softError,
-    candidates.length === 0,
-    candidatesQ.isError,
-    intl,
-  );
+  // 친구 후보 안내는 아이 화면 문구(child namespace)다. 부모 화면(parent namespace만 로드)에서 미리 만들면
+  // 쓰지도 않는 문구로 누락 번역 오류가 콘솔에 반복된다.
+  const notice = isParent
+    ? null
+    : playdateCandidateNotice(softError, candidates.length === 0, candidatesQ.isError, intl);
 
   if (role === "parent") {
     if (parentPlaydateLoading) {

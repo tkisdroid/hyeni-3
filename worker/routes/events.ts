@@ -405,32 +405,62 @@ events.patch("/:id", requireAuth, async (c) => {
   return c.json(saved);
 });
 
+/** 0-indexed 비패딩 date_key("2026-8-28")를 정렬 가능한 수로 바꾼다. 형식이 다르면 null. */
+function dateKeyOrdinal(dateKey: unknown): number | null {
+  const match = typeof dateKey === "string" ? /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(dateKey) : null;
+  if (!match) return null;
+  return Number(match[1]) * 10_000 + Number(match[2]) * 100 + Number(match[3]);
+}
+
+/** 한 batch 에 넣는 일정 수. 일정당 문장 5개라 batch 하나가 지나치게 커지지 않게 나눈다. */
+const EVENT_SERIES_DELETE_CHUNK = 10;
+
 // DELETE /api/events/:id — deleteEvent.
+// ?scope=following 이면 같은 반복 묶음(series_id)에서 이 일정과 그 이후 날짜의 일정을 함께 지운다.
 events.delete("/:id", requireAuth, async (c) => {
   const id = c.req.param("id");
   const user = c.get("user");
-  const row = await c.env.DB.prepare(`SELECT family_id, updated_at FROM events WHERE id = ?`)
+  const followingSeries = c.req.query("scope") === "following";
+  const row = await c.env.DB.prepare(`SELECT family_id, updated_at, series_id, date_key FROM events WHERE id = ?`)
     .bind(id)
-    .first<{ family_id: string; updated_at: string | null }>();
-  if (!row) return c.json({ ok: true }); // 이미 없음 — 멱등
+    .first<{ family_id: string; updated_at: string | null; series_id: string | null; date_key: string | null }>();
+  if (!row) return c.json({ ok: true, deleted: 0 }); // 이미 없음 — 멱등
   if (!(await assertFamilyParent(c.env.DB, user.sub, row.family_id))) {
     return c.json({ error: "forbidden" }, 403);
   }
 
+  let targets: Array<{ id: string; updated_at: string | null }> = [{ id, updated_at: row.updated_at }];
+  const pivot = dateKeyOrdinal(row.date_key);
+  if (followingSeries && row.series_id && pivot !== null) {
+    const series = await c.env.DB.prepare(
+      `SELECT id, updated_at, date_key FROM events WHERE family_id = ? AND series_id = ?`,
+    )
+      .bind(row.family_id, row.series_id)
+      .all<{ id: string; updated_at: string | null; date_key: string | null }>();
+    targets = (series.results ?? []).filter((event) => {
+      const ordinal = dateKeyOrdinal(event.date_key);
+      return event.id === id || (ordinal !== null && ordinal >= pivot);
+    });
+  }
+
   try {
-    await c.env.DB.batch(buildEventDeleteStatements(c.env.DB, {
-      id,
-      familyId: row.family_id,
-      expectedUpdatedAt: row.updated_at,
-    }));
+    for (let start = 0; start < targets.length; start += EVENT_SERIES_DELETE_CHUNK) {
+      await c.env.DB.batch(targets.slice(start, start + EVENT_SERIES_DELETE_CHUNK).flatMap((target) =>
+        buildEventDeleteStatements(c.env.DB, {
+          id: target.id,
+          familyId: row.family_id,
+          expectedUpdatedAt: target.updated_at,
+        })));
+    }
   } catch (error) {
     if (isAtomicEventBatchGuardError(error)) {
       return c.json({ error: "일정이 다른 곳에서 변경되었어요. 다시 시도해 주세요.", code: "concurrent_modification" }, 409);
     }
     throw error;
   }
+  // 클라이언트는 events 변경 알림 하나로 가족 일정 목록 전체를 다시 읽는다.
   await notifyPg(c.env, row.family_id, "events", "DELETE", null, { id });
-  return c.json({ ok: true });
+  return c.json({ ok: true, deleted: targets.length });
 });
 
 export default events;

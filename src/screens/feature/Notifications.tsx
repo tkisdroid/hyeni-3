@@ -42,9 +42,10 @@ export function Notifications() {
   // 알림이 바뀔 때만 now 재계산(상대시간/그룹 안정화).
   const now = useMemo(() => new Date(), [list]);
 
+  // intl 을 넘기지 않으면 그룹 이름("오늘"·"어제")과 항목 문구가 한국어 기본값으로 고정된다.
   const groups = useMemo(
-    () => mapAlertsToGroups(list, now, locale, familyTimeZone),
-    [familyTimeZone, list, locale, now],
+    () => mapAlertsToGroups(list, now, locale, familyTimeZone, intl),
+    [familyTimeZone, intl, list, locale, now],
   );
 
   useEffect(() => {

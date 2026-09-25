@@ -25,6 +25,8 @@ export interface AccountInfo {
   familyId: string;
   myName: string;
   myRole: "parent" | "child" | "teacher";
+  /** 가입(로그인) 방식 — 서버 정본. 모르면 null. */
+  authProvider: string | null;
   parentName: string | null;
   isPrimaryParent: boolean;
   isCoParent: boolean;
@@ -35,6 +37,7 @@ interface FamilyMineAccountResponse {
   familyId: string;
   myName?: string | null;
   myRole?: string | null;
+  myAuthProvider?: string | null;
   parentName?: string | null;
   isPrimaryParent?: boolean;
   isCoParent?: boolean;
@@ -58,6 +61,7 @@ export function toAccountInfo(data: FamilyMineAccountResponse | null): AccountIn
     familyId: data.familyId,
     myName: (data.myName ?? "").trim() || "보호자",
     myRole: toRole(data.myRole),
+    authProvider: typeof data.myAuthProvider === "string" ? data.myAuthProvider : null,
     parentName: data.parentName ?? null,
     isPrimaryParent: data.isPrimaryParent === true,
     isCoParent: data.isCoParent === true,

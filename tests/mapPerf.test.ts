@@ -70,7 +70,8 @@ test("길찾기 화면은 경로 API 를 기다리지 않고 지도를 먼저 �
   // 지도 위 폴리라인은 실 도보 경로일 때만 그린다(좌표 두 개를 이어 가짜 경로를 그리지 않는다).
   assert.ok(!/route=\{\[/.test(rv), "가짜 직선 폴리라인 금지");
   // 경로 API 가 죽으면 지도가 아니라 텍스트로만 "직선 …쯤"이라고 정직하게 강등한다.
-  assert.match(rv, /직선 \$\{distanceLabel\(straightM\)\}/);
+  assert.match(rv, /직선 \$\{distanceLabel\(straight\.distanceM\)\}/);
+  assert.match(rv, /\{ id: "shared\.routeView\.straightEstimate" \}/);
 });
 
 test("Kakao 지도 어댑터는 인라인 style 로 position 을 덮어쓰지 않는다(소비 화면 배치 파괴 금지)", () => {

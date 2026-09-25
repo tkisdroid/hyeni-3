@@ -148,5 +148,6 @@
   "core.aiBuddy.nudge.time.halfHour": "jam setengah {hour}",
   "core.aiBuddy.nudge.time.minute": "jam {hour}.{minute}",
   "core.aiBuddy.nudge.nextEvent.line": "{title} jam {when}!",
-  "core.aiBuddy.nudge.nextEvent.lineSoon": "Nanti ada {title}!"
+  "core.aiBuddy.nudge.nextEvent.lineSoon": "Nanti ada {title}!",
+  "core.error.api.primaryParentRequired.formal": "Hanya wali utama yang dapat melakukan ini. Kirim permintaan dari perangkat wali utama."
 }

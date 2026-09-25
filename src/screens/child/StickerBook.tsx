@@ -41,8 +41,8 @@ export function StickerBook() {
   const [selected, setSelected] = useState<StickerSlot | null>(null);
 
   const book = useMemo(
-    () => buildStickerBook(received.data ?? [], nowMs, seen),
-    [received.data, nowMs, seen],
+    () => buildStickerBook(received.data ?? [], nowMs, seen, intl),
+    [intl, received.data, nowMs, seen],
   );
   const weekCount = countThisWeek(
     book.slots.map((s) => s.latestAt),

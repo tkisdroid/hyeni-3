@@ -600,9 +600,11 @@ export function ParentHome() {
   // 활성 아이(전역 스위치) — 홈 카드 탭으로만 전환. 안전지표·오늘일정·준비물이 이 아이 기준.
   const { activeChild, setActiveChildId } = useActiveChild();
   const statusRequestedKeyRef = useRef("");
+  // 기기 상태 요청은 주 보호자만 보낼 수 있다(서버 정책). 공동 보호자는 저장된 상태만 다시 읽는다.
+  const canRequestDeviceStatus = familyQuery.data?.isPrimaryParent === true;
   useEffect(() => {
     const childUserId = activeChild?.user_id?.trim() ?? "";
-    if (!familyId || !childUserId) return;
+    if (!familyId || !childUserId || !canRequestDeviceStatus) return;
     const key = `${familyId}:${childUserId}`;
     if (statusRequestedKeyRef.current === key) return;
     statusRequestedKeyRef.current = key;
@@ -620,7 +622,7 @@ export function ParentHome() {
       cancelled = true;
       for (const timer of timers) window.clearTimeout(timer);
     };
-  }, [activeChild?.user_id, familyId]);
+  }, [activeChild?.user_id, canRequestDeviceStatus, familyId]);
   // 히어로 캐러셀: 표시 개수는 운영자 전역 설정, 광고 숨김은 구독 여부로 정한다.
   // ⚠️ entitlement.ready 가 false 면 무료 개수로 강등하지 않는다(R9) — resolve 함수가 오늘 한 장만 돌려준다.
   const { controls: heroControls } = useParentHomeHeroCarousel();
@@ -742,7 +744,7 @@ export function ParentHome() {
   const heroLocationPlace = useMemo(() => {
     if (!activeHeroLocation) return null;
     const label = locationLabel(activeHeroLocation).trim();
-    const loadingLabel = intl.formatMessage({ id: "parent.location.addressLoading" });
+    const loadingLabel = intl.formatMessage({ id: "shared.location.addressLoading" });
     if (!label || label === loadingLabel || label === "주소 확인 중") return null;
     return intl.formatMessage({ id: "parent.home.nearPlace" }, { place: label });
   }, [activeHeroLocation, intl, locationLabel]);
@@ -776,7 +778,8 @@ export function ParentHome() {
     setRefreshing(true);
     try {
       // 아이 기기에 상태 리포트 재요청(안전지표 실갱신 — 응답은 WS 로 자동 반영).
-      if (familyId) {
+      // 공동 보호자는 요청 권한이 없으므로 보내지 않고 저장된 정보만 다시 읽는다.
+      if (familyId && canRequestDeviceStatus) {
         await requestDeviceStatus(familyId, activeChild?.user_id ?? null);
         // 즉시 재조회만 하면 아이 응답 전에 끝나므로 짧은 확인 창을 둔다.
         await new Promise<void>((resolve) => window.setTimeout(resolve, 1200));

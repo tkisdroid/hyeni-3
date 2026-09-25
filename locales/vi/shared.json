@@ -927,5 +927,15 @@
   "study.vocabulary.subtitle": "Lật thẻ để xem nghĩa nhé",
   "study.vocabulary.title": "Thẻ từ tiếng Anh",
   "study.vocabulary.total": "5 cấp độ · {count, number} từ",
-  "study.vocabulary.wiktionarySource": "Wiktionary tiếng Hàn · CC BY-SA 4.0"
+  "study.vocabulary.wiktionarySource": "Wiktionary tiếng Hàn · CC BY-SA 4.0",
+  "shared.schedule.allDay": "cả ngày",
+  "shared.schedule.event": "lịch trình",
+  "shared.location.unverifiedPlace": "Địa điểm chưa xác nhận",
+  "shared.location.addressLoading": "Đang xác minh địa chỉ",
+  "shared.location.noInformation": "Không có thông tin vị trí",
+  "shared.location.justUpdated": "vừa cập nhật",
+  "shared.schedule.tag.ongoing": "Đang tiến hành",
+  "shared.schedule.tag.upcoming": "hy vọng",
+  "shared.schedule.tag.verify": "Yêu cầu xác nhận",
+  "shared.schedule.tag.visited": "tôi đã đi"
 }

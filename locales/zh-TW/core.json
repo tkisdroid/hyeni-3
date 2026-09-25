@@ -148,5 +148,6 @@
   "core.aiBuddy.nudge.time.halfHour": "{hour}點半",
   "core.aiBuddy.nudge.time.minute": "{hour}點{minute}分",
   "core.aiBuddy.nudge.nextEvent.line": "{when}有{title}!",
-  "core.aiBuddy.nudge.nextEvent.lineSoon": "等一下有{title}!"
+  "core.aiBuddy.nudge.nextEvent.lineSoon": "等一下有{title}!",
+  "core.error.api.primaryParentRequired.formal": "只有主要監護人可以執行此操作。請在主要監護人的裝置上發出要求。"
 }

@@ -76,7 +76,7 @@ export function FamilyConnection() {
   });
 
   const members = useMemo(() => family?.members ?? [], [family]);
-  const view = useMemo(() => mapFamilyToView(members, userId), [members, userId]);
+  const view = useMemo(() => mapFamilyToView(members, userId, intl), [intl, members, userId]);
 
   // 연결된 아이(user_id 존재) vs 대기 중(placeholder).
   const children = useMemo(() => members.filter((m) => m.role === "child"), [members]);

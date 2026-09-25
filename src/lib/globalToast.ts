@@ -3,19 +3,21 @@
  *
  * 원칙: 조용한 에러 금지 — 어떤 실패든 사용자에게 보이는 반응이 하나는 있어야 한다.
  * 다만 화면별 onError 가 이미 구체적 피드백을 줬다면 전역 폴백이 겹쳐 깜빡이면 안 되므로,
- * ToastProvider 가 "마지막 토스트 시각"을 여기 기록하고 폴백은 짧게 기다렸다가
- * 그 사이 아무 토스트도 없었을 때만 뜬다.
+ * ToastProvider 가 토스트를 띄울 때마다 순번을 올리고, 폴백은 짧게 기다렸다가
+ * 그 사이 순번이 그대로일 때(=다른 토스트가 없었을 때)만 뜬다.
  */
 
 export const GLOBAL_TOAST_EVENT = "hy-global-toast";
 
 export type GlobalToastDetail = { text: string; emoji?: string };
 
-let lastToastShownAtMs = 0;
+// 시각이 아니라 순번으로 비교한다. mutation 캐시 onError 와 mutate() 콜사이트 onError 는
+// 같은 틱에 연달아 실행돼 Date.now() 가 같은 밀리초가 되므로, 시각 비교는 화면 토스트를 놓친다.
+let toastShownSeq = 0;
 
 /** ToastProvider.show() 가 호출 — 전역 폴백 취소 판단의 단일 근거. */
 export function markToastShown(): void {
-  lastToastShownAtMs = Date.now();
+  toastShownSeq += 1;
 }
 
 let lastAnnounceAtMs = 0;
@@ -38,9 +40,9 @@ export function announceGlobalToast(text: string, emoji?: string): boolean {
  */
 export function announceFallbackToast(text: string, emoji?: string, delayMs = 450): void {
   if (typeof window === "undefined") return;
-  const errAtMs = Date.now();
+  const seqAtError = toastShownSeq;
   window.setTimeout(() => {
-    if (lastToastShownAtMs > errAtMs) return;
+    if (toastShownSeq !== seqAtError) return;
     announceGlobalToast(text, emoji);
   }, delayMs);
 }

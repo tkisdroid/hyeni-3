@@ -14,6 +14,7 @@ import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
+import { useMyFamily } from "@/queries/useFamily";
 import { FamilyMap, type MapZone, type MapPlace, type MapStay } from "@/maps/FamilyMap";
 import {
   useChildLocations,
@@ -226,6 +227,10 @@ export function ParentLocation() {
   // 대상 아이 = 전역 활성 아이(스위치는 부모 홈에서만 — 이 화면엔 전환 UI 없음).
   // 예외: 알림/SOS/도착에서 `?child=<user_id>` 로 진입하면 그 아이를 우선(위급 아이 — 안전 규칙).
   const { activeChild, childMembers } = useActiveChild();
+  // 위치 요청은 서버가 주 보호자에게만 허용한다. 공동 보호자는 화면에 들어올 때마다
+  // 거절 안내가 뜨지 않도록 자동 요청을 보내지 않는다(직접 누르면 이유를 알려 준다).
+  const familyQuery = useMyFamily();
+  const canAutoRequestLocation = familyQuery.data?.isPrimaryParent === true;
   const childParam = searchParams.get("child");
   const requestedView: "live" | "history" =
     searchParams.get("view") === "history" ? "history" : "live";
@@ -271,7 +276,7 @@ export function ParentLocation() {
     setRefreshState("idle");
   }, [refreshTargetKey]);
 
-  const fresh = loc ? formatFreshness(loc.updated_at, now, locale) : null;
+  const fresh = loc ? formatFreshness(loc.updated_at, now, locale, intl) : null;
   const accuracyM = loc?.accuracy_m != null && Number.isFinite(Number(loc.accuracy_m))
     ? Math.max(0, Math.round(Number(loc.accuracy_m)))
     : null;
@@ -584,7 +589,7 @@ export function ParentLocation() {
       visibleStayPoints.map((stay, index) => ({
         id: `${stay.arrivalMs}-${index}`,
         order: index + 1,
-        placeLabel: stayLabels[index] ?? intl.formatMessage({ id: "parent.location.unverifiedPlace" }),
+        placeLabel: stayLabels[index] ?? intl.formatMessage({ id: "shared.location.unverifiedPlace" }),
         timeLabel: `${formatClockHM(stay.arrivalMs, locale, familyTimeZone)}–${formatClockHM(stay.departureMs, locale, familyTimeZone)}`,
         dwellLabel: formatDwell(stay.dwellMs, locale),
         selected: index === activeStayIdx,
@@ -619,6 +624,10 @@ export function ParentLocation() {
       if (!requested.ok) {
         if (announceSuccess && requested.status === 429) {
           setUpsellSource("location_request");
+          return;
+        }
+        if (requested.error === "primary_parent_required") {
+          show(intl.formatMessage({ id: "core.error.api.primaryParentRequired.formal" }), "🔒");
           return;
         }
         show(intl.formatMessage({ id: "notifications.locationStatus.toast.requestFailed" }), "⚠️");
@@ -667,6 +676,7 @@ export function ParentLocation() {
       activeView !== "live"
       || !canShowLocation
       || !premiumOpen
+      || !canAutoRequestLocation
       || !refreshTargetKey
       || !isFetched
       || isFetching
@@ -676,6 +686,7 @@ export function ParentLocation() {
     autoRefreshKeyRef.current = refreshTargetKey;
     void refreshLocation(false);
   }, [activeView,
+    canAutoRequestLocation,
     canShowLocation,
     isFetched,
     isFetching,

@@ -927,5 +927,15 @@
   "study.vocabulary.subtitle": "พลิกบัตรเพื่อดูความหมาย",
   "study.vocabulary.title": "บัตรคำศัพท์อังกฤษ",
   "study.vocabulary.total": "5 ระดับ · {count, number} คำ",
-  "study.vocabulary.wiktionarySource": "วิกิพจนานุกรม · CC BY-SA 4.0"
+  "study.vocabulary.wiktionarySource": "วิกิพจนานุกรม · CC BY-SA 4.0",
+  "shared.schedule.allDay": "ตลอดทั้งวัน",
+  "shared.schedule.event": "กำหนดการ",
+  "shared.location.unverifiedPlace": "สถานที่ที่ยังไม่ยืนยัน",
+  "shared.location.addressLoading": "กำลังยืนยันที่อยู่",
+  "shared.location.noInformation": "ไม่มีข้อมูลตำแหน่ง",
+  "shared.location.justUpdated": "เพิ่งอัปเดต",
+  "shared.schedule.tag.ongoing": "อยู่ระหว่างดำเนินการ",
+  "shared.schedule.tag.upcoming": "ที่คาดหวัง",
+  "shared.schedule.tag.verify": "จำเป็นต้องมีการยืนยัน",
+  "shared.schedule.tag.visited": "ฉันไป"
 }

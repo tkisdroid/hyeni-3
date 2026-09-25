@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { IntlShape } from "react-intl";
 
-import { localizeApiError } from "../src/i18n/apiError.ts";
+import { hasLocalizedApiErrorCode, localizeApiError } from "../src/i18n/apiError.ts";
+import { readFileSync } from "node:fs";
 import { ApiError, normalizeApiErrorCode } from "../src/lib/api/errors.ts";
 import * as apiErrors from "../src/lib/api/errors.ts";
 
@@ -150,4 +151,21 @@ test("네트워크·일반 Error의 원문과 token은 어떤 tone에서도 반�
   assert.equal(localizeApiError(new TypeError(raw), intl, "formal"), messages["core.error.api.network.formal"]);
   assert.equal(localizeApiError(new Error(raw), intl, "child"), messages["core.error.api.unknown.child"]);
   assert.equal(localizeApiError(new Error(raw), intl, "child").includes("Bearer"), false);
+});
+
+// 2026-09-25 브라우저 QA — 계정 화면에서 잘못된 전화번호를 저장하면 서버는 invalid_phone 을
+// 줬는데 화면은 일반 "저장에 실패했어요"만 보여 무엇을 고쳐야 할지 알 수 없었다.
+test("전용 문구가 있는 code만 화면 일반 문구 대신 쓰도록 구분한다", () => {
+  assert.equal(hasLocalizedApiErrorCode(new ApiError("invalid_phone", 400)), true);
+  assert.equal(hasLocalizedApiErrorCode(new ApiError("worker_database_table_missing", 400)), false);
+  assert.equal(hasLocalizedApiErrorCode(new ApiError(null, 500)), false);
+  assert.equal(hasLocalizedApiErrorCode(new TypeError("fetch failed")), false);
+  assert.equal(hasLocalizedApiErrorCode(new ApiError("toString", 400)), false);
+});
+
+test("계정 프로필 저장 실패는 원인이 분명하면 그 이유를 보여 준다", () => {
+  const source = readFileSync(new URL("../src/screens/parent/ParentAccount.tsx", import.meta.url), "utf8");
+  const handler = source.slice(source.indexOf("프로필 저장 실패"), source.indexOf("const logoutBusyRef"));
+  assert.match(handler, /hasLocalizedApiErrorCode\(e\)\s*\?\s*localizeApiError\(e, intl, "formal"\)/);
+  assert.match(handler, /parent\.parentAccount\.copy005/);
 });

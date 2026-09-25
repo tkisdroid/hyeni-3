@@ -145,7 +145,7 @@ test("시간표 시트의 알림장 배너는 실제 부모 메시지일 때만 
 });
 
 test("스티커북은 12칸 도감 + NEW 배지이고, 상세는 서버가 아는 사실만 말한다", () => {
-  assert.match(stickerBook, /buildStickerBook\(received\.data \?\? \[\], nowMs, seen\)/);
+  assert.match(stickerBook, /buildStickerBook\(received\.data \?\? \[\], nowMs, seen, intl\)/);
   assert.match(stickerBook, /slot\.isNew && <span className="sb-slot__new">NEW<\/span>/);
   assert.match(stickerBook, /부모님 칭찬을 받으면 열려/); // 잠금 탭 → 토스트
   assert.match(stickerBook, /writeSeenSticker/); // 열어보면 NEW 해제
@@ -234,4 +234,12 @@ test("메시지 배너 스타일은 토큰 색상만 쓰고 reduced-motion 전�
   assert.ok(banner.length > 0, "kd-memo-banner 블록 존재");
   assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(banner), "hex 직접 사용 금지 — tokens.css 변수만");
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+test("일정이 없거나 불러오는 중에는 혜니 말풍선을 띄우지 않는다(상태 문구와 겹침·모순 방지)", () => {
+  const source = code(home);
+  assert.match(
+    source,
+    /\{!homeLoading && !homeError && adventure\.nodes\.length > 0 && \( <span className="kd-hyeni__bubble">\{adventure\.bubble\}<\/span> \)\}/,
+  );
 });

@@ -147,6 +147,7 @@ import {
   normalizeSuggestedStudyCountry,
   StudyCountryConfirmation,
 } from "@/features/study/StudyCountryConfirmation";
+import { formatPhoneDisplay } from "@/transform/phoneFormat";
 
 type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
 type AuthIntent = "login" | "signup";
@@ -2226,7 +2227,7 @@ function SignupStep({
           </div>
           <div className="ob-step-copy">
             <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.signup.otpTitle" })}</div>
-            <div className="ob-sub">{intl.formatMessage({ id: "onboarding.signup.otpDescription" }, { phone: pending?.phoneStorage ?? "" })}</div>
+            <div className="ob-sub">{intl.formatMessage({ id: "onboarding.signup.otpDescription" }, { phone: formatPhoneDisplay(pending?.phoneStorage ?? "") })}</div>
           </div>
         </div>
         <form
@@ -2490,14 +2491,15 @@ function ConnectStep({
             ? intl.formatMessage({ id: "onboarding.connect.referralTitle" })
             : intl.formatMessage({ id: "onboarding.field.referralCode" })}
         </strong>
-        <span>
-          {referralCode
-            ? intl.formatMessage(
+        {/* 코드가 아직 없으면 아래 입력칸의 안내가 같은 말을 하므로 여기서는 생략한다(중복 표시 방지). */}
+        {referralCode ? (
+          <span>
+            {intl.formatMessage(
               { id: "onboarding.connect.referralDescription" },
               { count: REFERRAL_REWARD_CREDITS_DISPLAY },
-            )
-            : intl.formatMessage({ id: "onboarding.field.referralCodeHint" })}
-        </span>
+            )}
+          </span>
+        ) : null}
         <ReferralCodeField
           value={referralDraft}
           onChange={onReferralDraftChange}

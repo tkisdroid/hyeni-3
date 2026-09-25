@@ -148,5 +148,6 @@
   "core.aiBuddy.nudge.time.halfHour": "{hour}点半",
   "core.aiBuddy.nudge.time.minute": "{hour}点{minute}分",
   "core.aiBuddy.nudge.nextEvent.line": "{when}有{title}!",
-  "core.aiBuddy.nudge.nextEvent.lineSoon": "等一下有{title}!"
+  "core.aiBuddy.nudge.nextEvent.lineSoon": "等一下有{title}!",
+  "core.error.api.primaryParentRequired.formal": "只有主要监护人可以执行此操作。请在主要监护人的设备上发起请求。"
 }

@@ -19,7 +19,7 @@ import type { MapBiasRef } from "@/lib/api/endpoints/maps";
 import { straightLineHint } from "@/transform/straightLineRoute";
 import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
-import { straightDistanceM, type RoutePoint } from "@/lib/api/endpoints/route";
+import type { RoutePoint } from "@/lib/api/endpoints/route";
 import { filterEventsForChild } from "@/transform/eventScope";
 import {
   beginRouteDestinationScope,
@@ -367,25 +367,18 @@ export function RouteView() {
   };
 
   // 경로 API 불가 시 직선거리 기반 "대략" 안내(직선임을 명시 — 가짜 정밀도 금지).
-  const straightM = useMemo(
-    () => (origin && destination ? straightDistanceM(origin, destination.point) : null),
-    [origin, destination],
-  );
+  // 아래 직선 안내 문단과 같은 계산(straightLineHint)을 써야 한 화면에 두 가지 소요 시간이 나오지 않는다.
   const straightEta =
-    straightM != null
+    straight != null
       ? intl.formatMessage(
           { id: "shared.routeView.straightEstimate" },
           {
-            distance: distanceLabel(straightM),
-            duration: formatDurationUnit(
-              Math.max(1, Math.round((straightM * 1.3) / WALK_M_PER_MIN)),
-              "minute",
-              locale,
-            ),
+            distance: distanceLabel(straight.distanceM),
+            duration: formatDurationUnit(straight.minutes, "minute", locale),
           },
         )
       : null;
-  // 한국어 정직한 강등 기준: `직선 ${distanceLabel(straightM)}`이며 실제 경로처럼 표시하지 않는다.
+  // 한국어 정직한 강등 기준: `직선 ${distanceLabel(straight.distanceM)}`이며 실제 경로처럼 표시하지 않는다.
 
   // 소요시간·거리 요약(실 경로만 정확 수치 노출).
   const etaText =

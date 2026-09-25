@@ -45,10 +45,10 @@ export function formatTimeLabel(
   providedIntl?: IntlShape,
 ): string {
   const intl = withDefaultIntl(providedIntl);
-  if (!time || !/^\d{1,2}:\d{2}$/.test(time)) return intl.formatMessage({ id: "parent.schedule.allDay" });
+  if (!time || !/^\d{1,2}:\d{2}$/.test(time)) return intl.formatMessage({ id: "shared.schedule.allDay" });
   const [h, m] = time.split(":").map(Number);
   if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 23 || m < 0 || m > 59) {
-    return intl.formatMessage({ id: "parent.schedule.allDay" });
+    return intl.formatMessage({ id: "shared.schedule.allDay" });
   }
   // 일정 time은 절대시각이 아닌 wall-clock 값이므로 UTC 합성 시각으로 표시만 지역화한다.
   return formatDateTime(Date.UTC(2026, 0, 1, h, m), {
@@ -158,10 +158,18 @@ export function eventToView(
     emoji: event.emoji || style.emoji,
     icon: resolveEventVisualAsset(event.title, event.category),
     time: formatTimeLabel(event.time, locale, intl),
-    title: event.title || intl.formatMessage({ id: "parent.schedule.event" }),
+    title: event.title || intl.formatMessage({ id: "shared.schedule.event" }),
     place: resolveEventPlaceLabel(event.location, places),
     tag: tag.tag,
-    tagLabel: intl.formatMessage({ id: `parent.schedule.tag.${tag.tag === "진행 중" ? "ongoing" : tag.tag === "다녀옴" ? "visited" : tag.tag === "확인 필요" ? "verify" : "upcoming"}` }),
+    tagLabel: intl.formatMessage({
+      id: tag.tag === "진행 중"
+        ? "shared.schedule.tag.ongoing"
+        : tag.tag === "다녀옴"
+          ? "shared.schedule.tag.visited"
+          : tag.tag === "확인 필요"
+            ? "shared.schedule.tag.verify"
+            : "shared.schedule.tag.upcoming",
+    }),
     tagText: tag.tagText,
     tagBg: tag.tagBg,
   };

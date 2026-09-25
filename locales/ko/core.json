@@ -148,5 +148,6 @@
   "core.aiBuddy.nudge.time.halfHour": "{hour}시 반",
   "core.aiBuddy.nudge.time.minute": "{hour}시 {minute}분",
   "core.aiBuddy.nudge.nextEvent.line": "{when}에 {title}!",
-  "core.aiBuddy.nudge.nextEvent.lineSoon": "이따 {title} 있어!"
+  "core.aiBuddy.nudge.nextEvent.lineSoon": "이따 {title} 있어!",
+  "core.error.api.primaryParentRequired.formal": "주 보호자만 할 수 있어요. 주 보호자 기기에서 요청해 주세요."
 }

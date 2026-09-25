@@ -927,5 +927,15 @@
   "study.vocabulary.subtitle": "Balik kartu untuk melihat artinya",
   "study.vocabulary.title": "Kartu kosakata Inggris",
   "study.vocabulary.total": "5 tingkat · {count, number} kata",
-  "study.vocabulary.wiktionarySource": "Wikikamus bahasa Korea · CC BY-SA 4.0"
+  "study.vocabulary.wiktionarySource": "Wikikamus bahasa Korea · CC BY-SA 4.0",
+  "shared.schedule.allDay": "sepanjang hari",
+  "shared.schedule.event": "jadwal",
+  "shared.location.unverifiedPlace": "Tempat belum terkonfirmasi",
+  "shared.location.addressLoading": "Memverifikasi alamat",
+  "shared.location.noInformation": "Tidak ada informasi lokasi",
+  "shared.location.justUpdated": "baru saja diperbarui",
+  "shared.schedule.tag.ongoing": "Sedang berlangsung",
+  "shared.schedule.tag.upcoming": "mengharapkan",
+  "shared.schedule.tag.verify": "Diperlukan konfirmasi",
+  "shared.schedule.tag.visited": "saya pergi"
 }

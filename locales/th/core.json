@@ -148,5 +148,6 @@
   "core.aiBuddy.nudge.time.halfHour": "{hour} โมงครึ่ง",
   "core.aiBuddy.nudge.time.minute": "{hour} นาฬิกา {minute} นาที",
   "core.aiBuddy.nudge.nextEvent.line": "{when} มี{title}!",
-  "core.aiBuddy.nudge.nextEvent.lineSoon": "เดี๋ยวมี{title}!"
+  "core.aiBuddy.nudge.nextEvent.lineSoon": "เดี๋ยวมี{title}!",
+  "core.error.api.primaryParentRequired.formal": "เฉพาะผู้ปกครองหลักเท่านั้นที่ทำได้ โปรดส่งคำขอจากอุปกรณ์ของผู้ปกครองหลัก"
 }

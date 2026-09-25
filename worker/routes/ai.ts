@@ -351,7 +351,7 @@ ${eventList || "(없음)"}
 ## 응답 형식 (JSON만, 다른 텍스트 없이)
 
 일정 추가:
-{"action":"add_event","title":"피아노학원","time":"15:00","category":"school","year":${year},"month":${month},"day":${(day || 0) + 1},"academyName":"피아노학원"}
+{"action":"add_event","title":"피아노학원","time":"15:00","category":"school","year":${tomorrowDate.getFullYear()},"month":${tomorrowDate.getMonth()},"day":${tomorrowDate.getDate()},"academyName":"피아노학원"}
 
 메모 추가:
 {"action":"add_memo","targetEventId":"이벤트id","memoText":"준비물 챙기기"}
@@ -388,7 +388,7 @@ ${academyList || "(없음)"}
 ## 응답 형식 (JSON만)
 
 반드시 다음 형식으로 응답:
-{"action":"add_events","events":[{"title":"수학학원","time":"15:00","category":"school","year":${year},"month":${month},"day":${day},"academyName":"수학학원","memo":"교재 지참"},{"title":"과학실험","time":"10:00","category":"school","year":${year},"month":${month},"day":${(day || 0) + 1},"memo":"실험복 준비"}]}
+{"action":"add_events","events":[{"title":"수학학원","time":"15:00","category":"school","year":${year},"month":${month},"day":${day},"academyName":"수학학원","memo":"교재 지참"},{"title":"과학실험","time":"10:00","category":"school","year":${tomorrowDate.getFullYear()},"month":${tomorrowDate.getMonth()},"day":${tomorrowDate.getDate()},"memo":"실험복 준비"}]}
 
 일정을 찾지 못한 경우:
 {"action":"unknown","message":"일정 정보를 찾지 못했어요"}`;

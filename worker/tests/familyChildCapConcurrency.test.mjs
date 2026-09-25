@@ -75,7 +75,7 @@ class ConcurrentChildMutationDb {
       || sql.includes("UPDATE family_members SET is_active=1")
       || sql.includes("INSERT INTO family_members (id, family_id, user_id, role, name, is_active, created_at)")
       || sql.includes("UPDATE family_members SET role='parent', is_active=1")
-      || sql.includes("INSERT INTO family_members (id, family_id, user_id, role, name, created_at)");
+      || sql.includes("INSERT INTO family_members (id, family_id, user_id, role, name, phone, created_at)");
   }
 
   async batch(statements) {

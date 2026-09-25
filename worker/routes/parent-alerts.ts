@@ -298,7 +298,14 @@ parentAlerts.post("/", requireAuth, async (c) => {
     nowMs: notificationAtMs,
   });
   message = occurrence.message;
-  const baseCopy = await resolvePublicParentAlertCopy(c.env.DB, { familyId, childUserId: writeScope.childUserId, alertType, placeKey: presenceDedupe?.placeKey ?? b.place_key, sourceEventId });
+  const baseCopy = await resolvePublicParentAlertCopy(c.env.DB, {
+    familyId,
+    childUserId: writeScope.childUserId,
+    alertType,
+    placeKey: presenceDedupe?.placeKey ?? b.place_key,
+    sourceEventId,
+    settingMenu: typeof b.setting_menu === "string" ? b.setting_menu : null,
+  });
   const notificationCopy = baseCopy ? normalizeNotificationCopy({ ...baseCopy, occurredAt: occurrence.occurredAt, timeZone: familyTimeZone }) : null;
   const baseMetadata = aiCreditRequestMetadata
     ?? (presenceDedupe

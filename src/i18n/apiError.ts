@@ -54,6 +54,10 @@ const CODE_MESSAGES: Readonly<Record<string, Readonly<Record<ApiErrorTone, Messa
     formal: "core.error.api.invalidPhone.formal",
     child: "core.error.api.invalidPhone.child",
   },
+  primary_parent_required: {
+    formal: "core.error.api.primaryParentRequired.formal",
+    child: "core.error.api.primaryParentRequired.formal",
+  },
   invalid_login_id: {
     formal: "core.error.api.invalidLoginId.formal",
     child: "core.error.api.invalidLoginId.child",
@@ -213,6 +217,11 @@ function genericMessageId(error: unknown, tone: ApiErrorTone): MessageId {
   if (error.status >= 500) return `core.error.api.server.${tone}` as MessageId;
   if (error.status >= 400) return `core.error.api.client.${tone}` as MessageId;
   return `core.error.api.unknown.${tone}` as MessageId;
+}
+
+/** 서버가 알려 준 안정 code 에 전용 문구가 있는가(화면이 자기 일반 문구 대신 쓸지 고를 때). */
+export function hasLocalizedApiErrorCode(error: unknown): boolean {
+  return isApiError(error) && !!error.code && Object.prototype.hasOwnProperty.call(CODE_MESSAGES, error.code);
 }
 
 /** 자유 오류 원문을 사용하지 않고 allowlist code 또는 역할별 공용 문구만 반환한다. */

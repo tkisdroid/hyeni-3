@@ -56,3 +56,10 @@ test("문구는 직선임을 밝히고 10개 locale 에 모두 있다", () => {
   // 아이 화면은 반말이다.
   assert.doesNotMatch(ko["child.route.straightLine"], /습니다|하세요|해요/);
 });
+
+test("길찾기 화면의 두 직선 안내는 같은 계산(straightLineHint)으로 같은 소요 시간을 보인다", async () => {
+  const { readFileSync } = await import("node:fs");
+  const view = readFileSync(new URL("../src/screens/feature/RouteView.tsx", import.meta.url), "utf8");
+  assert.match(view, /duration: formatDurationUnit\(straight\.minutes, "minute", locale\)/);
+  assert.doesNotMatch(view, /\* 1\.3\)/);
+});

@@ -34,7 +34,13 @@
       "childReminder": "{event} 일정이 {minutes}분 뒤에 시작돼. 준비하자!",
       "childReminderNow": "{event} 일정이 시작됐어. 준비됐지?",
       "leftNear": "{child}가 {place} 근처에서 출발했어요.",
-      "forceReminder": "응급 신호를 보낸 지 5분이 지났지만 아이 응답이 없습니다. 직접 연락하고 필요하면 현지 긴급기관에 연락하세요."
+      "forceReminder": "응급 신호를 보낸 지 5분이 지났지만 아이 응답이 없습니다. 직접 연락하고 필요하면 현지 긴급기관에 연락하세요.",
+      "title.request": "설정 변경 요청",
+      "childRejoined": "{child}의 기기가 다시 연결됐을 수 있어요. 가족 화면에서 확인해 주세요.",
+      "settingRequestTheme": "{child}가 테마 색깔을 바꾸고 싶어 해요.",
+      "settingRequestCharacter": "{child}가 캐릭터를 바꾸고 싶어 해요.",
+      "settingRequestSound": "{child}가 소리·진동 설정을 바꾸고 싶어 해요.",
+      "settingRequestMascot": "{child}가 마스코트 표시 설정을 바꾸고 싶어 해요."
     },
     "en": {
       "title.location": "Location update",
@@ -69,7 +75,13 @@
       "childReminder": "{event} starts in {minutes} minutes. Get ready!",
       "childReminderNow": "{event} starts now. Ready?",
       "leftNear": "{child} left the area near {place}.",
-      "forceReminder": "There has been no response for 5 minutes after the emergency signal. Contact your child directly and contact local emergency services if needed."
+      "forceReminder": "There has been no response for 5 minutes after the emergency signal. Contact your child directly and contact local emergency services if needed.",
+      "title.request": "Settings request",
+      "childRejoined": "The device for {child} may have reconnected. Please check the family screen.",
+      "settingRequestTheme": "{child} would like to change the theme color.",
+      "settingRequestCharacter": "{child} would like to change the character.",
+      "settingRequestSound": "{child} would like to change the sound and vibration settings.",
+      "settingRequestMascot": "{child} would like to change the mascot display setting."
     },
     "ja": {
       "title.location": "位置情報",
@@ -104,7 +116,13 @@
       "childReminder": "{event}が{minutes}分後に始まるよ。準備しよう！",
       "childReminderNow": "{event}が始まるよ。準備はできた？",
       "leftNear": "{child}が{place}付近を出発しました。",
-      "forceReminder": "緊急信号から5分経ちましたが、お子さまから応答がありません。直接連絡し、必要に応じて現地の緊急機関に連絡してください。"
+      "forceReminder": "緊急信号から5分経ちましたが、お子さまから応答がありません。直接連絡し、必要に応じて現地の緊急機関に連絡してください。",
+      "title.request": "設定変更のリクエスト",
+      "childRejoined": "{child}の端末が再接続された可能性があります。家族画面で確認してください。",
+      "settingRequestTheme": "{child}がテーマカラーを変えたいそうです。",
+      "settingRequestCharacter": "{child}がキャラクターを変えたいそうです。",
+      "settingRequestSound": "{child}がサウンド・バイブの設定を変えたいそうです。",
+      "settingRequestMascot": "{child}がマスコット表示の設定を変えたいそうです。"
     },
     "zh-CN": {
       "title.location": "位置更新",
@@ -139,7 +157,13 @@
       "childReminder": "{event}还有{minutes}分钟开始，准备好吧！",
       "childReminderNow": "{event}开始了，准备好了吗？",
       "leftNear": "{child}已离开{place}附近。",
-      "forceReminder": "紧急信号发出5分钟后，孩子仍未回应。请直接联系孩子，必要时联系当地紧急救援机构。"
+      "forceReminder": "紧急信号发出5分钟后，孩子仍未回应。请直接联系孩子，必要时联系当地紧急救援机构。",
+      "title.request": "设置更改请求",
+      "childRejoined": "{child}的设备可能已重新连接。请在家庭页面确认。",
+      "settingRequestTheme": "{child}想更改主题颜色。",
+      "settingRequestCharacter": "{child}想更改角色。",
+      "settingRequestSound": "{child}想更改声音和振动设置。",
+      "settingRequestMascot": "{child}想更改吉祥物显示设置。"
     },
     "zh-TW": {
       "title.location": "位置更新",
@@ -174,7 +198,13 @@
       "childReminder": "{event}還有{minutes}分鐘開始，準備好吧！",
       "childReminderNow": "{event}開始了，準備好了嗎？",
       "leftNear": "{child}已離開{place}附近。",
-      "forceReminder": "緊急訊號發出5分鐘後，孩子仍未回應。請直接聯絡孩子，必要時聯絡當地緊急救援機構。"
+      "forceReminder": "緊急訊號發出5分鐘後，孩子仍未回應。請直接聯絡孩子，必要時聯絡當地緊急救援機構。",
+      "title.request": "設定變更請求",
+      "childRejoined": "{child}的裝置可能已重新連線。請在家庭頁面確認。",
+      "settingRequestTheme": "{child}想變更主題顏色。",
+      "settingRequestCharacter": "{child}想變更角色。",
+      "settingRequestSound": "{child}想變更聲音與震動設定。",
+      "settingRequestMascot": "{child}想變更吉祥物顯示設定。"
     },
     "vi": {
       "title.location": "Cập nhật vị trí",
@@ -209,7 +239,13 @@
       "childReminder": "{event} bắt đầu sau {minutes} phút. Chuẩn bị nhé!",
       "childReminderNow": "{event} bắt đầu rồi. Sẵn sàng chưa?",
       "leftNear": "{child} đã rời khu vực gần {place}.",
-      "forceReminder": "Đã 5 phút kể từ tín hiệu khẩn cấp nhưng trẻ chưa phản hồi. Hãy liên hệ trực tiếp với trẻ và dịch vụ khẩn cấp địa phương nếu cần."
+      "forceReminder": "Đã 5 phút kể từ tín hiệu khẩn cấp nhưng trẻ chưa phản hồi. Hãy liên hệ trực tiếp với trẻ và dịch vụ khẩn cấp địa phương nếu cần.",
+      "title.request": "Yêu cầu đổi cài đặt",
+      "childRejoined": "Thiết bị của {child} có thể đã kết nối lại. Vui lòng kiểm tra trên màn hình gia đình.",
+      "settingRequestTheme": "{child} muốn đổi màu chủ đề.",
+      "settingRequestCharacter": "{child} muốn đổi nhân vật.",
+      "settingRequestSound": "{child} muốn đổi cài đặt âm thanh và rung.",
+      "settingRequestMascot": "{child} muốn đổi cài đặt hiển thị linh vật."
     },
     "th": {
       "title.location": "อัปเดตตำแหน่ง",
@@ -244,7 +280,13 @@
       "childReminder": "{event} จะเริ่มในอีก {minutes} นาที เตรียมตัวกันนะ!",
       "childReminderNow": "{event} เริ่มแล้ว พร้อมไหม?",
       "leftNear": "{child} ออกจากบริเวณใกล้ {place} แล้ว",
-      "forceReminder": "ผ่านไป 5 นาทีหลังส่งสัญญาณฉุกเฉิน แต่ลูกยังไม่ตอบกลับ โปรดติดต่อลูกโดยตรง และติดต่อหน่วยฉุกเฉินในพื้นที่หากจำเป็น"
+      "forceReminder": "ผ่านไป 5 นาทีหลังส่งสัญญาณฉุกเฉิน แต่ลูกยังไม่ตอบกลับ โปรดติดต่อลูกโดยตรง และติดต่อหน่วยฉุกเฉินในพื้นที่หากจำเป็น",
+      "title.request": "คำขอเปลี่ยนการตั้งค่า",
+      "childRejoined": "อุปกรณ์ของ {child} อาจเชื่อมต่อใหม่แล้ว โปรดตรวจสอบที่หน้าครอบครัว",
+      "settingRequestTheme": "{child} อยากเปลี่ยนสีธีม",
+      "settingRequestCharacter": "{child} อยากเปลี่ยนตัวละคร",
+      "settingRequestSound": "{child} อยากเปลี่ยนการตั้งค่าเสียงและการสั่น",
+      "settingRequestMascot": "{child} อยากเปลี่ยนการตั้งค่าการแสดงมาสคอต"
     },
     "id": {
       "title.location": "Pembaruan lokasi",
@@ -279,7 +321,13 @@
       "childReminder": "{event} dimulai dalam {minutes} menit. Siap-siap, ya!",
       "childReminderNow": "{event} dimulai sekarang. Sudah siap?",
       "leftNear": "{child} telah meninggalkan area dekat {place}.",
-      "forceReminder": "Belum ada respons selama 5 menit setelah sinyal darurat. Hubungi anak Anda langsung dan layanan darurat setempat jika diperlukan."
+      "forceReminder": "Belum ada respons selama 5 menit setelah sinyal darurat. Hubungi anak Anda langsung dan layanan darurat setempat jika diperlukan.",
+      "title.request": "Permintaan ubah pengaturan",
+      "childRejoined": "Perangkat {child} mungkin tersambung kembali. Silakan periksa di layar keluarga.",
+      "settingRequestTheme": "{child} ingin mengubah warna tema.",
+      "settingRequestCharacter": "{child} ingin mengubah karakter.",
+      "settingRequestSound": "{child} ingin mengubah pengaturan suara dan getar.",
+      "settingRequestMascot": "{child} ingin mengubah pengaturan tampilan maskot."
     },
     "ms": {
       "title.location": "Kemas kini lokasi",
@@ -314,7 +362,13 @@
       "childReminder": "{event} bermula dalam {minutes} minit. Bersedia ya!",
       "childReminderNow": "{event} bermula sekarang. Dah bersedia?",
       "leftNear": "{child} telah meninggalkan kawasan berhampiran {place}.",
-      "forceReminder": "Tiada respons selama 5 minit selepas isyarat kecemasan. Hubungi anak anda secara langsung dan perkhidmatan kecemasan tempatan jika perlu."
+      "forceReminder": "Tiada respons selama 5 minit selepas isyarat kecemasan. Hubungi anak anda secara langsung dan perkhidmatan kecemasan tempatan jika perlu.",
+      "title.request": "Permintaan tukar tetapan",
+      "childRejoined": "Peranti {child} mungkin telah bersambung semula. Sila semak di skrin keluarga.",
+      "settingRequestTheme": "{child} ingin menukar warna tema.",
+      "settingRequestCharacter": "{child} ingin menukar watak.",
+      "settingRequestSound": "{child} ingin menukar tetapan bunyi dan getaran.",
+      "settingRequestMascot": "{child} ingin menukar tetapan paparan maskot."
     },
     "fil": {
       "title.location": "Update sa lokasyon",
@@ -349,7 +403,13 @@
       "childReminder": "Magsisimula ang {event} sa loob ng {minutes} minuto. Maghanda na!",
       "childReminderNow": "Magsisimula na ang {event}. Handa ka na ba?",
       "leftNear": "Umalis si {child} sa lugar malapit sa {place}.",
-      "forceReminder": "Wala pang tugon 5 minuto matapos ang emergency signal. Direktang tawagan ang anak mo at makipag-ugnayan sa lokal na serbisyong pang-emergency kung kailangan."
+      "forceReminder": "Wala pang tugon 5 minuto matapos ang emergency signal. Direktang tawagan ang anak mo at makipag-ugnayan sa lokal na serbisyong pang-emergency kung kailangan.",
+      "title.request": "Hiling na palitan ang setting",
+      "childRejoined": "Maaaring muling nakakonekta ang device ni {child}. Pakitingnan sa family screen.",
+      "settingRequestTheme": "Gustong palitan ni {child} ang kulay ng tema.",
+      "settingRequestCharacter": "Gustong palitan ni {child} ang character.",
+      "settingRequestSound": "Gustong palitan ni {child} ang setting ng tunog at vibration.",
+      "settingRequestMascot": "Gustong palitan ni {child} ang setting ng pagpapakita ng mascot."
     }
   }
 }

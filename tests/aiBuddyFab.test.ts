@@ -45,6 +45,9 @@ import {
   AI_BUDDY_WANDER_LINE_MS,
   AI_BUDDY_WANDER_MOVING_FACE,
   AI_BUDDY_WANDER_TRAVEL_MS,
+  aiBuddyWanderCandidates,
+  pickLeastCoveringRatio,
+  shouldMoveAiBuddyTo,
   aiBuddyWanderFace,
   aiBuddyWanderLine as aiBuddyWanderLineIntl,
   canAiBuddyWander,
@@ -923,4 +926,51 @@ test("부르는 동안에도 SOS 는 가려지지 않는다", () => {
   // 화면을 채우고 부르는 오버레이는 최대 3.8초 떠 있다 —
   // 그동안 아이 독(SOS)을 덮으면 위급한 순간에 아이가 버튼을 못 누른다.
   assert.ok(stage < dock, "부르기 오버레이(" + stage + ")가 아이 독(" + dock + ")을 덮고 있다");
+});
+
+test("멈춰 설 자리 후보는 원래 자리 → 같은 가장자리 가까운 순 → 반대 가장자리 순이다", () => {
+  const candidates = aiBuddyWanderCandidates({ xRatio: 0.9, yRatio: 0.5 });
+  assert.deepEqual(candidates[0], { xRatio: 1, yRatio: 0.5 });
+  const sameEdge = candidates.slice(1).filter((c) => c.xRatio === 1);
+  const otherEdge = candidates.slice(1).filter((c) => c.xRatio === 0);
+  assert.ok(sameEdge.length > 0 && sameEdge.length === otherEdge.length);
+  assert.ok(candidates.indexOf(otherEdge[0]) > candidates.indexOf(sameEdge[sameEdge.length - 1]));
+  const distances = sameEdge.map((c) => Math.abs(c.yRatio - 0.5));
+  assert.deepEqual(distances, [...distances].sort((a, b) => a - b));
+  for (const c of candidates) {
+    assert.ok(c.yRatio >= AI_BUDDY_WANDER_VERTICAL_MIN - 1e-9 && c.yRatio <= AI_BUDDY_WANDER_VERTICAL_MAX + 1e-9);
+  }
+});
+
+test("떠다니는 친구는 버튼·입력창을 덮는 자리에 멈추지 않고, 스크롤 뒤에는 비켜 선다", () => {
+  const fab = readFileSync(new URL("../src/app/AiBuddyFab.tsx", import.meta.url), "utf8");
+  assert.match(fab, /elementsFromPoint/);
+  assert.match(fab, /pickLeastCoveredRef\.current\(nextAiBuddyWanderRatio\(from, step\)\)/);
+  assert.match(fab, /shouldMoveAiBuddyTo\(best, coverageAtRef\.current\(from\)\)/);
+  assert.match(fab, /addEventListener\("scroll", onScroll, \{ passive: true \}\)/);
+  assert.match(fab, /shouldMoveAiBuddyTo\(best, currentCovered\)\) setWanderRatio\(best\.ratio\)/);
+});
+
+// 2026-09-25 브라우저 QA 재검증 — 목록 행이 화면 폭을 채운 구간에는 빈자리가 없어서,
+// "빈자리만" 찾던 친구가 준비물 체크 버튼 위에 그대로 서 있었다.
+test("빈자리가 없으면 버튼을 가장 적게 덮는 가까운 자리를 고르고, 빈자리는 바로 고른다", () => {
+  const a = { xRatio: 1, yRatio: 0.2 };
+  const b = { xRatio: 1, yRatio: 0.3 };
+  const c = { xRatio: 0, yRatio: 0.2 };
+  const cover = (map: Map<object, number>) => (ratio: object) => map.get(ratio) ?? 9;
+  assert.deepEqual(pickLeastCoveringRatio([a, b, c], cover(new Map([[a, 6], [b, 3], [c, 3]]))), { ratio: b, covered: 3 });
+  const visited: object[] = [];
+  const picked = pickLeastCoveringRatio([a, b, c], (ratio) => { visited.push(ratio); return ratio === b ? 0 : 6; });
+  assert.deepEqual(picked, { ratio: b, covered: 0 });
+  assert.deepEqual(visited, [a, b], "빈자리를 찾으면 나머지 후보는 재지 않는다");
+  assert.equal(pickLeastCoveringRatio([], () => 0), null);
+});
+
+test("지금 자리보다 덜 덮을 때만 옮긴다", () => {
+  const ratio = { xRatio: 1, yRatio: 0.5 };
+  assert.equal(shouldMoveAiBuddyTo({ ratio, covered: 0 }, 0), true);
+  assert.equal(shouldMoveAiBuddyTo({ ratio, covered: 2 }, 6), true);
+  assert.equal(shouldMoveAiBuddyTo({ ratio, covered: 3 }, 3), false);
+  assert.equal(shouldMoveAiBuddyTo({ ratio, covered: 4 }, 2), false);
+  assert.equal(shouldMoveAiBuddyTo(null, 9), false);
 });

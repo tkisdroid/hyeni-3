@@ -126,8 +126,8 @@ export async function stopForceRing(eventId: string): Promise<{ stopped: boolean
 export async function requestDeviceStatus(
   familyId: string,
   targetChildUserId?: string | null,
-): Promise<void> {
-  if (!familyId) return;
+): Promise<{ ok: boolean; error?: string }> {
+  if (!familyId) return { ok: false, error: "familyId required" };
   const body: Record<string, unknown> = {
     action: "request_device_status",
     familyId,
@@ -138,8 +138,14 @@ export async function requestDeviceStatus(
   if (targetChildUserId) body.targetUserId = targetChildUserId;
   try {
     await apiPost("/api/push-notify", body);
-  } catch {
-    // 상태 요청 실패는 화면을 막지 않는다(오프라인 등 — 다음 갱신에 재시도)
+    return { ok: true };
+  } catch (e) {
+    // 상태 요청 실패는 화면을 막지 않는다(오프라인 등 — 다음 갱신에 재시도). 다만 성공처럼 보고하지 않도록
+    // 결과를 돌려준다(공동 보호자는 서버 정책상 primary_parent_required 로 거부된다).
+    return {
+      ok: false,
+      error: e instanceof ApiError ? e.code ?? "request_device_status_failed" : "request_device_status_failed",
+    };
   }
 }
 

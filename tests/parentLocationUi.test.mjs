@@ -52,10 +52,17 @@ test("부모 위치 화면 자동 요청은 Premium에서만 실행해 Free 수�
   assert.match(source, /const autoRefreshKeyRef = useRef<string \| null>\(null\)/);
   assert.match(
     source,
-    /if \(\s*activeView !== "live"\s*\|\|\s*!canShowLocation\s*\|\|\s*!premiumOpen\s*\|\|\s*!refreshTargetKey\s*\|\|\s*!isFetched\s*\|\|\s*isFetching\s*\|\|\s*isRefreshingLocation\s*\)\s*return;/s,
+    /if \(\s*activeView !== "live"\s*\|\|\s*!canShowLocation\s*\|\|\s*!premiumOpen\s*\|\|\s*!canAutoRequestLocation\s*\|\|\s*!refreshTargetKey\s*\|\|\s*!isFetched\s*\|\|\s*isFetching\s*\|\|\s*isRefreshingLocation\s*\)\s*return;/s,
   );
   assert.match(source, /autoRefreshKeyRef\.current = refreshTargetKey/);
   assert.match(source, /void refreshLocation\(false\)/);
+});
+
+// 2026-09-25 브라우저 QA — 공동 보호자가 위치 화면에 들어올 때마다 서버가 거절할 자동 요청을 보내
+// "주 보호자만 할 수 있어요" 안내가 저절로 떴다. 자동 요청은 주 보호자만 보낸다.
+test("부모 위치 화면 자동 요청은 주 보호자만 보낸다", () => {
+  assert.match(source, /const canAutoRequestLocation = familyQuery\.data\?\.isPrimaryParent === true;/);
+  assert.match(source, /requested\.error === "primary_parent_required"/);
 });
 
 test("오래된 위치는 현재 장소가 아니라 마지막 확인 장소로 표시한다", () => {

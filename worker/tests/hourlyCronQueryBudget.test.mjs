@@ -2,10 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import "./helpers/tsModuleResolve.mjs";
-const {
-  HOURLY_MAINTENANCE_CRON,
-  resolveHourlyMaintenanceHandlers,
-} = await import("../index.ts");
+const { resolveHourlyMaintenanceHandlers } = await import("../index.ts");
+const { HOURLY_MAINTENANCE_CRON } = await import("../cron/schedules.ts");
 test("hourly maintenance는 12개 invocation으로 분리되고 각 D1 query 예산이 50 이하다", () => {
   assert.equal(HOURLY_MAINTENANCE_CRON, "0,5,10,15,20,25,30,35,40,45,50,55 * * * *");
   const names = [];

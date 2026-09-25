@@ -927,5 +927,15 @@
   "study.vocabulary.subtitle": "Flip a card to see its meaning",
   "study.vocabulary.title": "English word cards",
   "study.vocabulary.total": "5 levels · {count, number} words",
-  "study.vocabulary.wiktionarySource": "Wiktionary · CC BY-SA 4.0"
+  "study.vocabulary.wiktionarySource": "Wiktionary · CC BY-SA 4.0",
+  "shared.schedule.allDay": "all day",
+  "shared.schedule.event": "schedule",
+  "shared.location.unverifiedPlace": "Unconfirmed place",
+  "shared.location.addressLoading": "Verifying address",
+  "shared.location.noInformation": "No location information",
+  "shared.location.justUpdated": "just updated",
+  "shared.schedule.tag.ongoing": "In progress",
+  "shared.schedule.tag.upcoming": "expected",
+  "shared.schedule.tag.verify": "Confirmation required",
+  "shared.schedule.tag.visited": "I went"
 }

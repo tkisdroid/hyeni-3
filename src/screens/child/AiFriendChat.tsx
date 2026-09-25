@@ -237,9 +237,10 @@ export function AiFriendChat() {
         familyTimeZone,
         undefined,
         places,
+        intl,
       )[todayKey] ?? [];
     return list.find((e) => !PAST_TAGS.has(e.tag)) ?? null;
-  }, [familyTimeZone, events, locale, myMemberId, now, todayKey, places]);
+  }, [familyTimeZone, events, intl, locale, myMemberId, now, todayKey, places]);
   const pendingSupply = useMemo(() => {
     const all = suppliesQuery.data ?? [];
     const mine = myMemberId ? all.filter((s) => s.child_user_id === myMemberId) : [];
@@ -763,7 +764,7 @@ export function AiFriendChat() {
         <div className="afc-head-main">
           <div className="afc-head-name">{friendName}</div>
         </div>
-        {shownUnlimited ? (
+        {publicSettings?.ai_enabled !== true ? null : shownUnlimited ? (
           <span className="afc-credits">
             <MessageCircle size={14} strokeWidth={2.2} aria-hidden="true" />
             {intl.formatMessage({ id: "child.aiChat.remainingUnlimited" })}

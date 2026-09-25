@@ -108,7 +108,7 @@ export function DangerAlert() {
                   <img className="da-hero__img" src={asset(iconOf(latest.alert_type))} alt="" />
                 </span>
                 <span className="da-hero__time">
-                  {relativeTime(latest.created_at, now, locale, familyTimeZone)}
+                  {relativeTime(latest.created_at, now, locale, familyTimeZone, intl)}
                 </span>
               </div>
               <div className="da-hero__title">
@@ -150,7 +150,7 @@ export function DangerAlert() {
                       </span>
                       <span className="da-item__meta">
                         <span className="da-item__time">
-                          {relativeTime(a.created_at, now, locale, familyTimeZone)}
+                          {relativeTime(a.created_at, now, locale, familyTimeZone, intl)}
                         </span>
                         {!a.read && <span className="da-item__dot" />}
                       </span>

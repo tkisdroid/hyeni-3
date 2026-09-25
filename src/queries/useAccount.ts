@@ -85,7 +85,10 @@ export function useAccount(): UseAccountResult {
   }, [query.data, photoUrls]);
   const me =
     account && userId ? account.members.find((m) => m.user_id === userId) ?? null : null;
-  const provider = user?.app_metadata?.provider ?? null;
+  // 가입 방식은 서버 정본(/mine 의 myAuthProvider)을 먼저 쓴다. 세션의 app_metadata.provider 는
+  // 로그인 경로마다 달라서(비밀번호 로그인 응답에는 없다) 같은 전화번호 가입 계정이
+  // "전화번호 계정"/"ID 계정"으로 다르게 보였다. 가족 조회 전에는 세션 값으로 대신한다.
+  const provider = account?.authProvider ?? user?.app_metadata?.provider ?? null;
 
   return {
     account,

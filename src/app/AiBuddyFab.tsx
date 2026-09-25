@@ -25,6 +25,9 @@ import {
   AI_BUDDY_WANDER_LINE_MS,
   AI_BUDDY_WANDER_STEP_MS,
   AI_BUDDY_WANDER_TRAVEL_MS,
+  aiBuddyWanderCandidates,
+  pickLeastCoveringRatio,
+  shouldMoveAiBuddyTo,
   aiBuddyWanderFace,
   aiBuddyWanderLine,
   canAiBuddyWander,
@@ -137,6 +140,25 @@ interface AiBuddyFabProps {
  * · 가끔 커졌다 화면을 채우고 다시 작아지며 아이를 부른다(부모가 설정에서 끌 수 있다).
  * · 아이 세션에서만, AI 친구 화면 밖에서만 렌더한다.
  */
+
+/** 이 요소들 위에 멈춰 서면 아이가 누른 곳 대신 친구가 눌린다. */
+const AI_BUDDY_INTERACTIVE_SELECTOR =
+  "button, a[href], input, textarea, select, [role='button'], [role='checkbox'], [role='switch'], [role='tab']";
+
+/** 화면 좌표의 친구 자리 표본점 중 아래에 누를 수 있는 요소가 있는 점의 수(친구 자신은 제외). */
+function aiBuddyCoveredInteractivePoints(host: HTMLElement, left: number, top: number, size: number): number {
+  if (typeof document === "undefined" || typeof document.elementsFromPoint !== "function") return 0;
+  let covered = 0;
+  for (const fx of [0.3, 0.5, 0.7]) {
+    for (const fy of [0.3, 0.5, 0.7]) {
+      const under = document
+        .elementsFromPoint(left + size * fx, top + size * fy)
+        .find((element) => !host.contains(element));
+      if (under?.closest(AI_BUDDY_INTERACTIVE_SELECTOR)) covered += 1;
+    }
+  }
+  return covered;
+}
 export function AiBuddyFab({ bottomInset }: AiBuddyFabProps) {
   const { role } = useAuth();
   const location = useLocation();
@@ -263,6 +285,35 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
     [measureFrame],
   );
 
+  // 비율 자리에 섰을 때 아래 버튼·입력창을 얼마나 덮는지 잰다(표본점 수).
+  const coverageAt = useCallback(
+    (ratio: AiBuddyFabRatio): number => {
+      const host = hostRef.current;
+      const parent = host?.offsetParent as HTMLElement | null;
+      if (!host || !parent) return 0;
+      const frame = measureFrame();
+      const size = frame.fabSize ?? presentation.size;
+      const origin = parent.getBoundingClientRect();
+      const { left, top } = aiBuddyFabOffset(ratio, frame);
+      return aiBuddyCoveredInteractivePoints(
+        host,
+        origin.left + parent.clientLeft + left,
+        origin.top + parent.clientTop + top,
+        size,
+      );
+    },
+    [measureFrame, presentation.size],
+  );
+  // 멈춰 설 자리는 아래의 버튼·입력창을 가장 적게 가리는 가까운 곳으로 고른다.
+  const pickLeastCovered = useCallback(
+    (preferred: AiBuddyFabRatio) => pickLeastCoveringRatio(aiBuddyWanderCandidates(preferred), coverageAt),
+    [coverageAt],
+  );
+  const coverageAtRef = useRef(coverageAt);
+  coverageAtRef.current = coverageAt;
+  const pickLeastCoveredRef = useRef(pickLeastCovered);
+  pickLeastCoveredRef.current = pickLeastCovered;
+
   useLayoutEffect(() => {
     // 전환 중에는 가운데로 보낸 좌표를 유지한다(제자리로 되돌리면 동작이 중간에 끊긴다).
     if (launching) return;
@@ -313,7 +364,10 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
       const step = wanderStepRef.current + 1;
       wanderStepRef.current = step;
       const from = wanderRatioRef.current ?? ratioRef.current;
-      const next = nextAiBuddyWanderRatio(from, step);
+      // 지금 자리보다 버튼을 더 덮게 되면 이번 걸음은 쉰다(아이가 누르려던 곳을 가로채지 않는다).
+      const best = pickLeastCoveredRef.current(nextAiBuddyWanderRatio(from, step));
+      if (!best || !shouldMoveAiBuddyTo(best, coverageAtRef.current(from))) return;
+      const next = best.ratio;
       setWanderRatio(next);
       setWanderFace(aiBuddyWanderFace(step, true));
       // 도착하면 아이에게 말을 걸 듯한 얼굴로 바꾼다(이동 중은 두리번거리는 얼굴).
@@ -340,6 +394,42 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
       if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
     };
   }, []);
+
+  // 화면을 스크롤하면 고정된 친구 아래로 버튼이 지나간다. 스크롤이 멈췄을 때 버튼 위라면
+  // 가까운 빈자리로 비켜 선다(임시 위치만 바꾸고 아이가 직접 옮긴 저장 위치는 그대로 둔다).
+  useEffect(() => {
+    const screen = hostRef.current?.closest(".hy-app")?.querySelector<HTMLElement>(".hy-screen");
+    if (!screen) return;
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
+    const stepAside = () => {
+      if (!presentationRef.current.canWander) return;
+      if (attentionRef.current || launchingRef.current || dragRef.current) return;
+      const gate = {
+        dragging: false,
+        showingEmotion: emotionRef.current !== "idle" && emotionRef.current !== "sleepy",
+        visible: !document.hidden,
+        reducedMotion: false,
+        msSinceDrag: lastDragAtRef.current === null ? null : Date.now() - lastDragAtRef.current,
+      };
+      if (!canAiBuddyWander(gate)) return;
+      const current = wanderRatioRef.current ?? ratioRef.current;
+      const currentCovered = coverageAtRef.current(current);
+      if (currentCovered === 0) return;
+      // 빈자리가 없으면(목록 행이 화면 폭을 채운 구간) 가장 덜 덮는 자리로라도 비켜 선다.
+      const best = pickLeastCoveredRef.current(current);
+      if (best && shouldMoveAiBuddyTo(best, currentCovered)) setWanderRatio(best.ratio);
+    };
+    const onScroll = () => {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(stepAside, 250);
+    };
+    screen.addEventListener("scroll", onScroll, { passive: true });
+    settleTimer = setTimeout(stepAside, 1_200);
+    return () => {
+      screen.removeEventListener("scroll", onScroll);
+      if (settleTimer) clearTimeout(settleTimer);
+    };
+  }, [presentation.canWander]);
 
   // 홈 밖에서는 저장된 가장자리 위치만 지키고, 이전 화면의 배회·말풍선·주목 상태를 이어오지 않는다.
   useEffect(() => {

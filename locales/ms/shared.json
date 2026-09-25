@@ -927,5 +927,15 @@
   "study.vocabulary.subtitle": "Balik kad untuk melihat maksudnya",
   "study.vocabulary.title": "Kad perkataan Inggeris",
   "study.vocabulary.total": "5 tahap · {count, number} perkataan",
-  "study.vocabulary.wiktionarySource": "Wikikamus bahasa Korea · CC BY-SA 4.0"
+  "study.vocabulary.wiktionarySource": "Wikikamus bahasa Korea · CC BY-SA 4.0",
+  "shared.schedule.allDay": "Sepanjang hari",
+  "shared.schedule.event": "Jadual",
+  "shared.location.unverifiedPlace": "Tempat belum disahkan",
+  "shared.location.addressLoading": "Sedang mengesahkan alamat",
+  "shared.location.noInformation": "Tiada maklumat lokasi",
+  "shared.location.justUpdated": "baru sahaja dikemas kini",
+  "shared.schedule.tag.ongoing": "Sedang berlangsung",
+  "shared.schedule.tag.upcoming": "Akan datang",
+  "shared.schedule.tag.verify": "Perlu disahkan",
+  "shared.schedule.tag.visited": "Sudah dikunjungi"
 }

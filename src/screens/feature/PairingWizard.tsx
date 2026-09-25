@@ -89,6 +89,8 @@ export function PairingWizard() {
   const currentAddDecision = resolveAddition(1);
   const remainingSlots = currentAddDecision.remainingSlots;
   const noSlots = gatesReady && remainingSlots <= 0;
+  // 프리미엄 최대 인원이 이미 연결됐으면 고를 인원이 없다 — 업셀 대신 연결 관리로 안내한다.
+  const premiumFull = noSlots && currentAddDecision.status === "limit_reached";
   const gateMessage = intl.formatMessage({ id: "parent.pairingWizard.gateMessage" });
   const childLimitMessage =
     tier === TIERS.PREMIUM
@@ -312,7 +314,12 @@ export function PairingWizard() {
         </div>
 
         {/* ── STEP 1 : 아이 수 ── */}
-        {step === 1 && (
+        {step === 1 && premiumFull && (
+          <p className="pw-note hy-explain" role="status">
+            {intl.formatMessage({ id: "parent.pairingWizard.full" }, { count: existingChildCount })}
+          </p>
+        )}
+        {step === 1 && !premiumFull && (
           <>
             <div className="pw-lead">
               {intl.formatMessage({ id: "parent.pairingWizard.countLead" })}
@@ -484,7 +491,11 @@ export function PairingWizard() {
 
       {/* 하단 고정 CTA */}
       <div className="pw-footer">
-        {step < 3 ? (
+        {step === 1 && premiumFull ? (
+          <button type="button" className="pw-cta hy-press" onClick={() => navigate("/family-connection")}>
+            {intl.formatMessage({ id: "parent.pairingWizard.manageConnections" })}
+          </button>
+        ) : step < 3 ? (
           <button type="button" className="pw-cta hy-press" onClick={next} disabled={step === 2 && !childInfoReady}>
             {intl.formatMessage({
               id: step === 1

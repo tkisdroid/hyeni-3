@@ -494,7 +494,9 @@ auth.post("/change-password", requireAuth, async (c) => {
     return c.json({ error: "password_account_required" }, 400);
   }
   if (!(await comparePassword(currentPassword, row.encrypted_password))) {
-    return c.json({ error: "current_password_mismatch" }, 401);
+    // 401은 "세션 만료"로 읽혀 클라이언트가 refresh 토큰을 회전한 뒤 재요청한다.
+    // 인증은 유효하고 입력만 틀렸으므로 400으로 돌려준다.
+    return c.json({ error: "current_password_mismatch" }, 400);
   }
 
   const nextHash = await hashPassword(newPassword);

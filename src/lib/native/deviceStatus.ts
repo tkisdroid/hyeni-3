@@ -3,7 +3,7 @@
  *
  * `DeviceStatusReporter` 네이티브 플러그인은 등록된 JS 플러그인이 아니므로 네이티브 호출을
  * 쓰지 않고 웹 표준 API 로 수집한다: navigator.getBattery() / navigator.onLine /
- * navigator.connection.effectiveType. Android WebView 에서도 그대로 동작한다.
+ * navigator.connection.type. Android WebView 에서도 그대로 동작한다.
  *
  * 미지원 브라우저(getBattery 없음 등)에선 batteryLevel/isCharging = null → 부모 화면이 "—"
  * 로 정직 처리한다(가짜 숫자 금지). 화면시간·앱 사용시간은 네이티브 UsageStats 가 필요해
@@ -22,7 +22,11 @@ interface BatteryLike {
 }
 
 type BatterySource = { getBattery?: () => Promise<BatteryLike> };
-type ConnectionSource = { connection?: { effectiveType?: string } };
+type ConnectionSource = { connection?: { type?: string } };
+
+// 실제 연결 종류로 인정하는 값. effectiveType("4g" 등)은 망 종류가 아니라 체감 속도 등급이라
+// Wi-Fi·유선에서도 "4g"가 나온다 — 그 값을 보고하면 부모 화면에 "4G"로 잘못 표시됐다(2026-09-25 QA).
+const KNOWN_CONNECTION_TYPES = new Set(["wifi", "cellular", "ethernet", "bluetooth", "wimax"]);
 
 interface NativeDeviceHealthPlugin {
   getDeviceHealthSnapshot(input: { familyId: string; userId: string }): Promise<DeviceHealth>;
@@ -45,12 +49,16 @@ async function readBattery(): Promise<{ batteryLevel: number | null; isCharging:
   }
 }
 
-// navigator.onLine + connection.effectiveType(있으면). 미지원 시 networkType=null(연결됨으로 표기).
-function readNetwork(): { networkConnected: boolean; networkType: string | null } {
-  const networkConnected = typeof navigator.onLine === "boolean" ? navigator.onLine : true;
+// navigator.onLine + connection.type(있으면). 모르면 networkType=null(연결됨으로 표기).
+export function readNetwork(source: ConnectionSource & { onLine?: unknown } = navigator as unknown as ConnectionSource & { onLine?: unknown }): {
+  networkConnected: boolean;
+  networkType: string | null;
+} {
+  const networkConnected = typeof source.onLine === "boolean" ? source.onLine : true;
   let networkType: string | null = null;
   try {
-    networkType = (navigator as unknown as ConnectionSource).connection?.effectiveType ?? null;
+    const type = source.connection?.type;
+    networkType = typeof type === "string" && KNOWN_CONNECTION_TYPES.has(type) ? type : null;
   } catch {
     networkType = null;
   }

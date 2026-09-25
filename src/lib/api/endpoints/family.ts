@@ -107,6 +107,8 @@ export interface FamilyInfo {
   myRole: "parent" | "child" | null;
   /** 내 표시 이름. */
   myName: string;
+  /** 내 계정의 가입(로그인) 방식 — 서버 정본. 모르면 null. */
+  myAuthProvider: string | null;
   /** 가족 대표(부모) 이름. */
   parentName: string;
   /** 주 보호자 user_id(연결 해제·아이 프로필 수정 권한 게이트). */
@@ -131,6 +133,7 @@ export interface FamilyMineResponse {
   members?: FamilyMember[];
   myRole?: "parent" | "child";
   myName?: string;
+  myAuthProvider?: string | null;
   parentName?: string | null;
   primaryParentId?: string | null;
   isPrimaryParent?: boolean;
@@ -189,6 +192,7 @@ export function mapFamilyMineResponse(data: FamilyMineResponse | null): FamilyIn
     members: data.members || [],
     myRole: data.myRole ?? null,
     myName: data.myName ?? "",
+    myAuthProvider: typeof data.myAuthProvider === "string" ? data.myAuthProvider : null,
     parentName: data.parentName ?? "",
     primaryParentId: data.primaryParentId ?? null,
     isPrimaryParent: data.isPrimaryParent === true,
@@ -361,9 +365,11 @@ export async function joinFamilyAsParent(pairCode: string, parentName?: string):
   const code = String(pairCode || "").toUpperCase().trim();
   if (!code) throw new Error("연결 코드를 입력해 주세요");
   const device = await getAuthDeviceDescriptor().catch(() => null);
+  // 이름을 모르면 보내지 않는다. 서버가 가입 프로필 이름으로 채운다("부모"로 저장되지 않게).
+  const name = parentName?.trim();
   const data = await apiPost<SessionResponse>("/api/family/join-as-parent", {
     pairCode: code,
-    name: parentName || "부모",
+    ...(name ? { name } : {}),
     ...(device ?? {}),
   });
   adoptSession(data);
@@ -582,6 +588,8 @@ export async function sendChildSettingRequest(input: ChildSettingRequestInput): 
   await apiPost("/api/parent-alerts", {
     family_id: familyId,
     alert_type: "child_setting_request",
+    // 서버가 이 메뉴로 부모 언어에 맞는 번역 문구를 붙인다(title·message 는 한국어 기본값).
+    setting_menu: menu,
     title: meta.parentTitle,
     message: meta.parentMessage(name),
     severity: "info",

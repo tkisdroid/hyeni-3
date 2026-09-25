@@ -185,8 +185,10 @@ function RoleSpecificInvite({ inviteRole }: { inviteRole: PairInviteRole }) {
     [family, inviteRole],
   );
   const connectionRef = useRef<ChildInviteConnectionState>({ baseline: null, notified: false });
+  const [connected, setConnected] = useState(false);
   useEffect(() => {
     connectionRef.current = { baseline: null, notified: false };
+    setConnected(false);
   }, [inviteRole]);
   useEffect(() => {
     const status = isSuccess && family ? "success" : isError ? "error" : "loading";
@@ -194,10 +196,16 @@ function RoleSpecificInvite({ inviteRole }: { inviteRole: PairInviteRole }) {
     connectionRef.current = result.state;
     if (result.newChildUid) {
       show(intl.formatMessage({ id: connectedMessageId }), "🔗");
-      const timer = setTimeout(() => navigate("/parent/family"), 1200);
-      return () => clearTimeout(timer);
+      setConnected(true);
     }
-  }, [connectedMessageId, family, isError, isSuccess, memberUids, navigate, show]);
+  }, [connectedMessageId, family, isError, isSuccess, memberUids, show]);
+  // 이동 타이머는 감지 effect 와 분리한다. 연결 직후 아이 기기가 상태를 보고하면 가족 데이터가 곧바로
+  // 다시 바뀌는데, 같은 effect 에 두면 그 재실행이 타이머를 지워 화면이 "기다리는 중"에 멈췄다.
+  useEffect(() => {
+    if (!connected) return;
+    const timer = setTimeout(() => navigate("/parent/family"), 1200);
+    return () => clearTimeout(timer);
+  }, [connected, navigate]);
 
   const copyCode = () => {
     if (!pairCode) return;
@@ -277,7 +285,7 @@ function RoleSpecificInvite({ inviteRole }: { inviteRole: PairInviteRole }) {
         <div className="ci-headline">
           {intl.formatMessage({
             id: parentInvite
-              ? "parent.familyConnection.inviteCoParent"
+              ? "parent.familyInvite.parent.headline"
               : "parent.childInvite.headline",
           })}
         </div>
@@ -396,11 +404,13 @@ function RoleSpecificInvite({ inviteRole }: { inviteRole: PairInviteRole }) {
             </button>
 
             <div className="ci-wait">
-              <span className="ci-wait__dot" />
+              {!connected && <span className="ci-wait__dot" />}
               {intl.formatMessage({
-                id: parentInvite
-                  ? "parent.familyInvite.parent.waiting"
-                  : "parent.childInvite.waiting",
+                id: connected
+                  ? connectedMessageId
+                  : parentInvite
+                    ? "parent.familyInvite.parent.waiting"
+                    : "parent.childInvite.waiting",
               })}
             </div>
           </>

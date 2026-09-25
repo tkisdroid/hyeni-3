@@ -927,5 +927,15 @@
   "study.vocabulary.subtitle": "カードをめくって意味を見よう",
   "study.vocabulary.title": "英単語カード",
   "study.vocabulary.total": "5段階・{count, number}語",
-  "study.vocabulary.wiktionarySource": "ウィクショナリー · CC BY-SA 4.0"
+  "study.vocabulary.wiktionarySource": "ウィクショナリー · CC BY-SA 4.0",
+  "shared.schedule.allDay": "一日中",
+  "shared.schedule.event": "スケジュール",
+  "shared.location.unverifiedPlace": "未確認の場所",
+  "shared.location.addressLoading": "住所確認中",
+  "shared.location.noInformation": "位置情報なし",
+  "shared.location.justUpdated": "今更新",
+  "shared.schedule.tag.ongoing": "進行中",
+  "shared.schedule.tag.upcoming": "予定",
+  "shared.schedule.tag.verify": "確認が必要",
+  "shared.schedule.tag.visited": "行く"
 }

@@ -101,6 +101,7 @@ const messages = {
   "core.error.api.passwordAccountRequired.formal": "只能對有密碼的帳戶進行更改。",
   "core.error.api.phoneExists.child": "這個手機號碼已經註冊過了，直接登入吧。",
   "core.error.api.phoneExists.formal": "這個手機號碼已經註冊，請直接登入。",
+  "core.error.api.primaryParentRequired.formal": "只有主要監護人可以執行此操作。請在主要監護人的裝置上發出要求。",
   "core.error.api.rateLimited.child": "嘗試次數太多了，等一下再試。",
   "core.error.api.rateLimited.formal": "請求太多。請稍等片刻，然後重試。",
   "core.error.api.samePassword.formal": "新密碼與目前密碼相同。",

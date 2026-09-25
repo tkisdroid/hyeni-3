@@ -29,9 +29,9 @@ export function formatFreshness(
 ): Freshness {
   const intl = withDefaultIntl(providedIntl);
   const d = parseServerTimestamp(updatedAt);
-  if (!d) return { label: intl.formatMessage({ id: "parent.location.noInformation" }), status: "stale" };
+  if (!d) return { label: intl.formatMessage({ id: "shared.location.noInformation" }), status: "stale" };
   const diffSec = Math.max(0, Math.round((now.getTime() - d.getTime()) / 1000));
-  if (diffSec < 90) return { label: intl.formatMessage({ id: "parent.location.justUpdated" }), status: "live" };
+  if (diffSec < 90) return { label: intl.formatMessage({ id: "shared.location.justUpdated" }), status: "live" };
   const diffMin = Math.round(diffSec / 60);
   if (diffMin < 60) {
     return {
@@ -112,7 +112,7 @@ export function exactSavedPlaceLabel(
 /** 주소 조회가 아직 끝나지 않았을 때의 사용자용 fallback. 좌표는 기본 UI에 노출하지 않는다. */
 export function coordinateLabel(loc: ChildLocation, providedIntl?: IntlShape): string {
   void loc;
-  return withDefaultIntl(providedIntl).formatMessage({ id: "parent.location.addressLoading" });
+  return withDefaultIntl(providedIntl).formatMessage({ id: "shared.location.addressLoading" });
 }
 
 /** 자녀 위치 → 현위치 라벨: 좁은 반경의 저장장소명, 아니면 주소 조회 대기. */

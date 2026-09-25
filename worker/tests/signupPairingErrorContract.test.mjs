@@ -536,3 +536,60 @@ test("PC 재로그인은 iPhone 세션만 닫고 같은 가족·아이 정본을
     "SELECT COUNT(*) AS n FROM refresh_tokens WHERE user_id='takeover-parent' AND revoked=0",
   ).get().n, 1);
 });
+
+test("현재 비밀번호 불일치는 401이 아니라 400이라 클라이언트가 refresh 토큰을 회전하지 않는다", async () => {
+  const { app, env, sqlite } = setup();
+  sqlite.prepare("INSERT INTO users(id,is_anonymous,encrypted_password) VALUES ('pw-parent',0,?)")
+    .run(await hashPassword("right-pass-1"));
+  const header = await authorization("pw-parent", "parent", false);
+
+  const wrong = await post(app, env, "/auth/change-password", {
+    currentPassword: "wrong-pass-1",
+    newPassword: "new-pass-123",
+  }, header);
+  assert.equal(wrong.status, 400);
+  assert.deepEqual(await wrong.json(), { error: "current_password_mismatch" });
+
+  const right = await post(app, env, "/auth/change-password", {
+    currentPassword: "right-pass-1",
+    newPassword: "new-pass-123",
+  }, header);
+  assert.equal(right.status, 200);
+});
+
+test("공동 보호자 합류는 이름이 없거나 옛 기본값이면 가입 프로필 이름·휴대폰을 쓴다", async () => {
+  const device = { device_install_id: "qa-coparent-install-0001", device_platform: "web" };
+  for (const body of [{ pairCode: "KID-COPARENT", ...device }, { pairCode: "KID-COPARENT", name: "부모", ...device }]) {
+    const { app, env, sqlite } = setup();
+    sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES ('primary-parent',0)").run();
+    sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES ('co-parent',0)").run();
+    sqlite.prepare(
+      "INSERT INTO user_profiles(user_id,display_name,login_id,phone,created_at,updated_at) VALUES ('co-parent','큐에이아빠','qaparent02','+821055550202','2026-09-25','2026-09-25')",
+    ).run();
+    sqlite.prepare(
+      "INSERT INTO families(id,parent_id,pair_code,pair_code_expires_at,created_at) VALUES ('fam-co','primary-parent','KID-COPARENT','2099-01-01 00:00:00','2026-09-25')",
+    ).run();
+
+    const response = await post(app, env, "/api/family/join-as-parent", body, await authorization("co-parent", "parent", false));
+    assert.equal(response.status, 200, JSON.stringify(body) + " " + await response.clone().text());
+    const member = sqlite.prepare("SELECT name, phone FROM family_members WHERE family_id='fam-co' AND user_id='co-parent'").get();
+    assert.deepEqual({ ...member }, { name: "큐에이아빠", phone: "010-5555-0202" }, JSON.stringify(body));
+  }
+});
+
+test("가입 프로필에 전화가 없어도 공동 보호자 합류는 빈 전화로 성공한다", async () => {
+  const { app, env, sqlite } = setup();
+  sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES ('primary-parent',0)").run();
+  sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES ('oauth-coparent',0)").run();
+  sqlite.prepare(
+    "INSERT INTO families(id,parent_id,pair_code,pair_code_expires_at,created_at) VALUES ('fam-nophone','primary-parent','KID-NOPHONE','2099-01-01 00:00:00','2026-09-25')",
+  ).run();
+  const response = await post(app, env, "/api/family/join-as-parent", {
+    pairCode: "KID-NOPHONE",
+    device_install_id: "qa-coparent-install-0002",
+    device_platform: "web",
+  }, await authorization("oauth-coparent", "parent", false));
+  assert.equal(response.status, 200, await response.clone().text());
+  const member = sqlite.prepare("SELECT name, phone FROM family_members WHERE family_id='fam-nophone' AND user_id='oauth-coparent'").get();
+  assert.deepEqual({ ...member }, { name: "부모", phone: "" });
+});

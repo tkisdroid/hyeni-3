@@ -28,3 +28,34 @@ test("일정 제목도 가족 범위에서 조회하고 임의 경고 종류는 
   assert.equal(await resolvePublicParentAlertCopy(empty, { familyId: "f", childUserId: "c", alertType: "arbitrary" }), null);
   assert.equal(empty.calls.length, 0);
 });
+
+// 2026-09-25 브라우저 QA — 영어로 쓰는 부모에게 아이의 설정 변경 요청과 기기 재연결 알림이
+// 한국어로만 보였다. 메뉴 허용 목록으로 번역 id 를 고르고, 이름은 가족 정본에서 읽는다.
+test("아이 설정 변경 요청은 허용된 메뉴만 번역 문구를 만들고 이름은 정본을 쓴다", async () => {
+  const { formatNotificationCopy } = await import("../../shared/notificationCopy.ts");
+  const db = database([{ name: "민지" }]);
+  const copy = await resolvePublicParentAlertCopy(db, { familyId: "f", childUserId: "c", alertType: "child_setting_request", settingMenu: "sound" });
+  assert.deepEqual(copy, { v: 1, id: "settingRequestSound", args: { child: "민지" } });
+  assert.deepEqual(formatNotificationCopy(copy, "en"), {
+    title: "Settings request",
+    body: "민지 would like to change the sound and vibration settings.",
+  });
+  assert.equal(formatNotificationCopy(copy, "ko"), null, "한국어는 저장된 원문을 그대로 쓴다");
+  for (const settingMenu of [null, "", "toString", "admin"]) {
+    const empty = database([{ name: "민지" }]);
+    assert.equal(await resolvePublicParentAlertCopy(empty, { familyId: "f", childUserId: "c", alertType: "child_setting_request", settingMenu }), null);
+    assert.equal(empty.calls.length, 0);
+  }
+});
+
+test("기기 재연결 알림은 번역 계약을 함께 저장한다", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { formatNotificationCopy, makeNotificationCopy } = await import("../../shared/notificationCopy.ts");
+  const source = readFileSync(new URL("../routes/family.ts", import.meta.url), "utf8");
+  const block = source.slice(source.indexOf('alertType: "child_rejoined"'), source.indexOf('alertType: "child_rejoined"') + 600);
+  assert.match(block, /notificationCopy: makeNotificationCopy\("childRejoined", \{ child: name \}\)/);
+  assert.deepEqual(formatNotificationCopy(makeNotificationCopy("childRejoined", { child: "Minji" }), "en"), {
+    title: "Device connection",
+    body: "The device for Minji may have reconnected. Please check the family screen.",
+  });
+});

@@ -76,7 +76,7 @@ export function LocationStatus() {
     : null;
   const loc = canShowLocation ? cachedLoc : null;
 
-  const fresh = loc ? formatFreshness(loc.updated_at, now, locale) : null;
+  const fresh = loc ? formatFreshness(loc.updated_at, now, locale, intl) : null;
   const accuracyM = loc?.accuracy_m != null && Number.isFinite(Number(loc.accuracy_m))
     ? Math.max(0, Math.round(Number(loc.accuracy_m)))
     : null;
@@ -207,7 +207,11 @@ export function LocationStatus() {
       const before = loc;
       const requested = await requestLocationRefresh(familyId, childMember.user_id);
       if (!requested.ok) {
-        show(intl.formatMessage({ id: "notifications.locationStatus.toast.requestFailed" }), "⚠️");
+        show(intl.formatMessage({
+          id: requested.error === "primary_parent_required"
+            ? "core.error.api.primaryParentRequired.formal"
+            : "notifications.locationStatus.toast.requestFailed",
+        }), "⚠️");
         return;
       }
       const outcome = await waitForNewChildLocation({

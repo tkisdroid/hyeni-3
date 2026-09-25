@@ -21,6 +21,7 @@
 //
 // 확인 토큰 secret: 원본은 SUPABASE_SERVICE_ROLE_KEY. Worker 엔 없으므로 안정 provisioned
 // 비밀인 JWT_PRIVATE_KEY 를 HMAC secret 으로 사용(토큰 생성·검증 모두 Worker 내부라 자기일관).
+import { trimToLastCompleteSentence } from "../lib/aiReplyText";
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../middleware/auth";
@@ -1449,6 +1450,10 @@ chat.post("/child-chat", requireAuth, async (c) => {
           } else {
             const data = await openaiRes.json<OpenAiChatResponse>();
             assistantText = (data.choices?.[0]?.message?.content || "").toString().trim();
+            // 출력 상한에 걸려 잘린 답은 마지막 완결 문장까지만 보여 준다. 완결 문장이 없으면 빈 응답 강등 경로로 간다.
+            if (data.choices?.[0]?.finish_reason === "length") {
+              assistantText = trimToLastCompleteSentence(assistantText);
+            }
             writeOpenAiLog(assistantText ? "info" : "error", {
               operation: "child_chat",
               outcome: assistantText ? "success" : "empty_response",

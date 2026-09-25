@@ -166,7 +166,7 @@
   "study.country.confirm": "이 국가로 확인",
   "study.country.confirmed": "확인했어요",
   "study.country.confirming": "확인하는 중…",
-  "study.country.description": "학습 서비스를 이용할 국가가 {country}(으)로 확인됐어요. 실제 이용 국가가 맞는지 확인해 주세요.",
+  "study.country.description": "확인된 학습 서비스 이용 국가는 {country}예요. 실제 이용 국가가 맞는지 확인해 주세요.",
   "study.country.inputHelp": "영문 두 글자 국가 코드를 입력해 주세요. 한국은 KR이에요.",
   "study.country.inputLabel": "학습 서비스 이용 국가",
   "study.country.title": "학습 서비스 이용 국가를 확인해 주세요",

@@ -257,6 +257,18 @@ export function ParentCalendar() {
     if (!sheetEvent) return;
     deleteEventById(sheetEvent.id, true);
   };
+  // 반복 일정: 선택한 날짜와 그 이후 반복을 서버에서 한 번에 지운다(캐시에 없는 먼 날짜 포함).
+  const handleDeleteFollowing = () => {
+    if (!sheetEvent || deleteEvent.isPending) return;
+    deleteEvent.mutate({ id: sheetEvent.id, scope: "following" }, {
+      onSuccess: () => {
+        show(intl.formatMessage({ id: "parent.parentCalendar.seriesDeleted" }), "🗑️");
+        closeSheet();
+      },
+      onError: () => show(intl.formatMessage({ id: "parent.parentCalendar.copy002" }), "⚠️"),
+    });
+  };
+  const sheetIsSeries = Boolean(sheetEvent?.series_id);
 
   const onCardPointerDown = (id: string, e: ReactPointerEvent<HTMLButtonElement>) => {
     swipeStart.current = { id, x: e.clientX, y: e.clientY };
@@ -640,7 +652,33 @@ export function ParentCalendar() {
 
             {confirmDelete ? (
               <div className="pc-sheet__confirm">
-                <div className="pc-sheet__confirm-text">{intl.formatMessage({ id: "parent.parentCalendar.copy013" })}</div>
+                <div className="pc-sheet__confirm-text">
+                  {intl.formatMessage({
+                    id: sheetIsSeries ? "parent.parentCalendar.seriesDeleteQuestion" : "parent.parentCalendar.copy013",
+                  })}
+                </div>
+                {sheetIsSeries && (
+                  <div className="pc-sheet__actions">
+                    <button
+                      type="button"
+                      className="pc-btn pc-btn--danger hy-press"
+                      onClick={handleDelete}
+                      disabled={deleteEvent.isPending}
+                      aria-busy={deleteEvent.isPending && typeof deleteEvent.variables === "string"}
+                    >
+                      {intl.formatMessage({ id: "parent.parentCalendar.seriesDeleteOne" })}
+                    </button>
+                    <button
+                      type="button"
+                      className="pc-btn pc-btn--danger hy-press"
+                      onClick={handleDeleteFollowing}
+                      disabled={deleteEvent.isPending}
+                      aria-busy={deleteEvent.isPending && typeof deleteEvent.variables !== "string"}
+                    >
+                      {intl.formatMessage({ id: "parent.parentCalendar.seriesDeleteFollowing" })}
+                    </button>
+                  </div>
+                )}
                 <div className="pc-sheet__actions">
                   <button
                     type="button"
@@ -651,14 +689,16 @@ export function ParentCalendar() {
                   >
                     {intl.formatMessage({ id: "parent.parentSettings.copy031" })}
                   </button>
-                  <button
-                    type="button"
-                    className="pc-btn pc-btn--danger hy-press"
-                    onClick={handleDelete}
-                    disabled={deleteEvent.isPending} aria-busy={deleteEvent.isPending}
-                  >
-                    {deleteEvent.isPending ? intl.formatMessage({ id: "parent.parentSettings.copy032" }) : intl.formatMessage({ id: "parent.parentCalendar.copy009" })}
-                  </button>
+                  {!sheetIsSeries && (
+                    <button
+                      type="button"
+                      className="pc-btn pc-btn--danger hy-press"
+                      onClick={handleDelete}
+                      disabled={deleteEvent.isPending} aria-busy={deleteEvent.isPending}
+                    >
+                      {deleteEvent.isPending ? intl.formatMessage({ id: "parent.parentSettings.copy032" }) : intl.formatMessage({ id: "parent.parentCalendar.copy009" })}
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (

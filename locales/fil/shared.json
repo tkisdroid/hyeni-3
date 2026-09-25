@@ -927,5 +927,15 @@
   "study.vocabulary.subtitle": "I-flip ang card para makita ang kahulugan",
   "study.vocabulary.title": "Mga English word card",
   "study.vocabulary.total": "5 antas · {count, number} salita",
-  "study.vocabulary.wiktionarySource": "Wiktionary sa Korean · CC BY-SA 4.0"
+  "study.vocabulary.wiktionarySource": "Wiktionary sa Korean · CC BY-SA 4.0",
+  "shared.schedule.allDay": "Buong araw",
+  "shared.schedule.event": "Iskedyul",
+  "shared.location.unverifiedPlace": "Hindi pa nakumpirmang lugar",
+  "shared.location.addressLoading": "Bine-verify ang address",
+  "shared.location.noInformation": "Walang impormasyon sa lokasyon",
+  "shared.location.justUpdated": "Kaka-update lang",
+  "shared.schedule.tag.ongoing": "Kasalukuyang ginagawa",
+  "shared.schedule.tag.upcoming": "Paparating",
+  "shared.schedule.tag.verify": "Kailangang kumpirmahin",
+  "shared.schedule.tag.visited": "Napuntahan na"
 }

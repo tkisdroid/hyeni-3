@@ -101,6 +101,7 @@ const messages = {
   "core.error.api.passwordAccountRequired.formal": "Perubahan hanya boleh dibuat pada akaun yang mempunyai kata laluan.",
   "core.error.api.phoneExists.child": "Nombor itu sudah ada akaun. Log masuk saja.",
   "core.error.api.phoneExists.formal": "Nombor telefon itu sudah didaftarkan. Sila log masuk.",
+  "core.error.api.primaryParentRequired.formal": "Hanya penjaga utama boleh melakukan ini. Sila buat permintaan daripada peranti penjaga utama.",
   "core.error.api.rateLimited.child": "Terlalu banyak mencuba. Tunggu sebentar, kemudian cuba lagi.",
   "core.error.api.rateLimited.formal": "Terlalu banyak permintaan. Sila tunggu sebentar dan cuba lagi.",
   "core.error.api.samePassword.formal": "Kata laluan baharu adalah sama dengan kata laluan semasa.",

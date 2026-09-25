@@ -148,5 +148,6 @@
   "core.aiBuddy.nudge.time.halfHour": "alas-{hour} y medya",
   "core.aiBuddy.nudge.time.minute": "{hour}:{minute}",
   "core.aiBuddy.nudge.nextEvent.line": "{title} sa {when}!",
-  "core.aiBuddy.nudge.nextEvent.lineSoon": "Mamaya may {title}!"
+  "core.aiBuddy.nudge.nextEvent.lineSoon": "Mamaya may {title}!",
+  "core.error.api.primaryParentRequired.formal": "Pangunahing tagapag-alaga lang ang maaaring gumawa nito. Humiling mula sa device ng pangunahing tagapag-alaga."
 }

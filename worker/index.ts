@@ -47,6 +47,7 @@ import {
   LEGAL_FAVICON_HEADERS,
   LEGAL_FAVICON_SVG,
 } from "./routes/legal";
+import { HOURLY_MAINTENANCE_CRON } from "./cron/schedules";
 import { run as runRegistered } from "./cron/registered-place-geofence-check";
 import { run as runDanger } from "./cron/danger-zone-geofence-check";
 import { run as runStay } from "./cron/unregistered-stay-check";
@@ -446,7 +447,6 @@ export type HourlyMaintenanceHandler = CronHandler & {
   maxD1Queries: number;
 };
 
-export const HOURLY_MAINTENANCE_CRON = "0,5,10,15,20,25,30,35,40,45,50,55 * * * *";
 
 const webBillingInitialRecoveryHandler: HourlyMaintenanceHandler = {
   name: "web-billing-initial-reconciliation",

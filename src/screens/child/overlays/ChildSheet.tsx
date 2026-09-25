@@ -5,8 +5,13 @@
  * 여기서 딱 한 번만 구현하고 각 시트는 내용만 채운다(중복 구현 금지).
  *
  * 접근성: 공통 dialog lifecycle로 포커스를 가두고 Esc·복귀 포커스를 관리한다.
+ *
+ * 쌓임 순서: 화면(.hy-screen) 안에서 그리면 그 안의 쌓임 맥락에 갇혀 하단 독(.kdock)과
+ * 떠다니는 AI 친구가 시트 위로 올라왔다. 앱 루트(.hy-app)로 포털해 독·AI 친구와 같은 맥락에서
+ * 시트(z-index 60)가 항상 위에 오게 한다.
  */
 import { useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useIntl } from "react-intl";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
@@ -22,6 +27,10 @@ export interface ChildSheetProps {
   children: ReactNode;
 }
 
+function overlayHost(): Element {
+  return document.querySelector(".hy-app") ?? document.body;
+}
+
 /** 아래에서 올라오는 바텀시트. */
 export function ChildSheet({ open, onClose, label, description, children }: ChildSheetProps) {
   const intl = useIntl();
@@ -34,7 +43,7 @@ export function ChildSheet({ open, onClose, label, description, children }: Chil
     initialFocusRef: closeRef,
   });
   if (!open) return null;
-  return (
+  return createPortal(
     <div
       ref={dialogRef}
       className="ks-layer"
@@ -69,7 +78,8 @@ export function ChildSheet({ open, onClose, label, description, children }: Chil
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    overlayHost(),
   );
 }
 
@@ -85,7 +95,7 @@ export function ChildModal({ open, onClose, label, description, children }: Chil
     initialFocusRef: closeRef,
   });
   if (!open) return null;
-  return (
+  return createPortal(
     <div
       ref={dialogRef}
       className="ks-layer ks-layer--center"
@@ -119,6 +129,7 @@ export function ChildModal({ open, onClose, label, description, children }: Chil
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    overlayHost(),
   );
 }

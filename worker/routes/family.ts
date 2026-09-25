@@ -27,7 +27,10 @@ import {
 import { notifyPg, revokeFamilyRealtimeUser, revokeFamilyRealtimeUsers } from "../lib/realtime";
 import { supersedeActiveChildren } from "../lib/realtimeMembership.ts";
 import { insertParentAlertV2 } from "./push-notify";
-import { normalizeMemberDisplayName } from "../lib/profileInput";
+import { isUnchangedMemberPhone, normalizeMemberDisplayName, normalizeMemberPhoneInput } from "../lib/profileInput";
+import { readParentProfileDefaults, resolveParentMemberName } from "../lib/parentMemberDefaults";
+import { readAccountAuthProvider } from "../lib/accountAuthProvider";
+import { makeNotificationCopy } from "../../shared/notificationCopy.ts";
 import {
   collectChildPhotoKeys,
   collectRetainedChildPhotoKeys,
@@ -472,11 +475,13 @@ family.post("/setup", requireAuth, async (c) => {
   } catch {
     return c.json({ error: "invalid_setup_payload" }, 400);
   }
-  const parentName = String(body.parentName ?? "").trim();
+  // 이름·전화를 보내지 않은 가입 흐름도 가입 때 확인한 프로필 값으로 부모 멤버를 채운다.
+  const profileDefaults = await readParentProfileDefaults(c.env.DB, userId);
+  const parentName = String(body.parentName ?? "").trim() || profileDefaults.name;
   const familyName = typeof body.familyName === "string" ? body.familyName : "";
   const plannedChildCount = Number(body.plannedChildCount ?? 1) || 1;
   const children = Array.isArray(body.children) ? (body.children as Record<string, unknown>[]) : [];
-  const parentPhone = typeof body.parentPhone === "string" ? body.parentPhone.trim() : "";
+  const parentPhone = (typeof body.parentPhone === "string" ? body.parentPhone.trim() : "") || profileDefaults.phone;
   const parentGender = typeof body.parentGender === "string" ? body.parentGender : "";
   const countryDecision = resolveInitialServiceCountry(
     body.serviceCountry,
@@ -1203,6 +1208,8 @@ family.post("/join", requireAuth, async (c) => {
               severity: "warning",
               eventId: null,
               childUserId: userId,
+              // 한국어가 아닌 부모 화면은 이 번역 계약으로 표시한다(원문은 한국어 기본값).
+              metadata: { notificationCopy: makeNotificationCopy("childRejoined", { child: name }) },
             });
           }
         } catch (e) {
@@ -1394,7 +1401,10 @@ family.post("/join-as-parent", requireAuth, async (c) => {
   if (!raw) return c.json({ error: "연동 코드를 입력해주세요", code: "invalid_pair_code" }, 400);
   const pairCode = raw.toUpperCase();
   const reqName = typeof body.name === "string" ? body.name.trim() : "";
-  const parentName = reqName || "부모";
+  // 이전 앱은 이름 없이 "부모"를 보냈다. 그때는 가입 프로필 이름·휴대폰 번호로 멤버를 채운다.
+  const profileDefaults = await readParentProfileDefaults(c.env.DB, userId);
+  const parentName = resolveParentMemberName(reqName, profileDefaults.name);
+  const parentPhone = profileDefaults.phone;
 
   if (!(await checkAndRecordAttempt(c.env.DB, userId))) {
     return c.json({ error: "Too many attempts. Try again later." }, 429);
@@ -1501,7 +1511,8 @@ family.post("/join-as-parent", requireAuth, async (c) => {
   if (member) {
     const mutation = await c.env.DB.batch([
       c.env.DB.prepare(
-        `UPDATE family_members SET role='parent', is_active=1, name=?
+        `UPDATE family_members SET role='parent', is_active=1, name=?,
+                phone=CASE WHEN ?<>'' AND COALESCE(phone,'')='' THEN ? ELSE phone END
           WHERE id=? AND family_id=? AND user_id=?
             AND EXISTS(SELECT 1 FROM users WHERE id=?)
             AND EXISTS(
@@ -1520,6 +1531,8 @@ family.post("/join-as-parent", requireAuth, async (c) => {
             AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
       ).bind(
         parentName,
+        parentPhone,
+        parentPhone,
         member.id,
         familyId,
         userId,
@@ -1562,8 +1575,8 @@ family.post("/join-as-parent", requireAuth, async (c) => {
   } else {
     const mutation = await c.env.DB.batch([
       c.env.DB.prepare(
-        `INSERT INTO family_members (id, family_id, user_id, role, name, created_at)
-         SELECT ?,?,?, 'parent',?,?
+        `INSERT INTO family_members (id, family_id, user_id, role, name, phone, created_at)
+         SELECT ?,?,?, 'parent',?,?,?
           WHERE EXISTS(SELECT 1 FROM users WHERE id=?)
             AND EXISTS(
               SELECT 1 FROM families AS target_family
@@ -1587,6 +1600,7 @@ family.post("/join-as-parent", requireAuth, async (c) => {
         familyId,
         userId,
         parentName,
+        parentPhone,
         pgNow(),
         userId,
         familyId,
@@ -1739,12 +1753,14 @@ family.get("/mine", requireAuth, async (c) => {
       .all<Record<string, unknown>>();
     const studyCountry = await readFamilyStudyCountry(c.env.DB, String(pf.id));
     const familyRegion = await readFamilyRegion(c.env.DB, String(pf.id));
+    const myAuthProvider = await readAccountAuthProvider(c.env.DB, userId);
     return c.json({
       familyId: pf.id,
       pairCode: finalPairCode,
       parentName: pf.parent_name ?? null,
       myRole: "parent",
       myName: pf.parent_name || "부모",
+      myAuthProvider,
       members: (results ?? []).map(hydrateMember),
       pairCodeExpiresAt: pf.pair_code_expires_at ? pgToIso(String(pf.pair_code_expires_at)) : null,
       primaryParentId: pf.parent_id,
@@ -1779,6 +1795,7 @@ family.get("/mine", requireAuth, async (c) => {
   const members = (results ?? []).map(hydrateMember);
   const studyCountry = await readFamilyStudyCountry(c.env.DB, membership.family_id);
   const familyRegion = await readFamilyRegion(c.env.DB, membership.family_id);
+  const myAuthProvider = await readAccountAuthProvider(c.env.DB, userId);
 
   const parentMembers = members.filter((m) => m.role === "parent" && m.user_id);
   const explicitPrimary = String(fam?.parent_id ?? "");
@@ -1794,6 +1811,7 @@ family.get("/mine", requireAuth, async (c) => {
     parentName: fam.parent_name || "",
     myRole: membership.role,
     myName: membership.name,
+    myAuthProvider,
     members,
     pairCodeExpiresAt: fam.pair_code_expires_at ? pgToIso(String(fam.pair_code_expires_at)) : null,
     primaryParentId: inferredPrimary,
@@ -1864,8 +1882,17 @@ family.patch("/profile", requireAuth, async (c) => {
     binds.push(newName);
   }
   if (typeof body.phone === "string") {
-    sets.push("phone=?");
-    binds.push(body.phone.trim());
+    const current = await c.env.DB.prepare(
+      "SELECT phone FROM family_members WHERE family_id=? AND user_id=? LIMIT 1",
+    )
+      .bind(familyId, userId)
+      .first<{ phone: string | null }>();
+    if (!isUnchangedMemberPhone(body.phone, current?.phone)) {
+      const phone = normalizeMemberPhoneInput(body.phone);
+      if (!phone.ok) return c.json({ error: "invalid_phone" }, 400);
+      sets.push("phone=?");
+      binds.push(phone.phone);
+    }
   }
   if (typeof body.emoji === "string") {
     sets.push("emoji=?");
@@ -2143,9 +2170,17 @@ family.post("/member/profile", requireAuth, async (c) => {
   // phone: 숫자/하이픈 텍스트 또는 null. 공개 API의 null(지움)은
   // D1 family_members.phone NOT NULL 계약에 맞춰 빈 문자열로 저장한다.
   if ("phone" in body) {
-    const ph = body.phone == null ? "" : String(body.phone).trim();
-    sets.push("phone=?");
-    binds.push(ph);
+    const current = await c.env.DB.prepare(
+      "SELECT phone FROM family_members WHERE id=? AND family_id=? LIMIT 1",
+    )
+      .bind(memberId, familyId)
+      .first<{ phone: string | null }>();
+    if (!isUnchangedMemberPhone(body.phone, current?.phone)) {
+      const phone = normalizeMemberPhoneInput(body.phone);
+      if (!phone.ok) return c.json({ error: "invalid_phone" }, 400);
+      sets.push("phone=?");
+      binds.push(phone.phone);
+    }
   }
 
   binds.push(memberId, familyId);

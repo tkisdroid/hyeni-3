@@ -101,6 +101,7 @@ const messages = {
   "core.error.api.passwordAccountRequired.formal": "パスワードのあるアカウントでのみ変更できます。",
   "core.error.api.phoneExists.child": "その電話番号は登録済みだよ。ログインしてね。",
   "core.error.api.phoneExists.formal": "その電話番号はすでに登録されています。ログインしてください。",
+  "core.error.api.primaryParentRequired.formal": "この操作は主保護者だけが行えます。主保護者の端末からリクエストしてください。",
   "core.error.api.rateLimited.child": "操作が多すぎるよ。少し待ってからもう一度試してね。",
   "core.error.api.rateLimited.formal": "リクエストが多いです。しばらくしてからもう一度お試しください。",
   "core.error.api.samePassword.formal": "新しいパスワードは現在のパスワードと同じです。",

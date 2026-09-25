@@ -452,7 +452,16 @@ export function DailySafetyReport() {
     if (!familyId || refreshingDevice) return;
     setRefreshingDevice(true);
     try {
-      await requestDeviceStatus(familyId, activeChild?.user_id ?? null);
+      const requested = await requestDeviceStatus(familyId, activeChild?.user_id ?? null);
+      if (!requested.ok) {
+        // 실패를 "요청을 보냈어요"로 표시하지 않는다(공동 보호자 거부 포함).
+        show(intl.formatMessage({
+          id: requested.error === "primary_parent_required"
+            ? "core.error.api.primaryParentRequired.formal"
+            : "reports.daily.deviceRequestFailed",
+        }), "⚠️");
+        return;
+      }
       show(intl.formatMessage({ id: "reports.daily.deviceRequestSent" }), "📱");
     } catch (error) {
       console.error("기기 상태 확인 요청 실패:", error);

@@ -7,4 +7,7 @@ export const definitions = {
   stay: ["location", "child", "place"], sos: ["sos", "child"], lowBattery: ["connection", "child"],
   childDangerEnter: ["child"], childDangerExit: ["child"],
   reminder: ["reminder", "event", "minutes"], reminderNow: ["reminder", "event"], childReminder: ["reminder", "event", "minutes"], childReminderNow: ["reminder", "event"],
+  childRejoined: ["connection", "child"],
+  settingRequestTheme: ["request", "child"], settingRequestCharacter: ["request", "child"],
+  settingRequestSound: ["request", "child"], settingRequestMascot: ["request", "child"],
 } as const;

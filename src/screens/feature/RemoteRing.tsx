@@ -256,6 +256,8 @@ export function RemoteRing() {
       if (res.error) {
         if (res.error === "force_ring_quota_exceeded") show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "quota" }), "🔕");
         else if (res.error === "force_ring_already_active") show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "alreadyActive" }), "🔔");
+        // 공동 보호자는 서버 정책상 원격 제어를 보낼 수 없다 — 일반 실패가 아니라 이유를 알려 준다.
+        else if (res.error === "primary_parent_required") show(intl.formatMessage({ id: "core.error.api.primaryParentRequired.formal" }), "🔒");
         else show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "startFailed" }), "⚠️");
         return;
       }

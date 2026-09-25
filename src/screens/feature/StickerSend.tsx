@@ -81,8 +81,8 @@ export function StickerSend() {
   const nowMs = useMemo(() => Date.now(), []);
   // 아이 스티커북과 동일한 API·동일한 변환기를 사용해 부모 화면의 보유 현황이 반드시 일치한다.
   const receivedBook = useMemo(
-    () => buildStickerBook(receivedQuery.data ?? [], nowMs, new Set<string>()),
-    [receivedQuery.data, nowMs],
+    () => buildStickerBook(receivedQuery.data ?? [], nowMs, new Set<string>(), intl),
+    [intl, receivedQuery.data, nowMs],
   );
   const stickerQueryState = resolveQueryTruthState([
     { isLoading: familyQuery.isLoading, isError: familyQuery.isError },

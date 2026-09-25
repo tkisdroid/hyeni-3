@@ -17,7 +17,7 @@ import { Loading } from "@/components/ui/Loading";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import "./ParentAccount.css";
 import { useIntl } from "react-intl";
-import { localizeApiError } from "@/i18n/apiError";
+import { hasLocalizedApiErrorCode, localizeApiError } from "@/i18n/apiError";
 
 /** P-30 계정·프로필 — 프로필 편집·로그인 정보·로그아웃·회원 탈퇴. */
 export function ParentAccount() {
@@ -169,7 +169,13 @@ export function ParentAccount() {
         },
         onError: (e) => {
           console.error("프로필 저장 실패:", e);
-          show(intl.formatMessage({ id: "parent.parentAccount.copy005" }), "⚠️");
+          // 전화번호 형식 오류처럼 원인이 분명하면 그 이유를 알린다(일반 "저장 실패"로 덮지 않는다).
+          show(
+            hasLocalizedApiErrorCode(e)
+              ? localizeApiError(e, intl, "formal")
+              : intl.formatMessage({ id: "parent.parentAccount.copy005" }),
+            "⚠️",
+          );
         },
       },
     );

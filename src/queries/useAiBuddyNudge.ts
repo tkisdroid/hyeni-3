@@ -74,6 +74,9 @@ export function useAiBuddyNudgeInput(enabled: boolean): AiBuddyNudgeInput {
       new Date(),
       locale,
       familyTimeZone,
+      undefined,
+      undefined,
+      intl,
     )[todayKey] ?? [];
     const nextEvent = todays.find((e) => !PAST_TAGS.has(e.tag)) ?? null;
     const pendingSupplies = (supplies ?? [])
@@ -86,5 +89,5 @@ export function useAiBuddyNudgeInput(enabled: boolean): AiBuddyNudgeInput {
       nextEventTime: nextEvent?.time ?? null,
       pendingSupplies,
     };
-  }, [familyTimeZone, enabled, events, locale, memos, myMemberId, supplies, todayKey, userId]);
+  }, [familyTimeZone, enabled, events, intl, locale, memos, myMemberId, supplies, todayKey, userId]);
 }

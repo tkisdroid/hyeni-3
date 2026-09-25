@@ -101,6 +101,7 @@ const messages = {
   "core.error.api.passwordAccountRequired.formal": "การเปลี่ยนแปลงสามารถทำได้กับบัญชีที่มีรหัสผ่านเท่านั้น",
   "core.error.api.phoneExists.child": "หมายเลขนี้สมัครไว้แล้ว เข้าสู่ระบบได้เลย",
   "core.error.api.phoneExists.formal": "หมายเลขโทรศัพท์นี้ลงทะเบียนแล้ว กรุณาเข้าสู่ระบบ",
+  "core.error.api.primaryParentRequired.formal": "เฉพาะผู้ปกครองหลักเท่านั้นที่ทำได้ โปรดส่งคำขอจากอุปกรณ์ของผู้ปกครองหลัก",
   "core.error.api.rateLimited.child": "พยายามมากเกินไป รอสักครู่แล้วลองอีกครั้ง",
   "core.error.api.rateLimited.formal": "คำขอมากเกินไป กรุณารอสักครู่แล้วลองอีกครั้ง",
   "core.error.api.samePassword.formal": "รหัสผ่านใหม่เหมือนกับรหัสผ่านปัจจุบัน",

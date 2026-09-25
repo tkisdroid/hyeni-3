@@ -58,7 +58,7 @@ function buildRows(
       key: `ev-${i}`,
       icon: CalendarDays,
       text: e.title,
-      sub: e.time ? formatTimeLabel(e.time, locale) : undefined,
+      sub: e.time ? formatTimeLabel(e.time, locale, intl) : undefined,
       tone: "info",
     });
   });

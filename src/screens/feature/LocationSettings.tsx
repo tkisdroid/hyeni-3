@@ -6,6 +6,7 @@ import { useIntl } from "react-intl";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
+import { useMyFamily } from "@/queries/useFamily";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { useLocationPreferences, useSaveLocationPreferences } from "@/queries/useLocation";
 import { requestDeviceStatus } from "@/lib/api/endpoints/remote";
@@ -175,10 +176,12 @@ export function LocationSettings() {
 
   // 이 화면의 권한 대상은 부모 iPhone이 아니라 활성 아이 Android다.
   // 진입 시 아이 기기에 최신 상태 보고를 요청하고, 응답은 기존 family realtime으로 반영한다.
+  // 기기 상태 요청은 주 보호자만 보낼 수 있다(공동 보호자는 저장된 상태만 본다).
+  const canRequestDeviceStatus = useMyFamily().data?.isPrimaryParent === true;
   useEffect(() => {
-    if (!familyId || !activeChild?.user_id) return;
+    if (!familyId || !activeChild?.user_id || !canRequestDeviceStatus) return;
     void requestDeviceStatus(familyId, activeChild.user_id);
-  }, [familyId, activeChild?.user_id]);
+  }, [familyId, activeChild?.user_id, canRequestDeviceStatus]);
 
   useEffect(() => {
     setHydratedFamilyId(null);

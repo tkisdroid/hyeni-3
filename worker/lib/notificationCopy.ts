@@ -5,11 +5,25 @@ const publicKinds: Record<string, NotificationCopyId> = {
   sos: "sos", emergency: "sos", sos_followup: "sos", low_battery: "lowBattery",
 };
 
+// 아이의 설정 변경 요청은 메뉴마다 문장이 다르다. 허용 목록 밖의 메뉴는 번역 없이 원문만 둔다.
+const settingRequestKinds: Record<string, NotificationCopyId> = {
+  theme: "settingRequestTheme", character: "settingRequestCharacter",
+  sound: "settingRequestSound", mascot: "settingRequestMascot",
+};
+
+function publicCopyId(alertType: string, settingMenu: string | null | undefined): NotificationCopyId | undefined {
+  if (alertType === "child_setting_request") {
+    return settingMenu && Object.hasOwn(settingRequestKinds, settingMenu) ? settingRequestKinds[settingMenu] : undefined;
+  }
+  return Object.hasOwn(publicKinds, alertType) ? publicKinds[alertType] : undefined;
+}
+
 /** 공개 요청의 번역 id·이름을 신뢰하지 않고, 이미 권한 확인한 가족의 정본 데이터로 표시 문구만 만든다. */
 export async function resolvePublicParentAlertCopy(db: D1Database, input: {
   familyId: string; childUserId: string | null; alertType: string; placeKey?: string | null; sourceEventId?: string | null;
+  settingMenu?: string | null;
 }): Promise<NotificationCopy | null> {
-  const id = publicKinds[input.alertType];
+  const id = publicCopyId(input.alertType, input.settingMenu);
   if (!id || !input.childUserId) return null;
   try {
     const child = await db.prepare("SELECT name FROM family_members WHERE family_id=? AND user_id=? AND role='child' AND is_active=1 LIMIT 1")

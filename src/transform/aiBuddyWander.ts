@@ -38,6 +38,60 @@ function seeded(step: number, salt: number): number {
   return value - Math.floor(value);
 }
 
+/** 멈춰 설 후보를 훑는 세로 간격(비율). */
+export const AI_BUDDY_WANDER_SCAN_STEP = 0.06;
+
+/**
+ * 멈춰 설 자리 후보를 가까운 순서로 돌려준다(2026-09-25 브라우저 QA — 떠다니는 친구가 홈 타일·
+ * 준비물 삭제 버튼을 덮어 아이가 누른 곳 대신 친구가 눌렸다).
+ * 호출부는 앞에서부터 "아래에 누를 수 있는 것이 가장 적은" 자리를 고른다. 같은 가장자리를 먼저,
+ * 그다음 반대편 가장자리를 세로 거리순으로 본다. 첫 후보는 원래 가려던 자리다.
+ */
+export function aiBuddyWanderCandidates(preferred: AiBuddyFabRatio): AiBuddyFabRatio[] {
+  const target = {
+    xRatio: preferred.xRatio >= 0.5 ? 1 : 0,
+    yRatio: clamp(preferred.yRatio, AI_BUDDY_WANDER_VERTICAL_MIN, AI_BUDDY_WANDER_VERTICAL_MAX),
+  };
+  const ys: number[] = [];
+  for (let y = AI_BUDDY_WANDER_VERTICAL_MIN; y <= AI_BUDDY_WANDER_VERTICAL_MAX + 1e-9; y += AI_BUDDY_WANDER_SCAN_STEP) {
+    ys.push(Math.round(y * 1000) / 1000);
+  }
+  const byDistance = (a: number, b: number) => Math.abs(a - target.yRatio) - Math.abs(b - target.yRatio);
+  const sameEdge = ys.slice().sort(byDistance).map((yRatio) => ({ xRatio: target.xRatio, yRatio }));
+  const otherEdge = ys.slice().sort(byDistance).map((yRatio) => ({ xRatio: 1 - target.xRatio, yRatio }));
+  return [target, ...sameEdge, ...otherEdge];
+}
+
+export interface AiBuddyRatioCoverage {
+  ratio: AiBuddyFabRatio;
+  /** 친구 자리 표본점 중 아래에 누를 수 있는 요소가 있는 점의 수. 0 이면 아무것도 덮지 않는다. */
+  covered: number;
+}
+
+/**
+ * 후보 중 버튼을 가장 적게 덮는 자리를 고른다(같으면 앞선 = 가까운 자리). 아무것도 덮지 않는 자리가
+ * 나오면 바로 멈춘다. 목록 행이 화면 폭을 다 채우는 구간에서는 빈자리가 아예 없어서,
+ * "빈자리만" 찾으면 친구가 준비물 체크 버튼 위에 그대로 서 있었다(2026-09-25 브라우저 QA).
+ */
+export function pickLeastCoveringRatio(
+  candidates: readonly AiBuddyFabRatio[],
+  coverage: (ratio: AiBuddyFabRatio) => number,
+): AiBuddyRatioCoverage | null {
+  let best: AiBuddyRatioCoverage | null = null;
+  for (const ratio of candidates) {
+    const covered = coverage(ratio);
+    if (covered <= 0) return { ratio, covered: 0 };
+    if (!best || covered < best.covered) best = { ratio, covered };
+  }
+  return best;
+}
+
+/** 지금 자리보다 덜 덮는 자리일 때만 옮긴다(같은 만큼 덮으면 괜히 움직여 아이를 헷갈리게 하지 않는다). */
+export function shouldMoveAiBuddyTo(best: AiBuddyRatioCoverage | null, currentCovered: number): boolean {
+  if (!best) return false;
+  return best.covered === 0 || best.covered < currentCovered;
+}
+
 /**
  * 다음 걸음 위치. x 는 좌우 가장자리(0 또는 1) 사이를 오가고, y 는 조금씩 오르내린다.
  * 세 걸음마다 반대쪽 가장자리로 건너가 화면을 넓게 돌아다니는 느낌을 준다.

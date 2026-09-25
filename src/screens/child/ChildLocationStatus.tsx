@@ -18,6 +18,7 @@ import {
 } from "@/lib/native/location";
 import { readPermissionState } from "@/lib/native/permissions";
 import "./ChildLocationStatus.css";
+import { upsertChildLocation } from "@/lib/api/endpoints/sos";
 
 /**
  * K-03 위치 전송 상태(아이). 반말 톤.
@@ -65,8 +66,12 @@ export function ChildLocationStatus() {
     await refetch();
   };
 
-  const fresh = myLoc ? formatFreshness(myLoc.updated_at, now, locale) : null;
+  const fresh = myLoc ? formatFreshness(myLoc.updated_at, now, locale, intl) : null;
   const isFreshEnough = fresh != null && fresh.status !== "stale";
+  // 공용 "방금" 표시는 "방금 업데이트"라서 "{freshness} 업데이트" 문장에 넣으면 말이 겹친다.
+  const freshnessPhrase = !fresh || fresh.status === "live"
+    ? intl.formatMessage({ id: "child.location.justNow" })
+    : fresh.label;
 
   const refreshPermission = useCallback(() => {
     if (nativeSupported) {
@@ -138,12 +143,27 @@ export function ChildLocationStatus() {
         await refetch();
         show(intl.formatMessage({ id: "child.location.toast.sent" }), "📍");
       } else if ("geolocation" in navigator) {
-        // 웹: OS 권한 프롬프트를 띄우고 상태를 갱신(백그라운드 전송은 앱에서 동작).
+        // 웹: 권한을 받아 지금 위치를 한 번 서버에 저장한다(백그라운드 전송은 앱에서 동작).
+        // 읽기만 하고 저장하지 않으면 "위치가 아직 안 보내지고 있어" 상태가 그대로 남았다.
         await new Promise<void>((resolve) => {
           navigator.geolocation.getCurrentPosition(
-            () => {
-              show(intl.formatMessage({ id: "child.location.toast.checked" }), "📍");
-              resolve();
+            (position) => {
+              void (async () => {
+                const saved = familyId && userId
+                  ? await upsertChildLocation(
+                    userId,
+                    familyId,
+                    position.coords.latitude,
+                    position.coords.longitude,
+                    position.timestamp,
+                  )
+                  : false;
+                show(
+                  intl.formatMessage({ id: saved ? "child.location.toast.sent" : "child.location.toast.failed" }),
+                  saved ? "📍" : "⚠️",
+                );
+                resolve();
+              })();
             },
             () => {
               show(intl.formatMessage({ id: "child.location.toast.permissionNeeded" }), "⚠️");
@@ -244,12 +264,12 @@ export function ChildLocationStatus() {
               {view.kind === "sending"
                 ? intl.formatMessage(
                     { id: "child.location.detail.updated" },
-                    { freshness: fresh?.label ?? intl.formatMessage({ id: "child.location.justNow" }) },
+                    { freshness: freshnessPhrase },
                   )
                 : myLoc
                   ? intl.formatMessage(
                       { id: "child.location.detail.lastChecked" },
-                      { freshness: fresh?.label ?? "-" },
+                      { freshness: freshnessPhrase },
                     )
                   : intl.formatMessage({ id: "child.location.detail.neverSent" })}
             </div>

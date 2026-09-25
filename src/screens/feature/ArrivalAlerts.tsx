@@ -159,7 +159,7 @@ export function ArrivalAlerts() {
                         {intl.formatMessage({ id: TONE_BADGE_ID[tone] })}
                       </span>
                       <span className="aa-item__time">
-                        {relativeTime(a.created_at, now, locale, familyTimeZone)}
+                        {relativeTime(a.created_at, now, locale, familyTimeZone, intl)}
                       </span>
                       {!a.read && <span className="aa-item__dot" />}
                     </span>
