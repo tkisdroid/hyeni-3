@@ -492,6 +492,7 @@ const messages = {
   "parent.location.currentChildLocation": "View current {childName} location",
   "parent.location.departure": "Departure",
   "parent.location.departureBadge": "Left",
+  "parent.location.deviceSilentSince": "No phone connection since {time}",
   "parent.location.expandStays": "{day} Expand where you stayed",
   "parent.location.freshnessAccuracy": "{freshness} · Error approx. {accuracy}m",
   "parent.location.history.dayAria": "{childName}'s route date",

@@ -137,6 +137,7 @@ const messages = {
   "notifications.locationStatus.success.lowAccuracyTitle": "A recent location arrived, but accuracy is low",
   "notifications.locationStatus.success.title": "Updated to the latest location",
   "notifications.locationStatus.toast.deviceMissing": "We couldn't send a location request because the child's device information is missing",
+  "notifications.locationStatus.toast.deviceSilent": "{childName}'s phone isn't responding. Check power, data, and airplane mode.",
   "notifications.locationStatus.toast.locked": "Your current plan doesn't include location viewing",
   "notifications.locationStatus.toast.noUpdate": "The request was sent, but no new location has arrived yet",
   "notifications.locationStatus.toast.refreshFailed": "Location refresh failed",

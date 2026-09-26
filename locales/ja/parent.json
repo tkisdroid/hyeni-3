@@ -464,6 +464,7 @@
   "parent.location.historyEmpty": "{day}移動履歴はまだありません",
   "parent.location.historyLoading": "{day}移動履歴を読み込んでいます…",
   "parent.location.lastSeenAt": "{childName} ·最後の確認：{place}",
+  "parent.location.deviceSilentSince": "{time}以降、端末と接続できていません",
   "parent.location.lowAccuracy": "精度が低い・誤差約{accuracy}m・{freshness}",
   "parent.location.mode.realtime": "リアルタイム",
   "parent.location.noPhone": "{childName}電話番号がありません",

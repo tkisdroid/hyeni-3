@@ -6486,6 +6486,15 @@
     "variables": {},
     "description": "요청 성공 뒤 새 위치 미도착 안내"
   },
+  "notifications.locationStatus.toast.deviceSilent": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {
+      "childName": "string"
+    },
+    "description": "부모 위치 새로고침이 시간 안에 끝나지 않았고 아이 폰이 이미 20분 넘게 연락이 없을 때 안내"
+  },
   "notifications.locationStatus.toast.refreshFailed": {
     "namespace": "notifications",
     "audience": "parent",
@@ -12623,6 +12632,15 @@
       "place": "string"
     },
     "description": "parent.location.lastSeenAt에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.deviceSilentSince": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {
+      "time": "string"
+    },
+    "description": "부모 위치 시트 — 아이 폰이 위치·기기 보고를 20분 넘게 보내지 않을 때 마지막 연락 시각"
   },
   "parent.location.lowAccuracy": {
     "namespace": "parent",

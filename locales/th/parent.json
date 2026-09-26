@@ -464,6 +464,7 @@
   "parent.location.historyEmpty": "{day} ยังไม่มีบันทึกการเคลื่อนไหว",
   "parent.location.historyLoading": "{day} กำลังโหลดบันทึกการเคลื่อนไหว...",
   "parent.location.lastSeenAt": "{childName} · เห็นครั้งสุดท้าย: {place}",
+  "parent.location.deviceSilentSince": "โทรศัพท์ไม่ได้เชื่อมต่อตั้งแต่ {time}",
   "parent.location.lowAccuracy": "ความแม่นยำ ต่ำ · ข้อผิดพลาดประมาณ {accuracy}m · {freshness}",
   "parent.location.mode.realtime": "เรียลไทม์",
   "parent.location.noPhone": "{childName} ไม่มีหมายเลขโทรศัพท์",

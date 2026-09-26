@@ -464,6 +464,7 @@
   "parent.location.historyEmpty": "{day} There is no movement record yet",
   "parent.location.historyLoading": "{day} Loading movement records…",
   "parent.location.lastSeenAt": "{childName} · Last seen: {place}",
+  "parent.location.deviceSilentSince": "No phone connection since {time}",
   "parent.location.lowAccuracy": "Accuracy is low · Error approx. {accuracy}m · {freshness}",
   "parent.location.mode.realtime": "Live",
   "parent.location.noPhone": "{childName} There is no phone number.",

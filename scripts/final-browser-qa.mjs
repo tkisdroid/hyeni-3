@@ -62,6 +62,8 @@ function referralStatusFixture() {
   };
 }
 const HOME = Object.freeze({ lat: 37.3021, lng: 127.1043 });
+// silentDevice 시나리오의 마지막 연락 시각 — 조회할 때마다 바뀌면 "새 위치 도착"으로 오판한다.
+const SILENT_LOCATION_AT = new Date(Date.now() - 125 * 60_000).toISOString();
 const SCHOOL = Object.freeze({ lat: 37.2925, lng: 127.1191 });
 
 export const PARENT_BROWSER_QA_ROUTES = Object.freeze([
@@ -183,7 +185,8 @@ function familyResponse(role, options = {}) {
           locationOk: true,
           locationServiceRunning: true,
           backgroundRestricted: false,
-          updatedAt: new Date().toISOString(),
+          // silentDevice: 아이 폰이 2시간 넘게 연락 없는 상태(2026-09-26 razr 실사례) 재현.
+          updatedAt: new Date(Date.now() - (options.silentDevice ? 130 * 60_000 : 0)).toISOString(),
         },
       },
       ...(options.daySummaryAudit ? [{ id: "qa-child-member-2", user_id: "qa-child-2", role: "child", name: "둘째 데모", child_order: 2, birthdate: "2018-03-02" }] : []),
@@ -733,7 +736,7 @@ export function mockApi(pathname, scenario, method = "GET", requestBody = null, 
       : { events: [] };
   }
   if (pathname === "/api/review-rewards") return { reviewed: false, rewarded: false };
-  if (pathname === "/api/location/children") return [{ user_id: CHILD_ID, ...SCHOOL, updated_at: new Date().toISOString(), accuracy_m: 8 }];
+  if (pathname === "/api/location/children") return [{ user_id: CHILD_ID, ...SCHOOL, updated_at: scenario.silentDevice ? SILENT_LOCATION_AT : new Date().toISOString(), accuracy_m: 8 }];
   if (pathname === "/api/location/history") {
     const now = Date.now();
     return [

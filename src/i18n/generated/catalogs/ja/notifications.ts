@@ -137,6 +137,7 @@ const messages = {
   "notifications.locationStatus.success.lowAccuracyTitle": "最近の位置情報を受信しましたが、精度が低いです",
   "notifications.locationStatus.success.title": "最新の位置情報に更新されました",
   "notifications.locationStatus.toast.deviceMissing": "お子さまの端末情報がないため、位置情報をリクエストできませんでした",
+  "notifications.locationStatus.toast.deviceSilent": "{childName}の端末が応答しません。電源・データ通信・機内モードを確認してください",
   "notifications.locationStatus.toast.locked": "現在のプランでは位置情報を確認できません",
   "notifications.locationStatus.toast.noUpdate": "リクエストは送信しましたが、新しい位置情報はまだ届いていません",
   "notifications.locationStatus.toast.refreshFailed": "位置情報の更新に失敗しました",

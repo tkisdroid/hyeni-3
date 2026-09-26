@@ -492,6 +492,7 @@ const messages = {
   "parent.location.currentChildLocation": "현재 {childName} 위치 보기",
   "parent.location.departure": "출발",
   "parent.location.departureBadge": "출발",
+  "parent.location.deviceSilentSince": "{time} 이후 폰 연결 없음",
   "parent.location.expandStays": "{day} 머문 곳 펼치기",
   "parent.location.freshnessAccuracy": "{freshness} · 오차 약 {accuracy}m",
   "parent.location.history.dayAria": "{childName}의 이동 기록 날짜",

@@ -464,6 +464,7 @@
   "parent.location.historyEmpty": "{day} 還沒有移動記錄",
   "parent.location.historyLoading": "{day} 正在載入移動記錄...",
   "parent.location.lastSeenAt": "{childName} · 最後上線：{place}",
+  "parent.location.deviceSilentSince": "{time}後手機未連線",
   "parent.location.lowAccuracy": "精度低 · 誤差約 100% {accuracy}m·{freshness}",
   "parent.location.mode.realtime": "即時",
   "parent.location.noPhone": "{childName} 沒有電話號碼。",

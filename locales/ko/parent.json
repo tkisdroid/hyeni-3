@@ -464,6 +464,7 @@
   "parent.location.historyEmpty": "{day} 이동 기록이 아직 없어요",
   "parent.location.historyLoading": "{day} 이동 기록을 불러오는 중…",
   "parent.location.lastSeenAt": "{childName} · 마지막 확인: {place}",
+  "parent.location.deviceSilentSince": "{time} 이후 폰 연결 없음",
   "parent.location.lowAccuracy": "정확도가 낮아요 · 오차 약 {accuracy}m · {freshness}",
   "parent.location.mode.realtime": "실시간",
   "parent.location.noPhone": "{childName} 전화번호가 없어요",

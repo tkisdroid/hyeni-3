@@ -137,6 +137,7 @@ const messages = {
   "notifications.locationStatus.success.lowAccuracyTitle": "Lokasi terbaru sudah diterima, tetapi akurasinya rendah",
   "notifications.locationStatus.success.title": "Diperbarui ke lokasi terbaru",
   "notifications.locationStatus.toast.deviceMissing": "Permintaan lokasi tidak dapat dikirim karena informasi perangkat anak tidak ada",
+  "notifications.locationStatus.toast.deviceSilent": "Ponsel {childName} tidak merespons. Periksa daya, data, dan mode pesawat.",
   "notifications.locationStatus.toast.locked": "Paket saat ini tidak mencakup akses lokasi",
   "notifications.locationStatus.toast.noUpdate": "Permintaan sudah dikirim, tetapi lokasi baru belum diterima",
   "notifications.locationStatus.toast.refreshFailed": "Pembaruan lokasi gagal",

@@ -492,6 +492,7 @@ const messages = {
   "parent.location.currentChildLocation": "查看目前 {childName} 位置",
   "parent.location.departure": "離開",
   "parent.location.departureBadge": "出發",
+  "parent.location.deviceSilentSince": "{time}後手機未連線",
   "parent.location.expandStays": "{day} 擴展您停留的地方",
   "parent.location.freshnessAccuracy": "{freshness} · 錯誤約。 {accuracy}m",
   "parent.location.history.dayAria": "{childName}的移動記錄日期",

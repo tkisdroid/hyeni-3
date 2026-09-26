@@ -464,6 +464,7 @@
   "parent.location.historyEmpty": "{day} Chưa có hồ sơ chuyển động nào",
   "parent.location.historyLoading": "{day} Đang tải bản ghi chuyển động…",
   "parent.location.lastSeenAt": "{childName} · Nhìn thấy lần cuối: {place}",
+  "parent.location.deviceSilentSince": "Điện thoại mất kết nối từ {time}",
   "parent.location.lowAccuracy": "Độ chính xác thấp · Lỗi xấp xỉ. {accuracy}m · {freshness}",
   "parent.location.mode.realtime": "Trực tiếp",
   "parent.location.noPhone": "{childName} Không có số điện thoại.",

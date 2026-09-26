@@ -492,6 +492,7 @@ const messages = {
   "parent.location.currentChildLocation": "ดูตำแหน่ง {childName} ปัจจุบัน",
   "parent.location.departure": "ออกเดินทาง",
   "parent.location.departureBadge": "ออกเดินทาง",
+  "parent.location.deviceSilentSince": "โทรศัพท์ไม่ได้เชื่อมต่อตั้งแต่ {time}",
   "parent.location.expandStays": "{day} ขยายพื้นที่ที่คุณอยู่",
   "parent.location.freshnessAccuracy": "{freshness} · ข้อผิดพลาดประมาณ {accuracy}ม",
   "parent.location.history.dayAria": "วันที่ของเส้นทาง {childName}",

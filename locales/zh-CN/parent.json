@@ -464,6 +464,7 @@
   "parent.location.historyEmpty": "{day} 还没有移动记录",
   "parent.location.historyLoading": "{day} 正在加载移动记录...",
   "parent.location.lastSeenAt": "{childName} · 最后上线：{place}",
+  "parent.location.deviceSilentSince": "{time}后手机未连接",
   "parent.location.lowAccuracy": "精度低 · 误差约 100% {accuracy}m·{freshness}",
   "parent.location.mode.realtime": "实时",
   "parent.location.noPhone": "{childName} 没有电话号码。",

@@ -110,6 +110,7 @@ export function PasswordResetSheet({
             aria-label={intl.formatMessage({ id: "onboarding.passwordReset.close" })}
             onClick={onClose}
             disabled={busy}
+            aria-busy={busy}
           >
             <X size={20} strokeWidth={2.2} aria-hidden="true" />
           </button>
@@ -211,6 +212,7 @@ export function PasswordResetSheet({
               type="button"
               className="ob-link prs-resend"
               disabled={busy}
+              aria-busy={busy}
               onClick={() => { setCode(""); void sendCode(); }}
             >
               {intl.formatMessage({ id: "onboarding.passwordReset.resend" })}

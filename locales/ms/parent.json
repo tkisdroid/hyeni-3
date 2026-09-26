@@ -464,6 +464,7 @@
   "parent.location.historyEmpty": "{day} Tiada rekod pergerakan lagi.",
   "parent.location.historyLoading": "{day} Memuatkan sejarah pergerakan…",
   "parent.location.lastSeenAt": "{childName} · Semakan terakhir: {place}",
+  "parent.location.deviceSilentSince": "Telefon tidak bersambung sejak {time}",
   "parent.location.lowAccuracy": "Ketepatan adalah rendah · Ralat lebih kurang. {accuracy}m · {freshness}",
   "parent.location.mode.realtime": "Langsung",
   "parent.location.noPhone": "{childName} Tiada nombor telefon.",

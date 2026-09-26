@@ -492,6 +492,7 @@ const messages = {
   "parent.location.currentChildLocation": "Kasalukuyang {childName} Tingnan ang lokasyon",
   "parent.location.departure": "umalis",
   "parent.location.departureBadge": "Umalis",
+  "parent.location.deviceSilentSince": "Walang koneksyon sa phone mula {time}",
   "parent.location.expandStays": "{day} Palawakin ang mga lugar na tinutuluyan mo",
   "parent.location.freshnessAccuracy": "{freshness} · Tinatayang error {accuracy}m",
   "parent.location.history.dayAria": "Petsa ng ruta ni {childName}",

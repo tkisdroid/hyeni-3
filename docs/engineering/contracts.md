@@ -262,6 +262,12 @@
 - **다자녀 대화 알림(2026-09-26)**: 대화 화면의 아이 전환 알약은 지금 보지 않는 아이의 안 읽은 메시지를 점으로 알린다
   (`useUnreadMemoChildIds`, 탭 점과 같은 쿼리 키). 아이 → 부모 메시지 푸시 제목은 "{이름}{이가|가} 메시지를 보냈어요"다
   (`worker/lib/koreanSubject.childSubjectKo` — 부모가 자기 아이를 "님"으로 부르지 않는다). 회귀=`worker/tests/koreanSubject.test.mjs`.
+- **아이 폰 무응답 표시(2026-09-26 실사례 — "사파리에서 실시간 안 됨")**: 부모 Safari 화면 문제가 아니라 아이 razr 가 성당 도착(18:55)
+  뒤 위치·기기 보고·토큰 갱신을 모두 멈춘 상태였다. 서버 cron·부모 새로고침의 `request_location` 푸시는 정상 발송됐고 응답만 없었다.
+  진단 순서: `child_locations.updated_at` → `family_members.device_health.updatedAt` → `refresh_tokens`(갱신 멈춤 여부) →
+  `push_idempotency`(요청 발송 여부) → `location_preferences.interval_mode`. 부모 위치 화면은 위치와 기기 보고가 모두 20분 넘게
+  멈추면(`transform/childDeviceSilence`, 서버 location_stale 과 같은 기준) "{시각} 이후 폰 연결 없음"과 주의색 점을 보이고, 새로고침이
+  시간 안에 끝나지 않으면 "폰이 응답하지 않아요. 전원·데이터·비행기 모드를 확인해 주세요"로 안내한다. 회귀=`tests/childDeviceSilence.test.mjs`.
 - **긴급 수신 위치 새로고침(2026-09-26)**: 부모 `SosReceive` 는 새 SOS 가 보이면 위치를 즉시 + 4초 뒤 한 번 더 다시 받는다.
   30초 폴링만 기다리면 서버가 SOS 중 실시간 위치를 줘도 첫 화면이 스냅샷("8분 전")이었다. 회귀=`tests/childSosCopy.test.mjs`.
 - **현재 Play 출시 후보(2026-08-15)**: 실제 제출 후보는 v1.3.0/**versionCode 6**이다. 위치 권한 안내가 인증 전환에

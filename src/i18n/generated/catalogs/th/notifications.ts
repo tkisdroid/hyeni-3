@@ -137,6 +137,7 @@ const messages = {
   "notifications.locationStatus.success.lowAccuracyTitle": "ได้รับตำแหน่งล่าสุดแล้ว แต่ความแม่นยำต่ำ",
   "notifications.locationStatus.success.title": "อัปเดตเป็นตำแหน่งล่าสุดแล้ว",
   "notifications.locationStatus.toast.deviceMissing": "ส่งคำขอตำแหน่งไม่ได้เพราะไม่มีข้อมูลอุปกรณ์ของลูก",
+  "notifications.locationStatus.toast.deviceSilent": "โทรศัพท์ของ {childName} ไม่ตอบสนอง ตรวจสอบแบตเตอรี่ อินเทอร์เน็ต และโหมดเครื่องบิน",
   "notifications.locationStatus.toast.locked": "แผนปัจจุบันไม่รองรับการดูตำแหน่ง",
   "notifications.locationStatus.toast.noUpdate": "ส่งคำขอแล้ว แต่ยังไม่ได้รับตำแหน่งใหม่",
   "notifications.locationStatus.toast.refreshFailed": "อัปเดตตำแหน่งไม่สำเร็จ",

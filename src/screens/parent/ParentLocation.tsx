@@ -43,6 +43,7 @@ import { TIERS, historyDaysFor, locationModeFor } from "@/transform/tierPolicy";
 import {
   dateInputValueToDateKey,
   dateKeyToDateInputValue,
+  dateToDateKeyInTimeZone,
   parseAppDateKey,
 } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
@@ -56,6 +57,7 @@ import {
 import { placePhoneCall } from "@/lib/native/phone";
 import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
 import { waitForNewChildLocation } from "@/transform/locationRefreshWait";
+import { childDeviceSilentSince } from "@/transform/childDeviceSilence";
 import {
   buildTrailPoints,
   findStayIndexAtMs,
@@ -285,6 +287,26 @@ export function ParentLocation() {
   const locationLabel = useLocationLabels(loc ? [loc] : [], places);
   const curPlace = loc ? locationLabel(loc) : intl.formatMessage({ id: "parent.location.checking" });
   const isStaleLocation = !!loc && fresh?.status === "stale";
+  // 위치도 기기 상태 보고도 20분 넘게 멈췄으면 "폰이 연결되지 않음"을 그대로 말한다(서버 푸시는 계속 보내는 중).
+  const deviceSilentSince = loc
+    ? childDeviceSilentSince({
+      locationUpdatedAt: loc.updated_at,
+      deviceReportedAt: selected?.device_health?.lastReportedAt ?? selected?.device_health?.updatedAt ?? null,
+      now,
+    })
+    : null;
+  // 새로고침 콜백은 화면 진입 자동 요청 effect 의 의존성이라, 렌더마다 바뀌는 값은 ref 로만 읽는다.
+  const deviceSilentRef = useRef<{ silent: boolean; childName: string }>({ silent: false, childName });
+  deviceSilentRef.current = { silent: deviceSilentSince !== null, childName };
+  const deviceSilentLabel = deviceSilentSince
+    ? formatDateTime(deviceSilentSince, {
+      locale,
+      timeZone: familyTimeZone,
+      ...(dateToDateKeyInTimeZone(deviceSilentSince, familyTimeZone) === dateToDateKeyInTimeZone(now, familyTimeZone)
+        ? { timeStyle: "short" as const }
+        : { dateStyle: "medium" as const, timeStyle: "short" as const }),
+    })
+    : null;
   const sheetName = locationScopeError
     ? intl.formatMessage({ id: "parent.location.scopeFailedForChild" }, { childName })
     : locationScopePending
@@ -302,6 +324,8 @@ export function ParentLocation() {
     ? intl.formatMessage({ id: "parent.parentLocation.copy004" })
     : isLocked
     ? intl.formatMessage({ id: "parent.parentLocation.copy005" })
+    : deviceSilentLabel && !isRefreshingLocation
+    ? intl.formatMessage({ id: "parent.location.deviceSilentSince" }, { time: deviceSilentLabel })
     : isLowAccuracy
       ? intl.formatMessage({ id: "parent.location.lowAccuracy" }, { accuracy: accuracyM, freshness: fresh?.label ?? intl.formatMessage({ id: "parent.parentLocation.copy007" }) })
       : accuracyM != null
@@ -651,7 +675,16 @@ export function ParentLocation() {
         show(intl.formatMessage({ id: "parent.parentLocation.copy012" }), "⚠️");
         return;
       }
-      show(intl.formatMessage({ id: "notifications.locationStatus.toast.noUpdate" }), "⚠️");
+      // 폰이 이미 20분 넘게 연락이 없던 상태면, "아직 도착하지 않았어요" 대신 확인할 것을 알려 준다.
+      show(
+        deviceSilentRef.current.silent
+          ? intl.formatMessage(
+            { id: "notifications.locationStatus.toast.deviceSilent" },
+            { childName: deviceSilentRef.current.childName },
+          )
+          : intl.formatMessage({ id: "notifications.locationStatus.toast.noUpdate" }),
+        "⚠️",
+      );
     } catch {
       show(intl.formatMessage({ id: "notifications.locationStatus.toast.refreshFailed" }), "⚠️");
       return;
@@ -886,7 +919,8 @@ export function ParentLocation() {
             <span className="pl-chip__main">
               <span className="pl-chip__name">{selected.name || intl.formatMessage({ id: "parent.location.childFallback" })}</span>
             </span>
-            <span className="pl-chip__dot" />
+            {/* 초록 점은 "연결됨"으로 읽힌다 — 폰이 20분 넘게 연락이 없거나 위치가 오래됐으면 주의 색으로 바꾼다. */}
+            <span className="pl-chip__dot" data-state={deviceSilentSince ? "silent" : isStaleLocation ? "stale" : "live"} />
           </div>
         </div>
       )}

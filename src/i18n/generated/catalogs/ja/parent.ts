@@ -492,6 +492,7 @@ const messages = {
   "parent.location.currentChildLocation": "現在の{childName}場所を見る",
   "parent.location.departure": "出発",
   "parent.location.departureBadge": "出発",
+  "parent.location.deviceSilentSince": "{time}以降、端末と接続できていません",
   "parent.location.expandStays": "{day} 滞在する場所を広げる",
   "parent.location.freshnessAccuracy": "{freshness}・誤差約{accuracy}m",
   "parent.location.history.dayAria": "{childName}の移動記録の日付",

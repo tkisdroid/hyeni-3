@@ -464,6 +464,7 @@
   "parent.location.historyEmpty": "{day} Wala pang record ng paggalaw.",
   "parent.location.historyLoading": "{day} Nilo-load ang history ng paggalaw...",
   "parent.location.lastSeenAt": "{childName} · Huling pagsusuri: {place}",
+  "parent.location.deviceSilentSince": "Walang koneksyon sa phone mula {time}",
   "parent.location.lowAccuracy": "Mababa ang katumpakan · Error approx. {accuracy}m · {freshness}",
   "parent.location.mode.realtime": "Kasalukuyan",
   "parent.location.noPhone": "{childName} Walang numero ng telepono.",

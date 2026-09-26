@@ -492,6 +492,7 @@ const messages = {
   "parent.location.currentChildLocation": "Saat ini {childName} Lihat lokasi",
   "parent.location.departure": "berangkat",
   "parent.location.departureBadge": "Berangkat",
+  "parent.location.deviceSilentSince": "Ponsel tidak terhubung sejak {time}",
   "parent.location.expandStays": "{day} Perluas tempat Anda menginap",
   "parent.location.freshnessAccuracy": "{freshness} · Kesalahan kira-kira. {accuracy}m",
   "parent.location.history.dayAria": "Tanggal rute {childName}",

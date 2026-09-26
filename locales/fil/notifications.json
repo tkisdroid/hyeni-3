@@ -139,6 +139,7 @@
   "notifications.locationStatus.toast.deviceMissing": "Hindi maipadala ang location request dahil wala ang impormasyon ng device ng anak",
   "notifications.locationStatus.toast.locked": "Hindi kasama sa kasalukuyang plan ang pagtingin sa lokasyon",
   "notifications.locationStatus.toast.noUpdate": "Naipadala ang request pero wala pang bagong lokasyon",
+  "notifications.locationStatus.toast.deviceSilent": "Hindi sumasagot ang phone ni {childName}. Tingnan ang power, data, at airplane mode.",
   "notifications.locationStatus.toast.refreshFailed": "Hindi na-update ang lokasyon",
   "notifications.locationStatus.toast.requestFailed": "Hindi maipadala ang location request sa device ng anak",
   "notifications.locationStatus.toast.retryFailed": "Hindi gumana ang muling pagsubok",

@@ -352,6 +352,13 @@
   border-radius: 50%;
   background: var(--mint-500);
 }
+.pl-chip__dot[data-state="stale"] {
+  background: var(--fg-placeholder);
+}
+.pl-chip__dot[data-state="silent"] {
+  /* 상세 카드의 오래된 위치 점(.pl-sheet__zone--stale)과 같은 주의 색. */
+  background: var(--gold-600);
+}
 
 /* ── 하단 상세 카드 ─────────────────────────────────────────────────────── */
 .pl-sheet {

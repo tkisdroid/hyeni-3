@@ -464,6 +464,7 @@
   "parent.location.historyEmpty": "{day} Belum ada catatan pergerakan.",
   "parent.location.historyLoading": "{day} Memuat riwayat pergerakan…",
   "parent.location.lastSeenAt": "{childName} · Pemeriksaan terakhir: {place}",
+  "parent.location.deviceSilentSince": "Ponsel tidak terhubung sejak {time}",
   "parent.location.lowAccuracy": "Akurasi rendah · Kesalahan kira-kira. {accuracy}m · {freshness}",
   "parent.location.mode.realtime": "Langsung",
   "parent.location.noPhone": "{childName} Tidak ada nomor telepon.",

@@ -492,6 +492,7 @@ const messages = {
   "parent.location.currentChildLocation": "Xem vị trí {childName} hiện tại",
   "parent.location.departure": "khởi hành",
   "parent.location.departureBadge": "Rời đi",
+  "parent.location.deviceSilentSince": "Điện thoại mất kết nối từ {time}",
   "parent.location.expandStays": "{day} Mở rộng nơi bạn ở",
   "parent.location.freshnessAccuracy": "{freshness} · Lỗi khoảng. {accuracy}m",
   "parent.location.history.dayAria": "Ngày xem lộ trình của {childName}",
