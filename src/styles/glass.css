@@ -80,27 +80,13 @@
   --type-meta-weight: 400;
 }
 
-/* ① 살아 있는 바닥 — 스크롤 영역에 고정돼 모든 판 뒤에서 움직인다.
-   흰 베일이 위에 얹혀 아래로 갈수록 색이 가라앉는다(위=지금, 아래=관리). */
+/* ① 살아 있는 바닥 — 스크롤 영역 자체의 배경으로 그린다. 스크롤 컨테이너의 배경은 기본값(scroll)에서
+   내용과 함께 움직이지 않으므로 모든 판 뒤에 고정된다. 흰 베일이 위에 얹혀 아래로 갈수록 색이 가라앉는다.
+   ⚠️ ::before(position:fixed; z-index:-1)로 깔지 않는다 — iOS 27 Safari가 그 고정 층을 스크롤 내용 위에
+   합성해, 자기 합성층이 없는 캘린더 날짜 칸 등이 통째로 가려졌다(2026-09-27 실기기: "캘린더 없이 별만 보여요"). */
 .hy-adult .hy-screen {
-  background: var(--ph-ground);
-  isolation: isolate;
-}
-
-/* isolation 스택에 갇힌 화면 안 모달이 탭바(z 45) 밑에 깔리지 않게, 열린 동안만 화면을 탭바 위로 올린다. */
-.hy-adult .hy-screen:has([aria-modal="true"]) {
-  z-index: 46;
-}
-
-.hy-adult .hy-screen::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  /* ⚠️ 자식에 position/z-index 를 강제하지 않는다 — inset:0 로 화면을 채우는 루트(.pl-root)가
-     높이 0 으로 무너진다. isolation 스택 컨텍스트 안에서 바닥만 -1 로 내린다. */
-  z-index: -1;
-  pointer-events: none;
-  background:
+  background-color: var(--ph-ground);
+  background-image:
     linear-gradient(
       180deg,
       rgba(255, 255, 255, 0) 0%,
@@ -115,6 +101,12 @@
     radial-gradient(80% 40% at 104% 78%, rgba(var(--ph-orb-lav), 0.4) 0%, rgba(var(--ph-orb-lav), 0) 66%),
     radial-gradient(76% 36% at -4% 100%, rgba(var(--ph-orb-sky), 0.34) 0%, rgba(var(--ph-orb-sky), 0) 64%),
     linear-gradient(180deg, #e8ecf8 0%, #eff1f7 54%, #f3f1f6 100%);
+  isolation: isolate;
+}
+
+/* isolation 스택에 갇힌 화면 안 모달이 탭바(z 45) 밑에 깔리지 않게, 열린 동안만 화면을 탭바 위로 올린다. */
+.hy-adult .hy-screen:has([aria-modal="true"]) {
+  z-index: 46;
 }
 
 
@@ -496,8 +488,8 @@
     --ph-glass-blur: none;
   }
 
-  .hy-adult .hy-screen::before {
-    background: var(--ph-ground);
+  .hy-adult .hy-screen {
+    background-image: none;
   }
 }
 

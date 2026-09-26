@@ -250,3 +250,9 @@
   52px·radius 16·body-lg 이고, 흰 판 위 흰 칸이 되지 않게 판을 유리로 둔다. 빈 `<input type="date">` 는 Android WebView 에서
   빈 상자로만 보이므로 `components/ui/DateField` 로 안내 문구를 겹친다(생년월일 3곳). 설문 선택은 공용 유리 목록보다 높은
   우선순위의 `outline` 링 + 옅은 강조 채움이다.
+
+- ★**어른 화면 바닥(2026-09-27 iOS 27 Safari)**: 오로라 바닥은 `.hy-adult .hy-screen`(스크롤 영역) 자체의
+  `background-image`로 그린다. 스크롤 컨테이너 배경은 내용과 함께 움직이지 않아 판 뒤에 고정된다.
+  `::before { position: fixed; z-index: -1 }` 층으로 깔면 iOS 27 Safari가 그 층을 스크롤 내용 위에 합성해,
+  자기 합성층이 없는 요소(캘린더 날짜 칸 등)가 가려지고 합성된 이미지·탭바만 보였다("캘린더 없이 별만").
+  실기기 확인은 Web Inspector의 LayerTree로 고정 층이 스크롤 층 위에 있는지 본다. 회귀=`tests/adultGlassDesignLanguage.test.mjs`.

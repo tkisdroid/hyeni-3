@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
@@ -20,7 +20,9 @@ test("어른 모드 디자인 언어는 glass.css 한 곳에서 .hy-adult 로만
   for (const token of ["--ph-glass-fill", "--ph-object-raise", "--ph-ink", "--ph-link", "--ph-hairline"]) {
     assert.ok(glass.includes(`${token}:`), `${token} 정의가 glass.css 에 있어야 한다`);
   }
-  assert.match(glass, /\.hy-adult \.hy-screen::before/);
+  // 바닥은 스크롤 영역 자체의 배경이다. ::before 고정 층은 iOS 27 Safari가 내용 위에 합성해 화면을 가렸다.
+  assert.match(glass, /\.hy-adult \.hy-screen \{[^}]*background-image:[^}]*radial-gradient/);
+  assert.doesNotMatch(glass, /\.hy-screen::before/);
 });
 
 test("화면별 redesign 파일은 공용 팔레트·바닥·탭바를 다시 정의하지 않는다", () => {
@@ -184,4 +186,19 @@ test("주변소리 대기 화면은 CTA를 고정하고 설명 본문만 스크�
   assert.match(idle, /env\(safe-area-inset-bottom, 0px\)/);
   assert.doesNotMatch(idle, /120px/);
   assert.match(center, /overflow-y: auto/);
+});
+
+test("고정 위치·음수 z-index 가상 요소로 배경을 깔지 않는다(iOS 27 Safari 합성 순서)", () => {
+  const walk = (dir) => readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    return statSync(path).isDirectory() ? walk(path) : path.endsWith(".css") ? [path] : [];
+  });
+  const offenders = [];
+  for (const path of walk(new URL("../src", import.meta.url).pathname)) {
+    const css = readFileSync(path, "utf8");
+    for (const match of css.matchAll(/([^{}]*::(?:before|after)[^{}]*)\{([^{}]*)\}/g)) {
+      if (/position:\s*fixed/.test(match[2]) && /z-index:\s*-/.test(match[2])) offenders.push(`${path}: ${match[1].trim()}`);
+    }
+  }
+  assert.deepEqual(offenders, []);
 });

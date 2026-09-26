@@ -37,6 +37,6 @@ test("화면별 파일은 바닥·팔레트를 다시 그리지 않고 glass.css
   // 바닥 그라데이션(오로라)은 공용 언어에만 있어야 한다. 화면이 자기 바닥을 칠하면
   // 예전처럼 화면마다 다른 색 배경이 생겨 일관성이 깨진다.
   assert.doesNotMatch(redesignCss, /(?:linear|radial|conic)-gradient/);
-  assert.match(glassCss, /\.hy-adult \.hy-screen::before[\s\S]*?radial-gradient/);
+  assert.match(glassCss, /\.hy-adult \.hy-screen \{[^}]*background-image:[^}]*radial-gradient/);
   assert.match(redesignCss, /\.ph-page::before\s*\{\s*content:\s*none;\s*\}/);
 });
