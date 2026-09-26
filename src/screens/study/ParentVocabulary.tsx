@@ -49,7 +49,9 @@ export function ParentVocabulary() {
       <header className="study-learning-header"><button type="button" className="study-learning-back hy-press" onClick={() => navigate("/miniapps")} aria-label={label("study.common.back")}><ChevronLeft aria-hidden="true" /></button>
         <div><h1>{label("study.vocabulary.parentTitle")}</h1><p>{target.kind === "ready" ? target.child.name : label("study.vocabulary.parentSubtitle")}</p></div>
       </header>
-      {familyLoading ? <p role="status">{label("study.parent.loadingFamily")}</p> : target.kind !== "ready" ? (
+      {familyLoading ? <p role="status">{label("study.parent.loadingFamily")}</p> : target.kind !== "ready" && childMembers.length === 0 ? (
+        <div className="study-learning-state"><p>{label("study.parent.noChildTitle")}</p><button type="button" onClick={() => navigate("/child-invite?role=child")}>{label("study.parent.connectChild")}</button></div>
+      ) : target.kind !== "ready" ? (
         <div className="study-learning-state"><p>{label("study.vocabulary.selectChildAtHome")}</p><button type="button" onClick={() => navigate("/parent/home")}>{label("study.vocabulary.parentHome")}</button></div>
       ) : <VocabularyProgress key={target.child.id} memberId={target.child.id} />}
       <VocabularySources />

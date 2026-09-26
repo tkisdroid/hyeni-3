@@ -73,6 +73,12 @@ export function ParentStudy() {
             <p>{intl.formatMessage({ id: "study.parent.invalidChild" })}</p>
             <button type="button" onClick={() => setParams({})}>{intl.formatMessage({ id: "study.parent.chooseChild" })}</button>
           </section>
+        ) : target.kind === "select" && childMembers.length === 0 ? (
+          // 고를 아이가 없는데 "선택해 주세요"만 두면 빈 화면이 된다 — 연결로 바로 보낸다.
+          <section className="study-parent-state">
+            <h2>{intl.formatMessage({ id: "study.parent.noChildTitle" })}</h2>
+            <button type="button" onClick={() => navigate("/child-invite?role=child")}>{intl.formatMessage({ id: "study.parent.connectChild" })}</button>
+          </section>
         ) : target.kind === "select" ? (
           <section className="study-parent-state">
             <h2>{intl.formatMessage({ id: "study.parent.chooseChild" })}</h2>
