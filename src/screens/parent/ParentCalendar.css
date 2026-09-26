@@ -75,12 +75,19 @@
   padding: 0 12px calc(120px + env(safe-area-inset-bottom, 0px));
 }
 
-/* ── 월간 그리드 — 날짜 면을 바닥 위에 직접 배치한다 ────────────────────── */
+/* ── 월간 그리드 — 한 장의 유리판 위에 숫자만 ────────────────────────────
+   날짜마다 칸을 두르면 30개의 상자가 된다(2026-09-27). 판 하나 + 숫자 + 오늘(채운 원) · 선택(렌즈 원).
+   판 안에서는 주말 신호색을 한 단계 진하게 써서 오로라 광원 위에서도 AA 를 지킨다. */
 .pc-card {
-  background: transparent;
-  border-radius: 0;
-  padding: 16px 8px 8px;
-  box-shadow: none;
+  --blue-text: color-mix(in srgb, var(--blue-cta-deep) 88%, var(--ink));
+  --danger-text: color-mix(in srgb, var(--danger-cta) 72%, var(--ink));
+  padding: 12px 8px 8px;
+  border: 0;
+  border-radius: var(--radius-24);
+  background: var(--ph-glass-fill);
+  box-shadow: var(--ph-panel-shadow);
+  backdrop-filter: var(--ph-glass-blur);
+  -webkit-backdrop-filter: var(--ph-glass-blur);
 }
 .pc-weekdays {
   display: grid;
@@ -116,8 +123,8 @@
   --press: 0.9;
 }
 .pc-day__num {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -125,8 +132,51 @@
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
-
-  transition: transform 0.12s ease;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--duration-base) var(--easing-standard),
+    color var(--duration-base) var(--easing-standard);
+}
+/* 오늘 = 강조색으로 채운 원(흰 숫자 4.5:1 이상 — --hy-accent-cta 계약). */
+.pc-day[aria-current="date"] .pc-day__num {
+  background: var(--hy-accent-cta);
+  color: var(--bg-card);
+  font-weight: var(--weight-bold);
+  box-shadow: 0 6px 12px -6px color-mix(in srgb, var(--hy-accent-cta) 70%, transparent);
+}
+/* 선택 = 탭바 선택과 같은 렌즈 원. 고를 때마다 스프링으로 한 번 부풀었다 앉는다. */
+.pc-day[aria-pressed="true"]:not([aria-current="date"]) .pc-day__num {
+  background: color-mix(in srgb, var(--hy-accent) 22%, rgba(255, 255, 255, 0.6));
+  color: var(--hy-accent-text);
+  font-weight: var(--weight-bold);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 6px 12px -6px color-mix(in srgb, var(--hy-accent-cta) 50%, transparent);
+}
+.pc-day[aria-pressed="true"] .pc-day__num {
+  animation: pc-select 0.44s var(--easing-spring);
+}
+/* 오늘을 고르면 채운 원 둘레에 옅은 고리가 생긴다. */
+.pc-day[aria-pressed="true"][aria-current="date"] .pc-day__num {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--hy-accent) 30%, transparent),
+    0 6px 12px -6px color-mix(in srgb, var(--hy-accent-cta) 70%, transparent);
+}
+@keyframes pc-select {
+  from { transform: scale(0.62); }
+}
+.pc-grid {
+  animation: pc-month 0.42s var(--easing-emphasized) backwards;
+}
+@keyframes pc-month {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-grid,
+  .pc-day[aria-pressed="true"] .pc-day__num {
+    animation: none;
+  }
 }
 .pc-day__dots {
   display: flex;
@@ -137,8 +187,8 @@
   height: 17px;
 }
 .pc-dot {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
 }
 /* 셀당 점 3개 초과 시 +N 배지 */
@@ -589,43 +639,40 @@
 .hy-adult .pc-body {
   padding-inline: 20px;
 }
-.hy-adult .pc-card {
-  padding: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
+/* 날짜 칸은 투명한 누름 영역이다(44px 이상). 눌리는 순간에만 옅은 서리가 번진다. */
 .pc-grid,
 .pc-weekdays {
-  gap: 4px;
+  gap: 4px 0;
 }
 .pc-day {
-  border-radius: var(--radius-8);
-  background: var(--control-fill);
-  box-shadow: var(--control-rim);
+  border-radius: var(--radius-12);
+  background: transparent;
+  box-shadow: none;
+  transition: background-color var(--duration-fast) var(--easing-standard), transform 0.36s var(--easing-cheer);
 }
-.pc-day[aria-pressed="true"] {
-  background: var(--control-fill-hover);
-  box-shadow: var(--control-shadow);
-}
-.pc-day[aria-current="date"] .pc-day__num {
-  font-weight: var(--weight-bold);
+.pc-day:active {
+  background: rgba(255, 255, 255, 0.42);
 }
 
+/* 좁은 폰(≤380px)은 판 안쪽 여백을 줄여 7열 44px 을 지킨다. */
 @media (max-width: 380px) {
-  .pc-grid,
-  .pc-weekdays {
-    gap: 4px 0;
+  .hy-adult .pc-body,
+  .pc-body {
+    padding: 0 12px calc(120px + env(safe-area-inset-bottom, 0px));
   }
 
+  .pc-card {
+    padding: 12px 4px 8px;
+  }
+}
+
+@media (max-width: 349px) {
   .hy-adult .pc-body,
   .pc-body {
     padding: 0 4px calc(120px + env(safe-area-inset-bottom, 0px));
   }
 
   .pc-card {
-    padding: 16px 0 8px;
+    padding: 12px 0 8px;
   }
 }

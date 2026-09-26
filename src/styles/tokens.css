@@ -108,11 +108,7 @@
   /* ── Typography ── */
   --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
     "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  --weight-medium: 500;
-  --weight-semibold: 600;
   --weight-bold: 700;
-  --weight-heavy: 800;
-  --weight-black: 900;
 
   /* 의미 기반 9단계 정본: size + line-height + weight는 항상 한 묶음으로 사용한다. */
   --type-display: 32px;
@@ -158,21 +154,6 @@
   --type-caption-line-height: 1.4;
   --type-caption-weight: 600;
 
-  /* 기존 화면 호환 alias — 화면별 이행이 끝날 때까지 이름을 유지한다. */
-  --text-display: var(--type-display);
-  --text-title-xl: var(--type-title-xl);
-  --text-title: var(--type-title-xl);
-  --text-section: var(--type-title);
-  --text-body-lg: var(--type-body-lg);
-  --text-body: var(--type-body);
-  --text-body-sm: var(--type-body-sm);
-  --text-label: var(--type-label);
-  --text-caption: var(--type-caption);
-  --text-micro: var(--type-caption);
-  --text-tiny: var(--type-caption);
-
-  --leading-tight: 1.28;
-  --leading-normal: 1.5;
   --tracking-tight: -0.02em;
 
   /* ── Radius ── */
@@ -184,15 +165,11 @@
   --radius-pill: 999px;
 
   /* 기존 이름은 가장 가까운 정본 값으로 연결한다. */
-  --radius-xs: var(--radius-8);
   --radius-sm: var(--radius-12);
   --radius-md: var(--radius-12);
   --radius-lg: var(--radius-16);
   --radius-xl: var(--radius-20);
   --radius-2xl: var(--radius-20);
-  --radius-card: var(--radius-16);
-  --radius-hero: var(--radius-20);
-  --radius-3xl: var(--radius-24);
 
   /* ── Spacing ── */
   --spacing-2: 2px;
@@ -213,7 +190,6 @@
   --space-4: var(--spacing-16);
   --space-5: var(--spacing-20);
   --space-6: var(--spacing-24);
-  --space-section: var(--spacing-24);
 
   /* ── Icon glyph (hit area와 분리) ── */
   --icon-16: 16px;
@@ -264,32 +240,34 @@
     0 20px 40px -22px rgba(60, 55, 90, 0.42);
   /* ── 공통 조작 면 · 얇은 유리 윤곽과 짧은 그림자 ──
      작은 버튼마다 blur를 중첩하지 않는다. 투명 채움과 윤곽만으로 재질을 이어 준다. */
-  --interface-ground: #DADBE0;
-  --interface-ground-light: #EDEDEE;
   --interface-ink: #161719;
   --interface-ink-secondary: #4D4E54;
-  --interface-ink-muted: #595A61;
-  --interface-orb: 127, 135, 162;
-  --control-fill: rgba(255, 255, 255, 0.24);
-  --control-fill-hover: rgba(255, 255, 255, 0.48);
+  /* 유리 위 보조 문구 — 오로라 광원 중심(가장 진한 바닥) 위 가장 맑은 판에서도 4.9:1 이상. */
+  --interface-ink-muted: #515259;
+  /* 작은 조작 면은 판보다 밝은 서리 알약이다 — 0.24 는 복숭아 광원 위에서 흙빛으로 탁해졌다. */
+  --control-fill: rgba(255, 255, 255, 0.46);
+  --control-fill-hover: rgba(255, 255, 255, 0.66);
   --control-border: rgba(255, 255, 255, 0.88);
-  --control-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.9), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  --control-rim:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.5);
   --control-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.9),
-    inset 0 2px 0 rgba(255, 255, 255, 0.3),
-    0 4px 7px -4px rgba(32, 40, 60, 0.28);
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 10px 14px -12px rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.5),
+    0 1px 2px rgba(32, 40, 60, 0.06),
+    0 6px 14px -8px rgba(40, 44, 96, 0.3);
   --control-shadow-pressed:
     inset 0 2px 4px rgba(32, 40, 60, 0.16),
     inset 0 0 0 1px rgba(255, 255, 255, 0.82);
 
   /* 기존 화면의 뉴모피즘 이름도 같은 조작 면을 사용한다. */
-  --neu-light: rgba(255, 255, 255, 0.82);
-  --neu-dark: rgba(32, 40, 60, 0.12);
   --neu-raised: var(--control-shadow);
   --neu-raised-soft: var(--control-shadow);
   --neu-pressed: var(--control-shadow-pressed);
   --neu-surface: var(--control-fill);
-  --neu-surface-solid: #F2F0F4;
   --neu-control-surface: var(--control-fill);
   --neu-control-selected-surface: var(--hy-accent-soft);
   --neu-control-border: var(--control-border);
@@ -301,7 +279,6 @@
   --shadow-soft: 0 2px 8px rgba(32, 26, 29, 0.08);
   --shadow-floating: 0 10px 28px -8px rgba(32, 26, 29, 0.2);
   --shadow-modal: 0 20px 48px -12px rgba(32, 26, 29, 0.28);
-  --shadow-card: var(--shadow-soft);
   --shadow-rose: 0 22px 42px -16px rgba(240, 81, 143, 0.55);
   --shadow-rose-btn: 0 12px 24px -8px rgba(240, 81, 143, 0.5);
   --shadow-mint: 0 12px 24px -10px rgba(35, 168, 118, 0.55);
@@ -315,9 +292,10 @@
   --easing-cheer: cubic-bezier(0.34, 1.56, 0.64, 1);
   /* 화면·시트가 들어올 때: 빠르게 출발해 끝에서 길게 감속한다(쫀득한 정착감). */
   --easing-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  /* 유리 렌즈·떠오르는 판: 목표를 살짝 지나쳤다 돌아오는 짧은 스프링. */
+  --easing-spring: cubic-bezier(0.3, 1.3, 0.5, 1);
   --duration-route: 0.42s;
   --duration-sheet: 0.46s;
-  --press-scale: 0.96;
 
   /* ── Accent (아이가 고른 테마색 · 기본 rose) ── */
   --hy-accent: #F76BA6;

@@ -401,7 +401,14 @@ export function ParentCalendar() {
               </div>
             ))}
           </div>
-          <div className="pc-grid" ref={calendarGridRef} role="group" aria-labelledby={calendarTitleId}>
+          {/* 달이 바뀌면 격자를 새로 그려 넘김 모션을 한 번 재생한다. */}
+          <div
+            key={`${view.year}-${view.month}`}
+            className="pc-grid"
+            ref={calendarGridRef}
+            role="group"
+            aria-labelledby={calendarTitleId}
+          >
             {cells.map((d, i) => {
               if (d === null) {
                 return <div key={`e${i}`} className="pc-cell-empty" aria-hidden="true" />;
@@ -413,14 +420,8 @@ export function ParentCalendar() {
               const dayViews = byKey[dayKey] ?? [];
               const dots = dayViews.slice(0, 3);
               const extra = dayViews.length - dots.length;
-              const numStyle = isSel
-                ? {
-                    color: "var(--hy-accent-text)",
-                    background: "transparent",
-                  }
-                : isToday
-                  ? { color: "var(--hy-accent-text)", background: "transparent" }
-                  : { color: weekendColor(dow), background: "transparent" };
+              // 오늘(채운 원)·선택(렌즈 원)의 색은 CSS 가 aria 상태로 칠한다. 나머지 날만 주말 신호색을 받는다.
+              const numStyle = isSel || isToday ? undefined : { color: weekendColor(dow) };
               return (
                 <button
                   key={d}

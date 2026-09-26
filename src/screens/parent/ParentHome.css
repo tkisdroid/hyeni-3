@@ -1374,9 +1374,29 @@
   box-shadow: var(--shadow-soft);
 }
 
+/* 홈이 열릴 때 빛이 유리 위를 한 번 스치고 지나간다(한 번만 — 계속 반짝이면 소음이다).
+   끝나면 판 밖 왼쪽에 머물러 overflow 로 가려진다(backwards 채움 — transform 을 남기지 않는다). */
 .ph-hero__sheen {
-  display: none;
-  background: none;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.55) 48%,
+    rgba(255, 255, 255, 0.12) 56%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  transform: translateX(-110%);
+  animation: ph-glint 1.3s var(--easing-standard) 0.55s backwards;
+}
+@keyframes ph-glint {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(110%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ph-hero__sheen {
+    display: none;
+  }
 }
 
 .ph-hero__mascot img {

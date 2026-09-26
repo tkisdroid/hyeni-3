@@ -211,7 +211,7 @@
 - ★**입력·선택 표시(2026-09-26)**: 입력창은 터치로도 `:focus-visible` 이 켜지므로 `:where(.hy-app) :is(input,textarea,select)`
   가 파란 3px 링 대신 `--hy-accent-cta` 2px 둥근 링을 쓴다(화면별 `.cls:focus-visible` 조정이 이긴다). placeholder 굵기는
   전역 400 하나 — 화면 CSS 에서 600·700 으로 다시 올리지 않는다. 어른 칩 선택은 글자색만으로는 유리 위에서 안 보여
-  `inset 0 0 0 2px color-mix(currentColor 70%)` 링을 두른다(아이 전환 알약과 같은 언어).
+  렌즈(`currentColor` 로 물든 유리 + 1.5px 같은 색 윤곽·그늘)로 알린다(2026-09-27 — 아래 "선택 = 렌즈").
 - ★**한국어 줄바꿈(2026-09-26)**: `html:lang(ko)` 에 `word-break: keep-all; overflow-wrap: break-word`. 중국어·일본어는
   띄어쓰기가 없어 keep-all 을 걸지 않는다. `overflow-wrap: anywhere` 를 전역에 쓰지 않는다 — min-content 가 한 글자로
   줄어 알약·칩이 글자 단위로 접힌다.
@@ -222,7 +222,8 @@
   (글자+작은 버튼·전체폭 버튼·검은 알약이 섞여 있었다). WebView `<input type="date|time">` 선택기는 Android 테마
   `colorAccent`(`picker_accent`, 라벤더 CTA)를 따른다 — 미지정이면 AppCompat 청록으로 떴다. 선택기의 '삭제'가 보내는
   빈 값은 일정 시간이면 '하루 종일'로, 날짜·시간 범위 설정이면 무시한다.
-- 초기 CSS 는 47,919/48,000바이트다. 전역 규칙을 더 넣을 때는 기존 중복부터 줄인다.
+- 초기 CSS 는 47,182/48,000바이트다(2026-09-27). 전역 규칙을 더 넣을 때는 기존 중복·죽은 토큰부터 줄이고, 한 역할만 쓰는
+  오버레이는 지연 로드한다(스티커 축하 화면 = `StickerCelebrationView`, 아이 세션만 미리 받는다).
 - ★**문구 밀도(2026-09-26 TK 제보 "텍스트가 너무 많다")**: 한 화면에서 같은 사실을 두 번 말하지 않는다. 행 부제는 제목을 반복하지
   않는 짧은 명사구(알림 토글 "도착·출발 소식", 아이 상세 "무음이어도 최대 볼륨")이고, 섹션 제목 아래 설명 문장
   (안심 리포트 "…함께 봅니다", 가족 "연결할 사람을 먼저 선택하면…", AI 일정 "말하거나, 쓰거나…")은 두지 않는다. 상태가 정상일 때
@@ -256,3 +257,22 @@
   `::before { position: fixed; z-index: -1 }` 층으로 깔면 iOS 27 Safari가 그 층을 스크롤 내용 위에 합성해,
   자기 합성층이 없는 요소(캘린더 날짜 칸 등)가 가려지고 합성된 이미지·탭바만 보였다("캘린더 없이 별만").
   실기기 확인은 Web Inspector의 LayerTree로 고정 층이 스크롤 층 위에 있는지 본다. 회귀=`tests/adultGlassDesignLanguage.test.mjs`.
+
+- ★**두꺼운 유리 개정(2026-09-27 TK "유리 느낌이 안 난다")**: 유리로 읽히는 조건은 ①뒤에 비칠 색 덩어리(바닥 가운데
+  광원 두 개 — 스크롤 영역 배경이라 판만 그 위를 지나간다) ②바닥보다 한 단계 밝은 **단색** 서리(`--ph-glass-fill` 0.36)
+  ③네 변이 빛을 다르게 받는 rim(`--ph-glass-rim`: 윗변 반사·윗면 안쪽 광택·아랫변 굴절광·오른변 그늘)이다.
+  `--ph-panel-shadow` = rim + lift 합성이라 판 CSS 는 토큰 하나만 쓴다. 대비는 광원 중심·`saturate(185%)` 최악 합성으로
+  계산한다(`--interface-ink-muted` #515259 → 가장 맑은 판에서도 4.9:1). ⚠️ Playwright WebKit 은 backdrop-filter 를
+  캡처에 그리지 않는다(최소 재현에서도 블러 0) — 유리 판정은 Chromium, iOS 는 실기기 Web Inspector 로 한다.
+- ★**선택 = 렌즈(2026-09-27)**: 탭바 `.hy-tabbar__lens`(TabBar 의 `data-count`·`data-active-index` 로 위치, `--easing-spring`
+  으로 미끄러짐), 달력 선택 원, 칩(`currentColor` 로 물든 유리 + 같은 색 윤곽·그늘), 아이 전환 알약이 한 언어다.
+  오늘 날짜만 `--hy-accent-cta` 로 채운 원이다. 달력은 날짜마다 타일을 두르지 않고 `.pc-card` 유리판 하나(glass-panel)에
+  숫자만 놓으며, 판 안에서 `--blue-text`·`--danger-text` 를 진하게 다시 선언해 광원 위 주말색 AA 를 지킨다.
+- ★**모션 정본 추가(2026-09-27)**: 라우트 루트의 본문 칸(`hy-content`·`*-content`·`*-body`) 직계 자식이 45ms 간격으로
+  떠오른다(`:where()` 특이도 0 — 자기 animation 을 가진 모달·시트가 이긴다, 순번은 `--hy-i`). 아이 모드는 같은 순서의
+  spring pop, 아이 독은 고른 탭이 튀고 그림이 폴짝 뛴다. 달력 월 전환은 격자 `key` 로 재생하고 홈 히어로는 열릴 때 빛이
+  한 번 스친다(`.ph-hero__sheen`). reduced-motion 은 전역 규칙이 `animation-delay` 까지 0 으로 만든다.
+- ★**시트·대화상자 = 두꺼운 서리(2026-09-27)**: `--ph-sheet-fill`(0.88) + blur 32px, 형제 scrim 은 blur 6px 로 초점을 모은다.
+  투명도 감소 강등은 `.hy-adult` 변수 강등 한 곳이 맡는다. 토스트는 어두운 유리(흰 글자 6.8:1 이상).
+- ★**간접 문구도 namespace 몫(2026-09-27)**: `useAccount().providerLabel` 은 `parent.account.provider.*` 라 이 훅을 쓰는 화면은
+  `parent` 카탈로그를 실어야 한다(선생님 설정에 키 원문이 보였다). `tests/i18nUiWiring` 의 공용 모듈 표에 등록돼 있다.

@@ -257,7 +257,7 @@ const router = createHashRouter([
           { path: "teacher/home", element: routeElement(<TeacherHome />, SHARED_NAMESPACES) },
           { path: "teacher/students", element: routeElement(<TeacherStudents />, SHARED_NAMESPACES) },
           { path: "teacher/timetable", element: routeElement(<TeacherTimetable />, SHARED_NAMESPACES) },
-          { path: "teacher/settings", element: routeElement(<TeacherSettings />, SHARED_NAMESPACES) },
+          { path: "teacher/settings", element: routeElement(<TeacherSettings />, PARENT_NAMESPACES) },
         ],
       },
     ] : [

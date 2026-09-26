@@ -495,6 +495,11 @@
   padding-inline: 20px;
   justify-content: space-between;
 }
+/* 뒤로가기가 있는 헤더(선생님 설정)는 다른 화면처럼 제목을 버튼 바로 옆에 둔다 —
+   space-between 이면 제목이 오른쪽 끝으로 밀려났다. */
+.hy-adult .ps-head:has(> .ps-back) {
+  justify-content: flex-start;
+}
 .hy-adult .ps-head-title {
   order: 0;
   font-size: var(--type-title-lg);

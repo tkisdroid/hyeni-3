@@ -164,8 +164,10 @@
   flex: 0 0 auto;
   padding: 0 16px;
   border-radius: var(--radius-pill);
-  background: var(--bg-page);
-  color: var(--fg-secondary);
+  /* 다른 보조 버튼과 같은 유리 알약(흰 판 위 회색 칩이 아니라 조작 면). */
+  background: var(--control-fill);
+  box-shadow: var(--control-shadow);
+  color: var(--ph-link, var(--fg-secondary));
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

@@ -109,6 +109,9 @@ test("화면이 쓰는 모든 message namespace를 그 라우트가 싣는다", 
     ["@/transform/tierPolicy", "parent"],
     ["@/transform/premiumUpsell", "parent"],
     ["@/components/PremiumUpsell", "parent"],
+    // 로그인 방식 라벨(providerLabel)은 parent.account.provider.* 를 쓴다 —
+    // 2026-09-27 선생님 설정이 core·shared 만 싣고 있어 키 원문이 그대로 보였다.
+    ["@/queries/useAccount", "parent"],
   ];
 
   const offenders = [];

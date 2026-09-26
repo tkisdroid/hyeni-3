@@ -482,10 +482,12 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: var(--radius-16);
-  background: rgba(28, 22, 25, 0.92);
-  backdrop-filter: blur(8px);
+  /* 어두운 유리 — 뒤 화면이 흐리게 비치되 흰 글자는 가장 밝은 바닥 위에서도 6.8:1 이상. */
+  background: rgba(30, 26, 38, 0.74);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
   box-shadow: var(--shadow-floating);
-  animation: hy-toast 0.3s var(--easing-cheer) forwards;
+  animation: hy-toast 0.42s var(--easing-spring) backwards;
 }
 .hy-toast__emoji {
   font-size: 18px;
@@ -512,6 +514,36 @@
 }
 @keyframes hy-route-push {
   from { opacity: 0; transform: translate3d(0, 36px, 0) scale(0.985); }
+}
+
+/* ── 내용 차례 등장 ─────────────────────────────────────────────────────────
+   화면 루트의 본문 칸(hy-content · *-content · *-body) 안 판들이 위에서부터 45ms 간격으로 떠오른다.
+   :where() 로 특이도를 0 으로 둬서 자기 animation 을 가진 모달·시트·배지는 그대로 이긴다.
+   데이터가 늦게 도착해 새로 끼는 판도 같은 방식으로 들어온다(끊김 없이 '도착'한다).
+   순번(--hy-i)은 같은 깊이의 형제 순서다 — 상속돼도 소비하는 곳은 이 등장 규칙뿐이다. */
+:where(.hy-app .hy-screen > * > :is(.hy-content, [class$="-content"], [class$="-body"])) > * {
+  animation: hy-reveal 0.62s var(--easing-emphasized) calc(var(--hy-i, 0) * 45ms) backwards;
+}
+:where(.hy-screen > * > * > :nth-child(2)) { --hy-i: 1; }
+:where(.hy-screen > * > * > :nth-child(3)) { --hy-i: 2; }
+:where(.hy-screen > * > * > :nth-child(4)) { --hy-i: 3; }
+:where(.hy-screen > * > * > :nth-child(5)) { --hy-i: 4; }
+:where(.hy-screen > * > * > :nth-child(n + 6)) { --hy-i: 5; }
+/* 아이 모드는 같은 순서로 통통 튀며 들어온다. */
+:where(.hy-app[data-role="child"] .hy-screen > * > :is(.hy-content, [class$="-content"], [class$="-body"])) > * {
+  animation-name: hy-reveal-pop;
+  animation-timing-function: var(--easing-spring);
+}
+@keyframes hy-reveal {
+  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.98); }
+}
+@keyframes hy-reveal-pop {
+  from { opacity: 0; transform: translate3d(0, 24px, 0) scale(0.94); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.hy-app .hy-screen > * > :is(.hy-content, [class$="-content"], [class$="-body"])) > * {
+    animation: none;
+  }
 }
 
 /* ── 화면 진입 모션 ─────────────────────────────────────────────────────── */

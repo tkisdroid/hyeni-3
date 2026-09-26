@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/auth/AuthContext";
-import { asset } from "@/lib/assets";
 import { useReceivedStickers } from "@/queries/useStickers";
 import type { ReceivedSticker } from "@/lib/api/endpoints/stickers";
-import "./StickerCelebration.css";
 import { useIntl } from "react-intl";
+
+/** 축하 화면(그림·색종이·CSS)은 아이가 스티커를 받을 때만 필요하다 — 진입 번들 밖에서 받아 온다. */
+const loadCelebrationView = () => import("./StickerCelebrationView");
+const StickerCelebrationView = lazy(async () => ({ default: (await loadCelebrationView()).StickerCelebrationView }));
 
 export interface StickerCelebrationDetail {
   id?: string;
@@ -19,30 +21,11 @@ declare global {
   }
 }
 
-const STICKER_BY_EMOJI: Record<string, string> = {
-  "🏆": "sticker/best.webp",
-  "💗": "sticker/love.webp",
-  "😎": "sticker/cool.webp",
-  "🙌": "sticker/brave.webp",
-  "📚": "sticker/study.webp",
-  "👍": "sticker/self.webp",
-  "✅": "sticker/ready.webp",
-  "🌟": "sticker/early.webp",
-  "💛": "sticker/friend.webp",
-  "🧸": "sticker/play.webp",
-  "🎾": "sticker/sports.webp",
-  "🌙": "sticker/rest.webp",
-  "⭐": "sticker/best.webp",
-};
 const CELEBRATION_MS = 4200;
 const RECENT_STICKER_MS = 12 * 60 * 60 * 1000;
 
 function storageKey(userId: string): string {
   return `hy_last_celebrated_sticker_${userId}`;
-}
-
-function stickerImage(emoji?: string): string {
-  return asset(STICKER_BY_EMOJI[emoji ?? ""] ?? "sticker/best.webp");
 }
 
 function stickerTitle(title: string | undefined, fallback: string): string {
@@ -108,40 +91,17 @@ export function StickerCelebrationHost() {
     });
   }, [openCelebration, received.data, role, userId]);
 
+  // 아이 세션은 첫 화면 뒤에 축하 화면을 미리 받아 두어 첫 스티커가 늦게 뜨지 않게 한다.
+  useEffect(() => {
+    if (role === "child") void loadCelebrationView();
+  }, [role]);
+
   if (!detail) return null;
 
   const title = stickerTitle(detail.title, intl.formatMessage({ id: "shared.sticker.defaultTitle" }));
   return (
-    <button
-      key={detail.key}
-      type="button"
-      className="sticker-celebration"
-      aria-label={intl.formatMessage({ id: "shared.sticker.receivedLabel" }, { title })}
-      onClick={() => setDetail(null)}
-    >
-      <span className="sticker-celebration__flash" />
-      <span className="sticker-celebration__confetti" aria-hidden="true">
-        {Array.from({ length: 28 }, (_, i) => (
-          <span key={i} style={{ "--i": i } as CSSProperties} />
-        ))}
-      </span>
-      <span className="sticker-celebration__main">
-        <span className="sticker-celebration__eyebrow">{intl.formatMessage({ id: "shared.sticker.arrived" })}</span>
-        <img className="sticker-celebration__sticker" src={stickerImage(detail.emoji)} alt="" />
-        <span className="sticker-celebration__title">{title}</span>
-        <span className="sticker-celebration__sub">
-          {intl.formatMessage({
-            id: detail.stickerType === "early" || detail.stickerType === "on_time"
-              ? "shared.sticker.earnedAutomatically"
-              : "shared.sticker.sentByParent",
-          })}
-        </span>
-      </span>
-      <span className="sticker-celebration__stars" aria-hidden="true">
-        <span>★</span>
-        <span>✦</span>
-        <span>★</span>
-      </span>
-    </button>
+    <Suspense fallback={null}>
+      <StickerCelebrationView key={detail.key} detail={detail} title={title} onClose={() => setDetail(null)} />
+    </Suspense>
   );
 }

@@ -1947,7 +1947,7 @@ const semanticSurfaceManifest = [
     ["src/screens/parent/ParentHome.css", "ph-section-shell", "ice-section"],
     ["src/screens/parent/ParentHome.css", "ph-inner-surface", "card"],
     ["src/screens/parent/ParentHome.css", "ph-section-drag-preview", "floating"],
-    ["src/screens/parent/ParentCalendar.css", "pc-card", "open-section"],
+    ["src/screens/parent/ParentCalendar.css", "pc-card", "glass-panel"],
     ["src/screens/parent/ParentCalendar.css", "pc-event__card", "card"],
     ["src/screens/parent/ParentCalendar.css", "pc-sheet", "sheet"],
     ["src/screens/parent/ParentLocation.css", "pl-sheet", "sheet"],
@@ -2220,6 +2220,8 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-visited__state"],
   ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-history-toolbar"],
   ["src/styles/components.css", ".hy-tabbar__inner"],
+  // 탭바 선택 렌즈 — 판이 아니라 현재 탭 표식이다(2026-09-27 유리 개정).
+  ["src/styles/glass.css", ".hy-adult .hy-tabbar__lens"],
   ["src/app/ChildDock.css", ".kdock__bar"],
   // 기존 버튼과 액션 컨트롤 — exact path + selector만 허용
   ["src/screens/parent/ParentHome.css", ".ph-stickerbtn"],

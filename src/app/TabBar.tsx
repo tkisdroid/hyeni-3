@@ -20,12 +20,20 @@ export function TabBar({ tabs, iconOnly = false }: { tabs: TabItem[]; iconOnly?:
   const tabPathKey = tabs.map((tab) => tab.to).join("|");
   const navigationLabel = tabs.map((tab) => tab.label).join(", ");
   useEffect(() => preloadRoutesWhenIdle(tabPathKey.split("|")), [tabPathKey]);
+  const isActive = (to: string) => pathname === to || pathname.startsWith(to + "/");
+  const activeIndex = tabs.findIndex((t) => isActive(t.to));
 
   return (
     <nav className="hy-tabbar" aria-label={navigationLabel} data-icon-only={iconOnly ? "true" : undefined}>
-      <div className="hy-tabbar__inner">
+      {/* 선택 렌즈는 탭 사이를 스프링으로 미끄러진다 — 위치는 CSS 가 data-active-index 로 정한다. */}
+      <div
+        className="hy-tabbar__inner"
+        data-count={tabs.length}
+        data-active-index={activeIndex >= 0 ? activeIndex : undefined}
+      >
+        <span className="hy-tabbar__lens" aria-hidden="true" />
         {tabs.map((t) => {
-          const active = pathname === t.to || pathname.startsWith(t.to + "/");
+          const active = isActive(t.to);
           return (
             <button
               key={t.to}
