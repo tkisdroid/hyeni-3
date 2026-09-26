@@ -55,7 +55,7 @@ function VocabularyRun({ run, memberId, onBack }: { run: Run; memberId: string; 
 
   return <div className="vocabulary-screen vocabulary-run">
     <header className="study-learning-header">
-      <button className="study-learning-back" type="button" disabled={state.status === "saving"} aria-busy={state.status === "saving"} onClick={onBack} aria-label={label("study.vocabulary.chooseLevel")}><ChevronLeft aria-hidden="true" /></button>
+      <button className="study-learning-back hy-press" type="button" disabled={state.status === "saving"} aria-busy={state.status === "saving"} onClick={onBack} aria-label={label("study.vocabulary.chooseLevel")}><ChevronLeft aria-hidden="true" /></button>
       <div><h1>{label(VOCABULARY_LEVEL_IDS[run.level])}</h1><p>{intl.formatMessage({ id: "study.vocabulary.sessionCount" }, { count: state.index })}</p></div>
     </header>
     {deck.isPending || (!card && deck.isFetchingNextPage) ? <p role="status">{label("study.vocabulary.loading")}</p> : deck.isError ? (
@@ -103,7 +103,7 @@ function VocabularyHome() {
   const total = overview.data?.levels.reduce((sum, level) => sum + level.total, 0) ?? 0;
   return <div className="vocabulary-screen">
     <header className="study-learning-header">
-      <button type="button" className="study-learning-back" onClick={() => navigate("/miniapps")} aria-label={label("study.common.back")}><ChevronLeft aria-hidden="true" /></button>
+      <button type="button" className="study-learning-back hy-press" onClick={() => navigate("/miniapps")} aria-label={label("study.common.back")}><ChevronLeft aria-hidden="true" /></button>
       <div><h1>{label("study.vocabulary.title")}</h1><p>{label("study.vocabulary.subtitle")}</p></div>
     </header>
     {overview.isPending ? <p role="status">{label("study.vocabulary.loading")}</p> : overview.isError || !overview.data ? (

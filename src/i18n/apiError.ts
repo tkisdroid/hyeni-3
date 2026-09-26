@@ -70,6 +70,10 @@ const CODE_MESSAGES: Readonly<Record<string, Readonly<Record<ApiErrorTone, Messa
     formal: "core.error.api.phoneExists.formal",
     child: "core.error.api.phoneExists.child",
   },
+  phone_not_registered: {
+    formal: "core.error.api.phoneNotRegistered.formal",
+    child: "core.error.api.phoneNotRegistered.formal",
+  },
   otp_expired: {
     formal: "core.error.api.otpExpired.formal",
     child: "core.error.api.otpExpired.child",

@@ -191,6 +191,11 @@ test("reverse raw 좌표 경계와 object ref 소유권을 검증한 뒤 Kakao �
       familyId: "family-a", source: { kind: "picker_pin", lat: 37.12345678, lng: 127 },
     }, auth);
     assert.equal(invalid.status, 400);
+    // 2026-09-26: `value*1e7` 오차로 경도 130대의 올바른 7자리 좌표(울릉도)까지 거부하던 회귀.
+    const sevenDigits = await post(db, "reverse", {
+      familyId: "family-a", source: { kind: "picker_pin", lat: 37.4842, lng: 130.958332 },
+    }, auth);
+    assert.equal(sevenDigits.status, 200);
     const response = await post(db, "reverse", {
       familyId: "family-a", source: { kind: "saved_place", savedPlaceId: "place-a" },
     }, auth);

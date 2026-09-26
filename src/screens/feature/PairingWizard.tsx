@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DateField } from "@/components/ui/DateField";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Camera } from "lucide-react";
@@ -99,6 +100,11 @@ export function PairingWizard() {
 
   const [step, setStep] = useState<Step>(1);
   const [count, setCount] = useState(1);
+  // 이미 아이가 있는 가족이 "아이 추가"로 들어오면 남은 자리는 한 명뿐이라(프리미엄 최대 2명)
+  // "몇 명을 연결할까요?"는 고를 것이 없는 단계다. 바로 아이 정보부터 받는다.
+  const skipCountStep = existingChildCount >= 1;
+  const firstStep: Step = skipCountStep ? 2 : 1;
+  const visibleSteps: Step[] = skipCountStep ? [2, 3] : [1, 2, 3];
   const [children, setChildren] = useState<ChildDraft[]>([emptyChild()]);
   const [processingIndex, setProcessingIndex] = useState<number | null>(null);
   const [upsellOpen, setUpsellOpen] = useState(false);
@@ -111,6 +117,16 @@ export function PairingWizard() {
     setCount((c) => Math.min(c, safeMax));
     setChildren((list) => (list.length > safeMax ? list.slice(0, safeMax) : list));
   }, [remainingSlots]);
+
+  // 아이 추가 모드: 권한 확인이 끝나고 한 명을 더 연결할 수 있으면 곧바로 정보 단계로 넘어간다.
+  // 무료 가족(둘째는 프리미엄)·최대 인원은 1단계에 남아 이유와 다음 행동을 보여 준다.
+  useEffect(() => {
+    if (!skipCountStep || step !== 1 || !gatesReady) return;
+    if (currentAddDecision.status !== "allowed") return;
+    setCount(1);
+    setChildren((list) => list.slice(0, 1));
+    setStep(2);
+  }, [skipCountStep, step, gatesReady, currentAddDecision.status]);
 
   const handleBlockedAddition = (decision: ChildAddGateDecision): boolean => {
     if (decision.status === "allowed") return true;
@@ -169,7 +185,7 @@ export function PairingWizard() {
   };
 
   const back = () => {
-    if (step === 1) navigate(-1);
+    if (step <= firstStep) navigate(-1);
     else setStep((step - 1) as Step);
   };
 
@@ -290,8 +306,10 @@ export function PairingWizard() {
           </div>
         )}
         {/* 진행 표시 */}
+        {/* 고를 단계가 없는 화면(최대 인원·둘째 프리미엄 안내)에는 진행 표시를 두지 않는다. */}
+        {!(step === 1 && (premiumFull || skipCountStep)) && (<>
         <div className="pw-progress" aria-hidden="true">
-          {[1, 2, 3].map((n) => (
+          {visibleSteps.map((n) => (
             <span key={n} className={n <= step ? "pw-progress__seg on" : "pw-progress__seg"} />
           ))}
         </div>
@@ -299,8 +317,8 @@ export function PairingWizard() {
           {intl.formatMessage(
             { id: "parent.pairingWizard.stepLabel" },
             {
-              step: intl.formatNumber(step),
-              total: intl.formatNumber(3),
+              step: intl.formatNumber(Math.max(1, visibleSteps.indexOf(step) + 1)),
+              total: intl.formatNumber(visibleSteps.length),
               title: intl.formatMessage({
                 id:
                   step === 1
@@ -312,6 +330,7 @@ export function PairingWizard() {
             },
           )}
         </div>
+        </>)}
 
         {/* ── STEP 1 : 아이 수 ── */}
         {step === 1 && premiumFull && (
@@ -319,7 +338,12 @@ export function PairingWizard() {
             {intl.formatMessage({ id: "parent.pairingWizard.full" }, { count: existingChildCount })}
           </p>
         )}
-        {step === 1 && !premiumFull && (
+        {step === 1 && !premiumFull && skipCountStep && (
+          <p className="pw-note hy-explain" role="status">
+            {!gatesReady ? intl.formatMessage({ id: "parent.pairingWizard.gateNote" }) : childLimitMessage}
+          </p>
+        )}
+        {step === 1 && !premiumFull && !skipCountStep && (
           <>
             <div className="pw-lead">
               {intl.formatMessage({ id: "parent.pairingWizard.countLead" })}
@@ -368,10 +392,11 @@ export function PairingWizard() {
             </div>
             {children.map((child, i) => (
               <div key={i} className="pw-childcard">
+                {/* 이미 연결된 아이가 있으면 번호를 이어서 센다 — 둘째를 추가하는데 "아이 1"로 보였다(2026-09-26). */}
                 <div className="pw-childcard__head">
                   {intl.formatMessage(
                     { id: "parent.pairingWizard.childLabel" },
-                    { number: intl.formatNumber(i + 1) },
+                    { number: intl.formatNumber(existingChildCount + i + 1) },
                   )}
                 </div>
 
@@ -390,9 +415,12 @@ export function PairingWizard() {
                         <Camera size={24} strokeWidth={2} />
                       </span>
                     )}
-                    <span className="pw-photo__edit" aria-hidden="true">
-                      <Camera size={13} strokeWidth={2.4} color="#fff" />
-                    </span>
+                    {/* 빈 칸은 가운데 카메라가 이미 '사진 넣기'를 말한다 — 편집 배지는 사진이 있을 때만(카메라 두 개 중복). */}
+                    {child.photoDataUrl && (
+                      <span className="pw-photo__edit" aria-hidden="true">
+                        <Camera size={13} strokeWidth={2.4} color="#fff" />
+                      </span>
+                    )}
                   </button>
                   <input
                     ref={(el) => {
@@ -420,9 +448,9 @@ export function PairingWizard() {
                   <span className="pw-flabel">
                     {intl.formatMessage({ id: "parent.pairingWizard.birthdateLabel" })}
                   </span>
-                  <input
+                  <DateField
                     className="pw-input pw-input--date"
-                    type="date"
+                    placeholder={intl.formatMessage({ id: "parent.pairingWizard.birthdatePlaceholder" })}
                     value={child.birthdate}
                     max={todayStr}
                     onChange={(e) => updateChild(i, { birthdate: e.target.value })}

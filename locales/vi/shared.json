@@ -438,6 +438,7 @@
   "shared.qrScanner.retryPermission": "Kiểm tra lại quyền",
   "shared.qrScanner.scannerUnavailable": "Không thể quét QR trên thiết bị này. Vui lòng nhập mã thủ công.",
   "shared.qrScanner.title": "Quét mã QR",
+  "shared.routeView.addScheduleButton": "Thêm lịch trình",
   "shared.routeView.childFallback": "Bé",
   "shared.routeView.currentLocationFallback": "Vị trí hiện tại",
   "shared.routeView.destinationFallback": "Điểm đến",
@@ -937,5 +938,8 @@
   "shared.schedule.tag.ongoing": "Đang tiến hành",
   "shared.schedule.tag.upcoming": "hy vọng",
   "shared.schedule.tag.verify": "Yêu cầu xác nhận",
-  "shared.schedule.tag.visited": "tôi đã đi"
+  "shared.schedule.tag.visited": "tôi đã đi",
+  "shared.childSwitcher.fallbackName": "Con",
+  "shared.childSwitcher.unread": "Tin nhắn mới",
+  "shared.childSwitcher.label": "Chọn con để xem"
 }

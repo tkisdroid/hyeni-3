@@ -266,9 +266,6 @@ export function ParentFamily() {
                 {intl.formatMessage({ id: "parent.parentFamily.connectionTargetTitle" })}
               </div>
               <div className="pf-paircode__card">
-                <p className="pf-paircode__intro">
-                  {intl.formatMessage({ id: "parent.parentFamily.connectionTargetDescription" })}
-                </p>
                 <div className="pf-paircode__targets">
                   <button
                     type="button"

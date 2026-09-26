@@ -1,0 +1,31 @@
+/* 빈 날짜 칸 안내 — 입력칸의 모양은 각 화면 클래스가 맡고, 여기서는 겹치는 문구만 둔다. */
+.hy-date-field {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.hy-date-field > input {
+  width: 100%;
+}
+
+/* 비어 있으면 브라우저 기본 날짜 틀(연도-월-일)을 숨기고 안내 문구를 보인다. */
+.hy-date-field[data-empty="true"] > input::-webkit-datetime-edit {
+  color: transparent;
+}
+
+.hy-date-field__placeholder {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  right: 44px;
+  transform: translateY(-50%);
+  overflow: hidden;
+  color: var(--fg-placeholder);
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}

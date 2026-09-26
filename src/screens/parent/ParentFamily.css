@@ -82,6 +82,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* 프레임이 둥글면 사진도 같은 모서리로 잘린다(형제 배지를 자르지 않도록 overflow 대신 상속). */
+  border-radius: inherit;
 }
 .pf-parent__main {
   flex: 1;
@@ -370,20 +372,9 @@
   border: 1px solid var(--line-card);
   padding: 16px;
 }
-.pf-paircode__intro {
-  margin: 0;
-  font-size: var(--type-label);
-  line-height: var(--type-label-line-height);
-  font-weight: var(--type-label-weight);
-  color: var(--fg-muted);
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-  text-wrap: pretty;
-}
 .pf-paircode__targets {
   display: grid;
   gap: 12px;
-  margin-top: 16px;
 }
 .pf-paircode__target {
   width: 100%;

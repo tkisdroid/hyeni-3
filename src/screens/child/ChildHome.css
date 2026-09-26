@@ -6,7 +6,7 @@
    ==========================================================================*/
 
 .kd-root {
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
   --kd-sky-1: #bfe3ff;
   --kd-sky-2: #dff3e7;
   --kd-sky-3: #cdebbe;

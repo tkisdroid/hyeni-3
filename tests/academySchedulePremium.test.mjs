@@ -10,7 +10,8 @@ test("부모 홈은 일반 AI 일정과 별도로 학원 시간표 Premium 진�
   const koParent = JSON.parse(read("locales/ko/parent.json"));
   assert.match(home, /navigate\("\/ai-schedule\?mode=academy&tab=image"\)/);
   assert.match(home, /parent\.parentHome\.copy028/);
-  assert.equal(koParent["parent.parentHome.copy028"], "학원표");
+  // 2026-09-26: "학원표" 줄임말 대신 무엇을 올리는지 바로 읽히는 이름을 쓴다.
+  assert.equal(koParent["parent.parentHome.copy028"], "학원 시간표");
   assert.match(css, /\.ph-ai__grid\s*\{[^}]*grid-template-columns:\s*1fr 1fr/s);
 });
 

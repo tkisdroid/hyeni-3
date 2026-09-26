@@ -1,14 +1,16 @@
 .sqs-screen {
   min-height: 100%;
-  padding: max(16px, env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(28px + env(safe-area-inset-bottom, 0px));
   background: var(--bg-page);
   color: var(--fg-primary);
 }
 
+/* 다른 상세 화면과 같은 헤더: 뒤로가기 + 왼쪽 정렬 제목(가운데 정렬은 이 화면에만 있었다). */
 .sqs-header {
   min-height: var(--control-min-size);
   display: grid;
   grid-template-columns: var(--control-min-size) minmax(0, 1fr) var(--control-min-size);
+  gap: 8px;
   align-items: center;
 }
 
@@ -29,7 +31,7 @@
 
 .sqs-title {
   overflow: hidden;
-  text-align: center;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--type-title);
@@ -105,8 +107,10 @@
   margin-top: 12px;
   padding: 0 16px;
   border-radius: var(--radius-pill);
-  background: var(--fg-primary);
+  /* 재시도는 화면의 주요 동작이다 — 검정 대신 다른 화면과 같은 CTA 색을 쓴다. */
+  background: var(--hy-accent-cta);
   color: var(--bg-card);
+  box-shadow: var(--control-shadow);
   display: inline-flex;
   align-items: center;
   justify-content: center;

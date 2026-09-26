@@ -6,13 +6,16 @@
 /* 탭 눌림 피드백 (--press 로 스케일 조정) */
 .hy-press {
   min-height: var(--control-min-size);
+  /* 뗄 때: 스프링으로 살짝 튀어 제자리로(0.36s). 누를 때는 아래 :active 가 90ms 로 즉시 들어간다. */
   transition:
-    transform var(--duration-fast) var(--easing-standard),
+    transform 0.36s var(--easing-cheer),
     box-shadow var(--duration-fast) var(--easing-standard),
     background-color var(--duration-fast) var(--easing-standard);
 }
 .hy-press:active:not(:disabled):not([aria-disabled="true"]):not([aria-busy="true"]) {
-  transform: scale(var(--press, 0.98));
+  transform: scale(var(--press, 0.97));
+  transition-duration: 0.09s, var(--duration-fast), var(--duration-fast);
+  transition-timing-function: var(--easing-standard);
 }
 
 /* 디자인 시스템 기본값: 별도 화면 규칙이 없어도 실제 조작 면적은 44px 아래로 줄지 않는다. */
@@ -494,9 +497,29 @@
   color: #fff;
 }
 
+/* ── 화면 전환 정본 ─────────────────────────────────────────────────────────
+   셸의 스크롤 영역 바로 아래 자식(= 라우트 화면 루트)이 마운트될 때 한 번 재생한다.
+   화면마다 따로 걸던 진입 페이드(hy-fadein 등)를 이 규칙이 대신한다(특이도 0,2,1 > 화면 0,1,0).
+   ⚠️ backwards 로만 채운다 — 끝난 뒤 transform 을 남기면 sticky 유리 헤더가 흐려지지 않는다. */
+.hy-app .hy-screen > * {
+  animation: hy-route-tab 0.28s var(--easing-emphasized) backwards;
+}
+.hy-app .hy-screen[data-shell="push"] > * {
+  animation: hy-route-push var(--duration-route) var(--easing-emphasized) backwards;
+}
+@keyframes hy-route-tab {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+}
+@keyframes hy-route-push {
+  from { opacity: 0; transform: translate3d(0, 36px, 0) scale(0.985); }
+}
+
 /* ── 화면 진입 모션 ─────────────────────────────────────────────────────── */
+/* ⚠️ 진입 모션은 `backwards` 로만 채운다. `forwards` 는 끝난 뒤에도 `translateY(0)` 을 남겨
+   화면 루트가 transform 조상이 되고, Android WebView(Chrome 124 실측)에서 sticky 헤더의
+   backdrop-filter 가 그려지지 않아 스크롤한 본문이 제목·뒤로가기와 겹쳐 보였다. */
 .hy-rise-in {
-  animation: hy-rise 0.46s var(--easing-standard) forwards;
+  animation: hy-rise 0.46s var(--easing-standard) backwards;
 }
 
 /* ── 빈 화면 플레이스홀더(임시) ─────────────────────────────────────────── */
@@ -624,7 +647,7 @@
   justify-content: center;
   text-align: center;
   background: linear-gradient(180deg, #fdf4f1, #f6f3fb);
-  animation: hy-rise 0.4s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  animation: hy-rise 0.4s cubic-bezier(0.2, 0, 0.2, 1) backwards;
 }
 .hy-crash__img {
   width: 108px;

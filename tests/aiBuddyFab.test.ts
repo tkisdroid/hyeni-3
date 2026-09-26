@@ -427,11 +427,12 @@ test("배회 타이머는 감정이 바뀌어도 다시 만들지 않고 말풍�
   assert.match(read("src/app/AiBuddyFab.css"), /\.abf__bubble \{[^}]*pointer-events: none/);
 });
 
-test("아이 홈은 화면 폭 약 1/3의 실제 렌더 크기로 위치를 계산한다", () => {
+// 2026-09-26: 1/3 크기는 색상 칩·카드 버튼을 너무 많이 가려 약 27%(411px 기준 111px)로 줄였다.
+test("아이 홈은 화면 폭 약 27%의 실제 렌더 크기로 위치를 계산한다", () => {
   const fab = read("src/app/AiBuddyFab.tsx");
   const css = read("src/app/AiBuddyFab.css");
-  assert.match(css, /\.abf \{[^}]*width: clamp\(112px, 33\.333vw, 144px\)/);
-  assert.match(css, /\.abf \{[^}]*height: clamp\(112px, 33\.333vw, 144px\)/);
+  assert.match(css, /\.abf \{[^}]*width: clamp\(96px, 27vw, 120px\)/);
+  assert.match(css, /\.abf \{[^}]*height: clamp\(96px, 27vw, 120px\)/);
   assert.match(fab, /fabSize: hostRef\.current\?\.offsetWidth \?\? presentation\.size/);
   assert.match(css, /\.abf--compact \{[^}]*width: 68px;[^}]*height: 68px/);
 });
@@ -542,7 +543,7 @@ test("설정을 확인한 뒤에만 탭을 대화나 친구 만들기로 연결�
   assert.match(fab, /friendSettings\.isError[\s\S]{0,220}child\.aiSetup\.loadError\.title/);
 });
 
-test("1/3 크기 친구의 살짝 커지기 동작은 가장자리 여백 안에서 끝난다", () => {
+test("홈 크기 친구의 살짝 커지기 동작은 가장자리 여백 안에서 끝난다", () => {
   const css = read("src/app/AiBuddyFab.css");
   assert.doesNotMatch(css, /@keyframes abf-attention[\s\S]{0,520}scale\(1\.55\)/);
   assert.match(css, /@keyframes abf-attention[\s\S]{0,520}scale\(1\.14\)/);

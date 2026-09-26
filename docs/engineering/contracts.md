@@ -218,6 +218,52 @@
   직접 전달하고, 캡처가 없으면 새 서비스를 만들지 않는다. microphone FGS 시작은 서버 승인 증표를 소비한
   `RemoteListenActivity`의 사용자 가시 경로로만 유지한다. 위치 부팅 복구 자체를 제거하지 않는다.
   회귀=`tests/remoteListenConsentSafety.test.mjs`·Android `RemoteListenActiveSessionTest`.
+- **위치 서비스 조기 종료 크래시 금지(2026-09-26 에뮬레이터 실측)**: `startForegroundService()`로 시작된
+  `LocationService`가 `startForeground()` 전에 `stopSelf()` 하면 OS가 `ForegroundServiceDidNotStartInTimeException`으로
+  앱을 죽인다(오래된 세션 문맥 거부 경로에서 44ms 만에 아이 앱 종료, 앱 업데이트 직후 `BootReceiver` 복구 경로도 같은 구조).
+  `onStartCommand`의 추적 시작 전 조기 종료는 모두 `stopBeforeTrackingStarts()`(알림을 한 번 올렸다 내린 뒤 종료)를 쓴다.
+  명시적 STOP 분기는 그대로 둔다. 회귀=`tests/locationServiceForegroundStop.test.mjs`.
+- **OS 위치 스위치는 권한과 별개(2026-09-26 실기기 S20 Ultra)**: 권한·위치 서비스는 정상인데 폰의 OS 위치(GPS)가
+  꺼져 좌표가 1.5일 넘게 오지 않았고, 기기 상태는 `locationOk=true` 로 보고돼 부모 화면이 "위치 정상"으로 읽혔다.
+  `DeviceStatusReporter` 가 `systemLocationEnabled`(LocationManager)를 싣고 `locationOk`·`ready` 에 반영한다(판정 불가면
+  꺼졌다고 단정하지 않는다). 부모 `deviceLocationHealthView` 는 이 값을 권한보다 먼저 "아이 폰 위치가 꺼져 있어요"로 알리고,
+  아이 "내 위치"는 `systemOff` 상태로 "폰 위치가 꺼져 있어" + OS 위치 설정 열기를 보인다(권한 안내로 뭉뚱그리지 않는다).
+  회귀=`tests/deviceStatusSystemLocation.test.mjs`·`tests/deviceNotificationHealth.test.ts`·`tests/locationPermissionFlow.test.ts`.
+- **Kakao SDK 준비 판정(2026-09-26 에뮬레이터 실측)**: `autoload=false` SDK는 `sdk.js` 실행 직후 `load`만 있는
+  `kakao.maps` 껍데기를 만들고 본체(`kakao.js`)는 뒤에 받는다. 로더는 `kakao.maps.LatLng` 존재로만 완성을 판정하고,
+  진행 중이면 같은 Promise·`maps.load` 완료를 기다린다(껍데기를 돌려주면 데이터 도착으로 다시 돈 지도 효과가
+  `new maps.LatLng` TypeError로 "지도를 불러오지 못했어요"에 굳었다 — 캐시 없는 첫 진입 매번 재현, 수정 뒤 4/4 정상).
+  회귀=`tests/kakaoLoaderReadiness.test.mjs`. 실 지도 확인은 에뮬레이터 앱(origin `https://localhost`)에서 지도 SDK·타일
+  호스트만 네트워크로 통과시키고 앱 API는 fixture로 닫는 방식으로 한다(키는 `.env.local`, 출력 금지).
+- **비밀번호 찾기(2026-09-26, Worker 배포됨)**: 로그인 화면 "아이디·비밀번호 찾기" → `PasswordResetSheet`.
+  `POST /auth/password-reset/request-otp`(가입 번호 아니면 404 `phone_not_registered`, 소셜 전용 계정이면 409
+  `password_account_required`) → `POST /auth/password-reset/verify`가 phone_otp 검증·비밀번호 변경·refresh 토큰 폐기·
+  OTP 삭제를 한 batch로 처리하고 `loginId`를 돌려준다(앱은 폼을 채워 곧바로 로그인). 인증·변경은 사용자 버튼에서만.
+  회귀=`worker/tests/passwordReset.test.mjs`.
+- **SOS 문구와 보호자 확인(2026-09-26 실기기)**: 아이 앱이 남기는 SOS 원문은 부모 존댓말·번역 카탈로그와 같은 문장
+  ("🆘 {이름} 긴급 도움 요청" / "{이름}{이가|가} 긴급 도움을 요청했어요. 위치를 확인하고 연락해 주세요.")이다. 한국어 알림함은
+  `notificationCopy` 대신 원문을 그대로 보이므로 원문이 곧 화면 문구다. 부모가 SOS 화면에서 '안전 확인'을 누르면 그 아이
+  대화방에 `origin: "sos_ack"` 메시지("SOS 확인했어. 곧 연락할게!")를 남기고, 아이 SOS 완료 화면은 발사 뒤 도착한 이
+  메시지를 보고 "보호자가 확인했어"로 바뀐다(실측 4초). 아이 SOS 화면 전화 버튼은 성별 미지정 보호자도 이름으로 보인다.
+  부모 연락 버튼은 아이 번호가 있으면 "아이에게 전화", 없으면 "아이 폰 벨 울리기"로 실제 동작을 말한다.
+  회귀=`tests/childSosCopy.test.mjs`.
+- **무료 SOS 위치는 실시간으로(2026-09-26, Worker 배포 `ae3e4e82` · 실기기 확인)**: 무료 standard 모드는 10분 스냅샷을 보여 주지만,
+  최근 30분 안에 SOS `parent_alerts` 가 있는 아이는 `child_locations` 최신값으로 덮는다(`SOS_LIVE_LOCATION_WINDOW_MS`).
+  회귀=`worker/tests/locationTierAccess.test.mjs`.
+- **지도 원좌표 역지오코딩 정밀도(2026-09-26 실기기)**: `/api/maps/reverse` 원좌표(picker_pin·memo_share)는 소수점
+  7자리까지만 받는다. 지도 탭 좌표(15자리)를 그대로 보내 400이 나며 장소 등록 주소 칸이 늘 비었다. 앱은
+  `lib/mapActions.toReverseCoordinate`로 7자리(1cm 이내)로 바꿔 보낸다. 서버 검사는 `value*1e7` 오차 비교가 경도 130대의
+  올바른 7자리 값도 거부해 `Number(value.toFixed(7)) === value`로 바꿨다(Worker `ae3e4e82` 배포).
+  회귀=`tests/mapReverseCoordinate.test.mjs`·`worker/tests/mapsRoutes.test.mjs`.
+- **무료 요금제 아이 수**: 무료는 아이 1명이다. 둘째 아이 연결은 가족 화면에서 프리미엄 안내로 막히므로 실서버 다자녀
+  E2E 는 프리미엄 가족이 필요하다. 임시 권한 절차는 [기기·운영 참고](operations.md)의 "다자녀 실서버 E2E" 항목을 따른다.
+  2026-09-26 실측(S25 부모·S20 첫째·에뮬레이터 둘째): 전역 아이 전환이 대화·위치·준비물·벨·스티커에 함께 적용되고,
+  대화·일정 배정·준비물·SOS·SOS 확인 메시지·벨 울리기가 모두 아이별로 갈렸다(다른 아이 기기에 새지 않음).
+- **다자녀 대화 알림(2026-09-26)**: 대화 화면의 아이 전환 알약은 지금 보지 않는 아이의 안 읽은 메시지를 점으로 알린다
+  (`useUnreadMemoChildIds`, 탭 점과 같은 쿼리 키). 아이 → 부모 메시지 푸시 제목은 "{이름}{이가|가} 메시지를 보냈어요"다
+  (`worker/lib/koreanSubject.childSubjectKo` — 부모가 자기 아이를 "님"으로 부르지 않는다). 회귀=`worker/tests/koreanSubject.test.mjs`.
+- **긴급 수신 위치 새로고침(2026-09-26)**: 부모 `SosReceive` 는 새 SOS 가 보이면 위치를 즉시 + 4초 뒤 한 번 더 다시 받는다.
+  30초 폴링만 기다리면 서버가 SOS 중 실시간 위치를 줘도 첫 화면이 스냅샷("8분 전")이었다. 회귀=`tests/childSosCopy.test.mjs`.
 - **현재 Play 출시 후보(2026-08-15)**: 실제 제출 후보는 v1.3.0/**versionCode 6**이다. 위치 권한 안내가 인증 전환에
   가려지지 않도록 gate를 유지하고, 권한이 없는 아이의 위치 화면에서도 같은 prominent disclosure를 거쳐 Android 전경→
   백그라운드 권한을 요청한다. 위치 FGS 지속 알림은 장식 문구 대신 `위치 공유 중`과 실제 공유 대상을 표시한다.

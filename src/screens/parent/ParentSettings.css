@@ -12,19 +12,6 @@
   background: color-mix(in srgb, var(--bg-app) 94%, transparent);
   backdrop-filter: blur(10px);
 }
-.ps-back {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--bg-card);
-  box-shadow: var(--shadow-soft);
-  color: var(--fg-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  --press: 0.9;
-}
 .ps-head-title {
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);
@@ -78,6 +65,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* 프레임이 둥글면 사진도 같은 모서리로 잘린다(형제 배지를 자르지 않도록 overflow 대신 상속). */
+  border-radius: inherit;
 }
 .ps-profile__info {
   flex: 1;
@@ -500,12 +489,6 @@
 }
 
 /* 실제 TSX 상호작용 요소의 최소 터치 영역 */
-.ps-back {
-  min-height: var(--control-min-size);
-}
-.ps-back {
-  min-width: var(--control-min-size);
-}
 
 /* 레퍼런스의 프로필 목록: 원형 조작 면과 여유 있는 한 줄 행. */
 .hy-adult .ps-head {
@@ -517,10 +500,6 @@
   font-size: var(--type-title-lg);
   line-height: var(--type-title-lg-line-height);
   font-weight: var(--type-title-lg-weight);
-}
-.hy-adult .ps-back {
-  order: 1;
-  margin-left: auto;
 }
 .hy-adult :is(.ps-nav, .ps-feature, .ps-account, .ps-notif) {
   min-height: 72px;

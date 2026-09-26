@@ -438,6 +438,7 @@
   "shared.qrScanner.retryPermission": "Suriin muli ang pahintulot",
   "shared.qrScanner.scannerUnavailable": "Hindi available ang pag-scan ng QR sa device na ito. Pakilagay nang manu-mano ang code.",
   "shared.qrScanner.title": "I-scan ang QR code",
+  "shared.routeView.addScheduleButton": "Magdagdag ng iskedyul",
   "shared.routeView.childFallback": "Bata",
   "shared.routeView.currentLocationFallback": "Kasalukuyang lokasyon",
   "shared.routeView.destinationFallback": "Destinasyon",
@@ -937,5 +938,8 @@
   "shared.schedule.tag.ongoing": "Kasalukuyang ginagawa",
   "shared.schedule.tag.upcoming": "Paparating",
   "shared.schedule.tag.verify": "Kailangang kumpirmahin",
-  "shared.schedule.tag.visited": "Napuntahan na"
+  "shared.schedule.tag.visited": "Napuntahan na",
+  "shared.childSwitcher.fallbackName": "Anak",
+  "shared.childSwitcher.unread": "Bagong mensahe",
+  "shared.childSwitcher.label": "Piliin ang anak na titingnan"
 }

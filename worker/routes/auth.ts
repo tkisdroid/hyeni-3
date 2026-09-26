@@ -506,6 +506,93 @@ auth.post("/change-password", requireAuth, async (c) => {
   return c.json({ ok: true });
 });
 
+// ── 아이디 확인·비밀번호 재설정(휴대폰 인증) ─────────────────────────────────────
+// 2026-09-26 실기기 E2E: 비밀번호를 잊으면 복구 수단이 없어 같은 번호로 새로 가입할 수도 없었다(phone_exists).
+// 가입과 같은 phone_otp(HMAC·5분·5회·60초 cooldown)를 재사용하고, 게이트만 반대다(등록된 비밀번호 계정 필수).
+// 번호 등록 여부는 가입 request-otp(phone_exists)가 이미 드러내므로 여기서도 명확히 알려 SMS 낭비를 막는다.
+async function findPasswordAccountByPhone(
+  db: D1Database,
+  phone: string,
+): Promise<{ id: string; loginId: string | null; hasPassword: boolean } | null> {
+  const row = await db
+    .prepare(
+      `SELECT u.id AS id, up.login_id AS login_id, u.encrypted_password AS pw
+       FROM users u
+       LEFT JOIN user_profiles up ON REPLACE(up.phone, '+', '') = u.phone
+       WHERE u.phone = ?1 AND COALESCE(u.is_anonymous, 0) = 0
+       LIMIT 1`,
+    )
+    .bind(e164ToGoTruePhone(phone))
+    .first<{ id: string; login_id: string | null; pw: string | null }>();
+  if (!row?.id) return null;
+  return { id: row.id, loginId: row.login_id ? String(row.login_id) : null, hasPassword: !!row.pw };
+}
+
+// POST /auth/password-reset/request-otp — { phone } → 등록된 비밀번호 계정이면 OTP 발송.
+auth.post("/password-reset/request-otp", async (c) => {
+  let body: { phone?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "bad_request" }, 400);
+  }
+  const phone = parsePhone(body?.phone);
+  if (!phone) return c.json({ error: "invalid_phone" }, 400);
+  const account = await findPasswordAccountByPhone(c.env.DB, phone);
+  if (!account) return c.json({ error: "phone_not_registered" }, 404);
+  // 카카오·Google 로만 가입한 계정은 바꿀 비밀번호가 없다 — 소셜 로그인으로 안내한다.
+  if (!account.hasPassword || !account.loginId) return c.json({ error: "password_account_required" }, 409);
+  const sent = await sendPhoneOtp(c.env.DB, c.env, phone);
+  if (!sent.ok) {
+    if (sent.retryAfter) c.header("Retry-After", sent.retryAfter);
+    return c.json({ error: sent.error }, (sent.status ?? 500) as 409 | 429 | 503 | 500);
+  }
+  return c.json({ ok: true });
+});
+
+// POST /auth/password-reset/verify — { phone, token, password } → OTP 확인 후 비밀번호 교체.
+// 성공하면 아이디를 돌려준다(아이디 찾기 겸용). 기존 refresh 세션은 모두 끊는다 — 비밀번호를 잃은
+// 상황은 기기 분실·유출일 수 있으므로 새 비밀번호로 다시 로그인한 설치만 활성으로 남긴다.
+auth.post("/password-reset/verify", async (c) => {
+  let body: { phone?: unknown; token?: unknown; password?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "bad_request" }, 400);
+  }
+  const phone = parsePhone(body?.phone);
+  if (!phone) return c.json({ error: "invalid_phone" }, 400);
+  const token = String(body?.token ?? "").replace(/\D/g, "");
+  if (!/^\d{6}$/.test(token)) return c.json({ error: "invalid_token_format" }, 400);
+  const password = String(body?.password ?? "");
+  if (password.length < 6) return c.json({ error: "weak_password" }, 400);
+
+  const account = await findPasswordAccountByPhone(c.env.DB, phone);
+  if (!account) return c.json({ error: "phone_not_registered" }, 404);
+  if (!account.hasPassword || !account.loginId) return c.json({ error: "password_account_required" }, 409);
+
+  const validated = await validatePhoneOtp(c.env.DB, c.env, phone, token);
+  if (!validated.ok || !validated.verificationHash) {
+    return c.json({ error: validated.error }, (validated.status ?? 401) as 401 | 429);
+  }
+  const nextHash = await hashPassword(password);
+  // 비밀번호 교체·세션 정리·OTP 소비를 한 batch(트랜잭션)로 묶는다. 교체와 세션 정리는 "검증한 바로 그 OTP 가
+  // 아직 남아 있을 때"만 적용해, 같은 코드로 동시에 들어온 두 요청 중 하나만 비밀번호를 바꾼다.
+  const otpStillValid = "EXISTS (SELECT 1 FROM phone_otp WHERE phone = ? AND code_hash = ?)";
+  const results = await c.env.DB.batch([
+    c.env.DB.prepare(`UPDATE users SET encrypted_password = ? WHERE id = ? AND ${otpStillValid}`)
+      .bind(nextHash, account.id, phone, validated.verificationHash),
+    c.env.DB.prepare(`DELETE FROM refresh_tokens WHERE user_id = ? AND ${otpStillValid}`)
+      .bind(account.id, phone, validated.verificationHash),
+    c.env.DB.prepare("DELETE FROM phone_otp WHERE phone = ? AND code_hash = ?").bind(phone, validated.verificationHash),
+  ]);
+  if (Number(results[0]?.meta?.changes ?? 0) !== 1 || Number(results[2]?.meta?.changes ?? 0) !== 1) {
+    return c.json({ error: "otp_not_found" }, 401);
+  }
+  await clearLoginFailures(c.env.DB, account.loginId.trim().toLowerCase());
+  return c.json({ ok: true, loginId: account.loginId });
+});
+
 // ── 신규 부모/선생님 전화 가입(Supabase auth.signUp + verifyOtp 직역) ──────────────
 // 원본 흐름: checkLoginIdAvailability → signUp{phone,password,data} OTP 발송 → verifyOtp 세션
 //            → user_profiles upsert(login_id/이름). Worker 는 GoTrue 가 없으므로 user/identity/

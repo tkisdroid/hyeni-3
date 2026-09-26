@@ -86,7 +86,8 @@ test("가입 전 단계는 같은 헤더·밝은 표면을 쓰고 QR 실행 영�
     assert.match(onboarding, new RegExp(`className="${className} ob-step-head"`), `${className}: 공통 헤더 누락`);
   }
   assert.match(css, /\.ob-step-head\s*\{[^}]*grid-template-columns:\s*56px minmax\(0, 1fr\)/s);
-  assert.match(css, /:is\(\.ob-role-card, \.ob-survey-card, \.ob-connect-card, \.ob-perm, \.ob-referral-notice\)/);
+  // 2026-09-26: 가족 연결 단계의 시간대·이용 국가 판도 같은 유리로 칠한다.
+  assert.match(css, /:is\(\.ob-role-card, \.ob-survey-card, \.ob-connect-card, \.ob-perm, \.ob-referral-notice, \.ob-connect \.hy-tz, \.ob-connect \.study-country-card\)/);
   assert.match(css, /\.ob-qr\s*\{[^}]*background:\s*#0c0a0a/s);
   assert.match(onboarding, /className="ob-input ob-pair-code-input"/);
   assert.doesNotMatch(onboarding, /ob-pair-code-input[^>]*style=\{/s);
@@ -110,6 +111,7 @@ test("역할 카드의 의미 색상은 인라인 값이 아니라 공용 디자
 
   assert.doesNotMatch(roleStep, /className="ob-role-(?:name|desc)"\s+style=/);
   assert.doesNotMatch(roleStep, /<ChevronRight[^>]*\bcolor=/);
+  assert.match(css, /\.ob-role-card--parent\s*\{[^}]*--ob-role-title:\s*var\(--blue-text\)/s);
   assert.match(css, /\.ob-role-card--child\s*\{[^}]*--ob-role-title:\s*var\(--lav-text\)/s);
   assert.match(css, /\.ob-role-card--teacher\s*\{[^}]*--ob-role-title:\s*var\(--mint-text\)/s);
   assert.match(css, /\.ob-role-card\s*>\s*svg\s*\{[^}]*color:\s*var\(--ob-role-chevron\)/s);
@@ -122,4 +124,18 @@ test("기존 가족 연결 실패는 화면 안에 남고 입력을 고치면 �
   assert.match(onboarding, /className="ob-auth-alert" role="alert"/);
   assert.match(onboarding, /onChange=\{\(e\) => \{[\s\S]{0,160}setPairingError\(null\)/);
   assert.match(onboarding, /const message = localizeApiError\(e, intl, mode === "child" \? "child" : "formal"\)[\s\S]{0,120}setPairingError\(message\)/);
+});
+
+test("첫 화면 언어 판은 판 하나이고 빈 생년월일 칸은 안내 문구를 보인다", () => {
+  // 2026-09-26 제보: 흰 카드 안 회색 알약 + 흰 목록 카드가 겹쳐 "깨져 보였다". 빈 date 칸은 빈 상자로만 보였다.
+  const languageCss = source("src/components/LanguageSelector.css");
+  const languageTsx = source("src/components/LanguageSelector.tsx");
+  const onboarding = source("src/screens/onboarding/Onboarding.tsx");
+  const wizard = source("src/screens/feature/PairingWizard.tsx");
+  assert.match(languageCss, /\.hy-language--collapse-others\s*\{[^}]*background:\s*var\(--ph-glass-fill/s);
+  assert.match(languageCss, /\.hy-language--collapse-others \.hy-language__options--list\s*\{[^}]*background:\s*none;[^}]*box-shadow:\s*none/s);
+  assert.match(languageTsx, /scrollIntoView\(\{ block: "nearest", behavior: "smooth" \}\)/);
+  assert.match(onboarding, /<DateField inputRef=\{birthdateInputRef\} placeholder=\{intl\.formatMessage\(\{ id: "onboarding\.field\.birthdatePlaceholder" \}\)\}/);
+  assert.match(wizard, /<DateField[\s\S]{0,120}parent\.pairingWizard\.birthdatePlaceholder/);
+  assert.doesNotMatch(onboarding, /className="ob-input" type="date"/);
 });

@@ -72,6 +72,7 @@ export interface DeviceHealth {
   locationOk?: boolean | null;
   /** 네이티브 백그라운드 위치 서비스 실행 상태. */
   locationServiceRunning?: boolean | null;
+  systemLocationEnabled?: boolean | null;
   /** OS가 앱 백그라운드 실행을 제한하고 있는지 여부. */
   backgroundRestricted?: boolean | null;
   /** 마지막 네이티브 상태 보고의 실제 제조사·모델. 오래된 device_label 보정에 사용. */

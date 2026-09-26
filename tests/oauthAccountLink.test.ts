@@ -124,6 +124,7 @@ test("과거 callback은 현재 link transaction의 실패 이벤트로 전파�
 test("계정 화면 안내문이 실제 동작과 맞는다(해제 가능한데 '해당 서비스에서 관리' 금지)", () => {
   const account = readFileSync(new URL("../src/screens/parent/ParentAccount.tsx", import.meta.url), "utf8");
   assert.ok(!Object.values(koParent).includes("연동된 소셜 계정은 해당 서비스에서 관리돼요"));
-  assert.match(account, /parent\.parentAccount\.copy022/);
-  assert.equal(koParent["parent.parentAccount.copy022"], "소셜 로그인은 아래에서 연결하거나 해제할 수 있어요.");
+  // 2026-09-26: "소셜 로그인은 아래에서 연결하거나 해제할 수 있어요" 안내는 뺐다 — 바로 아래 섹션 제목과
+  // 행마다 붙은 "연결하기" 버튼이 같은 말을 한다. 다시 넣는다면 실제 동작(해제 가능)과 맞아야 한다.
+  assert.doesNotMatch(account, /parent\.parentAccount\.copy022/);
 });

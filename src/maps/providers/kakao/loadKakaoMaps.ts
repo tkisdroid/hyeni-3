@@ -19,11 +19,30 @@ export type KakaoMaps = any;
 let loadPromise: Promise<KakaoMaps> | null = null;
 const KAKAO_RETRY_DELAY_MS = 300;
 
+/**
+ * autoload=false SDK 는 sdk.js 가 실행되자마자 `kakao.maps`(load 함수만 있는 껍데기)를 먼저 만들고
+ * 본체(kakao.js)는 뒤이어 받는다. 껍데기를 완성본으로 돌려주면 `new maps.LatLng` 가 TypeError 로
+ * 실패해 화면이 "지도를 불러오지 못했어요"로 굳는다(2026-09-26 에뮬레이터 실측: 본체 도착 2.7초 전
+ * 데이터 도착으로 지도 효과가 다시 돌며 실패). 완성 여부는 생성자(LatLng) 존재로 판정한다.
+ */
+function isKakaoMapsReady(): boolean {
+  return typeof window.kakao?.maps?.LatLng === "function";
+}
+
 function loadKakaoMapsOnce(): Promise<KakaoMaps> {
-  if (window.kakao?.maps) return Promise.resolve(window.kakao.maps);
+  if (isKakaoMapsReady()) return Promise.resolve(window.kakao.maps);
   if (loadPromise) return loadPromise;
 
   loadPromise = new Promise<KakaoMaps>((resolve, reject) => {
+    // 스크립트는 이미 실행됐고 본체만 기다리는 중이면 새 스크립트를 넣지 않고 load 완료를 기다린다.
+    if (typeof window.kakao?.maps?.load === "function") {
+      try {
+        window.kakao.maps.load(() => resolve(window.kakao.maps));
+      } catch (e) {
+        reject(e instanceof Error ? e : new Error("Kakao 지도 초기화 실패"));
+      }
+      return;
+    }
     const script = document.createElement("script");
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_APP_KEY}&autoload=false&libraries=services`;
     script.async = true;

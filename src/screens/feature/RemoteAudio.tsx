@@ -670,7 +670,6 @@ export function RemoteAudio() {
           <div className="ra-start-note hy-explain">
             <span className="hy-explain__lines">
               <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.remoteAudio.emergencyOnly" })}</span>
-              <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.remoteAudio.fullScreenSafety" })}</span>
             </span>
           </div>
           <button

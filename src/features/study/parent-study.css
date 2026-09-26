@@ -1,25 +1,16 @@
 .parent-study-screen {
   display: grid;
+  align-content: start;
   gap: 16px;
   padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 16px;
   color: var(--fg-body);
 }
-.parent-study-header { display: flex; align-items: center; gap: 14px; }
 .parent-study-header h1,
 .parent-study-header p,
 .parent-study-summary h2,
 .study-grade-editor h2,
 .study-report h2,
 .study-report h3 { margin: 0; }
-.study-back-button {
-  flex: 0 0 48px;
-  width: 48px;
-  height: 48px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--bg-chip-idle);
-  font-size: 1.4rem;
-}
 .study-selected-child,
 .parent-study-summary,
 .study-grade-editor,
@@ -40,6 +31,11 @@
   border-radius: 12px;
   background: var(--bg-chip-idle);
 }
+/* 어른 화면에서는 유리판 안의 '한 단계 낮은 면'(.hy-tile 과 같은 재질)으로 둔다. */
+.hy-adult .parent-study-summary dl div {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
 .parent-study-summary dt { font-size: .82rem; color: var(--fg-muted); }
 .parent-study-summary dd { margin: 6px 0 0; font-size: 1.3rem; font-weight: 800; }
 .study-grade-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
@@ -49,11 +45,14 @@
 .study-range-select select {
   min-height: 48px;
   padding: 0 12px;
-  border: 1px solid #bdb0b7;
-  border-radius: 12px;
-  background: #fff;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-12);
+  background: var(--control-fill);
+  box-shadow: var(--control-rim);
   font: inherit;
 }
+/* 진도 막대는 브라우저 기본 파랑 대신 화면 강조색을 쓴다. */
+.study-mastery-list progress { accent-color: var(--hy-accent-cta); }
 .study-grade-actions button,
 .study-parent-state button,
 .study-child-list button,
@@ -61,7 +60,8 @@
   min-height: 48px;
   padding: 0 16px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--control-shadow);
   background: var(--hy-accent-cta);
   color: #fff;
   font: inherit;

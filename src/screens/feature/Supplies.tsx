@@ -1,3 +1,4 @@
+import { ChildSwitcher } from "@/components/ChildSwitcher";
 import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
@@ -238,6 +239,7 @@ export function Supplies() {
       </div>
 
       <div className="sup-content">
+        <ChildSwitcher className="hy-kidswitch--screen" />
         <div className="sup-intro">
           <img className="sup-intro__img" src={asset("cat/study.webp")} alt="" />
           <div>

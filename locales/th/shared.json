@@ -438,6 +438,7 @@
   "shared.qrScanner.retryPermission": "ตรวจสอบสิทธิ์อีกครั้ง",
   "shared.qrScanner.scannerUnavailable": "อุปกรณ์นี้ไม่สามารถสแกน QR ได้ โปรดกรอกรหัสด้วยตนเอง",
   "shared.qrScanner.title": "สแกนรหัส QR",
+  "shared.routeView.addScheduleButton": "เพิ่มกำหนดการ",
   "shared.routeView.childFallback": "เด็ก",
   "shared.routeView.currentLocationFallback": "ตำแหน่งปัจจุบัน",
   "shared.routeView.destinationFallback": "ปลายทาง",
@@ -937,5 +938,8 @@
   "shared.schedule.tag.ongoing": "อยู่ระหว่างดำเนินการ",
   "shared.schedule.tag.upcoming": "ที่คาดหวัง",
   "shared.schedule.tag.verify": "จำเป็นต้องมีการยืนยัน",
-  "shared.schedule.tag.visited": "ฉันไป"
+  "shared.schedule.tag.visited": "ฉันไป",
+  "shared.childSwitcher.fallbackName": "ลูก",
+  "shared.childSwitcher.unread": "ข้อความใหม่",
+  "shared.childSwitcher.label": "เลือกลูกที่ต้องการดู"
 }

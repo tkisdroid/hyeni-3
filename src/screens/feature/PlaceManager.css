@@ -2,7 +2,7 @@
 
 .pm-screen {
   min-height: 100%;
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 상세 헤더(sticky) ──────────────────────────────────────────────────── */
@@ -147,9 +147,45 @@
   gap: 8px;
 }
 
+/* ── 빈 목록 안내 ───────────────────────────────────────────────────────── */
+.pm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px;
+}
+.pm-empty__title {
+  font-size: var(--type-row);
+  line-height: var(--type-row-line-height);
+  font-weight: var(--type-row-weight);
+  color: var(--fg-primary);
+}
+.pm-empty__hint {
+  margin: 0;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-secondary);
+}
+.pm-empty__cta {
+  margin-top: 8px;
+  min-height: var(--control-min-size);
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
 /* ── 저장한 장소 카드 ───────────────────────────────────────────────────── */
 .pm-item {
-  animation: hy-fadein 0.3s ease both;
+  animation: hy-fadein 0.3s ease backwards;
   background: #fff;
   border-radius: var(--radius-16);
   padding: 12px 12px;
@@ -309,6 +345,23 @@
 }
 .pm-danger__del:disabled {
   opacity: 0.5;
+}
+/* 삭제 확인 대기: 아이콘 버튼이 '한 번 더 눌러 삭제' 알약으로 펼쳐져 두 번째 탭을 기다린다. */
+.pm-item__del[data-armed="true"],
+.pm-danger__del[data-armed="true"] {
+  width: auto;
+  padding: 0 12px;
+  gap: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--danger-soft);
+  box-shadow: inset 0 0 0 1.5px var(--danger-strong);
+}
+.pm-del__confirm {
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  color: var(--danger-text);
+  white-space: nowrap;
 }
 .pm-danger__icon {
   width: 48px;

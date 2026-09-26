@@ -3,7 +3,7 @@
 .rv-screen {
   min-height: 100%; /* 848px 하드코딩 → 큰 기기에서 배경 그라디언트 끊김 */
   background: linear-gradient(180deg, #fdf4f1, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 상세 헤더(sticky) ──────────────────────────────────────────────────── */

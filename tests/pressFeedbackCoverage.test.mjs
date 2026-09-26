@@ -19,12 +19,11 @@ test("눌림 피드백 기본 도구는 토큰과 최소 터치 크기를 함께
   const tokens = read("src/styles/tokens.css");
 
   assert.match(rule(components, ".hy-press"), /min-height: var\(--control-min-size\)/);
-  assert.match(
-    rule(components, ".hy-press"),
-    /transition:\s*transform var\(--duration-fast\) var\(--easing-standard\)/,
-  );
+  // 2026-09-26: 누를 땐 90ms 로 즉시 들어가고, 뗄 땐 스프링(--easing-cheer)으로 살짝 튀어 돌아온다.
+  assert.match(rule(components, ".hy-press"), /transition:\s*transform 0\.36s var\(--easing-cheer\)/);
   const enabledPress = '.hy-press:active:not(:disabled):not([aria-disabled="true"]):not([aria-busy="true"])';
-  assert.match(rule(components, enabledPress), /transform: scale\(var\(--press, 0\.98\)\)/);
+  assert.match(rule(components, enabledPress), /transform: scale\(var\(--press, 0\.97\)\)/);
+  assert.match(rule(components, enabledPress), /transition-duration: 0\.09s/);
   assert.match(tokens, /--duration-fast:/);
   assert.match(tokens, /--easing-standard:/);
 });

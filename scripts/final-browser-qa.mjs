@@ -2472,7 +2472,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       };
     })()`);
     const expectedParentHomeShortcuts = [
-      "AI 일정", "위치추적", "친구놀이", "장소관리",
+      "AI 일정", "이동 기록", "친구놀이", "장소관리",
       "주변소리", "안심리포트", "아이 기기 찾기", "알림",
     ];
 
@@ -3622,9 +3622,9 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     await cdp.evaluate("document.querySelector('.pm-list')?.scrollIntoView({ block: 'start' }); true");
     await wait(200);
     const placeFacts = await cdp.evaluate(`(() => ({
-      activeCount: [...document.querySelectorAll(".pm-alert-state")].filter((node) => node.textContent.includes("플랜 한도 안 · 알림 설정 가능")).length,
-      premiumRequiredCount: [...document.querySelectorAll(".pm-alert-state")].filter((node) => node.textContent.includes("저장됨 · 프리미엄에서 알림 대상")).length,
-      unknownCount: [...document.querySelectorAll(".pm-alert-state")].filter((node) => node.textContent.includes("확인 필요")).length,
+      activeCount: [...document.querySelectorAll(".pm-alert-state")].filter((node) => node.textContent.includes("알림 받을 수 있어요")).length,
+      premiumRequiredCount: [...document.querySelectorAll(".pm-alert-state")].filter((node) => node.textContent.includes("저장됨 · 알림은 프리미엄에서 받아요")).length,
+      unknownCount: [...document.querySelectorAll(".pm-alert-state")].filter((node) => node.textContent.includes("알림 가능 여부를 확인하지 못했어요")).length,
     }))()`);
     if (placeFacts.activeCount !== 3 || placeFacts.premiumRequiredCount !== 2 || placeFacts.unknownCount !== 0 || rowProblems(place).length > 0) {
       report.problems.push({ scope: "tier-alert-state", facts: placeFacts, routeProblems: rowProblems(place) });

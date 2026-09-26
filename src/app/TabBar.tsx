@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { LucideIcon } from "lucide-react";
 import { preloadRoute, preloadRoutesWhenIdle } from "./routePreload";
+import { selectionHaptic } from "@/lib/haptics";
 
 export type TabItem = {
   to: string;
@@ -34,7 +35,10 @@ export function TabBar({ tabs, iconOnly = false }: { tabs: TabItem[]; iconOnly?:
               aria-current={active ? "page" : undefined}
               aria-label={t.label}
               onPointerDown={() => preloadRoute(t.to)}
-              onClick={() => navigate(t.to)}
+              onClick={() => {
+                if (!active) selectionHaptic();
+                navigate(t.to);
+              }}
             >
               <span className="hy-tab__icon">
                 <t.Icon size={22} strokeWidth={active ? 2.4 : 2.2} />

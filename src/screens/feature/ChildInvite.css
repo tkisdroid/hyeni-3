@@ -5,7 +5,7 @@
   background:
     radial-gradient(120% 44% at 50% 0%, var(--lav-soft) 0%, rgba(241, 236, 255, 0) 55%),
     linear-gradient(180deg, #fdf4f1, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 상세 헤더(sticky) ──────────────────────────────────────────────────── */

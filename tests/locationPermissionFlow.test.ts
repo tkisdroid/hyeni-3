@@ -15,6 +15,7 @@ const resolveChildLocationStatusKind = (
     resolveChildLocationStatusKind?: (input: {
       freshEnough: boolean;
       permission: "granted" | "denied" | "unknown";
+      systemLocationOff?: boolean;
     }) => string;
   }
 ).resolveChildLocationStatusKind;
@@ -92,4 +93,14 @@ test("현재 기기 위치 권한이 없으면 다른 기기의 최근 위치가
     resolveChildLocationStatusKind({ freshEnough: true, permission: "unknown" }),
     "off",
   );
+});
+
+// 2026-09-26 실기기: 권한은 허용인데 폰의 OS 위치 스위치가 꺼져 있을 때 "위치 권한이 꺼져 있어"로 잘못 안내했다.
+test("폰의 OS 위치 스위치가 꺼져 있으면 권한보다 먼저 systemOff 로 판정한다", () => {
+  assert.equal(typeof resolveChildLocationStatusKind, "function");
+  if (!resolveChildLocationStatusKind) return;
+  assert.equal(resolveChildLocationStatusKind({ freshEnough: false, permission: "denied", systemLocationOff: true }), "systemOff");
+  assert.equal(resolveChildLocationStatusKind({ freshEnough: true, permission: "granted", systemLocationOff: true }), "systemOff");
+  assert.equal(resolveChildLocationStatusKind({ freshEnough: false, permission: "denied" }), "permission");
+  assert.equal(resolveChildLocationStatusKind({ freshEnough: true, permission: "granted" }), "sending");
 });

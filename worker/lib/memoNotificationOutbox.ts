@@ -1,4 +1,5 @@
 import type { PushEnv } from "./pushEnv.ts";
+import { childSubjectKo } from "./koreanSubject.ts";
 import { pgTs } from "./time.ts";
 import type { AccountMutationLease } from "./accountMutationLease.ts";
 import type { AccountMutationScope } from "./accountMutationScope.ts";
@@ -268,7 +269,7 @@ async function deliverClaim(
     ).bind(reply.family_id, reply.user_id).first<{ name: string | null }>();
     const senderName = (sender?.name || (currentSenderMembership.role === "child" ? "아이" : "보호자")).trim();
     const title = currentSenderMembership.role === "child"
-      ? `${senderName}님이 메시지를 보냈어요`
+      ? `${childSubjectKo(senderName)} 메시지를 보냈어요`
       : `${senderName}님의 메시지`;
     const pushId = `memo:${reply.id}`;
     const { handleInstantNotification } = await import("../routes/push-notify.ts");

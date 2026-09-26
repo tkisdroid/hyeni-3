@@ -1,25 +1,16 @@
 .child-study-screen {
   display: grid;
+  align-content: start;
   gap: 16px;
-  padding: max(48px, calc(env(safe-area-inset-top, 0px) + 28px)) 16px 24px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 24px;
   color: var(--fg-body);
 }
-.child-study-header { display: flex; align-items: center; gap: 12px; }
 .child-study-header h1,
 .child-study-header p,
 .child-study-start h2,
 .child-study-start p,
 .study-mission-result h2,
 .study-mission-result p { margin: 0; }
-.child-study-header > button {
-  flex: 0 0 48px;
-  width: 48px;
-  height: 48px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--bg-chip-idle);
-  font-size: 1.4rem;
-}
 .child-study-start,
 .child-study-resume,
 .child-study-state,

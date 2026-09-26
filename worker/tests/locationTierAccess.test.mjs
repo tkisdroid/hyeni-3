@@ -950,3 +950,33 @@ test("standard 자동 최신점 쿼리는 active child별 correlated index looku
   assert.match(plan, /idx_location_history_user_recorded \(user_id=\? AND recorded_at<\?\)/);
   sqlite.close();
 });
+
+// 2026-09-26 실기기 E2E: SOS 는 최신 위치를 저장하지만 무료 표준 모드가 10분 스냅샷만 보여
+// 부모 긴급 수신 화면에 몇 분 전 위치가 떴다. 최근 SOS 를 보낸 아이만 최신 위치로 덮어쓴다.
+test("무료 표준 모드도 최근 SOS 를 보낸 아이는 최신 위치를 받고, 다른 아이는 스냅샷을 유지한다", async () => {
+  const { sqlite, db } = createDb();
+  sqlite.prepare("INSERT INTO parent_alerts VALUES (?,?,?,?,?,?,?,?,?)").run(
+    "sos-a", "family-reviewed", "sos", "SOS", "SOS", "urgent", "req-a", "child-a", d1Timestamp(-1),
+  );
+  const response = await request(db, "/children?family_id=family-reviewed", {
+    sub: "parent-reviewed",
+    role: "parent",
+    familyId: "family-reviewed",
+  });
+  assert.equal(response.status, 200);
+  const rows = await response.json();
+  const childA = rows.find((row) => row.user_id === "child-a");
+  const childB = rows.find((row) => row.user_id === "child-b");
+  assert.equal(childA.lat, 37.51, "SOS 아이는 child_locations 최신 위치");
+  assert.equal(childB.lat, 37.60, "다른 아이는 10분 스냅샷 유지");
+
+  // 30분이 지난 SOS 는 더 이상 예외가 아니다.
+  sqlite.prepare("UPDATE parent_alerts SET created_at=? WHERE id='sos-a'").run(d1Timestamp(-45));
+  const later = await (await request(db, "/children?family_id=family-reviewed", {
+    sub: "parent-reviewed",
+    role: "parent",
+    familyId: "family-reviewed",
+  })).json();
+  assert.equal(later.find((row) => row.user_id === "child-a").lat, 37.50);
+  sqlite.close();
+});

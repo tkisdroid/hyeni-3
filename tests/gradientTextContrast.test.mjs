@@ -165,7 +165,8 @@ const AUDITED_SAME_RULES = [
   ["src/screens/feature/DangerZoneForm.css", ".dzf-save", "var(--cta-grad-danger)"],
   ["src/screens/feature/DaySummary.css", ".ds-panel__cta", "var(--cta-grad-lavender)"],
   ["src/screens/feature/FriendPlay.css", ".fp-cta", "var(--cta-grad-accent)"],
-  ["src/screens/feature/LocationStatus.css", ".ls-retry", "var(--cta-grad-info)"],
+  // 재시도는 정보 표시가 아니라 주요 동작이라 다른 화면과 같은 accent CTA 를 쓴다(2026-09-26).
+  ["src/screens/feature/LocationStatus.css", ".ls-retry", "var(--cta-grad-accent)"],
   ["src/screens/feature/PlaydateAccept.css", ".pa-btn-accept", "var(--cta-grad-mint)"],
   ["src/screens/feature/RemoteAudio.css", ".ra-start", "var(--cta-grad-lavender)"],
   ["src/screens/feature/RemoteRing.css", ".rr-cta", "var(--cta-grad-danger)"],
@@ -521,12 +522,6 @@ test("단색 CTA와 선택 상태도 전경색에 맞는 AA 전용 토큰을 쓴
     ],
     ["src/screens/feature/SosReceive.css", ".sr-banner", "var(--danger-cta)", "#fff"],
     ["src/screens/feature/SosReceive.css", ".sr-act--call", "var(--danger-cta)", "#fff"],
-    [
-      "src/screens/feature/RemoteRing.css",
-      ".rr-childchip--active",
-      "var(--cream-soft)",
-      "var(--gold-text)",
-    ],
     [
       "src/screens/feature/SosReceive.css",
       ".sr-banner-chip",

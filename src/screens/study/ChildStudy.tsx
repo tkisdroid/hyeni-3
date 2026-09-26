@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router";
 import { StudyAccessGate } from "@/features/study/StudyAccessGate";
 import {
@@ -22,6 +23,7 @@ import {
   useStudyMission,
 } from "@/queries/useStudy";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import "@/features/study/study-learning.css";
 import "@/features/study/child-study.css";
 
 export function ChildStudy() {
@@ -103,7 +105,7 @@ export function ChildStudy() {
     <StudyAccessGate deniedPath="/child/home" onBack={goHome}>
       <div className="child-study-screen">
         <header className="child-study-header">
-          <button type="button" onClick={goHome} aria-label={STUDY_TOPIC_COPY.back}>←</button>
+          <button type="button" className="child-study-back hy-press" onClick={goHome} aria-label={STUDY_TOPIC_COPY.back}><ChevronLeft aria-hidden="true" /></button>
           <div><h1>{STUDY_TOPIC_COPY.screenTitle}</h1><p>{STUDY_TOPIC_COPY.screenSubtitle}</p></div>
         </header>
         {childStudyQueryState === "loading" && learner.isLoading ? (

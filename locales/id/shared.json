@@ -438,6 +438,7 @@
   "shared.qrScanner.retryPermission": "Periksa izin lagi",
   "shared.qrScanner.scannerUnavailable": "Pemindaian QR tidak tersedia di perangkat ini. Silakan masukkan kode secara manual.",
   "shared.qrScanner.title": "Pindai kode QR",
+  "shared.routeView.addScheduleButton": "Tambahkan jadwal",
   "shared.routeView.childFallback": "Anak",
   "shared.routeView.currentLocationFallback": "Lokasi saat ini",
   "shared.routeView.destinationFallback": "Tujuan",
@@ -937,5 +938,8 @@
   "shared.schedule.tag.ongoing": "Sedang berlangsung",
   "shared.schedule.tag.upcoming": "mengharapkan",
   "shared.schedule.tag.verify": "Diperlukan konfirmasi",
-  "shared.schedule.tag.visited": "saya pergi"
+  "shared.schedule.tag.visited": "saya pergi",
+  "shared.childSwitcher.fallbackName": "Anak",
+  "shared.childSwitcher.unread": "Pesan baru",
+  "shared.childSwitcher.label": "Pilih anak yang ingin dilihat"
 }

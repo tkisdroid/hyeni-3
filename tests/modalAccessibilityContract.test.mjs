@@ -17,6 +17,8 @@ const expectedDialogCounts = new Map([
   ["src/screens/child/overlays/ChildSheet.tsx", 2],
   ["src/screens/feature/FamilyConnection.tsx", 1],
   ["src/screens/feature/RemoteRing.tsx", 1],
+  // 2026-09-26: 아이디 확인·비밀번호 재설정 바닥 시트.
+  ["src/screens/onboarding/PasswordResetSheet.tsx", 1],
   ["src/screens/parent/ChildDetail.tsx", 1],
   ["src/screens/parent/EventForm.tsx", 1],
   ["src/screens/parent/ParentAccount.tsx", 2],
@@ -137,7 +139,7 @@ test("dialog의 투명 scrim은 Tab 순서에 들어오지 않는다", () => {
       if (!/tabIndex=\{-1\}/.test(tag)) violations.push(relativePath);
     }
   }
-  assert.equal(scrimCount, 13, "dialog scrim 전수 목록이 바뀌면 접근성 계약도 갱신해야 합니다");
+  assert.equal(scrimCount, 14, "dialog scrim 전수 목록이 바뀌면 접근성 계약도 갱신해야 합니다");
   assert.deepEqual(violations, [], `Tab 순서에 남은 투명 scrim:\n${violations.join("\n")}`);
 });
 
@@ -168,4 +170,16 @@ test("공용 아이 sheet와 modal은 항상 44px 이상의 명시적 닫기 버
   const closeRule = /\.ks-dialog-close\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
   assert.match(closeRule, /width:\s*44px\s*;/);
   assert.match(closeRule, /height:\s*44px\s*;/);
+});
+
+test("어른 화면 안 modal은 isolation 스택에 갇혀 탭바 밑에 깔리지 않는다", () => {
+  // 2026-09-26 실기기: .hy-adult .hy-screen 의 isolation 때문에 프리미엄 안내·벨 확인 시트의
+  // 아래쪽과 scrim 이 탭바(z 45)에 가려졌다. 모달이 열린 동안 화면 스택을 탭바 위로 올린다.
+  const glass = readFileSync(resolve(root, "src/styles/glass.css"), "utf8");
+  const components = readFileSync(resolve(root, "src/styles/components.css"), "utf8");
+  assert.match(glass, /\.hy-adult \.hy-screen\s*\{[^}]*isolation:\s*isolate/);
+  const tabbarZ = Number(/\.hy-tabbar\s*\{[^}]*z-index:\s*(\d+)/.exec(components)?.[1]);
+  const lifted = /\.hy-adult \.hy-screen:has\(\[aria-modal="true"\]\)\s*\{[^}]*z-index:\s*(\d+)/.exec(glass);
+  assert.ok(lifted, "모달을 품은 어른 화면의 z-index 승격 규칙이 있어야 합니다");
+  assert.ok(Number(lifted[1]) > tabbarZ, "승격한 화면은 탭바보다 위여야 합니다");
 });

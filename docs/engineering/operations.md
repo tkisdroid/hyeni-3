@@ -6,14 +6,14 @@
 
 ## 절대 안전 규칙
 
-1. **실사용 기기 보호**: 2026-08-19 최신 사용자 지시 기준 실기기 검증기는
-   **A17(RFKL40DP73J) 부모 · razr(ZY22H9VTQD) 아이 · S25(R5CY521CFNZ, SM-S937N)** 세 대다.
-   세 기기 모두 현재 역할·세션을 유지하고 `npm run android:install:debug -- <serial>`로 기본 사용자(0)에만
+1. **실사용 기기 보호**: 2026-09-26 최신 사용자 지시 기준 실기기 검증기는
+   **A17(RFKL40DP73J)·S25(R5CY521CFNZ, SM-S937N) 부모 · razr(ZY22H9VTQD)·S20 Ultra(R3CN400MGNW, SM-G988N) 아이**
+   네 대다. S25는 항상 부모다.
+   네 기기 모두 현재 역할·세션을 유지하고 `npm run android:install:debug -- <serial>`로 기본 사용자(0)에만
    `adb install --user 0 -r`하여 앱 데이터·계정·페어링·세션을 보존한다. `--user 0` 없는 adb 설치는
    Samsung DUAL_APP 프로필에도 복제되어 아이콘이 두 개 생길 수 있으므로 금지한다.
-   실제 계정 로그아웃·역할 전환·재페어링을 하지 않는다.
-   ⚠️ S25는 2026-08-02~08-19 검증 제외였다가 TK 지시로 복귀했다. **A17·razr 와 달리 고정 역할이 없으므로**
-   역할 의존 검증 전에 CDP 세션 확인(아래)으로 역할을 먼저 확정한다.
+   실제 계정 로그아웃·역할 전환·재페어링을 하지 않는다. 부모 계정은 한 설치만 활성이므로(아래 2번)
+   S25에서 부모 로그인을 새로 하면 같은 계정의 다른 부모 설치가 끊긴다. 로그인은 사용자가 직접 한다.
    refresh 토큰은 출력·복사·회전하지 않는다.
 2. **라이브 refresh 토큰 조작 금지** — 회전시키면 앱 세션이 파괴된다. access 토큰만 읽기.
    2026-07-10부터 refresh 체인은 **기기 바인딩**(device_install_id 스탬핑) — 외부에서 토큰 사본으로 회전 시도하면 401이 정상이다.
@@ -195,6 +195,12 @@
   을 주면 표가 화면보다 넓어지고, 남은 폭에 밀린 값 칸이 한국어 글자 중간에서 끊긴다. `table-layout: fixed` +
   열 폭(44%/28%/28%) + `word-break: keep-all`·`overflow-wrap: anywhere`·`text-wrap: pretty` 로 어절 단위로만 접는다.
   가드=`tests/responsiveTextWrapContract.test.mjs`.
+- ★**다자녀 실서버 E2E 임시 권한(2026-09-26, 사용자 명시 요청 범위)**: 무료 가족은 둘째 연결이 막힌다. 테스트 가족에
+  `family_subscription` 행을 `status='active'`, `provider='qa_manual'`, `qonversion_user_id='qa-...'` 표식,
+  `current_period_end`=몇 시간 뒤로 넣으면 엔타이틀먼트가 프리미엄이 된다. 체험 자격(`isFamilyTrialEligible`)은
+  `google_play`·`toss_web` 행의 체험·주문 흔적만 보므로 `qa_manual` 은 무료 체험 자격을 소모하지 않는다. 먼저 기존 행이 없는지
+  확인하고, 끝나면 ①테스트 아이를 가족 연결 화면에서 해제 ②표식으로 한정한 `DELETE`로 원상 복구 ③행 수 0 확인 순서다.
+  실제 계정 아이(S20 등)는 해제하지 않는다. 둘째 아이 기기는 에뮬레이터(`pm clear` 후 실서버 연결)로 쓴다.
 - ★**Worker 배포 자격(2026-08-02 갱신)**: 루트 `.env` 의 `CLOUDFLARE_API_TOKEN` 은 D1 전용이라 Workers 배포가
   `Authentication error 10000` 이다. 배포 권한 토큰과 계정 ID 는 **`worker/.env`** 에 있고 두 값 모두 따옴표를
   벗겨 프로세스 env 로 주입해야 한다(`"…"` 그대로면 `/accounts/"id"/…` 로 요청돼 실패).
@@ -222,10 +228,9 @@
   컬럼 존재 확인은 `SELECT (SELECT COUNT(*) FROM (SELECT 컬럼 FROM 테이블 LIMIT 0)) a, ...` 처럼 0행 조회로 하고,
   응답 meta 의 `rows_written=0`·`changed_db=false` 를 함께 확인한다(컬럼이 없으면 쿼리 자체가 실패한다).
 
-- 기기(2026-08-19 최신 사용자 지시): **A17(RFKL40DP73J)=부모 · razr(ZY22H9VTQD)=아이 ·
-  S25(R5CY521CFNZ, SM-S937N)=역할 미고정** 상시 실기기 검증기 3대다. 세 기기 모두 현재 역할·세션을 유지하고
-  `adb install --user 0 -r`로 앱 데이터·계정·페어링·세션을 보존한다. 실제 로그아웃·역할 전환·재페어링을 하지 않는다.
-  S25 는 고정 역할이 없으므로 역할 의존 검증 전에 아래 CDP 세션 확인을 먼저 수행한다.
+- 기기(2026-09-26 최신 사용자 지시): **A17(RFKL40DP73J)·S25(R5CY521CFNZ, SM-S937N)=부모 ·
+  razr(ZY22H9VTQD)·S20 Ultra(R3CN400MGNW, SM-G988N)=아이** 상시 실기기 검증기 4대다. 네 기기 모두 현재 역할·세션을
+  유지하고 `adb install --user 0 -r`로 앱 데이터·계정·페어링·세션을 보존한다. 실제 로그아웃·역할 전환·재페어링을 하지 않는다.
 - 기기 역할은 세션별로 바뀐 이력이 있으므로, 문서의 과거 단계 기록보다 **최신 사용자 지시/goal**을 우선한다.
   실기기 검증 결과를 보고할 때는 CDP로 WebView 세션(`hyeni-api-session-v1`)의 role/familyId와 실제 화면을 다시 확인하고,
   지시한 역할과 다르면 해당 실기기 검증은 미검증/차단으로 분리 보고한다.

@@ -21,6 +21,7 @@ import { useLocale } from "@/i18n/useLocale";
 
 import { useRecentDateKeys } from "@/app/useRecentDateKeys";
 import { Loading } from "@/components/ui/Loading";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import "./ChildDetail.css";
 import { useIntl } from "react-intl";
 import { localizeApiError } from "@/i18n/apiError";
@@ -169,11 +170,17 @@ export function ChildDetail() {
     return (
       <div className="cd-root">
         <Header title={intl.formatMessage({ id: "parent.childDetail.copy003" })} onBack={() => navigate(-1)} onEdit={null} />
-        <div className="cd-state" role="alert">
-          {intl.formatMessage({ id: "parent.childDetail.copy004" })}
-          <button type="button" className="cd-state__btn hy-press" onClick={() => void retryChildDetail()}>
-            {intl.formatMessage({ id: "parent.parentHome.copy017" })}
-          </button>
+        <div className="cd-state">
+          <ScreenQueryState
+            embedded
+            state="error"
+            screenTitle={intl.formatMessage({ id: "parent.childDetail.copy003" })}
+            heading={intl.formatMessage({ id: "parent.childDetail.copy004" })}
+            description={intl.formatMessage({ id: "core.error.api.network.formal" })}
+            onRetry={() => void retryChildDetail()}
+            retrying={familyQuery.isFetching}
+            retryLabel={intl.formatMessage({ id: "parent.parentHome.copy017" })}
+          />
         </div>
       </div>
     );

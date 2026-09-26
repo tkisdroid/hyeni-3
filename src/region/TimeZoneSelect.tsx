@@ -1,6 +1,7 @@
 import { useId, useMemo } from "react";
 import { useIntl } from "react-intl";
 import { orderedTimeZones, suggestedTimeZone, timeZoneOptionLabel } from "./timeZoneOptions";
+import "./TimeZoneSelect.css";
 
 export { suggestedTimeZone } from "./timeZoneOptions";
 
@@ -14,10 +15,10 @@ export function TimeZoneSelect({ value, onChange, disabled, recipient = false }:
     () => orderedTimeZones(value, suggestedTimeZone()).map((zone) => ({ zone, label: timeZoneOptionLabel(zone, intl.locale) })),
     [intl.locale, value],
   );
-  return <label htmlFor={id} style={{ display: "grid", gap: 8, marginBlock: 12, minWidth: 0 }}>
-    <span>{intl.formatMessage({ id: recipient ? "core.recipientTimeZone.label" : "core.familyTimeZone.label" })}</span>
-    <select id={id} value={value} onChange={event => onChange(event.target.value)} disabled={disabled}
-      style={{ width: "100%", minWidth: 0, minHeight: 44, font: "inherit" }}>
+  // 배치·모양은 클래스가 맡는다(공용 컴포넌트에 인라인 style 을 두면 소비 화면이 덮을 수 없다).
+  return <label htmlFor={id} className="hy-tz">
+    <span className="hy-tz__label">{intl.formatMessage({ id: recipient ? "core.recipientTimeZone.label" : "core.familyTimeZone.label" })}</span>
+    <select id={id} className="hy-tz__select" value={value} onChange={event => onChange(event.target.value)} disabled={disabled}>
       {options.map(({ zone, label }) => <option key={zone} value={zone}>{label}</option>)}
     </select>
   </label>;

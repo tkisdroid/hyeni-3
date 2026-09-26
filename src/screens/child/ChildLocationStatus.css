@@ -2,7 +2,7 @@
 
 .cls-screen {
   min-height: 100%;
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
   transition: background 0.3s ease;
 }
 .cls-screen--mint {

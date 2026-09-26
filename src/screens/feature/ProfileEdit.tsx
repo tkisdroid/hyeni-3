@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DateField } from "@/components/ui/DateField";
 import type { ChangeEvent } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft, Camera } from "lucide-react";
@@ -346,9 +347,9 @@ export function ProfileEdit() {
                   </span>
                 )}
               </div>
-              <input
+              <DateField
                 className="pe-input pe-input--date"
-                type="date"
+                placeholder={intl.formatMessage({ id: "parent.profileEdit.birthdate.placeholder" })}
                 aria-label={intl.formatMessage({ id: "parent.profileEdit.birthdate.aria" })}
                 value={birthday}
                 max={todayStr}

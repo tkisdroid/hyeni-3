@@ -287,7 +287,8 @@ export function ChildSettings() {
           <div className="ks-hero__main">
             <div className="ks-hero__name">
               {myName}
-              {age != null && (
+              {/* 생일을 오늘 날짜로 잘못 고른 경우 "0살"로 보였다 — 1살 미만은 나이를 숨긴다. */}
+              {age != null && age >= 1 && (
                 <span className="ks-hero__age">
                   {intl.formatMessage({ id: "child.settings.age" }, { age })}
                 </span>
@@ -345,9 +346,6 @@ export function ChildSettings() {
             </span>
             <span className="ks-row__main">
               <span className="ks-row__title">{intl.formatMessage({ id: "child.settings.notifications" })}</span>
-              <span className="ks-row__sub">
-                {intl.formatMessage({ id: "child.settings.notificationsDescription" })}
-              </span>
             </span>
             <span className={notifOn ? "ks-toggle on" : "ks-toggle"} aria-hidden="true">
               <span className="ks-toggle__knob" />

@@ -17,6 +17,8 @@ export interface DeviceLocationHealthInput extends DeviceNotificationHealthInput
   /** 구버전 네이티브 보고의 백그라운드 위치 권한 종합값. */
   locationOk?: boolean | null;
   locationServiceRunning?: boolean | null;
+  /** OS 위치(GPS) 스위치. 권한과 별개로 꺼져 있으면 좌표를 얻지 못한다. */
+  systemLocationEnabled?: boolean | null;
   backgroundRestricted?: boolean | null;
   networkConnected?: boolean | null;
 }
@@ -220,6 +222,15 @@ export function deviceLocationHealthView(
     ? health.backgroundLocationGranted
     : health?.locationOk;
 
+  // 가장 바로 고칠 수 있는 원인부터 알린다 — 권한이 있어도 OS 위치 스위치가 꺼져 있으면 위치가 오지 않는다.
+  if (health?.systemLocationEnabled === false) {
+    return {
+      state: "attention",
+      label: intl.formatMessage({ id: "parent.device.location.systemOffLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.location.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.location.systemOffDetail" }),
+    };
+  }
   if (backgroundLocationGranted === false) {
     return {
       state: "attention",

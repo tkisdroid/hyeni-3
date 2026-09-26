@@ -76,18 +76,26 @@ function useTeacherTabs(): TabItem[] {
   ], [intl]);
 }
 
+/**
+ * 대화 화면은 메신저처럼 화면 전체를 쓴다 — 입력줄 아래에 하단 메뉴와 휴대폰 내비게이션이 겹겹이 쌓여
+ * 이상해 보였다(2026-09-26 TK 제보). 대화 헤더의 뒤로가기가 이동 수단이다.
+ */
+const CHAT_PATHS = new Set(["/parent/memo", "/child/memo"]);
+
 /** 부모 모드 셸: 폰 프레임 + 스크롤 + 부모 탭바. */
 export function ParentShell() {
   const { accent } = useAccent();
+  const { pathname } = useLocation();
+  const chat = CHAT_PATHS.has(pathname);
   // 이 셸은 부모 전용이라 모든 아이 스레드를 조회해도 된다.
   const tabs = useMemoDotTabs(useParentTabs(), "/parent/memo", true);
   const scrolledRef = useScrolledShell();
   return (
-    <div className="hy-app hy-adult" data-role="parent" data-accent={accent}>
+    <div className="hy-app hy-adult" data-role="parent" data-accent={accent} data-chat={chat ? "true" : undefined}>
       <main className="hy-screen" ref={scrolledRef}>
         <Outlet />
       </main>
-      <TabBar tabs={tabs} iconOnly />
+      {!chat && <TabBar tabs={tabs} />}
       <ToastHost />
     </div>
   );
@@ -96,14 +104,23 @@ export function ParentShell() {
 /** 아이 모드 셸: 시안 2a 의 하단 독(홈·스티커·대화 + SOS). 색은 아이가 고른 강조색. */
 export function ChildShell() {
   const { accent } = useAccent();
+  const { pathname } = useLocation();
+  const chat = CHAT_PATHS.has(pathname);
   return (
-    <div className="hy-app" data-role="child" data-accent={accent}>
+    <div className="hy-app" data-role="child" data-accent={accent} data-chat={chat ? "true" : undefined}>
       <main className="hy-screen hy-screen--dock">
         <Outlet />
       </main>
-      <ChildDock />
-      {/* 하단 독(패딩 24 + 바 66 + 12)을 피해서만 놓이도록 여유를 알려 준다. */}
-      <AiBuddyFabSlot bottomInset={112} />
+      {/* 대화 화면은 AI 친구 대화처럼 자기 입력줄이 바닥을 쓴다 — 독(SOS 포함)은 홈·스티커에서 쓴다. */}
+      {chat ? (
+        <AiBuddyFabSlot bottomInset={20} />
+      ) : (
+        <>
+          <ChildDock />
+          {/* 하단 독(패딩 24 + 바 66 + 12)을 피해서만 놓이도록 여유를 알려 준다. */}
+          <AiBuddyFabSlot bottomInset={112} />
+        </>
+      )}
       <ToastHost />
     </div>
   );
@@ -157,10 +174,10 @@ export function PushShell() {
   const isChild = role === "child";
   return (
     <div className={`hy-app${isChild ? "" : " hy-adult"}`} data-accent={accent}>
-      <main className="hy-screen" ref={scrolledRef} data-nav={showNav && !isChild ? "push" : undefined}>
+      <main className="hy-screen" ref={scrolledRef} data-nav={showNav && !isChild ? "push" : undefined} data-shell="push">
         <Outlet />
       </main>
-      {showNav && role === "parent" && <TabBar tabs={parentTabs} iconOnly />}
+      {showNav && role === "parent" && <TabBar tabs={parentTabs} />}
       {showNav && role === "teacher" && <TabBar tabs={teacherTabs} />}
       {/* 아이 세션에서만 렌더된다. */}
       <AiBuddyFabSlot bottomInset={20} />

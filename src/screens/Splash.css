@@ -16,7 +16,7 @@
   padding: calc(env(safe-area-inset-top, 0px) + 8px) 0 calc(env(safe-area-inset-bottom, 0px) + 32px);
   overflow: hidden;
   isolation: isolate;
-  animation: hy-fadein 0.3s ease forwards;
+  animation: hy-fadein 0.3s ease backwards;
   transition: opacity 280ms cubic-bezier(0.2, 0, 0, 1);
 }
 .sp-root--exit {

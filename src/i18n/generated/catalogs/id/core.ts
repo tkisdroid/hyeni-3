@@ -101,6 +101,7 @@ const messages = {
   "core.error.api.passwordAccountRequired.formal": "Perubahan hanya dapat dilakukan pada akun yang mempunyai password.",
   "core.error.api.phoneExists.child": "Nomor itu sudah punya akun. Masuk saja.",
   "core.error.api.phoneExists.formal": "Nomor telepon tersebut sudah terdaftar. Silakan masuk.",
+  "core.error.api.phoneNotRegistered.formal": "Nomor ini belum terdaftar. Periksa nomor atau daftar baru.",
   "core.error.api.primaryParentRequired.formal": "Hanya wali utama yang dapat melakukan ini. Kirim permintaan dari perangkat wali utama.",
   "core.error.api.rateLimited.child": "Terlalu banyak percobaan. Tunggu sebentar, lalu coba lagi.",
   "core.error.api.rateLimited.formal": "Terlalu banyak permintaan. Harap tunggu sebentar dan coba lagi.",

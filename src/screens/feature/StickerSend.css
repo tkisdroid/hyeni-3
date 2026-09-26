@@ -10,7 +10,7 @@
   overflow: hidden;
   background: radial-gradient(120% 42% at 50% 0%, #ffe7f0 0%, rgba(255, 231, 240, 0) 55%),
     linear-gradient(180deg, #fdf4f1, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
@@ -149,62 +149,9 @@
   text-overflow: ellipsis;
 }
 
-/* ── 대상 자녀 선택(다자녀) ────────────────────────────────────────────── */
+/* ── 대상 자녀 선택(다자녀) — 모양은 공용 다자녀 전환 알약(ChildSwitcher.css)이 맡는다 ── */
 .ss-children {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px;
-  scrollbar-width: none;
-}
-.ss-children::-webkit-scrollbar {
-  display: none;
-}
-.ss-child {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 12px 4px 4px;
-  border-radius: 999px;
-  background: #fff;
-  border: 2px solid transparent;
-  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.05);
-  transition: border-color 0.16s ease, background 0.16s ease;
-  --press: 0.95;
-}
-.ss-child[data-active="true"] {
-  border-color: var(--hy-accent);
-  background: var(--hy-accent-soft);
-}
-.ss-child__avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--hy-accent-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-}
-.ss-child__avatar img {
-  width: 26px;
-  height: 26px;
-  object-fit: contain;
-}
-/* 등록한 프로필 사진은 프레임을 여백 없이 꽉 채운다(TK 지시). */
-.ss-child__avatar[data-photo="true"] img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.ss-child__name {
-  font-size: var(--type-label);
-  line-height: var(--type-label-line-height);
-  font-weight: var(--type-label-weight);
-
-  color: var(--fg-primary);
-  white-space: nowrap;
+  margin: -4px -4px 0;
 }
 
 /* 받은 칭찬 누적(미리보기 하단) */

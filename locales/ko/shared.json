@@ -438,6 +438,7 @@
   "shared.qrScanner.retryPermission": "허용 다시 확인",
   "shared.qrScanner.scannerUnavailable": "이 기기에서는 QR 스캔을 할 수 없어요. 코드를 직접 입력해 주세요.",
   "shared.qrScanner.title": "QR 코드 스캔",
+  "shared.routeView.addScheduleButton": "일정 추가",
   "shared.routeView.childFallback": "아이",
   "shared.routeView.currentLocationFallback": "현재 위치",
   "shared.routeView.destinationFallback": "목적지",
@@ -937,5 +938,8 @@
   "shared.schedule.tag.ongoing": "진행 중",
   "shared.schedule.tag.upcoming": "예정",
   "shared.schedule.tag.verify": "확인 필요",
-  "shared.schedule.tag.visited": "다녀옴"
+  "shared.schedule.tag.visited": "다녀옴",
+  "shared.childSwitcher.fallbackName": "아이",
+  "shared.childSwitcher.label": "지금 볼 아이 고르기",
+  "shared.childSwitcher.unread": "새 메시지"
 }

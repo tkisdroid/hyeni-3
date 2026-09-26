@@ -88,7 +88,7 @@ export const memoPreview = {
 
 export const shortcuts: Shortcut[] = [
   { id: "sc1", label: "AI 일정", icon: "ui/menu-ai-schedule.webp", soft: "var(--lav-soft)", shadow: "color-mix(in srgb, var(--lav-600) 16%, transparent)" },
-  { id: "sc2", label: "위치추적", icon: "ui/menu-child-tracker.webp", soft: "var(--blue-soft)", shadow: "color-mix(in srgb, var(--blue-500) 16%, transparent)" },
+  { id: "sc2", label: "이동 기록", icon: "ui/menu-child-tracker.webp", soft: "var(--blue-soft)", shadow: "color-mix(in srgb, var(--blue-500) 16%, transparent)" },
   { id: "sc3", label: "친구놀이", icon: "ui/menu-friend-playdate.webp", soft: "var(--cream-soft)", shadow: "color-mix(in srgb, var(--gold-600) 16%, transparent)" },
   { id: "sc4", label: "장소관리", icon: "ui/menu-place-manager.webp", soft: "var(--mint-soft)", shadow: "color-mix(in srgb, var(--mint-600) 16%, transparent)" },
   { id: "sc5", label: "주변 소리 듣기", icon: "ui/menu-remote-audio.webp", soft: "var(--rose-soft)", shadow: "color-mix(in srgb, var(--rose-600) 16%, transparent)" },

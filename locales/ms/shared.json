@@ -438,6 +438,7 @@
   "shared.qrScanner.retryPermission": "Semak kebenaran lagi",
   "shared.qrScanner.scannerUnavailable": "Imbasan QR tidak tersedia pada peranti ini. Sila masukkan kod secara manual.",
   "shared.qrScanner.title": "Imbas kod QR",
+  "shared.routeView.addScheduleButton": "Tambah jadual",
   "shared.routeView.childFallback": "Anak",
   "shared.routeView.currentLocationFallback": "Lokasi semasa",
   "shared.routeView.destinationFallback": "Destinasi",
@@ -937,5 +938,8 @@
   "shared.schedule.tag.ongoing": "Sedang berlangsung",
   "shared.schedule.tag.upcoming": "Akan datang",
   "shared.schedule.tag.verify": "Perlu disahkan",
-  "shared.schedule.tag.visited": "Sudah dikunjungi"
+  "shared.schedule.tag.visited": "Sudah dikunjungi",
+  "shared.childSwitcher.fallbackName": "Anak",
+  "shared.childSwitcher.unread": "Mesej baharu",
+  "shared.childSwitcher.label": "Pilih anak untuk dilihat"
 }

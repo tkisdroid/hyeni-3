@@ -23,9 +23,9 @@ test("서버가 확정한 알림 활성 상태만 사용자 상태로 채택한�
 });
 
 test("한도 초과 항목은 삭제된 것처럼 보이지 않고 Premium 알림 상태를 정확히 안내한다", () => {
-  assert.equal(tierAlertActivationLabel("active"), "플랜 한도 안 · 알림 설정 가능");
-  assert.equal(tierAlertActivationLabel("premium_required"), "저장됨 · 프리미엄에서 알림 대상");
-  assert.equal(tierAlertActivationLabel("unknown"), "플랜 알림 대상 확인 필요");
+  assert.equal(tierAlertActivationLabel("active"), "알림 받을 수 있어요");
+  assert.equal(tierAlertActivationLabel("premium_required"), "저장됨 · 알림은 프리미엄에서 받아요");
+  assert.equal(tierAlertActivationLabel("unknown"), "알림 가능 여부를 확인하지 못했어요");
 
   const manager = readFileSync(
     new URL("../src/screens/feature/PlaceManager.tsx", import.meta.url),

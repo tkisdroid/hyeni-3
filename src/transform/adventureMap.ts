@@ -56,10 +56,14 @@ export const ADVENTURE_SLOTS: ReadonlyArray<{ leftPct: number; top: number }> = 
   { leftPct: 32.8, top: 399 },
 ];
 
+// 숫자로 끝나는 이름은 읽는 소리로 판정한다(영·일·삼·육·칠·팔은 받침이 있다) — "수업 7" → "수업 7이야".
+const DIGIT_HAS_FINAL = new Set(["0", "1", "3", "6", "7", "8"]);
+
 /** 받침이 있으면 true — "태권도야" vs "수영이야" 조사 처리. */
 export function hasJongseong(word: string): boolean {
-  const last = word.trim().slice(-1);
+  const last = word.trim().replace(/[\s)\]}"'.,!?~]+$/u, "").slice(-1);
   if (!last) return false;
+  if (/[0-9]/.test(last)) return DIGIT_HAS_FINAL.has(last);
   const code = last.charCodeAt(0);
   if (code < 0xac00 || code > 0xd7a3) return false;
   return (code - 0xac00) % 28 !== 0;
@@ -113,7 +117,8 @@ function bubbleFor(
   if (next.startMinutes == null) return intl.formatMessage({ id: final ? "shared.adventure.next.final" : "shared.adventure.next.vowel" }, { title: next.title });
   const left = next.startMinutes - nowMinutes;
   if (left <= 0) return intl.formatMessage({ id: "shared.adventure.now" }, { title: next.title });
-  if (left <= 120) {
+  // 1시간이 넘으면 "112분 후"처럼 큰 분 단위는 아이가 읽기 어렵다 — 시각("오전 11:30")으로 말한다.
+  if (left <= 60) {
     return intl.formatMessage({ id: final ? "shared.adventure.soon.final" : "shared.adventure.soon.vowel" }, { relativeTime: formatRelativeMinutes(left, "future", locale), title: next.title });
   }
   return intl.formatMessage({ id: final ? "shared.adventure.later.final" : "shared.adventure.later.vowel" }, { time: compactTime(next.startMinutes, locale), title: next.title });

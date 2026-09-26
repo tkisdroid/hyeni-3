@@ -4,7 +4,7 @@
 .pf-screen {
   min-height: 100%;
   background: linear-gradient(180deg, #fdf4f1, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
@@ -82,9 +82,10 @@
   inset: 0;
 }
 /* "지도를 눌러 위치 선택" 안내 칩 — 아직 선택 전에만 표시. */
+/* 안내는 지도 위쪽에 둔다 — 아래에 두면 좌하단 지도 공급자 로고·축척(저작권 표기)을 가린다(2026-09-26 실측). */
 .pf-map__hint {
   position: absolute;
-  bottom: 10px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -139,7 +140,6 @@
 }
 .pf-input::placeholder {
   color: var(--fg-placeholder);
-  font-weight: 600;
 }
 .pf-input:focus {
   border-color: var(--hy-accent);

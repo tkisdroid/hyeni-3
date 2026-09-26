@@ -483,6 +483,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* 프레임이 둥글면 사진도 같은 모서리로 잘린다(형제 배지를 자르지 않도록 overflow 대신 상속). */
+  border-radius: inherit;
 }
 .ph-child__online {
   position: absolute;
@@ -1781,55 +1783,6 @@ button.ph-neu-control:focus-visible {
 button.ph-neu-control:disabled {
   box-shadow: var(--neu-control-raised-soft);
   opacity: 0.58;
-}
-
-.ph-page .ph-device-finder {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 64px;
-  padding: 12px 16px;
-  border-radius: var(--radius-20);
-  text-align: left;
-}
-
-.ph-device-finder__icon {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-}
-
-.ph-device-finder__copy {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-  gap: 4px;
-}
-
-.ph-device-finder__label {
-  font-size: var(--type-body-sm);
-  line-height: var(--type-body-sm-line-height);
-  font-weight: var(--type-body-sm-weight);
-  color: var(--fg-primary);
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-}
-
-.ph-device-finder__child {
-  overflow: hidden;
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
-  color: var(--fg-secondary);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.ph-device-finder > svg {
-  flex: none;
-  color: var(--fg-muted);
 }
 
 /* 상단 원형 버튼과 핵심 2열 버튼은 레퍼런스처럼 한 단계 더 또렷하게 솟는다. */

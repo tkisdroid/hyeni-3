@@ -52,3 +52,13 @@ test("대화 컴포저는 하단 메뉴 위 전체 폭 레이아웃을 유지한
   assert.match(composer, /padding:\s*8px 20px 12px/);
   assert.match(end, /height:\s*var\(--mc-bottom-clearance\)/);
 });
+
+test("대화 화면은 하단 메뉴·아이 독 없이 입력줄을 화면 바닥에 붙인다", () => {
+  // 2026-09-26 TK 제보: 입력창 아래에 앱 하단 메뉴와 휴대폰 내비게이션이 겹겹이 쌓여 이상해 보였다.
+  const shell = readFileSync(new URL("../src/app/AppShell.tsx", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../src/screens/shared/MemoChat.css", import.meta.url), "utf8");
+  assert.match(shell, /const CHAT_PATHS = new Set\(\["\/parent\/memo", "\/child\/memo"\]\)/);
+  assert.match(shell, /\{!chat && <TabBar tabs=\{tabs\} \/>\}/);
+  assert.match(shell, /\{chat \? \(\s*<AiBuddyFabSlot bottomInset=\{20\} \/>\s*\) : \(\s*<>\s*<ChildDock \/>/);
+  assert.match(css, /\.hy-app\[data-chat="true"\] \.mc-root\s*\{[^}]*--mc-tabbar-clearance:\s*env\(safe-area-inset-bottom, 0px\)/s);
+});

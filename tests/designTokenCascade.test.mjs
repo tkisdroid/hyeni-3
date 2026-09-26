@@ -170,15 +170,15 @@ test("busy 상태는 실제 버튼의 aria-busy와 중복 실행 차단 조건�
   assert.match(aiSchedule, /className="ais-confirm hy-press"[\s\S]{0,150}disabled=\{createM\.isPending\}[\s\S]{0,80}aria-busy=\{createM\.isPending\}/);
   assert.match(aiSchedule, /className="ais-confirm hy-press"[\s\S]{0,170}disabled=\{!canParse \|\| parseM\.isPending\}[\s\S]{0,80}aria-busy=\{parseM\.isPending\}/);
   assert.match(remoteAudio, /className="ra-start hy-press"[\s\S]{0,260}disabled=\{ending \|\| starting \|\| requestListen\.isPending \|\| !childUserId \|\| !remoteAudioDataReady\}[\s\S]{0,140}aria-busy=\{ending \|\| starting \|\| requestListen\.isPending\}/);
-  assert.match(remoteRing, /className="rr-cta hy-press"[\s\S]{0,200}disabled=\{!ringDataReady \|\| !targetChild\?\.user_id \|\| ringing \|\| trigger\.isPending\}[\s\S]{0,120}aria-busy=\{ringing \|\| trigger\.isPending\}/);
+  assert.match(remoteRing, /className=\{`rr-cta hy-press[\s\S]{0,200}disabled=\{!ringDataReady \|\| !targetChild\?\.user_id \|\| ringing \|\| trigger\.isPending \|\| ctaState === "exhausted"\}[\s\S]{0,120}aria-busy=\{ringing \|\| trigger\.isPending\}/);
   assert.match(remoteRing, /className="rr-modal-confirm hy-press"[\s\S]{0,180}disabled=\{trigger\.isPending\}[\s\S]{0,120}aria-busy=\{trigger\.isPending\}/);
   assert.match(
     remoteRing,
-    /intl\.formatMessage\(\{ id: "notifications\.remoteRing\.action" \}, \{ state: ringing \|\| trigger\.isPending \? "ringing" : "ready" \}\)/,
+    /intl\.formatMessage\(\{ id: "notifications\.remoteRing\.action" \}, \{ state: ctaState \}\)/,
   );
   assert.equal(
     koNotifications["notifications.remoteRing.action"],
-    "{state, select, ringing {울리는 중…} other {지금 울리기}}",
+    "{state, select, ringing {울리는 중…} upsell {프리미엄으로 더 울리기} exhausted {24시간 뒤 다시 울릴 수 있어요} other {지금 울리기}}",
   );
 });
 

@@ -20,6 +20,7 @@ import { makeNotificationCopy, normalizeNotificationCopy, type NotificationCopy 
 //  · jsonb(location/notif_override/data/subscription/metadata/delivery_status) ↔ parseJson/JSON.stringify.
 //  · boolean(is_family_event/parent_enabled/child_enabled/remote_listen_enabled) 0/1 ↔ toBool.
 //  · uuid[]/int[](minutes_before/read_by) ↔ pgArray. write timestamp pgNow(), 범위비교 substr(col,1,19).
+import { childSubjectKo } from "../lib/koreanSubject.ts";
 import { appDateKeyAt, addCalendarDays, wallTimeToEpoch, readFamilyTimeZone, normalizeTimeZone } from "../lib/timeZone.ts";
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
@@ -2866,7 +2867,7 @@ async function handleVerifiedLegacyMemoNotification(
     .first<{ name: string | null; role: string | null }>();
   const senderName = (sender?.name || (membership.role === "child" ? "아이" : "보호자")).trim();
   const title = membership.role === "child"
-    ? `${senderName}님이 메시지를 보냈어요`
+    ? `${childSubjectKo(senderName)} 메시지를 보냈어요`
     : `${senderName}님의 메시지`;
   const idempotencyKey = `memo:${reply.id}`;
   return handleInstantNotification(

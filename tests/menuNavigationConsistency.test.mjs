@@ -16,9 +16,9 @@ test("부모 홈 바로가기는 핵심 서비스 순서와 실제 라우트를 
 
   const labels = [...mock.matchAll(/label: "([^"]+)"/g)]
     .map((m) => m[1])
-    .filter((label) => ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변 소리 듣기", "안심리포트", "아이 기기 찾기", "알림"].includes(label));
+    .filter((label) => ["AI 일정", "이동 기록", "친구놀이", "장소관리", "주변 소리 듣기", "안심리포트", "아이 기기 찾기", "알림"].includes(label));
 
-  assert.deepEqual(labels, ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변 소리 듣기", "안심리포트", "아이 기기 찾기", "알림"]);
+  assert.deepEqual(labels, ["AI 일정", "이동 기록", "친구놀이", "장소관리", "주변 소리 듣기", "안심리포트", "아이 기기 찾기", "알림"]);
   assert.match(home, /sc1: "\/ai-schedule\?tab=text"/);
   assert.match(home, /sc2: "\/parent\/location\?view=history"/);
   assert.match(home, /sc3: "\/friend-play"/);
@@ -64,9 +64,13 @@ test("부모 위치 시트의 액션 버튼은 원시 이모지 대신 아이콘
   assert.match(actions, /ui\/phone-lavender\.webp/);
   assert.match(css, /\.pl-route-btn \{[^}]*background: var\(--blue-soft\)/);
   // 4열 퀵액션은 아이콘마다 라벨을 함께 보여준다(처음 쓰는 부모도 뜻을 안다).
+  // 2026-09-26: 대화 탭과 같은 이름("대화")을 쓴다. 경로 버튼은 부모 길안내가 아니라 아이의 다음 일정
+  // 가는 길이므로 "길찾기"라고 부르지 않는다(실기기: 부모가 아이에게 가는 길로 오해했다).
+  const koCore = JSON.parse(readSource("locales/ko/core.json"));
+  assert.match(actions, /className="pl-actions__label"[^>]*>[\s\S]{0,100}core\.nav\.chat/);
+  assert.equal(koCore["core.nav.chat"], "대화");
   const labels = {
-    "parent.eventForm.copy060": "메모",
-    "parent.parentLocation.copy054": "경로",
+    "parent.parentLocation.copy054": "일정 가는 길",
     "parent.location.action.remoteAudio": "주변 소리 듣기",
     "parent.parentLocation.copy057": "전화",
   };

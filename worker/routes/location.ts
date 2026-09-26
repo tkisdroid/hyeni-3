@@ -128,10 +128,68 @@ type ChildLocationRow = {
   accuracy_m: number | null;
 };
 
+/** SOS 후 이 시간 동안은 요금제와 무관하게 그 아이의 최신 위치를 보여 준다. */
+export const SOS_LIVE_LOCATION_WINDOW_MS = 30 * 60 * 1000;
+
+/**
+ * 표준(무료) 모드 위치 + 긴급 예외.
+ * 2026-09-26 실기기 E2E: SOS 는 아이의 최신 위치를 함께 저장하지만, 표준 모드는 10분 단위 스냅샷만 보여 줘
+ * 부모 긴급 수신 화면에 "3분 전 확인" 위치가 떴다. 최근 SOS 를 보낸 아이는 최신 위치로 덮어쓴다.
+ * 긴급 알림 조회가 실패하면 기존 스냅샷을 그대로 돌려준다(위치 표시 자체를 막지 않는다).
+ */
 export async function loadStandardChildLocations(
   db: D1Database,
   familyId: string,
   nowMs = Date.now(),
+): Promise<ChildLocationRow[]> {
+  const rows = await loadStandardChildLocationSnapshots(db, familyId, nowMs);
+  let sosChildIds: string[] = [];
+  try {
+    const { results } = await db
+      .prepare(
+        `SELECT DISTINCT child_user_id
+           FROM parent_alerts
+          WHERE family_id = ?1
+            AND alert_type = 'sos'
+            AND child_user_id IS NOT NULL
+            AND substr(created_at, 1, 19) >= ?2`,
+      )
+      .bind(familyId, d1Timestamp(nowMs - SOS_LIVE_LOCATION_WINDOW_MS))
+      .all<{ child_user_id: string }>();
+    sosChildIds = (results ?? []).map((row) => String(row.child_user_id));
+  } catch {
+    return rows;
+  }
+  if (sosChildIds.length === 0) return rows;
+  const byUserId = new Map(rows.map((row) => [String(row.user_id), row]));
+  const placeholders = sosChildIds.map((_, index) => `?${index + 2}`).join(",");
+  const { results: liveRows } = await db
+    .prepare(
+      `SELECT cl.user_id, cl.lat, cl.lng, cl.updated_at, cl.accuracy_m
+         FROM child_locations cl
+        WHERE cl.family_id = ?1
+          AND cl.user_id IN (${placeholders})
+          AND EXISTS (
+            SELECT 1 FROM family_members fm
+             WHERE fm.family_id = cl.family_id AND fm.user_id = cl.user_id
+               AND fm.role = 'child' AND fm.is_active = 1
+          )`,
+    )
+    .bind(familyId, ...sosChildIds)
+    .all<ChildLocationRow>();
+  for (const live of liveRows ?? []) {
+    const current = byUserId.get(String(live.user_id));
+    if (!current || pgToMs(live.updated_at) > pgToMs(current.updated_at)) {
+      byUserId.set(String(live.user_id), live);
+    }
+  }
+  return [...byUserId.values()].sort((a, b) => a.user_id.localeCompare(b.user_id));
+}
+
+async function loadStandardChildLocationSnapshots(
+  db: D1Database,
+  familyId: string,
+  nowMs: number,
 ): Promise<ChildLocationRow[]> {
   const { results: automaticRows } = await db
     .prepare(STANDARD_CHILD_LOCATIONS_SQL)

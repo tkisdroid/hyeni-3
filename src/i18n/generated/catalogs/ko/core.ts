@@ -101,6 +101,7 @@ const messages = {
   "core.error.api.passwordAccountRequired.formal": "비밀번호가 있는 계정에서만 변경할 수 있어요.",
   "core.error.api.phoneExists.child": "이미 가입한 휴대폰 번호야. 로그인해 줘.",
   "core.error.api.phoneExists.formal": "이미 가입된 휴대폰 번호예요. 로그인해 주세요.",
+  "core.error.api.phoneNotRegistered.formal": "가입된 휴대폰 번호가 아니에요. 번호를 확인하거나 새로 가입해 주세요.",
   "core.error.api.primaryParentRequired.formal": "주 보호자만 할 수 있어요. 주 보호자 기기에서 요청해 주세요.",
   "core.error.api.rateLimited.child": "요청이 많아. 잠시 후 다시 해 줘.",
   "core.error.api.rateLimited.formal": "요청이 많아요. 잠시 후 다시 시도해 주세요.",

@@ -46,7 +46,7 @@ export function ParentVocabulary() {
   const label = (id: string) => intl.formatMessage({ id });
   return <StudyAccessGate deniedPath="/parent/home" onBack={() => navigate("/miniapps")}>
     <div className="vocabulary-screen">
-      <header className="study-learning-header"><button type="button" className="study-learning-back" onClick={() => navigate("/miniapps")} aria-label={label("study.common.back")}><ChevronLeft aria-hidden="true" /></button>
+      <header className="study-learning-header"><button type="button" className="study-learning-back hy-press" onClick={() => navigate("/miniapps")} aria-label={label("study.common.back")}><ChevronLeft aria-hidden="true" /></button>
         <div><h1>{label("study.vocabulary.parentTitle")}</h1><p>{target.kind === "ready" ? target.child.name : label("study.vocabulary.parentSubtitle")}</p></div>
       </header>
       {familyLoading ? <p role="status">{label("study.parent.loadingFamily")}</p> : target.kind !== "ready" ? (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { useIntl } from "react-intl";
@@ -52,6 +52,23 @@ export function PlaceManager() {
     navigate("/place-form");
   };
 
+  // 삭제는 도착·위험 알림을 함께 끄는 되돌릴 수 없는 동작이라 한 번의 탭으로 실행하지 않는다.
+  // 설정의 로그아웃과 같은 방식으로 첫 탭은 확인 대기, 5초 안의 두 번째 탭에서만 삭제한다.
+  const [armedDeleteKey, setArmedDeleteKey] = useState<string | null>(null);
+  useEffect(() => {
+    if (!armedDeleteKey) return undefined;
+    const timer = window.setTimeout(() => setArmedDeleteKey(null), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [armedDeleteKey]);
+  const confirmThenDelete = (key: string, run: () => void) => {
+    if (armedDeleteKey !== key) {
+      setArmedDeleteKey(key);
+      return;
+    }
+    setArmedDeleteKey(null);
+    run();
+  };
+
   const handleDeleteZone = (id: string, name: string) => {
     deleteZone.mutate(id, {
       onSuccess: () => show(intl.formatMessage({ id: "notifications.placeManager.zoneDeleted" }, { name }), "🗑️"),
@@ -102,9 +119,15 @@ export function PlaceManager() {
                 </button>
               </div>
             )}
+            {/* 빈 목록은 '없어요' 한 줄로 끝내지 않는다 — 무엇을 등록하면 무엇이 좋아지는지와 바로 할 버튼을 둔다. */}
             {!placesLoading && !placesError && places.length === 0 && (
-              <div className="pm-item__addr" style={{ padding: 16 }}>
-                {intl.formatMessage({ id: "notifications.placeManager.savedPlacesEmpty" })}
+              <div className="pm-empty hy-tile">
+                <div className="pm-empty__title">{intl.formatMessage({ id: "notifications.placeManager.savedPlacesEmpty" })}</div>
+                <p className="pm-empty__hint">{intl.formatMessage({ id: "notifications.placeManager.savedPlacesEmptyHint" })}</p>
+                <button type="button" className="pm-empty__cta hy-press" onClick={handleAddPlace}>
+                  <Plus size={16} strokeWidth={2.4} aria-hidden="true" />
+                  {intl.formatMessage({ id: "notifications.placeManager.addPlace" })}
+                </button>
               </div>
             )}
             {!placesLoading && !placesError && places.map((p) => {
@@ -131,12 +154,19 @@ export function PlaceManager() {
                 <button
                   type="button"
                   className="pm-item__del hy-press"
-                  aria-label={intl.formatMessage({ id: "notifications.placeManager.deleteAria" }, { name: p.name })}
-                  onClick={() => handleDeletePlace(p.id, p.name)}
+                  data-armed={armedDeleteKey === `place:${p.id}` ? "true" : "false"}
+                  aria-label={intl.formatMessage(
+                    { id: armedDeleteKey === `place:${p.id}` ? "notifications.placeManager.deleteConfirmAria" : "notifications.placeManager.deleteAria" },
+                    { name: p.name },
+                  )}
+                  onClick={() => confirmThenDelete(`place:${p.id}`, () => handleDeletePlace(p.id, p.name))}
                   disabled={deletePlace.isPending}
                   aria-busy={deletePlace.isPending && deletePlace.variables === p.id}
                 >
                   <Trash2 size={18} strokeWidth={2.2} color="#8B7E84" />
+                  {armedDeleteKey === `place:${p.id}` && (
+                    <span className="pm-del__confirm">{intl.formatMessage({ id: "notifications.placeManager.deleteConfirm" })}</span>
+                  )}
                 </button>
               </div>
               );
@@ -169,9 +199,11 @@ export function PlaceManager() {
                 </button>
               </div>
             )}
+            {/* 비어 있는 것은 경고가 아니다 — 빨간 글씨 대신 차분한 안내로 보여 준다. */}
             {!zonesLoading && !zonesError && zones.length === 0 && (
-              <div className="pm-danger__addr" style={{ padding: 16 }}>
-                {intl.formatMessage({ id: "notifications.placeManager.dangerZonesEmpty" })}
+              <div className="pm-empty hy-tile">
+                <div className="pm-empty__title">{intl.formatMessage({ id: "notifications.placeManager.dangerZonesEmpty" })}</div>
+                <p className="pm-empty__hint">{intl.formatMessage({ id: "notifications.placeManager.dangerZonesEmptyHint" })}</p>
               </div>
             )}
             {!zonesLoading && !zonesError && zones.map((z) => {
@@ -199,12 +231,19 @@ export function PlaceManager() {
                 <button
                   type="button"
                   className="pm-danger__del hy-press"
-                  aria-label={intl.formatMessage({ id: "notifications.placeManager.deleteAria" }, { name: z.name })}
-                  onClick={() => handleDeleteZone(z.id, z.name)}
+                  data-armed={armedDeleteKey === `zone:${z.id}` ? "true" : "false"}
+                  aria-label={intl.formatMessage(
+                    { id: armedDeleteKey === `zone:${z.id}` ? "notifications.placeManager.deleteConfirmAria" : "notifications.placeManager.deleteAria" },
+                    { name: z.name },
+                  )}
+                  onClick={() => confirmThenDelete(`zone:${z.id}`, () => handleDeleteZone(z.id, z.name))}
                   disabled={deleteZone.isPending}
                   aria-busy={deleteZone.isPending && deleteZone.variables === z.id}
                 >
                   <Trash2 size={18} strokeWidth={2.2} color="#C0334C" />
+                  {armedDeleteKey === `zone:${z.id}` && (
+                    <span className="pm-del__confirm">{intl.formatMessage({ id: "notifications.placeManager.deleteConfirm" })}</span>
+                  )}
                 </button>
               </div>
               );

@@ -161,38 +161,39 @@
 }
 
 /* ── 편집 필드 ────────────────────────────────────────────────────────────── */
+/* 편집 필드는 다른 폼(일정·장소·아이 프로필)과 같은 "라벨 위 + 전체 폭 입력칸"이다.
+   예전의 왼쪽 라벨 + 오른쪽 정렬 인라인 입력은 공용 입력 재질을 입으면 모서리 없는 상자로 보였다. */
 .pa-field {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  gap: 8px;
   padding: 12px 0;
 }
 .pa-field__k {
-  flex: none;
-  width: 68px;
-  font-size: var(--type-body-sm);
-  line-height: var(--type-body-sm-line-height);
-  font-weight: var(--type-body-sm-weight);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
 
   color: var(--fg-secondary);
 }
 .pa-field__control {
-  flex: 1;
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 8px;
 }
 .pa-input {
-  flex: 1;
+  width: 100%;
   min-width: 0;
-  border: none;
-  background: transparent;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: var(--radius-16);
+  background: var(--bg-card);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
   color: var(--fg-primary);
-  text-align: right;
+  text-align: left;
 }
 .pa-field__control .pa-input {
   width: 100%;
@@ -202,15 +203,15 @@
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
-  text-align: right;
+  text-align: left;
 }
 .pa-input::placeholder {
   color: var(--fg-placeholder);
-  font-weight: 500;
 }
 .pa-input:disabled {
   color: var(--fg-muted);
 }
+
 
 /* 주요 저장 CTA — 흰 라벨이 AA 를 넘도록 채움은 --hy-accent-cta, 라벨은 18px/700. */
 .pa-save {

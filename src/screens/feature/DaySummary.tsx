@@ -1,3 +1,4 @@
+import { ChildSwitcher } from "@/components/ChildSwitcher";
 import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useMemo, useRef, useState } from "react";
 import { scopedDaySummary, type DaySummaryScope, type ScopedDaySummary } from "@/transform/auditStateScope";
@@ -247,6 +248,7 @@ export function DaySummary() {
       </div>
 
       <div className="hy-content ds-content">
+        <ChildSwitcher className="hy-kidswitch--screen" />
         {!childUserId && familyLoading ? (
           <div className="ds-panel">
             <Loading label={intl.formatMessage({ id: "parent.daySummary.familyLoading" })} />

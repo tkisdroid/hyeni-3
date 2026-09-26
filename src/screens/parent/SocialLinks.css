@@ -79,12 +79,13 @@
   color: var(--danger-text);
 }
 
+/* 재시도는 다른 화면과 같은 연한 강조 알약 — 검은 알약만 튀어 보였다(2026-09-26 실패 매트릭스). */
 .sl-retry {
   min-height: var(--control-min-size);
   padding: 0 16px;
   border-radius: var(--radius-pill);
-  background: var(--fg-primary);
-  color: #fff;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

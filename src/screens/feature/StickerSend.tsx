@@ -13,6 +13,7 @@ import { useReceivedStickers, useSendSticker, useStickerSummary } from "@/querie
 import { buildStickerBook, stickerSendDateKey } from "@/transform/stickerBook";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import "@/components/ChildSwitcher.css";
 import "./StickerSend.css";
 
 type Sticker = { id: string; img: string; labelId: string; emoji: string };
@@ -213,19 +214,22 @@ export function StickerSend() {
                 {intl.formatMessage({ id: "shared.stickerSend.selectChildPrompt" })}
               </div>
             ) : null}
-            <div className="ss-children">
+            {/* 받는 아이는 이 화면에서 명시적으로 고른다. 모양은 앱 공용 다자녀 전환 알약과 같다. */}
+            <div className="hy-kidswitch ss-children" role="radiogroup" aria-label={intl.formatMessage({ id: "shared.childSwitcher.label" })}>
               {children.map((c) => (
                 <button
                   key={c.id}
                   type="button"
-                  className="ss-child hy-press"
-                  data-active={c.user_id === targetChild?.user_id}
+                  role="radio"
+                  className="hy-kidswitch__item hy-press"
+                  data-selected={c.user_id === targetChild?.user_id ? "true" : "false"}
+                  aria-checked={c.user_id === targetChild?.user_id}
                   onClick={() => setSelectedUserId(c.user_id)}
                 >
-                  <span className="ss-child__avatar" data-photo={isUploadedAvatar(c.photo_url) ? "true" : "false"}>
+                  <span className="hy-kidswitch__avatar" data-photo={isUploadedAvatar(c.photo_url) ? "true" : "false"}>
                     <img className="hy-network-avatar" src={avatarSrc(childAvatarPath(c.photo_url))} alt="" loading="lazy" decoding="async" />
                   </span>
-                  <span className="ss-child__name">
+                  <span className="hy-kidswitch__name">
                     {c.name || intl.formatMessage({ id: "shared.stickerSend.childFallback" })}
                   </span>
                 </button>

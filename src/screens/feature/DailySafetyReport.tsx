@@ -1,3 +1,4 @@
+import { ChildSwitcher } from "@/components/ChildSwitcher";
 import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -486,11 +487,11 @@ export function DailySafetyReport() {
         </button>
         <div className="dr-head-main">
           <div className="dr-title">{intl.formatMessage({ id: "reports.daily.title" })}</div>
-          <div className="dr-subtitle">{intl.formatMessage({ id: "reports.daily.subtitle" })}</div>
         </div>
       </header>
 
       <div className="dr-content">
+        <ChildSwitcher className="hy-kidswitch--screen" />
         {safetySourceState === "loading" ? (
           <section className="hy-card dr-loading">
             <Loading label={intl.formatMessage({ id: "reports.daily.loading" })} />
@@ -607,7 +608,6 @@ export function DailySafetyReport() {
                 </span>
                 <span>
                   <b>{intl.formatMessage({ id: "reports.daily.safetySignals" })}</b>
-                  <small>{intl.formatMessage({ id: "reports.daily.safetySignalsDescription" })}</small>
                 </span>
               </div>
               <div className="dr-signal-grid">
@@ -642,7 +642,6 @@ export function DailySafetyReport() {
                 </span>
                 <span>
                   <b>{intl.formatMessage({ id: "reports.daily.movementTitle" })}</b>
-                  <small>{intl.formatMessage({ id: "reports.daily.movementDescription" })}</small>
                 </span>
                 <button type="button" className="dr-link hy-press" onClick={() => navigate("/parent/location?view=history")}>
                   {intl.formatMessage({ id: "reports.daily.viewMap" })}
@@ -783,7 +782,6 @@ export function DailySafetyReport() {
                   </span>
                   <span>
                     <b>{intl.formatMessage({ id: "reports.daily.supplies" })}</b>
-                    <small>{intl.formatMessage({ id: "reports.daily.suppliesDescription" })}</small>
                   </span>
                 </div>
                 {suppliesQuery.isError ? (
@@ -850,7 +848,6 @@ export function DailySafetyReport() {
                 </span>
                 <span>
                   <b>{intl.formatMessage({ id: "reports.daily.deviceStatus" })}</b>
-                  <small>{intl.formatMessage({ id: "reports.daily.deviceDescription" })}</small>
                 </span>
                 <button
                   type="button"

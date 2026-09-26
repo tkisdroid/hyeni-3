@@ -31,12 +31,9 @@ export function MiniApps() {
         >
           <ChevronLeft aria-hidden="true" />
         </button>
-        <div>
-          <p className="mini-apps-eyebrow">HYENI MINI APPS</p>
-          <h1 id="mini-apps-title">{MINI_APP_COPY.title}</h1>
-          <p>{MINI_APP_COPY.subtitle}</p>
-        </div>
+        <h1 id="mini-apps-title">{MINI_APP_COPY.title}</h1>
       </header>
+      <p className="mini-apps-lead">{isChild ? MINI_APP_COPY.childSubtitle : MINI_APP_COPY.subtitle}</p>
 
       <section className="mini-apps-grid" aria-label={MINI_APP_COPY.title}>
         <button
@@ -51,7 +48,7 @@ export function MiniApps() {
           <span className="mini-app-card__copy">
             <span className="mini-app-card__badge">{MINI_APP_COPY.mathBadge}</span>
             <strong>{MINI_APP_COPY.mathTitle}</strong>
-            <span>{MINI_APP_COPY.mathDescription}</span>
+            <span>{isChild ? MINI_APP_COPY.childMathDescription : MINI_APP_COPY.mathDescription}</span>
           </span>
           <ChevronRight className="mini-app-card__arrow" aria-hidden="true" />
         </button>

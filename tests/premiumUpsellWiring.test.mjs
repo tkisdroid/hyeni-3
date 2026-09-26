@@ -46,16 +46,18 @@ test("무료 소리 울리기 1회 소진은 발사 확인창 대신 상황형 �
   const source = read("src/screens/feature/RemoteRing.tsx");
   const quotaGate = source.indexOf("if (!quotaAllowed)");
   const confirmOpen = source.indexOf("setShowConfirm(true)", quotaGate);
-  const ctaStart = source.indexOf('className="rr-cta hy-press"');
+  const ctaStart = source.indexOf("className={`rr-cta hy-press");
   const ctaEnd = source.indexOf("</button>", ctaStart);
   assert.ok(quotaGate >= 0 && confirmOpen > quotaGate);
   assert.ok(ctaStart >= 0 && ctaEnd > ctaStart);
   assert.match(source.slice(quotaGate, confirmOpen), /setUpsellOpen\(true\)[\s\S]*return/);
   assert.match(
     source.slice(ctaStart, ctaEnd),
-    /disabled=\{!ringDataReady \|\| !targetChild\?\.user_id \|\| ringing \|\| trigger\.isPending\}/,
+    /disabled=\{!ringDataReady \|\| !targetChild\?\.user_id \|\| ringing \|\| trigger\.isPending \|\| ctaState === "exhausted"\}/,
   );
+  // 무료 소진은 누를 수 있어야 업셀이 열린다 — 막는 것은 프리미엄 한도 소진("exhausted")뿐이다.
   assert.doesNotMatch(source.slice(ctaStart, ctaEnd), /!quotaAllowed/);
+  assert.match(source, /quota\.tier === "premium" \? "exhausted" : "upsell"/);
   assert.match(source, /source="remote_ring"/);
   assert.match(source, /savePremiumReturnIntent/);
   assert.match(source, /draft:\s*\{[^}]*childUserId[^}]*durationSec/s);
@@ -76,7 +78,7 @@ test("소리 울리기는 앱 계정 user_id가 연결된 아이만 대상으로
   const source = read("src/screens/feature/RemoteRing.tsx");
   assert.match(source, /m\.role === "child"[\s\S]{0,120}typeof m\.user_id === "string"[\s\S]{0,120}m\.user_id\.trim\(\)/);
   assert.match(source, /if \(!targetChild\?\.user_id\)/);
-  assert.match(source, /disabled=\{!ringDataReady \|\| !targetChild\?\.user_id \|\| ringing \|\| trigger\.isPending\}/);
+  assert.match(source, /disabled=\{!ringDataReady \|\| !targetChild\?\.user_id \|\| ringing \|\| trigger\.isPending \|\| ctaState === "exhausted"\}/);
 });
 
 test("소리 울리기 rolling quota 안내는 모두 최근 24시간 기준으로 표시한다", () => {

@@ -177,6 +177,7 @@ interface AiBuddyFabButtonProps extends AiBuddyFabProps {
 
 function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const intl = useIntl();
   const { show } = useToast();
   const { familyId, userId } = useAuth();
@@ -397,16 +398,19 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
 
   // 화면을 스크롤하면 고정된 친구 아래로 버튼이 지나간다. 스크롤이 멈췄을 때 버튼 위라면
   // 가까운 빈자리로 비켜 선다(임시 위치만 바꾸고 아이가 직접 옮긴 저장 위치는 그대로 둔다).
+  // 홈 밖(조용히 곁을 지키는 화면)에서도 비켜 서기만은 한다 — 설정의 '부탁'·피드백의 '포함'처럼
+  // 가장자리 버튼을 덮은 채 머물면 아이가 누른 곳 대신 친구가 눌린다. 배회·말풍선은 여전히 홈에서만.
   useEffect(() => {
     const screen = hostRef.current?.closest(".hy-app")?.querySelector<HTMLElement>(".hy-screen");
     if (!screen) return;
     let settleTimer: ReturnType<typeof setTimeout> | null = null;
     const stepAside = () => {
-      if (!presentationRef.current.canWander) return;
       if (attentionRef.current || launchingRef.current || dragRef.current) return;
+      // 비켜 서기는 배회가 아니다 — 감정 표현(왕관·놀람) 중이어도 버튼 위라면 옮긴다(2026-09-26 S20:
+      // 스티커 축하 표정 동안 가방 "편집" 버튼을 덮은 채 머물렀다). 막 끌어다 놓은 자리만 존중한다.
       const gate = {
         dragging: false,
-        showingEmotion: emotionRef.current !== "idle" && emotionRef.current !== "sleepy",
+        showingEmotion: false,
         visible: !document.hidden,
         reducedMotion: false,
         msSinceDrag: lastDragAtRef.current === null ? null : Date.now() - lastDragAtRef.current,
@@ -425,11 +429,25 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
     };
     screen.addEventListener("scroll", onScroll, { passive: true });
     settleTimer = setTimeout(stepAside, 1_200);
+    // 화면 내용(버튼)은 조회가 끝난 뒤에 늦게 그려진다 — 1.2초 시점엔 로딩 표시뿐이라 "덮는 것 없음"으로
+    // 끝나고, 그 뒤 도착한 버튼을 덮은 채 남았다(2026-09-26 길찾기 '안내 시작' 실측).
+    // 내용이 바뀌면 잠시 뒤 다시 재서 비켜 선다(연속 변경은 한 번으로 묶는다).
+    let mutationTimer: ReturnType<typeof setTimeout> | null = null;
+    const contentObserver = typeof MutationObserver === "function"
+      ? new MutationObserver(() => {
+        if (mutationTimer) clearTimeout(mutationTimer);
+        mutationTimer = setTimeout(stepAside, 400);
+      })
+      : null;
+    contentObserver?.observe(screen, { childList: true, subtree: true });
     return () => {
       screen.removeEventListener("scroll", onScroll);
       if (settleTimer) clearTimeout(settleTimer);
+      if (mutationTimer) clearTimeout(mutationTimer);
+      contentObserver?.disconnect();
     };
-  }, [presentation.canWander]);
+    // 같은 셸 안에서 화면만 바뀌어도(설정 → 피드백) 새 화면의 버튼 배치로 다시 잰다.
+  }, [presentation.canWander, pathname]);
 
   // 홈 밖에서는 저장된 가장자리 위치만 지키고, 이전 화면의 배회·말풍선·주목 상태를 이어오지 않는다.
   useEffect(() => {

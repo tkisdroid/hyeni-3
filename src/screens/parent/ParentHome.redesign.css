@@ -482,6 +482,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* 프레임이 둥글면 사진도 같은 모서리로 잘린다(형제 배지를 자르지 않도록 overflow 대신 상속). */
+  border-radius: inherit;
 }
 
 .ph-page .ph-child__online {
@@ -1065,25 +1067,34 @@
 
 .ph-hero-carousel__track::-webkit-scrollbar { display: none; }
 
+/* 슬라이드마다 카드 높이가 달라(오늘 168 · 소식 152) 넘길 때 크기가 바뀌어 보였다(2026-09-26 TK 제보).
+   가장 긴 슬라이드 높이에 모든 카드를 맞춘다. */
 .ph-hero-carousel__slide {
   flex: 0 0 100%;
   min-width: 0;
+  display: flex;
   scroll-snap-align: start;
 }
 
-/* 소식 슬라이드는 오늘 히어로와 같은 유리 표면을 쓴다(장식 배지·파스텔 CTA 없음). */
+.ph-hero-carousel__slide > .ph-hero {
+  flex: 1;
+  width: 100%;
+}
+
+/* 소식 슬라이드는 오늘 히어로와 같은 유리 표면·같은 세로 배치(위 라벨 · 가운데 제목 · 아래 한 줄)를 쓴다. */
 .ph-page .ph-hero--promo {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   text-align: left;
 }
 
-/* 미니앱 캐릭터는 카드 안에서 온전히 보이도록 위아래 여백을 확보한다. */
+/* 캐릭터도 오늘 히어로와 같은 칸 크기 — 카드 안에서 잘리지 않게 바닥에만 붙인다. */
 .ph-page .ph-hero--promo .ph-hero__mascot {
-  top: var(--spacing-16);
-  right: var(--spacing-12);
-  bottom: var(--spacing-16);
-  width: 104px;
-  height: auto;
+  right: 0;
+  bottom: 0;
+  width: 128px;
+  height: 146px;
   animation: none;
 }
 
@@ -1158,6 +1169,8 @@
 .ph-page .ph-home-section[data-section-id="ai_schedule"] .ph-section-shell,
 .ph-page .ph-home-section[data-section-id="shortcuts"] .ph-section-shell {
   padding: 0;
+  /* 판이 없으니 잘라낼 모서리도 없다 — hidden 이 남으면 제목 첫 글자('AI'의 A)와 버튼 그림자가 잘렸다. */
+  overflow: visible;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -1179,4 +1192,9 @@
   border-radius: var(--radius-pill);
   background: var(--control-fill);
   box-shadow: var(--control-rim);
+}
+
+/* 다자녀 전환 알약: 홈 맨 위에서 "지금 보는 아이"를 바꾼다(히어로·아이 현황·안전 지표가 따른다). */
+.ph-page .ph-kidswitch {
+  margin: -8px -4px -4px;
 }

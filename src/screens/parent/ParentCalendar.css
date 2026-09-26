@@ -404,22 +404,22 @@
   flex-direction: column;
   justify-content: flex-end;
   box-sizing: border-box;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 .pc-scrim {
   position: absolute;
   inset: 0;
   background: rgba(31, 24, 28, 0.32);
-  animation: hy-fadein 0.2s ease forwards;
+  animation: hy-fadein 0.2s ease backwards;
 }
 .pc-sheet {
   position: relative;
   z-index: 1;
   background: var(--bg-card);
   border-radius: var(--radius-24) var(--radius-24) 0 0;
-  padding: 4px 16px 16px;
+  /* 모달이 열리면 화면 스택이 탭바 위로 올라간다(glass.css) — 탭바 자리를 비우지 않고 바닥에 붙인다. */
+  padding: 4px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   box-shadow: var(--shadow-modal);
-  animation: hy-sheetup 0.32s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  animation: hy-sheetup var(--duration-sheet) var(--easing-emphasized) backwards;
   display: flex;
   flex-direction: column;
   gap: 12px;

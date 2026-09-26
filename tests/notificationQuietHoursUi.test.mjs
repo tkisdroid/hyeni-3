@@ -144,5 +144,6 @@ test("운영 문서는 알림 조용한 시간 정본과 배포 순서를 보존
   assert.match(docs, /A17[^\n]*(부모|parent)/i);
   assert.match(docs, /razr[^\n]*(아이|child)/i);
   assert.match(docs, /adb install --user 0 -r/);
-  assert.match(docs, /S25[^\n]*고정 역할[^\n]*확인/);
+  assert.match(docs, /S25[^\n]*(부모|parent)/i);
+  assert.match(docs, /S20 Ultra[^\n]*(아이|child)/i);
 });

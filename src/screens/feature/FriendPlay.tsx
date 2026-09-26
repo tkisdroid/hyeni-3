@@ -19,6 +19,7 @@ import { Loading } from "@/components/ui/Loading";
 import { useIntl } from "react-intl";
 import { localizeApiError } from "@/i18n/apiError";
 import { useLocale } from "@/i18n/useLocale";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import "./FriendPlay.css";
 
 /** 친구 놀이요청 진행 단계 안내. */
@@ -58,16 +59,21 @@ function ParentPlaydateQueryState({
         </span>
       </div>
       <div className="fp-content">
-        <div className="fp-empty" role={loading ? "status" : "alert"}>
-          {loading
-            ? <Loading label={intl.formatMessage({ id: "shared.friendPlay.parent.loading" })} />
-            : <span>{intl.formatMessage({ id: "shared.friendPlay.parent.loadError" })}</span>}
-          {!loading && (
-            <button type="button" className="fp-cta hy-press" onClick={onRetry}>
-              {intl.formatMessage({ id: "shared.friendPlay.retry" })}
-            </button>
-          )}
-        </div>
+        {loading ? (
+          <div className="fp-empty" role="status">
+            <Loading label={intl.formatMessage({ id: "shared.friendPlay.parent.loading" })} />
+          </div>
+        ) : (
+          <ScreenQueryState
+            embedded
+            state="error"
+            screenTitle={intl.formatMessage({ id: "shared.friendPlay.parent.screenTitle" })}
+            heading={intl.formatMessage({ id: "shared.friendPlay.parent.loadError" })}
+            description={intl.formatMessage({ id: "core.error.api.network.formal" })}
+            onRetry={onRetry}
+            retryLabel={intl.formatMessage({ id: "shared.friendPlay.retry" })}
+          />
+        )}
       </div>
     </div>
   );

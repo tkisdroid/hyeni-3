@@ -11,8 +11,9 @@ import { useToast } from "@/app/toast";
 import { useSafeBack } from "@/app/useSafeBack";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
+import { ChildSwitcher } from "@/components/ChildSwitcher";
 import { useMyFamily } from "@/queries/useFamily";
-import { useMemoThread, useSendMemo, useMarkRead } from "@/queries/useMemo";
+import { useMemoThread, useSendMemo, useMarkRead, useUnreadMemoChildIds } from "@/queries/useMemo";
 import { isPendingMemoReply } from "@/queries/memoCache";
 import { useChildLocations } from "@/queries/useLocation";
 import {
@@ -250,12 +251,12 @@ export function MemoChat() {
     isError: familyError,
     refetch: refetchFamily,
   } = useMyFamily();
-  const { activeChild } = useActiveChild();
-  const [searchParams] = useSearchParams();
+  const { activeChild, childMembers } = useActiveChild();
+  const [searchParams, setSearchParams] = useSearchParams();
   const childHint = searchParams.get("child")?.trim() || null;
 
   // 대화 스코프 아이(member id) — 아이별 1:1 스레드(TK 결정: 대화도 각각).
-  // 부모/선생님 = 전역 활성 아이(홈 스위치), 아이 = 자기 자신. 메시지 fetch·send 모두 이 스코프.
+  // 부모/선생님 = 전역 활성 아이(홈·대화 상단 전환 알약), 아이 = 자기 자신. 메시지 fetch·send 모두 이 스코프.
   const scopeChild = useMemo(() => {
     if (!family) return null;
     const members = family.members;
@@ -281,6 +282,11 @@ export function MemoChat() {
   const dateKeys = useRecentDateKeys(7, familyTimeZone);
   const memoDateKey = latestDateKeyOrNull(dateKeys);
   const thread = useMemoThread(dateKeys, scopeChild?.id ?? null);
+  // 다자녀 부모: 지금 보지 않는 아이의 새 메시지를 전환 알약의 점으로 알린다(아이 세션은 형제 스레드를 읽지 않는다).
+  const unreadChildIds = useUnreadMemoChildIds(
+    isChildSession ? [] : dateKeys,
+    isChildSession ? [] : childMembers.map((member) => member.id),
+  );
   const sendMemo = useSendMemo();
   const markRead = useMarkRead();
   const memoBlocks = useMemoBlocks();
@@ -636,6 +642,20 @@ export function MemoChat() {
             {statusLabel}
           </div>
         </div>
+        {/* 다자녀 부모: 홈으로 돌아가지 않고 대화할 아이를 바꾼다(고정 헤더 둘째 줄 · 같은 전역 선택). */}
+        {!isChildSession && (
+          <ChildSwitcher
+            className="mc-kidswitch"
+            selectedId={scopeChild?.id ?? null}
+            unreadIds={unreadChildIds}
+            onChange={() => {
+              if (!childHint) return;
+              const next = new URLSearchParams(searchParams);
+              next.delete("child");
+              setSearchParams(next, { replace: true });
+            }}
+          />
+        )}
       </header>
 
       {/* 대화 스레드 */}

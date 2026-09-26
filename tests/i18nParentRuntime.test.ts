@@ -186,16 +186,16 @@ test("글쓰기와 무관한 모든 Premium source는 10개 locale의 Free 계�
 
 test("ParentAccount 전화 입력은 10개 locale에서 실제 KR formatter 계약과 한계 안내를 표시한다", () => {
   const expectedHelp = {
-    ko: "현재는 한국 휴대폰 번호만 지원합니다.",
-    en: "Currently, only Korean mobile phone numbers are supported.",
-    ja: "現在は韓国の携帯電話番号のみ対応しています。",
-    "zh-CN": "目前仅支持韩国手机号码。",
-    "zh-TW": "目前僅支援韓國手機號碼。",
-    vi: "Hiện tại chỉ hỗ trợ số điện thoại di động Hàn Quốc.",
-    th: "ขณะนี้รองรับเฉพาะหมายเลขโทรศัพท์มือถือของเกาหลีใต้เท่านั้น",
-    id: "Saat ini hanya nomor ponsel Korea Selatan yang didukung.",
-    ms: "Buat masa ini, hanya nombor telefon bimbit Korea Selatan disokong.",
-    fil: "Sa ngayon, mga numero ng mobile phone sa South Korea lamang ang sinusuportahan.",
+    ko: "한국 휴대폰 번호만 지원해요.",
+    en: "Only South Korean mobile numbers are supported.",
+    ja: "韓国の携帯電話番号のみ対応しています。",
+    "zh-CN": "仅支持韩国手机号码。",
+    "zh-TW": "僅支援韓國手機號碼。",
+    vi: "Chỉ hỗ trợ số di động Hàn Quốc.",
+    th: "รองรับเฉพาะเบอร์มือถือเกาหลีใต้",
+    id: "Hanya nomor ponsel Korea Selatan yang didukung.",
+    ms: "Hanya nombor telefon bimbit Korea Selatan disokong.",
+    fil: "Mga numero ng mobile sa South Korea lang ang suportado.",
   } as const;
   for (const [locale, help] of Object.entries(expectedHelp)) {
     const localeMessages = JSON.parse(read(`locales/${locale}/parent.json`));

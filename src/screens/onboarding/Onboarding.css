@@ -9,6 +9,22 @@
   overflow-x: hidden;
 }
 
+/* 온보딩은 고정 헤더가 없어 스크롤한 입력칸·안내가 투명한 상태바 아래로 비쳐 시계·아이콘과 겹쳤다
+   (2026-09-26 S25 실측). 상태바 높이만큼 흐린 가림막을 고정한다(웹 PWA 는 높이 0 이라 영향 없음). */
+.ob-root::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  height: env(safe-area-inset-top, 0px);
+  background: color-mix(in srgb, var(--bg-app) 84%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+
 /* 스텝 공통 컨테이너 */
 .ob-step {
   min-height: 100dvh;
@@ -18,7 +34,7 @@
   padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(40px + env(safe-area-inset-bottom, 0px));
   overflow-x: hidden;
   background: transparent;
-  animation: hy-fadeup 0.32s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  animation: hy-fadeup 0.32s cubic-bezier(0.2, 0, 0.2, 1) backwards;
 }
 
 /* 공통 타이틀 / 서브텍스트 */
@@ -177,7 +193,10 @@
   display: flex;
   flex-direction: column;
 }
+/* 로고·역할 카드 묶음을 남는 세로 공간의 가운데에 둔다 — 위에 붙고 아래 언어 판까지 큰 빈칸이 생겼다.
+   (언어 판의 margin-top:auto 와 남는 높이를 반씩 나눈다.) */
 .ob-role-head {
+  margin-top: auto;
   text-align: center;
 }
 .ob-role-logo {
@@ -232,6 +251,12 @@
   box-shadow: var(--shadow-soft);
   transition: transform 0.14s ease;
   --press: 0.98;
+}
+/* 역할마다 제 색을 준다 — 학부모만 검정이면 아이 카드만 강조된 것처럼 보였다(2026-09-26). */
+.ob-role-card--parent {
+  --ob-role-title: var(--blue-text);
+  --ob-role-description: color-mix(in srgb, var(--blue-text) 76%, var(--fg-muted));
+  --ob-role-chevron: color-mix(in srgb, var(--blue-500) 55%, transparent);
 }
 .ob-role-card--child {
   --ob-role-title: var(--lav-text);
@@ -327,7 +352,13 @@
   color: var(--fg-muted);
 
 }
+/* 약관 링크도 누르는 순간 반응한다 — 새 창이 뜨기 전까지 눌렸는지 알 수 없었다. */
+.ob-role-terms a:active {
+  color: var(--hy-accent-text);
+  opacity: 0.72;
+}
 .ob-role-terms a {
+  transition: color var(--duration-fast) var(--easing-standard), opacity var(--duration-fast) var(--easing-standard);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -636,6 +667,15 @@
   transition: transform 0.14s ease;
   --press: 0.98;
 }
+/* 로그인 버튼 바로 아래의 "아이디·비밀번호 찾기" — 조용한 텍스트 링크지만 44px 누름 영역을 지킨다. */
+.ob-login-recover {
+  align-self: center;
+  min-height: var(--control-min-size);
+  padding: 0 12px;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+}
 .ob-login-device-note {
   margin: 4px 8px 0;
   color: var(--fg-muted);
@@ -656,7 +696,8 @@
 }
 .ob-link {
   font-weight: 800;
-  color: #b0477a;
+  /* 화면 강조색을 따른다(어른 온보딩=라벤더). 분홍 고정색은 주변 버튼과 색이 달랐다. */
+  color: var(--hy-accent-text);
   background: transparent;
   transition: opacity 0.12s ease;
 }
@@ -847,11 +888,13 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
+/* 선택 전 보호자 구분은 옆 입력칸과 같은 높이·모서리·유리 채움 — 흰 판만 튀어 보였다(2026-09-26). */
 .ob-guardian-option {
-  min-height: 48px;
-  border: 1.5px solid var(--line-strong);
-  border-radius: var(--radius-12);
-  background: var(--bg-card);
+  min-height: 52px;
+  border: 1.5px solid var(--control-border, var(--line-strong));
+  border-radius: var(--radius-16);
+  background: var(--control-fill, var(--bg-card));
+  box-shadow: var(--control-rim, none);
   color: var(--fg-body);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
@@ -860,6 +903,7 @@
 .ob-guardian-option--active {
   border-color: var(--hy-accent-cta);
   background: var(--hy-accent-cta);
+  box-shadow: none;
   color: var(--bg-card);
 }
 .ob-auth-alternative {
@@ -1295,17 +1339,53 @@
   word-break: keep-all;
 }
 
-:is(.ob-role-card, .ob-survey-card, .ob-connect-card, .ob-perm, .ob-referral-notice) {
-  border: 1px solid rgba(255, 255, 255, 0.62);
+/* 온보딩의 모든 판은 어른 화면 정본 유리(glass.css 토큰) 하나로 칠한다 — 학부모 카드만 정본 유리, 아이·초대·
+   국가 카드는 테두리 유리·흰 판이라 한 화면에 재질이 섞여 있었다(2026-09-26). 토큰이 없는 셸은 폴백을 쓴다. */
+:is(.ob-role-card, .ob-survey-card, .ob-connect-card, .ob-perm, .ob-referral-notice, .ob-connect .hy-tz, .ob-connect .study-country-card) {
+  border: 0;
   background: var(--ph-glass-fill, rgba(255, 255, 255, 0.86));
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(18px) saturate(145%);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  box-shadow: var(--ph-panel-shadow, var(--shadow-soft));
+  backdrop-filter: var(--ph-glass-blur, blur(18px) saturate(145%));
+  -webkit-backdrop-filter: var(--ph-glass-blur, blur(18px) saturate(145%));
 }
 
-.ob-survey-card--on {
-  border-color: var(--hy-accent-cta);
+/* 선택한 관심 기능 — 공용 유리 목록(.hy-adult :is(...))보다 높은 우선순위로 링과 옅은 채움을 준다. */
+.ob-root .ob-survey-card.ob-survey-card--on {
   background: color-mix(in srgb, var(--hy-accent-soft) 72%, rgba(255, 255, 255, 0.86));
+  outline: 2px solid var(--hy-accent-cta);
+  outline-offset: -2px;
+}
+
+/* 가족 연결 단계의 시간대·이용 국가도 초대 코드와 같은 판·같은 안쪽 여백으로 쌓는다. */
+.ob-connect .hy-tz,
+.ob-connect .study-country-card {
+  margin: 12px 0 0;
+  padding: 16px;
+  border-radius: var(--radius-16);
+}
+.ob-connect .study-country-card {
+  gap: 8px;
+}
+/* 흰 판 위 흰 칸이라 선택칸이 글자만 떠 보였다 — 판을 유리로 바꾸고, 칸은 바로 위 초대 코드 입력칸(.ob-input)과
+   같은 높이·모서리·글자 크기로 맞춘다. 채움·테두리는 어른 화면 공용 입력 규칙이 그대로 칠한다. */
+.ob-connect :is(.hy-tz__select, .study-country-input) {
+  height: 52px;
+  padding: 0 16px;
+  border-width: 1.5px;
+  border-style: solid;
+  border-radius: var(--radius-16);
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+}
+.ob-connect .study-access-action {
+  min-height: 48px;
+  border-radius: var(--radius-pill);
+  transition: transform 0.36s var(--easing-cheer), opacity var(--duration-fast) var(--easing-standard);
+}
+.ob-connect .study-access-action:not(:disabled):active {
+  transform: scale(0.97);
+  transition-duration: 0.09s;
 }
 
 .ob-input,

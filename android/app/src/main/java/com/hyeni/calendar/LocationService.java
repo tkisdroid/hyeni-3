@@ -294,6 +294,35 @@ public class LocationService extends Service {
         loadShownEventNotifs();
     }
 
+    /**
+     * startForeground() 전에 멈추는 모든 경로의 정본.
+     * startForegroundService() 로 시작된 서비스가 startForeground() 없이 stopSelf() 하면 OS 가
+     * "Bringing down service while still waiting for start foreground" 뒤
+     * ForegroundServiceDidNotStartInTimeException 으로 앱 프로세스를 죽인다
+     * (2026-09-26 에뮬레이터 실측: 오래된 세션 문맥 거부 경로에서 44ms 만에 아이 앱 강제 종료).
+     * 그래서 먼저 알림을 한 번 올려 foreground 요건을 채우고 곧바로 내린 뒤 멈춘다.
+     * 권한이 없어 올릴 수 없는 경우(SecurityException)는 기존처럼 멈추기만 한다.
+     */
+    private void stopBeforeTrackingStarts() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    startForeground(
+                        NOTIFICATION_ID,
+                        buildForegroundNotification(),
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                    );
+                } else {
+                    startForeground(NOTIFICATION_ID, buildForegroundNotification());
+                }
+            } catch (RuntimeException e) {
+                Log.w(TAG, "Could not satisfy foreground start before stopping: " + e.getMessage());
+            }
+            stopForeground(true);
+        }
+        stopSelf();
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
@@ -333,7 +362,7 @@ public class LocationService extends Service {
             );
             if (!context.acceptedIncoming && !context.serviceEnabled) {
                 Log.w(TAG, "Rejected stale location context while service is disabled");
-                stopSelf();
+                stopBeforeTrackingStarts();
                 return START_NOT_STICKY;
             }
             if (!context.acceptedIncoming) {
@@ -343,7 +372,7 @@ public class LocationService extends Service {
             context = SessionTokenStore.readContext(prefs);
             if (!context.serviceEnabled) {
                 Log.i(TAG, "Location service restart skipped because tracking is disabled");
-                stopSelf();
+                stopBeforeTrackingStarts();
                 return START_NOT_STICKY;
             }
         }
@@ -352,13 +381,13 @@ public class LocationService extends Service {
 
         if (userId == null || familyId == null || supabaseUrl == null) {
             Log.w(TAG, "Missing config, stopping service");
-            stopSelf();
+            stopBeforeTrackingStarts();
             return START_NOT_STICKY;
         }
         if (isBlank(accessToken) && isBlank(refreshToken)) {
             Log.w(TAG, "Missing auth token, stopping service");
             SessionTokenStore.setServiceEnabled(prefs, false);
-            stopSelf();
+            stopBeforeTrackingStarts();
             return START_NOT_STICKY;
         }
 
@@ -369,7 +398,7 @@ public class LocationService extends Service {
         if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
                 != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             Log.w(TAG, "Location permission not granted, cannot start foreground service");
-            stopSelf();
+            stopBeforeTrackingStarts();
             return START_NOT_STICKY;
         }
 

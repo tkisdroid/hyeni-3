@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useIntl } from "react-intl";
+import { SERVICE_COUNTRY_CODES } from "../../../shared/serviceCountries";
 import "./study-access.css";
 
 type Props = Readonly<{
@@ -48,6 +49,18 @@ export function StudyCountryConfirmation({
     onCountryChange?.(normalized);
   };
 
+  // 영문 두 글자 코드를 직접 치게 하지 않는다(2026-09-26 실기기: "KR 을 입력" 안내가 어려웠다).
+  // 현재 언어의 국가 이름으로 정렬한 목록에서 고르고, 추천 국가를 맨 위에 둔다.
+  const options = useMemo(() => {
+    const named = SERVICE_COUNTRY_CODES.map((code) => ({ code, name: studyCountryDisplayName(code, intl.locale) ?? code }));
+    named.sort((a, b) => a.name.localeCompare(b.name, intl.locale));
+    const pinned = [suggestion, country].filter((code, index, list): code is string => !!code && list.indexOf(code) === index);
+    return [
+      ...pinned.map((code) => named.find((option) => option.code === code) ?? { code, name: code }),
+      ...named.filter((option) => !pinned.includes(option.code)),
+    ];
+  }, [intl.locale, suggestion, country]);
+
   return (
     <section className="study-country-card" aria-labelledby="study-country-title">
       <h2 id="study-country-title">{intl.formatMessage({ id: "study.country.title" })}</h2>
@@ -58,22 +71,18 @@ export function StudyCountryConfirmation({
         )}
       </p>
       <label htmlFor="study-service-country">{intl.formatMessage({ id: "study.country.inputLabel" })}</label>
-      <input
+      <select
         id="study-service-country"
         className="study-country-input"
         value={country}
-        inputMode="text"
-        autoCapitalize="characters"
-        maxLength={2}
-        pattern="[A-Za-z]{2}"
         disabled={busy || confirmed}
         onChange={(event) => changeCountry(event.target.value)}
         aria-describedby="study-country-help"
-      />
-      {/* 두 글자 코드만으로는 어느 나라인지 알기 어렵다 — 입력한 코드의 국가 이름을 바로 보여 준다. */}
-      <output htmlFor="study-service-country" aria-live="polite">
-        {studyCountryDisplayName(country, intl.locale)}
-      </output>
+      >
+        {options.map((option) => (
+          <option key={option.code} value={option.code}>{option.name}</option>
+        ))}
+      </select>
       <small id="study-country-help">{intl.formatMessage({ id: "study.country.inputHelp" })}</small>
       <button
         type="button"

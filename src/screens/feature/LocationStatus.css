@@ -3,7 +3,7 @@
 .ls-screen {
   min-height: 100%;
   background: linear-gradient(180deg, #f2f7fb, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 헤더(sticky · 뒤로가기) ─────────────────────────────────────────────── */
@@ -186,8 +186,9 @@
   height: var(--control-height-primary);
   flex: none;
   border-radius: 16px;
-  background: var(--cta-grad-info);
-  box-shadow: 0 14px 30px -12px rgba(46, 134, 193, 0.55);
+  /* 재시도는 정보 표시가 아니라 주요 동작이다 — 다른 화면과 같은 CTA 그라디언트를 쓴다. */
+  background: var(--cta-grad-accent);
+  box-shadow: var(--control-shadow);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);

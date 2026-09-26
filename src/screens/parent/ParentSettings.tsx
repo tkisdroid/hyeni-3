@@ -1,8 +1,10 @@
 import { TimeZoneSelect, suggestedTimeZone } from "@/region/TimeZoneSelect";
+// 시간대는 "Asia/Seoul" 같은 IANA 원문 대신 사람이 읽는 이름(한국 표준시 · Seoul)으로 보인다.
+import { timeZoneOptionLabel } from "@/region/timeZoneOptions";
 import { useIntl } from "react-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { parentAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -108,13 +110,11 @@ export function ParentSettings() {
   const retryParentSettings = async (): Promise<void> => {
     await Promise.all([accountQuery.refetch(), entitlementQuery.refetch()]);
   };
-  const reviewRewardNotice = !ready
-    ? null
-    : tier === TIERS.REVIEWED
-      ? intl.formatMessage({ id: "parent.parentSettings.copy001" })
-      : tier === TIERS.FREE
-        ? intl.formatMessage({ id: "parent.parentSettings.copy002" })
-        : null;
+  // 기존 혜택을 받은 가족에게만 "유지돼요"를 알린다. 받은 적 없는 무료 가족에게 "신규 지급 종료"를 메뉴 한 칸으로
+  // 보여 주면 누를 것도 없는 두 줄 안내가 설정 목록을 차지했다(2026-09-26 문구 밀도 정리).
+  const reviewRewardNotice = ready && tier === TIERS.REVIEWED
+    ? intl.formatMessage({ id: "parent.parentSettings.copy001" })
+    : null;
   const referralEligibleChildren = useMemo(() => (
     (account?.members ?? []).flatMap((member) => (
       member.role === "child" && member.user_id
@@ -124,7 +124,12 @@ export function ParentSettings() {
   ), [account?.members, intl]);
 
   const displayName = account?.myName || intl.formatMessage({ id: "parent.parentSettings.copy003" });
-  const roleLabel = account?.isCoParent ? intl.formatMessage({ id: "parent.parentSettings.copy004" }) : intl.formatMessage({ id: "parent.parentSettings.copy003" });
+  // 계정 화면(ParentAccount)과 같은 역할 이름을 쓴다 — 대표 보호자 → 공동 보호자 → 보호자.
+  const roleLabel = account?.isPrimaryParent
+    ? intl.formatMessage({ id: "parent.parentAccount.copy001" })
+    : account?.isCoParent
+      ? intl.formatMessage({ id: "parent.parentSettings.copy004" })
+      : intl.formatMessage({ id: "parent.parentSettings.copy003" });
   // 프로필 아바타 — 업로드 사진 > 성별 매칭 3D 캐릭터(아빠 계정에 엄마 캐릭터가 뜨지 않게).
   // 멤버 행 gender 가 비어 있으면 가입 메타(user_metadata.gender)를 본다.
   const genderHint = String(me?.gender ?? user?.user_metadata?.gender ?? "");
@@ -187,15 +192,8 @@ export function ParentSettings() {
 
   return (
     <div className="hy-rise-in">
+      {/* 설정은 하단 탭 화면이라 뒤로가기를 두지 않는다(탭 루트의 오른쪽 위 < 는 하단 메뉴와 역할이 겹쳤다). */}
       <header className="ps-head">
-        <button
-          type="button"
-          className="ps-back hy-press"
-          aria-label={intl.formatMessage({ id: "parent.parentSettings.copy017" })}
-          onClick={() => navigate(-1)}
-        >
-          <ChevronLeft size={22} strokeWidth={2.2} />
-        </button>
         <span className="ps-head-title">{intl.formatMessage({ id: "parent.parentHome.copy009" })}</span>
       </header>
 
@@ -284,7 +282,7 @@ export function ParentSettings() {
           >
             <SettingsIcon icon="ui/clay/location.webp" tone="mint" />
             <span className="ps-nav__label">{intl.formatMessage({ id: "core.familyRegion.label" })}</span>
-            <span className="ps-nav__value ps-region-value"><span>{familyCountryName}</span><small>{familyQuery.data?.timeZone}</small></span>
+            <span className="ps-nav__value ps-region-value"><span>{familyCountryName}</span>{familyQuery.data?.timeZone && <small>{timeZoneOptionLabel(familyQuery.data.timeZone, locale)}</small>}</span>
             {familyQuery.data?.isPrimaryParent ? chevronIcon : null}
           </button>
           {countryOpen && familyQuery.data?.isPrimaryParent && (

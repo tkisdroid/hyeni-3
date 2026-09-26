@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router";
-import { Check, ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft, Clock3 } from "lucide-react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -8,6 +8,10 @@ import { useSafeBack } from "@/app/useSafeBack";
 import { useAuth } from "@/auth/AuthContext";
 import { useSendSos } from "@/queries/useSos";
 import { useMyFamily } from "@/queries/useFamily";
+import { useMemoThread } from "@/queries/useMemo";
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
+import { useRecentDateKeys } from "@/app/useRecentDateKeys";
+import { parseServerTimestamp } from "@/transform/locationView";
 import { placePhoneCall } from "@/lib/native/phone";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
@@ -32,7 +36,7 @@ export function ChildSos() {
   const navigate = useNavigate();
   const goBack = useSafeBack("/child/home");
   const { show } = useToast();
-  const { familyId } = useAuth();
+  const { familyId, userId } = useAuth();
   const sos = useSendSos();
   const familyQuery = useMyFamily();
   const family = familyQuery.data;
@@ -67,8 +71,19 @@ export function ChildSos() {
         ? dadLabel
         : intl.formatMessage({ id: "child.family.guardians" });
 
-  const callParent = (gender: "mom" | "dad", label: string) => {
-    const number = parents.find((p) => p.gender === gender)?.phone;
+  // 전화 버튼은 보호자마다 하나씩 — 성별을 안 정한 보호자(이름만 있는 경우)도 빠지지 않게 한다
+  // (2026-09-26 S20: 성별 미지정 보호자뿐이라 SOS 뒤 전화 버튼이 하나도 없었다).
+  const guardianLabel = intl.formatMessage({ id: "child.family.guardian" });
+  const callTargets = parents.map((p) => ({
+    id: p.id,
+    phone: p.phone ?? null,
+    image: p.gender === "dad" ? "family/dad.webp" : p.gender === "mom" ? "family/mom.webp" : "ui/phone-lavender.webp",
+    label: p.gender === "mom" ? momLabel : p.gender === "dad" ? dadLabel : (p.name?.trim() || guardianLabel),
+  }));
+
+  const callParent = (target: { phone: string | null; label: string }) => {
+    const number = target.phone;
+    const label = target.label;
     if (!number) {
       show(intl.formatMessage({ id: "child.sos.phoneMissing" }, { name: label }), "📞");
       return;
@@ -78,6 +93,20 @@ export function ChildSos() {
       if (!r.ok) show(intl.formatMessage({ id: "child.sos.callFailed" }), "⚠️");
     });
   };
+
+  // 보호자가 SOS 화면에서 '안전 확인'을 누르면 아이 대화방에 origin "sos_ack" 메시지가 온다.
+  // 그 메시지를 보면 "전송을 시작했어"에 머물지 않고 "보호자가 확인했어"를 보여 준다(실시간 무효화로 갱신).
+  const familyTimeZone = useFamilyTimeZone();
+  const [todayKey] = useRecentDateKeys(1, familyTimeZone);
+  const ownMemberId = family?.members.find((m) => m.role === "child" && m.user_id === userId)?.id ?? null;
+  const sentAtRef = useRef<number | null>(null);
+  const ackThread = useMemoThread(phase === "sent" && todayKey ? [todayKey] : [], ownMemberId);
+  const guardianAcked = phase === "sent" && sentAtRef.current !== null && (ackThread.data ?? []).some((reply) => {
+    if (reply.origin !== "sos_ack" || reply.user_role !== "parent") return false;
+    const at = parseServerTimestamp(reply.created_at)?.getTime();
+    // 기기 시계 차이를 감안해 발사 1분 전 이후의 확인만 이번 SOS 의 응답으로 본다.
+    return at !== undefined && at >= (sentAtRef.current ?? 0) - 60_000;
+  });
 
   // 위치는 홀드가 시작될 때 1회만 읽는다(발송 아님). 거부/실패해도 SOS 는 위치 없이 나간다.
   const acquirePosition = () => {
@@ -110,7 +139,10 @@ export function ChildSos() {
         capturedAtMs: posRef.current?.capturedAtMs ?? null,
       },
       {
-        onSuccess: (result) => setPhase(result.alertSent ? "sent" : "error"),
+        onSuccess: (result) => {
+          if (result.alertSent) sentAtRef.current = Date.now();
+          setPhase(result.alertSent ? "sent" : "error");
+        },
         onError: () => setPhase("error"),
       },
     );
@@ -229,18 +261,12 @@ export function ChildSos() {
           <button type="button" className="cs-callbtn hy-press" onClick={retrySos} disabled={sos.isPending} aria-busy={sos.isPending}>
             <span>{intl.formatMessage({ id: "child.sos.sendAgain" })}</span>
           </button>
-          {mom && (
-            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("mom", momLabel)}>
-              <img src={asset("family/mom.webp")} alt="" />
-              <span>{intl.formatMessage({ id: "child.sos.callTo" }, { name: momLabel })}</span>
+          {callTargets.map((target) => (
+            <button key={target.id} type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent(target)}>
+              <img src={asset(target.image)} alt="" />
+              <span>{intl.formatMessage({ id: "child.sos.callTo" }, { name: target.label })}</span>
             </button>
-          )}
-          {dad && (
-            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("dad", dadLabel)}>
-              <img src={asset("family/dad.webp")} alt="" />
-              <span>{intl.formatMessage({ id: "child.sos.callTo" }, { name: dadLabel })}</span>
-            </button>
-          )}
+          ))}
         </div>
       </div>
     );
@@ -271,20 +297,24 @@ export function ChildSos() {
               </span>
               <span className="cs-checks__text">{intl.formatMessage({ id: "child.sos.notificationStarted" })}</span>
             </div>
+            <div className={`cs-checks__row${guardianAcked ? "" : " cs-checks__row--pending"}`} role="status" aria-live="polite">
+              <span className="cs-checks__dot">
+                {guardianAcked
+                  ? <Check size={17} strokeWidth={3} color="var(--mint-500)" />
+                  : <Clock3 size={17} strokeWidth={2.6} color="var(--fg-tertiary)" />}
+              </span>
+              <span className="cs-checks__text">
+                {intl.formatMessage({ id: guardianAcked ? "child.sos.guardianAcked" : "child.sos.guardianPending" })}
+              </span>
+            </div>
           </div>
 
-          {mom && (
-            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("mom", momLabel)}>
-              <img src={asset("family/mom.webp")} alt="" />
-              <span>{intl.formatMessage({ id: "child.sos.callTo" }, { name: momLabel })}</span>
+          {callTargets.map((target) => (
+            <button key={target.id} type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent(target)}>
+              <img src={asset(target.image)} alt="" />
+              <span>{intl.formatMessage({ id: "child.sos.callTo" }, { name: target.label })}</span>
             </button>
-          )}
-          {dad && (
-            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("dad", dadLabel)}>
-              <img src={asset("family/dad.webp")} alt="" />
-              <span>{intl.formatMessage({ id: "child.sos.callTo" }, { name: dadLabel })}</span>
-            </button>
-          )}
+          ))}
 
           <button type="button" className="cs-ghost hy-press" onClick={() => navigate("/child/home")}>
             {intl.formatMessage({ id: "child.sos.goHome" })}

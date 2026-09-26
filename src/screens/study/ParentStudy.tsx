@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChevronLeft } from "lucide-react";
 import { useIntl } from "react-intl";
 import { useNavigate, useSearchParams } from "react-router";
 import { useActiveChild } from "@/app/activeChild";
@@ -12,6 +13,7 @@ import { StudyProblemHistory } from "@/features/study/StudyProblemHistory";
 import { buildStudyGradeCommand, resolveParentStudyTarget } from "@/features/study/parentStudyModel";
 import type { StudyGrade, StudyRange } from "@/features/study/contracts";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import "@/features/study/study-learning.css";
 import "@/features/study/parent-study.css";
 
 export function ParentStudy() {
@@ -60,7 +62,7 @@ export function ParentStudy() {
     <StudyAccessGate deniedPath="/parent/home" onBack={() => navigate("/parent/home")}>
       <div className="parent-study-screen">
         <header className="parent-study-header">
-          <button type="button" className="study-back-button" onClick={() => navigate("/parent/home")} aria-label={intl.formatMessage({ id: "study.common.back" })}>←</button>
+          <button type="button" className="study-back-button hy-press" onClick={() => navigate("/parent/home")} aria-label={intl.formatMessage({ id: "study.common.back" })}><ChevronLeft aria-hidden="true" /></button>
           <div><h1>{intl.formatMessage({ id: "study.parent.title" })}</h1><p>{intl.formatMessage({ id: "study.parent.subtitle" })}</p></div>
         </header>
 

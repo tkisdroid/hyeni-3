@@ -87,6 +87,11 @@
   isolation: isolate;
 }
 
+/* isolation 스택에 갇힌 화면 안 모달이 탭바(z 45) 밑에 깔리지 않게, 열린 동안만 화면을 탭바 위로 올린다. */
+.hy-adult .hy-screen:has([aria-modal="true"]) {
+  z-index: 46;
+}
+
 .hy-adult .hy-screen::before {
   content: "";
   position: fixed;
@@ -303,36 +308,7 @@
   color: var(--ph-link);
 }
 
-/* ── 접근성 강등: 투명·블러를 쓸 수 없으면 단색 면으로 정직하게 내려간다 ── */
-@media (prefers-reduced-transparency: reduce) {
-  .hy-adult {
-    --ph-glass-fill: var(--bg-card);
-    --ph-glass-fill-clear: var(--bg-card);
-    --ph-glass-blur: none;
-  }
-
-  .hy-adult .hy-screen::before {
-    background: var(--ph-ground);
-  }
-
-  .hy-adult .hy-card,
-  .hy-adult .hy-glass {
-    background: #fff;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-}
-
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .hy-adult .hy-card,
-  .hy-adult .hy-glass {
-    background: rgba(255, 255, 255, 0.94);
-  }
-
-  .hy-adult .hy-tabbar__inner {
-    background: rgba(255, 255, 255, 0.97);
-  }
-}
+/* 접근성·미지원 강등은 파일 끝의 변수 강등 한 곳이 맡는다(카드·탭바가 모두 같은 변수를 읽는다). */
 
 /* ══════════════════════════════════════════════════════════════════════════
    전수 적용 — 화면마다 따로 칠하던 바닥을 걷어낸다.
@@ -351,7 +327,7 @@
   .ls-screen, .nst-screen, .pw-root, .pd-root, .psu-screen, .pf-screen,
   .pa-screen, .pe-root, .ra-idle, .raa-root, .rr-idle, .ss-wrap, .sub-screen,
   .sup-screen, .wr-root, .ob-login, .ob-survey, .ob-signup, .cd-root,
-  .ef-screen, .ph-page, .pl-root--history, .tn-screen, .trg-screen, .ts-screen
+  .ef-screen, .ph-page, .pl-root--history, .tn-screen, .trg-screen, .ts-screen, .sqs-screen
 ) {
   background: transparent;
 }
@@ -448,7 +424,10 @@
   .sub-cancel, .sub-plan, .sub-web-unavailable, .sup-card,
   .sup-status, .th-empty, .th-tile, .tl-lock,
   .tl-perks, .tn-empty, .tn-reflect, .trg-card,
-  .ts-empty, .ts-row, .tt-empty
+  .ts-empty, .ts-row, .tt-empty,
+  .ci-role-card, .cd-hero, .sub-compare__scroll, .fp-parent-card, .fb-textwrap,
+  .mini-app-card, .study-learning-state, .study-parent-state, .study-selected-child,
+  .parent-study-summary, .study-grade-editor, .study-report
 ) {
   border: 0;
   background: var(--ph-glass-fill);
@@ -457,32 +436,12 @@
   -webkit-backdrop-filter: var(--ph-glass-blur);
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .hy-adult :is(
-  .aa-item, .ac-auto, .ac-control-row, .ac-detail,
-  .ac-pack, .ais-academy-intro, .ais-mode-intro, .ais-result,
-  .au-card, .cd-danger, .cd-row, .cd-stat,
-  .da-item, .ds-card, .ds-panel, .ds-quote,
-  .ds-row, .dzf-toggles, .fb-ideas__card, .fb-satis,
-  .fc-device, .fc-invite, .fp-card, .fp-connected,
-  .fp-setting, .ls-card, .ls-last, .lset-row,
-  .nc-item, .nst-list, .ob-connect-card, .ob-perm,
-  .ob-role-card--parent, .ob-survey-card, .pa-action, .pa-card,
-  .pc-event__card, .pc-sheet__row, .pd-card,
-  .pf-child, .pf-conn, .pf-paircode__card, .pf-parents,
-  .pm-danger, .pm-item, .ps-list, .psu-card,
-  .pw-childcard, .pw-summary, .rrp__code, .rrp__progress,
-  .rrp__state, .rv-empty, .rv-fallback, .rv-info,
-  .rv-steps, .sqs-card, .sqs-inline-empty, .sub-benefits,
-  .sub-cancel, .sub-plan, .sub-web-unavailable, .sup-card,
-  .sup-status, .th-empty, .th-tile, .tl-lock,
-  .tl-perks, .tn-empty, .tn-reflect, .trg-card,
-  .ts-empty, .ts-row, .tt-empty
-  ) {
-    background: #fff;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
+
+/* 유리판 안의 선택지·빈 상태는 흰 불투명 면 대신 .hy-tile 과 같은 '한 단계 낮은 면'을 쓴다.
+   선택 상태는 각 화면의 테두리·accent 규칙이 그대로 맡는다(채움색으로 알리지 않는다). */
+.hy-adult :is(.pf-paircode__target, .pw-count:not(.on), .fb-kind:not([data-selected="true"]), .raa-empty, .wr-emptyline) {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -522,7 +481,9 @@
 }
 .hy-adult button:is(.ef-chip, .nst-minute, .pf-type, .ais-tab, .rr-chip, .mc-quick-btn, .afc-chip):is([data-on="true"], [data-active="true"], [data-selected="true"], [aria-pressed="true"], [aria-selected="true"]) {
   background: var(--control-fill-hover);
-  box-shadow: var(--control-shadow);
+  /* 글자색만 바뀌면 유리 위에서 선택이 안 보인다 — 아이 전환 알약과 같은 테두리 링을 두른다. */
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, currentColor 70%, transparent), var(--control-shadow);
+  font-weight: 600;
 }
 
 /* 투명도 감소와 미지원 환경은 화면별 CSS 로드 순서와 관계없이 불투명하게 읽힌다. */
@@ -533,6 +494,10 @@
     --ph-object-fill: #fff;
     --ph-chrome-fill: #fff;
     --ph-glass-blur: none;
+  }
+
+  .hy-adult .hy-screen::before {
+    background: var(--ph-ground);
   }
 }
 

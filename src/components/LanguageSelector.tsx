@@ -86,6 +86,15 @@ export function LanguageSelector({
     };
   }, [open]);
 
+  // 첫 화면 아래쪽에서 펼치면 목록이 화면 밖으로 내려갔다 — 펼침이 끝날 즈음 목록이 보이게 굴린다.
+  useEffect(() => {
+    if (!open || !collapseOthers) return;
+    const timer = window.setTimeout(() => {
+      rootRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [open, collapseOthers]);
+
   const currentEntry = localeEntries.find((entry) => entry.code === locale);
   const visibleEntries = collapseOthers
     ? localeEntries.filter((entry) => entry.code !== locale)
@@ -142,7 +151,8 @@ export function LanguageSelector({
             lang={currentEntry?.code ?? locale}
             onClick={() => setOpen((value) => !value)}
           >
-            <span>{currentEntry?.nativeName ?? locale}</span>
+            <Globe className="hy-language__globe" size={20} strokeWidth={2.1} aria-hidden="true" />
+            <span className="hy-language__current-name">{currentEntry?.nativeName ?? locale}</span>
             <span className="hy-language__toggle-label">{intl.formatMessage({ id: copy.label })}</span>
             <ChevronDown
               className={open ? "hy-language__chevron hy-language__chevron--open" : "hy-language__chevron"}

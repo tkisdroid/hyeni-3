@@ -28,7 +28,7 @@ test("무료 가족은 프리미엄 혜택을 확인하는 카드로 안내한�
     periodEnd: null,
   }, koIntl, "ko"), {
     title: "구독 시 혜택",
-    description: "실시간 위치와 더 넉넉한 가족 기능을 확인해 보세요",
+    description: "실시간 위치 · 30일 이동 기록",
     meta: "현재 무료 플랜",
     tone: "benefits",
     actionLabel: "혜택 보기",

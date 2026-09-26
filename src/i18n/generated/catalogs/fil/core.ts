@@ -101,6 +101,7 @@ const messages = {
   "core.error.api.passwordAccountRequired.formal": "Magagawa lamang ang mga pagbabago sa mga account na may password.",
   "core.error.api.phoneExists.child": "May account na ang numerong iyan. Mag-log in ka na lang.",
   "core.error.api.phoneExists.formal": "Nakarehistro na ang numerong iyan. Mangyaring mag-log in.",
+  "core.error.api.phoneNotRegistered.formal": "Hindi naka-register ang numerong ito. Tingnan ang numero o mag-sign up.",
   "core.error.api.primaryParentRequired.formal": "Pangunahing tagapag-alaga lang ang maaaring gumawa nito. Humiling mula sa device ng pangunahing tagapag-alaga.",
   "core.error.api.rateLimited.child": "Masyadong maraming sumusubok. Maghintay ng kaunti, pagkatapos ay subukang muli.",
   "core.error.api.rateLimited.formal": "Masyadong maraming kahilingan. Mangyaring maghintay ng ilang sandali at subukang muli.",

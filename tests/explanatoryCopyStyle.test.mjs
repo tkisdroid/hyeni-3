@@ -153,7 +153,7 @@ test("다문장 설명 다섯 곳은 조건과 문구를 유지한 채 문장별
   );
   assert.match(socialLinks.block, /\{native\s*\?\s*canUnlink\s*\?/);
   const socialCopy = {
-    "parent.socialLinks.copy017": "계정을 바꾸려면 새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요.",
+    "parent.socialLinks.copy017": "새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요.",
     "parent.socialLinks.copy018": "해제해도 가족·일정 데이터는 그대로예요.",
     "parent.socialLinks.copy019": "지금은 이 소셜 계정이 유일한 로그인 수단이라 해제할 수 없어요.",
     "parent.socialLinks.copy020": "다른 로그인 방법을 먼저 추가해 주세요.",
@@ -225,10 +225,10 @@ test("필수 설명 상자는 공통 스타일을 사용하고 긴 안전 문구
     assertAllTagsUseExplain(file, className);
   }
 
-  assert.match(
-    notification,
-    /className="hy-explain__lines"[\s\S]*?className="hy-explain__line">위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요\.<\/span>[\s\S]*?className="hy-explain__line">위 토글은 부모가 받는 일반 위치 소식에만 적용돼요\.<\/span>/,
-  );
+  // 2026-09-26 문구 밀도 정리: 부모 안전 안내는 "항상 전달" 한 줄이다(토글 적용 범위 문장은 뺐다).
+  assert.match(notification, /i18n 안전 문구 정본: 위험·SOS·미도착 알림은 토글과 관계없이 항상 전달돼요/);
+  assert.match(notification, /notifications\.settings\.parentSafety\.always/);
+  assert.doesNotMatch(notification, /notifications\.settings\.parentSafety\.toggleScope/);
   assert.match(
     locationStatus,
     /className="ls-permit hy-explain"[\s\S]*?className="hy-explain__lines"[\s\S]*?className="hy-explain__line">아이 기기의 위치 권한이 꺼져 있거나 GPS가 잡히지 않으면 갱신이 지연될 수 있어요\.<\/span>[\s\S]*?className="hy-explain__line">아이 기기에서 위치 권한과 GPS를 확인해 주세요\.<\/span>/,
@@ -249,7 +249,6 @@ test("순수 설명과 인라인 도움말은 화면별 이름을 유지한 채 
     ["src/screens/feature/RemoteAudioAudit.tsx", "raa-note"],
     ["src/screens/feature/Subscription.tsx", "sub-note"],
     ["src/screens/onboarding/Onboarding.tsx", "ob-teacher-note"],
-    ["src/screens/parent/ParentAccount.tsx", "pa-note"],
     ["src/screens/parent/SocialLinks.tsx", "pa-note"],
     ["src/screens/teacher/TeacherReleaseGate.tsx", "trg-notice"],
     ["src/screens/child/ChildSettings.tsx", "ks-help-item"],

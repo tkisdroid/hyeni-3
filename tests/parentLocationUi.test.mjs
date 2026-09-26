@@ -11,7 +11,9 @@ const refreshWaitSource = readFileSync(resolve(rootDir, "src/transform/locationR
 const koParent = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/parent.json"), "utf8"));
 
 test("부모 위치 화면의 아이 표시 배지는 조회 범위가 확정된 실시간 탭에서만 보인다", () => {
-  assert.match(source, /!isLocked && !locationScopePending && activeView === "live" && selected && \(/);
+  // 한 아이면 표시 배지, 다자녀면 같은 자리의 전환 알약 — 둘 다 조회 범위가 확정된 실시간 탭에서만.
+  assert.match(source, /!isLocked && !locationScopePending && activeView === "live" && selected && childMembers\.length <= 1 && \(/);
+  assert.match(source, /!isLocked && !locationScopePending && activeView === "live" && selected && childMembers\.length > 1 && \(/);
   assert.doesNotMatch(source, /!isLocked && selected && \(/);
 });
 

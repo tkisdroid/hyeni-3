@@ -8,7 +8,7 @@ import type {
   ReactNode,
 } from "react";
 import { useNavigate } from "react-router";
-import { AlertTriangle, Check, ChevronRight, RefreshCw } from "lucide-react";
+import { AlertTriangle, Check, RefreshCw } from "lucide-react";
 import settings3dIcon from "../../../assets/01-runtime-3d/ui/settings.webp";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
@@ -66,6 +66,7 @@ import {
 } from "@/transform/parentHomeSectionOrder";
 import { openExternal } from "@/lib/native/browser";
 import { ParentHomeHeroCarousel } from "@/components/ParentHomeHeroCarousel";
+import { ChildSwitcher } from "@/components/ChildSwitcher";
 import { useParentHomeHeroCarousel } from "@/queries/useParentHomeHero";
 import { useStudyStatus } from "@/queries/useStudyStatus";
 import { isMiniAppsMarket } from "@/features/miniapps/miniAppNavigation";
@@ -1033,6 +1034,8 @@ export function ParentHome() {
       />
 
       <div className="hy-content">
+        {/* 다자녀 가족: 지금 보고 있는 아이를 맨 위에서 바로 바꾼다(홈 전체가 이 선택을 따른다). */}
+        <ChildSwitcher className="ph-kidswitch" />
         {/* 히어로: 오늘 + 소식 캐러셀. 첫 장은 항상 오늘이고 광고 성격 슬라이드는 구독 가족에게 감춘다. */}
         <ParentHomeHeroCarousel
           slides={heroSlides}
@@ -1168,7 +1171,6 @@ export function ParentHome() {
               <span className="ph-ai__title" id="ph-ai-title">
                 {intl.formatMessage({ id: "parent.parentHome.copy023" })}
               </span>
-              <span className="ph-ai__sub">{intl.formatMessage({ id: "parent.parentHome.copy024" })}</span>
             </span>
           </div>
           <div className="ph-ai__grid">
@@ -1575,20 +1577,21 @@ export function ParentHome() {
         ))}
 
         {/* 바로가기 */}
+        {/* 바로 위 "아이와 대화하기"와 같은 유리 판·아이콘 받침·글자 위계를 쓴다 — 이 카드만 조작 버튼 재질
+            (흰 테두리·안쪽 광택)이라 테두리가 달라 보였다(2026-09-26 TK 제보). */}
         <button
           type="button"
-          className="ph-device-finder ph-neu-control hy-press"
+          className="ph-section-shell ph-glass ph-memo ph-device-finder hy-press"
           style={{ order: sectionOrder.indexOf("shortcuts") + 1 }}
           onClick={() => openShortcut("sc7")}
         >
-          <img className="ph-device-finder__icon" src={asset("ui/phone-lavender.webp")} alt="" />
-          <span className="ph-device-finder__copy">
-            <span className="ph-device-finder__label">
-              {intl.formatMessage({ id: "parent.home.shortcut.deviceFinder" })}
-            </span>
-            {activeChild?.name && <span className="ph-device-finder__child">{activeChild.name}</span>}
+          <span className="ph-memo__icon ph-neu-control">
+            <img src={asset("ui/phone-lavender.webp")} alt="" />
           </span>
-          <ChevronRight size={20} strokeWidth={2.2} aria-hidden="true" />
+          <span className="ph-memo__main">
+            <span className="ph-memo__from">{intl.formatMessage({ id: "parent.home.shortcut.deviceFinder" })}</span>
+            {activeChild?.name && <span className="ph-memo__text">{activeChild.name}</span>}
+          </span>
         </button>
 
         {renderHomeSection("shortcuts", (

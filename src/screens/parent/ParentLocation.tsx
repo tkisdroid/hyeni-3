@@ -14,6 +14,7 @@ import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
+import { ChildSwitcher } from "@/components/ChildSwitcher";
 import { useMyFamily } from "@/queries/useFamily";
 import { FamilyMap, type MapZone, type MapPlace, type MapStay } from "@/maps/FamilyMap";
 import {
@@ -169,7 +170,7 @@ export function ParentLocation() {
   const { data: places } = useSavedPlaces();
   const { data: events } = useEvents();
   const entitlement = useEntitlement();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // 위치 데이터는 조회 범위가 확정된 뒤에만 연다. 엔타이틀먼트 오류 때도
   // TanStack 캐시의 정확한 좌표·경로가 잠깐 노출되지 않도록 fail-closed 한다.
@@ -224,7 +225,7 @@ export function ParentLocation() {
   // 같은 장소에 setCenter→panBy를 반복해 지도가 떨리는 현상을 막는다.
   const [settledScrubTimeMs, setSettledScrubTimeMs] = useState<number | null>(null);
 
-  // 대상 아이 = 전역 활성 아이(스위치는 부모 홈에서만 — 이 화면엔 전환 UI 없음).
+  // 대상 아이 = 전역 활성 아이. 다자녀면 지도 위 전환 알약으로 바로 바꾼다(홈과 같은 전역 선택).
   // 예외: 알림/SOS/도착에서 `?child=<user_id>` 로 진입하면 그 아이를 우선(위급 아이 — 안전 규칙).
   const { activeChild, childMembers } = useActiveChild();
   // 위치 요청은 서버가 주 보호자에게만 허용한다. 공동 보호자는 화면에 들어올 때마다
@@ -857,7 +858,22 @@ export function ParentLocation() {
       )}
 
       {/* 아이 표시 배지 — 실시간에서만 현재 보는 아이를 명시한다. */}
-      {!isLocked && !locationScopePending && activeView === "live" && selected && (
+      {!isLocked && !locationScopePending && activeView === "live" && selected && childMembers.length > 1 && (
+        <div className="pl-chips">
+          {/* 알림 딥링크(?child=)로 들어온 뒤 직접 고르면 그 고정을 풀어 선택한 아이를 보여 준다. */}
+          <ChildSwitcher
+            className="pl-kidswitch"
+            selectedId={selected.id}
+            onChange={() => {
+              if (!childParam) return;
+              const next = new URLSearchParams(searchParams);
+              next.delete("child");
+              setSearchParams(next, { replace: true });
+            }}
+          />
+        </div>
+      )}
+      {!isLocked && !locationScopePending && activeView === "live" && selected && childMembers.length <= 1 && (
         <div className="pl-chips">
           {/* 갱신 중에도 이 칩은 움직이지 않는다 — 진행은 상단 새로고침 버튼만 알린다. */}
           <div
@@ -978,7 +994,7 @@ export function ParentLocation() {
             onClick={() => navigate("/parent/memo")}
           >
             <img className="pl-actions__icon" src={asset("ui/chat-heart.webp")} alt="" />
-            <span className="pl-actions__label">{intl.formatMessage({ id: "parent.eventForm.copy060" })}</span>
+            <span className="pl-actions__label">{intl.formatMessage({ id: "core.nav.chat" })}</span>
           </button>
           {/* 길찾기는 모든 티어에서 열고, 주변 소리는 대상 화면의 고지형 Premium gate를 사용한다. */}
           {!isLocked && !locationScopePending && (

@@ -1029,6 +1029,7 @@ export function AiCredit() {
             </button>
           </div>
 
+          {/* 시스템 시간 선택기의 '삭제'는 빈 값을 보낸다 — 시간 범위에는 빈 값이 없으므로 무시한다. */}
           <div className="ac-time-grid">
             <label className="ac-field">
               <span className="ac-field__label">{intl.formatMessage({ id: "billing.aiCredit.detail.proactiveStart" })}</span>
@@ -1036,7 +1037,7 @@ export function AiCredit() {
                 className="ac-time"
                 type="time"
                 value={proactiveStartTime}
-                onChange={(e) => setProactiveStartTime(e.target.value)}
+                onChange={(e) => { if (e.target.value) setProactiveStartTime(e.target.value); }}
                 disabled={!advancedSettingsReady || saveSettings.isPending || !proactiveEnabled}
               />
             </label>
@@ -1046,7 +1047,7 @@ export function AiCredit() {
                 className="ac-time"
                 type="time"
                 value={proactiveEndTime}
-                onChange={(e) => setProactiveEndTime(e.target.value)}
+                onChange={(e) => { if (e.target.value) setProactiveEndTime(e.target.value); }}
                 disabled={!advancedSettingsReady || saveSettings.isPending || !proactiveEnabled}
               />
             </label>
@@ -1056,7 +1057,7 @@ export function AiCredit() {
                 className="ac-time"
                 type="time"
                 value={quietHoursStart}
-                onChange={(e) => setQuietHoursStart(e.target.value)}
+                onChange={(e) => { if (e.target.value) setQuietHoursStart(e.target.value); }}
                 disabled={!advancedSettingsReady || saveSettings.isPending}
               />
             </label>
@@ -1066,7 +1067,7 @@ export function AiCredit() {
                 className="ac-time"
                 type="time"
                 value={quietHoursEnd}
-                onChange={(e) => setQuietHoursEnd(e.target.value)}
+                onChange={(e) => { if (e.target.value) setQuietHoursEnd(e.target.value); }}
                 disabled={!advancedSettingsReady || saveSettings.isPending}
               />
             </label>

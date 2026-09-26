@@ -1,39 +1,41 @@
+/* 학습 화면도 다른 상세 화면과 같은 헤더 리듬(safe area + 16px)·원형 뒤로가기·알약 CTA 를 쓴다.
+   ⚠️ min-height 를 가진 grid 는 align-content 기본값(stretch)으로 행을 늘린다 —
+      빈/오류 상태에서 카드와 버튼이 세로로 길게 늘어나던 원인이라 위로 붙인다. */
 .vocabulary-screen {
   display: grid;
+  align-content: start;
   gap: 20px;
   width: min(100%, 760px);
   min-height: 100%;
   margin: 0 auto;
-  padding: max(32px, calc(env(safe-area-inset-top, 0px) + 20px)) 16px
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px
     max(32px, env(safe-area-inset-bottom, 0px));
   color: var(--fg-primary);
   overflow-wrap: anywhere;
 }
-.study-learning-header {
+.study-learning-header,
+.parent-study-header,
+.child-study-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
-.study-learning-header h1 {
+.study-learning-header h1,
+.parent-study-header h1,
+.child-study-header h1 {
   margin: 0;
-  font-size: 24px;
-  line-height: 1.3;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
 }
-.study-learning-header p {
-  margin: 5px 0 0;
+.study-learning-header p,
+.parent-study-header p,
+.child-study-header p {
+  margin: 4px 0 0;
   color: var(--fg-muted);
-  font-size: 14px;
-}
-.study-learning-back {
-  display: grid;
-  place-items: center;
-  flex: 0 0 48px;
-  width: 48px;
-  height: 48px;
-  border: 1px solid var(--line-soft);
-  border-radius: 16px;
-  background: var(--bg-card);
-  color: inherit;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: 500;
 }
 .vocabulary-screen button,
 .study-history-section button {
@@ -55,10 +57,14 @@
   min-height: 48px;
   padding: 12px 20px;
   border: 0;
-  border-radius: 16px;
-  background: var(--hy-accent-text);
+  border-radius: var(--radius-pill);
+  background: var(--hy-accent-cta);
   color: var(--bg-card);
   font-weight: 700;
+  box-shadow: var(--control-shadow);
+}
+.study-learning-state button {
+  justify-self: stretch;
 }
 .study-learning-button.is-secondary {
   background: var(--bg-chip-idle);
@@ -66,6 +72,7 @@
 }
 .study-learning-state {
   display: grid;
+  align-content: start;
   justify-items: start;
   gap: 12px;
   padding: 20px;

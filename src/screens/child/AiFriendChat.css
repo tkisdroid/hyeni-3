@@ -5,7 +5,7 @@
   position: relative; /* 진입 전환·파형 화면이 이 프레임 안에 겹친다. */
   height: 100%;
   overflow: hidden;
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
   display: flex;
   flex-direction: column;
   background: linear-gradient(
@@ -637,7 +637,7 @@
     var(--hy-accent-soft) 0%,
     color-mix(in srgb, var(--hy-accent-soft) 46%, var(--bg-body)) 100%
   );
-  animation: hy-fadein 0.24s ease forwards;
+  animation: hy-fadein 0.24s ease backwards;
 }
 .afc-voice__face {
   width: 168px;

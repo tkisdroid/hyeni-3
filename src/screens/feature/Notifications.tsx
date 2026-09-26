@@ -6,6 +6,7 @@ import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useParentAlerts, useMarkAlertRead, useMarkAllAlertsRead } from "@/queries/useNotifications";
 import {
   alertRoute,
@@ -134,15 +135,17 @@ export function Notifications() {
           </div>
         )}
 
+        {/* 화면 전체 실패는 공용 오류 카드로 — 화면마다 글자·버튼 모양이 달랐다(2026-09-26 실패 매트릭스). */}
         {isError && !isLoading && (
-          <div className="nc-state">
-            <span className="nc-state__text">
-              {intl.formatMessage({ id: "notifications.center.loadFailed" })}
-            </span>
-            <button type="button" className="nc-retry hy-press" onClick={() => refetch()}>
-              {intl.formatMessage({ id: "notifications.action.retry" })}
-            </button>
-          </div>
+          <ScreenQueryState
+            embedded
+            state="error"
+            screenTitle={intl.formatMessage({ id: "notifications.center.title" })}
+            heading={intl.formatMessage({ id: "notifications.center.loadFailed" })}
+            description={intl.formatMessage({ id: "core.error.api.network.formal" })}
+            onRetry={() => refetch()}
+            retryLabel={intl.formatMessage({ id: "notifications.action.retry" })}
+          />
         )}
 
         {!isLoading && !isError && groups.length === 0 && (

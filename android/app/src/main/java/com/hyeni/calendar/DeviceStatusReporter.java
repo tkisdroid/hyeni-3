@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.location.LocationManager;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -265,6 +266,10 @@ final class DeviceStatusReporter {
         int remoteListenChannelImportance = getChannelImportance(nm, REMOTE_LISTEN_CHANNEL_ID);
         boolean remoteListenChannelBlocked = remoteListenChannelImportance == NotificationManager.IMPORTANCE_NONE;
         boolean locationServiceRunning = prefs.getBoolean("serviceEnabled", false);
+        // 권한이 있어도 OS 위치(GPS) 스위치가 꺼져 있으면 좌표를 못 얻는다(2026-09-26 실기기: 권한·서비스 정상,
+        // 위치 스위치 꺼짐인데 locationOk=true 로 보고돼 부모 화면이 "위치 정상"으로 읽혔다).
+        boolean systemLocationEnabled = isSystemLocationEnabled(
+            (LocationManager) context.getSystemService(Context.LOCATION_SERVICE));
         String deviceInstallId = getOrCreateDeviceInstallId(prefs);
         String ringerMode = describeRingerMode(audio);
         String dndMode = describeDndMode(nm);
@@ -304,7 +309,8 @@ final class DeviceStatusReporter {
             .put("channelOk", remoteListenChannelEnabled)
             .put("remoteListenChannelImportance", remoteListenChannelImportance)
             .put("remoteListenChannelBlocked", remoteListenChannelBlocked)
-            .put("locationOk", backgroundLocationGranted)
+            .put("locationOk", backgroundLocationGranted && systemLocationEnabled)
+            .put("systemLocationEnabled", systemLocationEnabled)
             .put("recordAudioGranted", recordAudioGranted)
             .put("postPermissionGranted", postPermissionGranted)
             .put("notificationsEnabled", notificationsEnabled)
@@ -341,7 +347,8 @@ final class DeviceStatusReporter {
                 && recordAudioGranted
                 && remoteListenChannelEnabled
                 && connectivity.connected
-                && locationServiceRunning);
+                && locationServiceRunning
+                && systemLocationEnabled);
 
         if (!isBlank(requestId)) payload.put("requestId", requestId);
         if (!isBlank(requesterUserId)) payload.put("requesterUserId", requesterUserId);
@@ -898,6 +905,18 @@ final class DeviceStatusReporter {
             this.connected = connected;
             this.validated = validated;
             this.connectionType = connectionType;
+        }
+    }
+
+    /** OS 위치 스위치. 판정할 수 없으면(서비스 없음·예외) 꺼졌다고 단정하지 않는다(거짓 경보 방지). */
+    static boolean isSystemLocationEnabled(@Nullable LocationManager locationManager) {
+        if (locationManager == null) return true;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) return locationManager.isLocationEnabled();
+            return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (RuntimeException e) {
+            return true;
         }
     }
 }

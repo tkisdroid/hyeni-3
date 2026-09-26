@@ -26,6 +26,7 @@ import {
 import { TIERS } from "@/transform/tierPolicy";
 import { useLocale } from "@/i18n/useLocale";
 import { formatPastTime } from "@/i18n/format";
+import "@/components/ChildSwitcher.css";
 import "./RemoteRing.css";
 
 /** 선택 가능한 벨소리 지속(초). 아이 기기 알람을 이 시간 뒤 자동 정지한다. */
@@ -189,6 +190,12 @@ export function RemoteRing() {
   }, [ringing, active, nowMs, stop]);
 
   const quotaAllowed = quota?.allowed === true;
+  // 횟수를 다 쓴 뒤에도 "지금 울리기"로 보이면 누르는 결과(프리미엄 안내·안내 토스트)와 라벨이 어긋난다.
+  const ctaState: "ringing" | "upsell" | "exhausted" | "ready" = ringing || trigger.isPending
+    ? "ringing"
+    : ringDataReady && quota && !quotaAllowed
+      ? (quota.tier === "premium" ? "exhausted" : "upsell")
+      : "ready";
   const tierLabel = intl.formatMessage({ id: "notifications.remoteRing.tier" }, { tier: quota?.tier ?? "free" });
   const childName = targetChild?.name || intl.formatMessage({ id: "notifications.remoteRing.childFallback" });
   const childAvatar = avatarSrc(childAvatarPath(targetChild?.photo_url));
@@ -357,17 +364,23 @@ export function RemoteRing() {
             {intl.formatMessage({ id: "notifications.remoteRing.useToFind" })}
           </div>
 
+          {/* 울릴 아이는 이 화면에서 명시적으로 고른다(형제 오발사 방지). 모양은 앱 공용 다자녀 전환 알약과 같다. */}
           {children.length > 1 && (
-            <div className="rr-children">
+            <div className="hy-kidswitch rr-children" role="radiogroup" aria-label={intl.formatMessage({ id: "shared.childSwitcher.label" })}>
               {children.map((c) => (
                 <button
                   key={c.id}
                   type="button"
-                  className={`rr-childchip hy-press${targetChild?.id === c.id ? " rr-childchip--active" : ""}`}
-                  aria-pressed={targetChild?.id === c.id}
+                  role="radio"
+                  className="hy-kidswitch__item hy-press"
+                  data-selected={targetChild?.id === c.id ? "true" : "false"}
+                  aria-checked={targetChild?.id === c.id}
                   onClick={() => setTargetId(c.user_id ?? null)}
                 >
-                  {c.name || intl.formatMessage({ id: "notifications.location.childFallback" })}
+                  <span className="hy-kidswitch__avatar" data-photo={childAvatarPath(c.photo_url) === "mascot/wave.webp" ? "false" : "true"}>
+                    <img src={avatarSrc(childAvatarPath(c.photo_url))} alt="" loading="eager" decoding="async" />
+                  </span>
+                  <span className="hy-kidswitch__name">{c.name || intl.formatMessage({ id: "notifications.location.childFallback" })}</span>
                 </button>
               ))}
             </div>
@@ -401,13 +414,13 @@ export function RemoteRing() {
 
         <button
           type="button"
-          className="rr-cta hy-press"
-          disabled={!ringDataReady || !targetChild?.user_id || ringing || trigger.isPending}
+          className={`rr-cta hy-press${ctaState === "upsell" ? " rr-cta--upsell" : ""}`}
+          disabled={!ringDataReady || !targetChild?.user_id || ringing || trigger.isPending || ctaState === "exhausted"}
           aria-busy={ringing || trigger.isPending}
           onClick={onRingClick}
         >
           <Bell size={20} strokeWidth={2.2} color="#fff" />
-          {intl.formatMessage({ id: "notifications.remoteRing.action" }, { state: ringing || trigger.isPending ? "ringing" : "ready" })}
+          {intl.formatMessage({ id: "notifications.remoteRing.action" }, { state: ctaState })}
         </button>
 
         {recent && (

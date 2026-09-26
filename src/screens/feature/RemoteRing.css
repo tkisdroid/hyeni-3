@@ -8,13 +8,14 @@
 /* ── 대기 화면 ──────────────────────────────────────────────────────────── */
 .rr-idle {
   min-height: 100%;
-  padding: calc(56px + env(safe-area-inset-top, 0px)) 24px
+  /* 뒤로가기는 주변 소리 듣기(.ra-idle)·다른 상세 화면과 같은 높이(safe area + 16px)에 둔다. */
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px
     calc(24px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   background: radial-gradient(120% 46% at 50% 0%, #ffe9d6 0%, rgba(255, 233, 214, 0) 55%),
     linear-gradient(180deg, #fdf4f1, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 .rr-back {
@@ -168,23 +169,6 @@
   gap: 8px;
   justify-content: center;
 }
-.rr-childchip {
-  padding: 8px 16px;
-  border-radius: var(--radius-pill);
-  background: #fff;
-  border: 1.5px solid rgba(32, 26, 29, 0.08);
-  font-size: var(--type-label);
-  line-height: var(--type-label-line-height);
-  font-weight: var(--type-label-weight);
-
-  color: var(--fg-secondary);
-  --press: 0.94;
-}
-.rr-childchip--active {
-  background: var(--cream-soft);
-  border-color: var(--gold-400);
-  color: var(--gold-text);
-}
 
 .rr-chips {
   margin-top: 16px;
@@ -260,6 +244,11 @@
   gap: 8px;
   --press: 0.98;
 }
+/* 무료 횟수를 다 쓰면 위험색 대신 프리미엄 안내 색으로 바꿔 "지금 울린다"와 구분한다. */
+.rr-cta.rr-cta--upsell {
+  background: var(--cta-grad-lavender);
+  box-shadow: var(--control-shadow);
+}
 .rr-cta:disabled {
   background: var(--fg-disabled);
   box-shadow: none;
@@ -292,7 +281,7 @@
   justify-content: center;
   padding: 24px;
   background: rgba(20, 16, 15, 0.5);
-  animation: hy-fadein 0.2s ease forwards;
+  animation: hy-fadein 0.2s ease backwards;
 }
 .rr-modal {
   width: 100%;
@@ -368,7 +357,7 @@
   padding: calc(72px + env(safe-area-inset-top, 0px)) 32px
     calc(40px + env(safe-area-inset-bottom, 0px));
   background: radial-gradient(circle at 50% 34%, #3a1720, #17100f);
-  animation: hy-fadein 0.25s ease forwards;
+  animation: hy-fadein 0.25s ease backwards;
 }
 .rr-ring-head {
   text-align: center;

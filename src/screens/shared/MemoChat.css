@@ -8,6 +8,12 @@
   --mc-bottom-clearance: calc(220px + env(safe-area-inset-bottom, 0px));
 }
 
+/* 대화 화면은 셸이 하단 메뉴·아이 독을 그리지 않는다(AppShell CHAT_PATHS) — 입력줄을 화면 바닥에 붙인다. */
+.hy-app[data-chat="true"] .mc-root {
+  --mc-tabbar-clearance: env(safe-area-inset-bottom, 0px);
+  --mc-bottom-clearance: calc(124px + env(safe-area-inset-bottom, 0px));
+}
+
 /* ── 헤더 (sticky) ──────────────────────────────────────────────────────── */
 .mc-header {
   position: sticky;
@@ -186,6 +192,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* 프레임이 둥글면 사진도 같은 모서리로 잘린다(형제 배지를 자르지 않도록 overflow 대신 상속). */
+  border-radius: inherit;
 }
 .mc-bubble-wrap {
   max-width: 74%;
@@ -203,7 +211,7 @@
 /* 텍스트 말풍선 — 글자는 일반 채팅 앱 크기(14px)로 낮춘다(2026-08-18 TK 지시). */
 .mc-bubble {
   padding: 8px 12px;
-  animation: hy-fadein 0.28s ease both;
+  animation: hy-fadein 0.28s ease backwards;
   box-shadow: 0 4px 14px rgba(32, 26, 29, 0.06);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
@@ -731,4 +739,15 @@
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
+}
+
+/* 다자녀 전환 알약은 고정 헤더의 둘째 줄이다 — 스레드가 길어져도 스크롤로 사라지지 않는다. */
+.mc-header:has(.mc-kidswitch) {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.mc-kidswitch {
+  flex: 1 0 100%;
+  order: 10;
+  margin: 0 -4px;
 }

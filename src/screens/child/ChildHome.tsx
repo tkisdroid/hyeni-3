@@ -586,7 +586,7 @@ export function ChildHome() {
             <span className="kd-next__main">
               <span className="kd-next__badge">
                 {nextView
-                  ? minutesToNext != null && minutesToNext > 0 && minutesToNext <= 120
+                  ? minutesToNext != null && minutesToNext > 0 && minutesToNext <= 60
                     ? intl.formatMessage(
                         { id: "child.home.nextEventWithTime" },
                         { relative: formatRelativeMinutes(minutesToNext, "future", locale) },

@@ -51,6 +51,8 @@ export function ChildDock() {
           >
             {tab.to === "/child/memo" && unread > 0 && <span className="kdock__badge">{unread}</span>}
             <img src={asset(tab.icon)} alt="" />
+            {/* 그림만으로는 뜻이 바로 읽히지 않아 짧은 이름을 함께 보인다(이름은 aria-label 과 같다). */}
+            <span className="kdock__label" aria-hidden="true">{intl.formatMessage({ id: tab.labelId })}</span>
           </NavLink>
         ))}
       </div>

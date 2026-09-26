@@ -4,7 +4,7 @@
 .ef-screen {
   min-height: 100%;
   background: linear-gradient(180deg, #fdf4f1, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
@@ -79,7 +79,6 @@
 }
 .ef-input::placeholder {
   color: var(--fg-placeholder);
-  font-weight: 600;
 }
 .ef-input:focus {
   border-color: var(--hy-accent);
@@ -119,7 +118,6 @@
 }
 .ef-textarea::placeholder {
   color: var(--fg-placeholder);
-  font-weight: 600;
 }
 .ef-textarea:focus {
   border-color: var(--hy-accent);

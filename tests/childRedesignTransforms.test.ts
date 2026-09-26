@@ -123,6 +123,10 @@ test("받침 판정으로 조사를 고른다", () => {
   assert.equal(hasJongseong("미술관"), true);
   assert.equal(hasJongseong("Piano"), false);
   assert.equal(hasJongseong(""), false);
+  // 2026-09-26 실기기: "E2E 둘다 1717야!" — 숫자로 끝나면 읽는 소리(칠)로 판정한다.
+  assert.equal(hasJongseong("수업 1717"), true);
+  assert.equal(hasJongseong("수업 2"), false);
+  assert.equal(hasJongseong("미술관)"), true);
 });
 
 test("일정 4개 이하면 전부 배치하고 상태를 나눈다", () => {
@@ -346,4 +350,12 @@ test("스티커 도감 이름은 보내기 화면과 같은 번역 ID를 써서 
   const view = buildStickerBook([], Date.parse("2026-09-25T12:00:00Z"), new Set());
   assert.equal(view.slots.find((slot) => slot.key === "early")?.label, "일찍 왔어");
   assert.equal(view.slots.find((slot) => slot.key === "study")?.label, "공부왕");
+});
+
+// 2026-09-26 실기기: "112분 후 태권도야!"는 아이가 읽기 어렵다. 1시간이 넘으면 시각으로 말한다.
+test("다음 일정이 1시간보다 멀면 분 대신 시각으로 알려 준다", () => {
+  const far = buildAdventureMap([ev("f", "태권도", "17:30", false)], 15 * 60 + 38, "ko").bubble;
+  assert.doesNotMatch(far, /\d{3}분 후/);
+  assert.match(far, /5:30/);
+  assert.equal(buildAdventureMap([ev("n", "태권도", "16:00", false)], 15 * 60, "ko").bubble.startsWith("1시간 후 태권도야!"), true);
 });

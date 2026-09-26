@@ -14,8 +14,21 @@
 import { apiPost } from "../client";
 import { isApiError } from "../errors";
 
-/** 알림함/부모 오버레이에 뜨는 SOS 제목(hyeni-1 동일 문안). */
-const SOS_TITLE = "🆘 도와줘요!";
+/**
+ * 알림함·부모 푸시에 남는 한국어 원문. 다른 언어는 서버가 붙인 notificationCopy("sos")로 번역되고,
+ * 한국어는 이 원문을 그대로 보여 주므로 부모용 존댓말·번역 카탈로그와 같은 문장을 쓴다.
+ * (2026-09-26 실기기: 감탄 제목과 "OO님이" 호칭은 누가 무엇을 요청했는지와 부모 존댓말 계약에 어긋났다.)
+ */
+function sosAlertCopy(childName: string | undefined): { title: string; message: string } {
+  const name = childName?.trim() || "아이";
+  const last = name.charCodeAt(name.length - 1);
+  const subject = last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 !== 0 ? `${name}이가` : `${name}가`;
+  return {
+    title: `🆘 ${name} 긴급 도움 요청`,
+    message: `${subject} 긴급 도움을 요청했어요. 위치를 확인하고 연락해 주세요.`,
+  };
+}
+
 const SOS_ALERT_ATTEMPT_TIMEOUT_MS = 8_000;
 
 export interface SendSosInput {
@@ -120,7 +133,7 @@ export async function sendSos(input: SendSosInput): Promise<SendSosResult> {
   }
 
   const requestHash = makeRequestHash(childUserId);
-  const message = `${childName || "아이"}님이 SOS를 보냈어요`;
+  const { title, message } = sosAlertCopy(childName);
 
   // 1단계: 자녀 위치 갱신 — 유효 좌표가 있을 때만. await 를 뒤로 미뤄 알림을 막지 않는다.
   const hasPosition =
@@ -138,7 +151,7 @@ export async function sendSos(input: SendSosInput): Promise<SendSosResult> {
     await postParentSosAlert({
       family_id: familyId,
       alert_type: "sos",
-      title: SOS_TITLE,
+      title,
       message,
       severity: "urgent",
       // 응답 유실·일시적 5xx 때 같은 요청을 한 번 재시도해도 부모 알림은 1건만 생성된다.

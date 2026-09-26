@@ -64,7 +64,7 @@ test("아이 홈에서만 큰 활동형 친구이고 다른 화면에서는 작�
   assert.equal(typeof module.aiBuddyFabPresentation, "function");
   assert.deepEqual(module.aiBuddyFabPresentation?.("/child/home"), {
     mode: "home",
-    size: 136,
+    size: 112,
     canWander: true,
     canPrompt: true,
     bottomClearance: 0,
@@ -81,11 +81,12 @@ test("아이 홈에서만 큰 활동형 친구이고 다른 화면에서는 작�
   }
 });
 
-test("아이 홈 친구의 기준 크기는 411px 화면 폭의 약 1/3이다", () => {
+// 2026-09-26: 1/3 크기는 조작 요소를 너무 많이 가려 약 27%로 줄였다(존재감은 작은 친구의 1.6배 이상 유지).
+test("아이 홈 친구의 기준 크기는 411px 화면 폭의 약 27%다", () => {
   const presentation = positionModule.aiBuddyFabPresentation("/child/home");
   const ratio = presentation.size / 411;
-  assert.ok(ratio >= 0.32 && ratio <= 0.34, `홈 친구 비율이 1/3에서 벗어났다: ${ratio}`);
-  assert.ok(presentation.size >= positionModule.aiBuddyFabPresentation("/child/memo").size * 1.9);
+  assert.ok(ratio >= 0.26 && ratio <= 0.28, `홈 친구 비율이 27%에서 벗어났다: ${ratio}`);
+  assert.ok(presentation.size >= positionModule.aiBuddyFabPresentation("/child/memo").size * 1.6);
 });
 
 test("홈과 작은 친구 모두 실제 크기만큼 화면·하단 독 안쪽에서 움직인다", () => {

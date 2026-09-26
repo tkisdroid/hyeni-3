@@ -39,23 +39,37 @@
 
 .kdock__tab {
   position: relative;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+  min-width: 64px;
+  height: 56px;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0;
   background: transparent;
   transition: background 0.2s ease;
-  --press: 0.88;
+  --press: 0.9;
 }
 .kdock__tab[aria-current="page"] {
   background: var(--hy-accent-soft);
 }
 .kdock__tab img {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
+}
+.kdock__label {
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-secondary);
+  white-space: nowrap;
+}
+.kdock__tab[aria-current="page"] .kdock__label {
+  color: var(--hy-accent-text);
+  font-weight: 700;
 }
 
 .kdock__badge {

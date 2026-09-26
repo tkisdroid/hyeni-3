@@ -1,9 +1,12 @@
 /**
- * 전역 "활성 아이" 선택 컨텍스트 — 다자녀 스위치는 부모 홈에서만.
+ * 전역 "활성 아이" 선택 컨텍스트 — 다자녀 가족의 "지금 보고 있는 아이"는 이 값 하나뿐이다.
  *
- * 부모 홈의 아이 카드 탭이 유일한 스위치이고, 다른 화면(안전지표·위치·대화·주변소리·스티커)은
- * 전부 이 선택을 따른다(화면마다 중복 전환 UI 금지 — TK 결정). 선택은 가족별로
- * localStorage 에 지속되어 재실행에도 유지된다. 알림/SOS 딥링크(?child=)는 화면 단위로
+ * 전환 UI 는 공용 `ChildSwitcher` 알약 하나다(2026-09-26 TK 제보 "다자녀 선택·관리 단계가 이상함").
+ * 정본 자리는 부모 홈 맨 위이고, 아이 단위로 읽는 위치·대화·숙제/준비물·안심 리포트·하루 요약·
+ * 위치 상태에도 같은 알약을 둬 홈으로 돌아가지 않고 바꾼다 — 어느 화면에서 바꾸든 이 전역 값이 바뀐다.
+ * 예전처럼 홈 아이 카드를 눌러 "선택 + 상세 이동"을 겸하게 하지 않는다(카드는 상세만 연다).
+ * 원격 동작의 대상 지정(소리 울리기·칭찬 스티커)은 화면 안 명시 선택을 유지하되 같은 알약 모양을 쓴다.
+ * 선택은 가족별로 localStorage 에 지속되어 재실행에도 유지된다. 알림/SOS 딥링크(?child=)는 화면 단위로
  * 이 선택을 일시 오버라이드할 수 있다(위급 아이 우선 — 안전 규칙).
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -15,7 +18,7 @@ import type { MapPolicy } from "../../shared/mapPolicy";
 interface ActiveChildValue {
   /** 선택된 아이 family_members.id (아이 없으면 null). */
   activeChildId: string | null;
-  /** 홈 카드 스위치 전용 — 다른 화면에서 호출 금지(부모 홈 + 아이 상세 진입만 예외). */
+  /** ChildSwitcher·아이 상세 진입에서만 호출한다(화면이 임의로 바꾸지 않는다). */
   setActiveChildId: (memberId: string) => void;
   /** 검증된 활성 아이 멤버(저장값이 무효면 첫 아이로 폴백). */
   activeChild: FamilyMember | null;

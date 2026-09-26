@@ -5,6 +5,10 @@
     <color name="colorAccent">#A78BFA</color>
     <color name="splash_background">#FFF0F7</color>
 
+    <!-- WebView 네이티브 날짜·시간 선택기 강조색: tokens.css 라벤더 hy-accent-cta 미러.
+         미지정 시 AppCompat 기본 청록(#009688)으로 떠 앱 보라와 어긋났다(2026-09-26 실기기). -->
+    <color name="picker_accent">#7E63D4</color>
+
     <!-- 알림 브랜드 틴트: src/styles/tokens.css 의 brand-rose 토큰 미러.
          모든 알림 setColor 가 이 단일 소스를 참조한다. -->
     <color name="notification_accent">#F779A8</color>

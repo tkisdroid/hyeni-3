@@ -1,7 +1,7 @@
 /* 체험 종료 · 잠금(S-03) — 화면 전용 스타일. prefix: tl- */
 
 .tl-root {
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
   min-height: 100%;
 }
 

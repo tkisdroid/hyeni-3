@@ -101,6 +101,7 @@ const messages = {
   "core.error.api.passwordAccountRequired.formal": "Changes can only be made to accounts that have a password.",
   "core.error.api.phoneExists.child": "That phone number already has an account. Log in instead.",
   "core.error.api.phoneExists.formal": "That phone number is already registered. Please log in instead.",
+  "core.error.api.phoneNotRegistered.formal": "This phone number isn't registered. Check the number or sign up.",
   "core.error.api.primaryParentRequired.formal": "Only the primary guardian can do this. Please make the request from the primary guardian's device.",
   "core.error.api.rateLimited.child": "Too many tries. Wait a little, then try again.",
   "core.error.api.rateLimited.formal": "Too many requests. Please wait a moment and try again.",

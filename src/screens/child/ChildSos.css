@@ -252,6 +252,13 @@
   justify-content: center;
   flex: none;
 }
+/* 보호자 확인 대기 줄 — 완료된 줄과 구분되게 옅게, 확인되면 민트 체크로 바뀐다. */
+.cs-checks__row--pending .cs-checks__dot {
+  background: var(--bg-page);
+}
+.cs-checks__row--pending .cs-checks__text {
+  color: var(--fg-secondary);
+}
 .cs-checks__text {
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);

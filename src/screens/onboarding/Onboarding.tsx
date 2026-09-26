@@ -86,6 +86,7 @@ import { resolveAuthenticatedOnboardingRedirect } from "@/transform/onboardingRe
 
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { BusyLabel } from "@/components/ui/BusyLabel";
+import { DateField } from "@/components/ui/DateField";
 import {
   PRIVACY_POLICY_URL,
   TERMS_OF_SERVICE_URL,
@@ -117,6 +118,7 @@ import {
   type AsyncActionToken,
   type SignupPendingAction,
 } from "@/transform/asyncUiState";
+import { PasswordResetSheet } from "./PasswordResetSheet";
 import "./Onboarding.css";
 import { localizeApiError } from "@/i18n/apiError";
 import { useLocale } from "@/i18n/useLocale";
@@ -1549,6 +1551,7 @@ function LoginStep({
   const intl = useIntl();
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
+  const [resetOpen, setResetOpen] = useState(false);
   const [errors, setErrors] = useState<LoginFormErrors>({});
   const [pendingAction, setPendingAction] = useState<"id" | OAuthProvider | null>(null);
   const loginIdInputRef = useRef<HTMLInputElement>(null);
@@ -1844,10 +1847,31 @@ function LoginStep({
             <button type="submit" className="ob-loginbtn hy-press hy-busy-quiet" disabled={busy} aria-busy={busy && pendingAction === "id"}>
               <BusyLabel busy={busy && pendingAction === "id"} idle={intl.formatMessage({ id: "onboarding.login.submit" })} pending={intl.formatMessage({ id: "onboarding.login.pending" })} />
             </button>
+            {/* 비밀번호를 잊어도 가입한 휴대폰으로 아이디를 확인하고 새 비밀번호를 정한다. */}
+            <button
+              type="button"
+              className="ob-link ob-login-recover"
+              onClick={() => setResetOpen(true)}
+              disabled={loginNavigationLocked}
+            >
+              {intl.formatMessage({ id: "onboarding.passwordReset.entry" })}
+            </button>
             <p className="ob-login-device-note">
               {intl.formatMessage({ id: "onboarding.login.deviceTransferNote" })}
             </p>
           </form>
+          {resetOpen && (
+            <PasswordResetSheet
+              onClose={() => setResetOpen(false)}
+              onReset={({ loginId: recoveredId, password: nextPassword }) => {
+                setResetOpen(false);
+                setLoginId(recoveredId);
+                setPassword(nextPassword);
+                show(intl.formatMessage({ id: "onboarding.passwordReset.done" }, { loginId: recoveredId }), "🔐");
+                void loginIdPw({ loginId: recoveredId, password: nextPassword });
+              }}
+            />
+          )}
 
           <div className="ob-login-foot">
             {intl.formatMessage({ id: "onboarding.login.noAccount" })}{" "}
@@ -2387,7 +2411,7 @@ function SignupStep({
           </div>
         </Field>
         <Field label={intl.formatMessage({ id: "onboarding.field.birthdate" })} validationMessage={fieldErrorMessage("birthdate")} errorId="ob-signup-birthdate-error">
-          <input ref={birthdateInputRef} id="hyeni-signup-birthdate" name="bday" className="ob-input" type="date" autoComplete="bday" aria-label={intl.formatMessage({ id: "onboarding.field.birthdate" })} aria-invalid={Boolean(formErrors.birthdate)} aria-describedby={formErrors.birthdate ? "ob-signup-birthdate-error" : undefined} value={birthdate} onChange={(e) => { setBirthdate(e.target.value); clearFormFieldError("birthdate"); }} />
+          <DateField inputRef={birthdateInputRef} placeholder={intl.formatMessage({ id: "onboarding.field.birthdatePlaceholder" })} id="hyeni-signup-birthdate" name="bday" className="ob-input" autoComplete="bday" aria-label={intl.formatMessage({ id: "onboarding.field.birthdate" })} aria-invalid={Boolean(formErrors.birthdate)} aria-describedby={formErrors.birthdate ? "ob-signup-birthdate-error" : undefined} value={birthdate} onChange={(e) => { setBirthdate(e.target.value); clearFormFieldError("birthdate"); }} />
         </Field>
         <Field label={intl.formatMessage({ id: "onboarding.field.phone" })} validationMessage={fieldErrorMessage("phone")} errorId="ob-signup-phone-error">
           <input ref={phoneInputRef} id="hyeni-signup-phone" name="tel" className="ob-input" type="tel" inputMode="tel" autoComplete="tel-national" aria-label={intl.formatMessage({ id: "onboarding.field.phone" })} aria-invalid={Boolean(formErrors.phone)} aria-describedby={formErrors.phone ? "ob-signup-phone-error" : undefined} placeholder={intl.formatMessage({ id: "onboarding.field.phonePlaceholder" })} value={phone} onChange={(e) => { setPhone(e.target.value); setExistingAccountDetected(false); clearFormFieldError("phone"); }} />

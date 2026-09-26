@@ -34,6 +34,15 @@ export function useMemoThread(dateKeys: string[], childId?: string | null) {
 
 /** 부모 탭의 미읽음 점: 모든 아이의 실제 memo_replies.read_by를 조회한다. */
 export function useUnreadMemoForChildren(dateKeys: string[], childIds: string[]): boolean {
+  return useUnreadMemoChildIds(dateKeys, childIds).size > 0;
+}
+
+/**
+ * 안 읽은 상대 메시지가 있는 아이(member id) 집합. 대화 화면의 아이 전환 알약이 다른 아이의 새 메시지를
+ * 점으로 알린다(2026-09-26 실기기: 첫째 대화를 보는 동안 둘째의 새 메시지를 알 길이 알림뿐이었다).
+ * 같은 쿼리 키를 쓰므로 탭 점과 캐시를 공유한다.
+ */
+export function useUnreadMemoChildIds(dateKeys: string[], childIds: string[]): ReadonlySet<string> {
   const { familyId, userId, status } = useAuth();
   const keys = [...new Set(dateKeys.filter(Boolean))];
   const scopedChildIds = [...new Set(childIds.filter(Boolean))];
@@ -46,15 +55,18 @@ export function useUnreadMemoForChildren(dateKeys: string[], childIds: string[])
     })),
   });
 
-  if (!enabled || !userId) return false;
-  return queries.some((query) =>
-    ((query.data ?? []) as MemoReply[]).some(
+  const unread = new Set<string>();
+  if (!enabled || !userId) return unread;
+  queries.forEach((query, index) => {
+    const hasUnread = ((query.data ?? []) as MemoReply[]).some(
       (r) =>
         r.user_id !== userId
         && (r.content ?? "").trim().length > 0
         && !(r.read_by ?? []).includes(userId),
-    ),
-  );
+    );
+    if (hasUnread) unread.add(scopedChildIds[index]);
+  });
+  return unread;
 }
 
 export interface SendMemoVars {

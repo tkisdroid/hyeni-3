@@ -149,5 +149,6 @@
   "core.aiBuddy.nudge.time.minute": "{hour}點{minute}分",
   "core.aiBuddy.nudge.nextEvent.line": "{when}有{title}!",
   "core.aiBuddy.nudge.nextEvent.lineSoon": "等一下有{title}!",
-  "core.error.api.primaryParentRequired.formal": "只有主要監護人可以執行此操作。請在主要監護人的裝置上發出要求。"
+  "core.error.api.primaryParentRequired.formal": "只有主要監護人可以執行此操作。請在主要監護人的裝置上發出要求。",
+  "core.error.api.phoneNotRegistered.formal": "此手機號碼尚未註冊。請確認號碼或註冊新帳號。"
 }

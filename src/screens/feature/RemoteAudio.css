@@ -17,7 +17,7 @@
   overflow: hidden;
   background: radial-gradient(120% 46% at 50% 0%, var(--lav-soft2) 0%, rgba(239, 232, 255, 0) 55%),
     linear-gradient(180deg, #fdf4f1, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 .ra-back {
@@ -265,7 +265,7 @@
   padding: calc(72px + env(safe-area-inset-top, 0px)) 32px
     calc(40px + env(safe-area-inset-bottom, 0px));
   background: radial-gradient(circle at 50% 34%, #2a2140, #14100f);
-  animation: hy-fadein 0.25s ease forwards;
+  animation: hy-fadein 0.25s ease backwards;
 }
 
 .ra-listen-head {

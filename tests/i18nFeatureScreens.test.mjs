@@ -310,7 +310,8 @@ test("아이 초대·페어링·가족 연결 문구는 10개 locale에 완전�
 });
 
 test("장소 알림 상태 라벨은 기존 한국어 폴백과 화면 Intl 경로를 모두 지원한다", () => {
-  assert.equal(tierAlertActivationLabel("active"), "플랜 한도 안 · 알림 설정 가능");
+  // 2026-09-26: "플랜 한도 안" 같은 내부 용어 대신 부모가 바로 아는 말로 바꿨다.
+  assert.equal(tierAlertActivationLabel("active"), "알림 받을 수 있어요");
   const messages = {
     "notifications.place.alert.active": "ACTIVE",
     "notifications.place.alert.premiumRequired": "PREMIUM",
@@ -342,8 +343,10 @@ test("위급 주변소리는 숨기지 않고 아이 화면 지속 표시·1분 
     "notifications.remoteAudio.visibleToChild",
     "notifications.remoteAudio.oneMinuteLimit",
     "notifications.remoteAudio.auditRecorded",
-    "notifications.remoteAudio.fullScreenSafety",
   ]) assert.match(remoteAudio, new RegExp(id.replaceAll(".", "\\.")), `실제 RemoteAudio 배선: ${id}`);
+  // 2026-09-26 문구 밀도 정리: "알림이 뜨고 곧바로 연결"은 신뢰 카드 첫 줄(visibleToChild — 아이가 누르지 않아도
+  // 연결, 아이 화면에 계속 표시)과 같은 사실이라 시작 버튼 위 안내에서 반복하지 않는다.
+  assert.doesNotMatch(remoteAudio, /notifications\.remoteAudio\.fullScreenSafety/);
 
   for (const locale of locales) {
     const catalog = JSON.parse(readFileSync(resolve(rootDir, `locales/${locale}/notifications.json`), "utf8"));

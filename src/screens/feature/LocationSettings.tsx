@@ -498,8 +498,8 @@ export function LocationSettings() {
             <span className="hy-explain__line">
               {intl.formatMessage({ id: "notifications.locationSettings.note.androidSync" }, { childName })}
             </span>
-            {/* i18n 회귀 불변식: 아이 기기의 권한·배터리 예외는 아이 앱에서 직접 허용해야 해요 */}
-            <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.locationSettings.note.permissions" })}</span>
+            {/* 아이 기기의 권한·배터리 예외는 아이 앱에서 직접 허용해야 해요 — 배터리 행 설명(battery.description)이 말하므로
+                아래 안내에서 같은 문장을 반복하지 않는다(2026-09-26 문구 밀도 정리). */}
           </span>
         </p>
       </div>

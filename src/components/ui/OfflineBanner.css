@@ -18,7 +18,7 @@
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
-  animation: hy-fadein 0.25s ease forwards;
+  animation: hy-fadein 0.25s ease backwards;
 }
 .ofb-text {
   letter-spacing: -0.01em;

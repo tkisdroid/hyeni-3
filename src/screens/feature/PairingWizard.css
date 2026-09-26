@@ -6,7 +6,7 @@
   flex-direction: column;
   background: radial-gradient(120% 40% at 50% 0%, #ffe7f0 0%, rgba(255, 231, 240, 0) 55%),
     linear-gradient(180deg, #fdf4f1, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 헤더 ───────────────────────────────────────────────────────────────── */

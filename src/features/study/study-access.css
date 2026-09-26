@@ -21,13 +21,44 @@
   margin: 0;
 }
 
+/* 온보딩 다른 카드와 같은 위계: 제목은 섹션 크기, 설명은 본문 보조 크기(과하게 큰 24px 제목을 줄였다). */
+.study-country-card h2 {
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+  word-break: keep-all;
+}
+.study-country-card p,
+.study-country-card small {
+  color: var(--fg-muted);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+  word-break: keep-all;
+}
+.study-country-card label {
+  color: var(--fg-secondary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
 .study-country-input {
+  width: 100%;
   min-height: 48px;
   padding: 0 14px;
-  border: 1px solid var(--line-strong);
-  border-radius: 12px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: var(--radius-16);
+  background: var(--bg-card);
+  color: var(--fg-primary);
   font: inherit;
-  text-transform: uppercase;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+}
+
+.study-access-action {
+  border-radius: var(--radius-pill);
 }
 
 .study-access-actions {

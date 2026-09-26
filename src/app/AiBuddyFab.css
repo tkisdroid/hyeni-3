@@ -4,8 +4,8 @@
 .abf {
   position: absolute;
   /* 휴대폰 폭의 약 1/3. 작은 화면에서는 본문을 과하게 가리지 않고 큰 화면에서는 비대해지지 않는다. */
-  width: clamp(112px, 33.333vw, 144px);
-  height: clamp(112px, 33.333vw, 144px);
+  width: clamp(96px, 27vw, 120px);
+  height: clamp(96px, 27vw, 120px);
   padding: 0;
   border: 0;
   background: transparent;

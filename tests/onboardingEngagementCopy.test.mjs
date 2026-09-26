@@ -11,7 +11,8 @@ const koCatalog = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/onboardin
 test("가입 전 설문은 첫 단계에서 20% 진행률로 시작한다", () => {
   assert.match(source, /type Step = .*"survey"/);
   assert.match(source, /id: "onboarding\.survey\.title"/);
-  assert.equal(koCatalog["onboarding.survey.title"], "가입 전에 한 가지만 알려 주세요");
+  // 2026-09-26: "한 / 가지만"으로 어절이 갈라져 한 단어("하나만")로 바꿨다.
+  assert.equal(koCatalog["onboarding.survey.title"], "가입 전에 하나만 알려 주세요");
   assert.match(source, /percent=\{20\}/);
 });
 

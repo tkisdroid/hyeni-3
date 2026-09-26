@@ -438,6 +438,7 @@
   "shared.qrScanner.retryPermission": "許可を再確認",
   "shared.qrScanner.scannerUnavailable": "この端末ではQRスキャンを利用できません。コードを手動で入力してください。",
   "shared.qrScanner.title": "QRコードをスキャン",
+  "shared.routeView.addScheduleButton": "予定を追加",
   "shared.routeView.childFallback": "お子さま",
   "shared.routeView.currentLocationFallback": "現在地",
   "shared.routeView.destinationFallback": "目的地",
@@ -937,5 +938,8 @@
   "shared.schedule.tag.ongoing": "進行中",
   "shared.schedule.tag.upcoming": "予定",
   "shared.schedule.tag.verify": "確認が必要",
-  "shared.schedule.tag.visited": "行く"
+  "shared.schedule.tag.visited": "行く",
+  "shared.childSwitcher.fallbackName": "子ども",
+  "shared.childSwitcher.unread": "新着メッセージ",
+  "shared.childSwitcher.label": "表示する子どもを選ぶ"
 }

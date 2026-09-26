@@ -4,7 +4,7 @@
   min-height: 100%;
   background: radial-gradient(120% 40% at 50% 0%, #ffe7f0 0%, rgba(255, 231, 240, 0) 55%),
     linear-gradient(180deg, #fdf4f1, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 헤더 (sticky) ──────────────────────────────────────────────────────── */
@@ -367,11 +367,7 @@
   align-items: center;
   text-align: center;
   box-shadow: var(--shadow-modal);
-  animation: cd-sheet-up 0.22s ease;
-}
-@keyframes cd-sheet-up {
-  from { transform: translateY(24px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  animation: hy-sheetup var(--duration-sheet) var(--easing-emphasized) backwards;
 }
 .cd-confirm__icon {
   width: 54px;
@@ -431,4 +427,20 @@
 .cd-confirm__delete:disabled,
 .cd-confirm__cancel:disabled {
   opacity: 0.6;
+}
+
+/* 어른 화면: 바로가기 네 개는 유리판 위의 조작 면(다른 화면의 알약·타일 버튼과 같은 재질)이다.
+   흰 불투명 버튼은 주변 유리 행보다 무거워 보였다(2026-09-26). 주 동작(실시간 위치)은 민트 테두리로 구분한다. */
+.hy-adult .cd-action {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--control-fill);
+  box-shadow: var(--control-shadow);
+}
+.hy-adult .cd-action--primary {
+  background: color-mix(in srgb, var(--mint-soft) 55%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--mint-line), var(--control-shadow);
+}
+.hy-adult .cd-action:active {
+  box-shadow: var(--control-shadow-pressed);
 }

@@ -313,6 +313,10 @@
   --duration-screen: 0.4s;
   --easing-standard: cubic-bezier(0.2, 0, 0.2, 1);
   --easing-cheer: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 화면·시트가 들어올 때: 빠르게 출발해 끝에서 길게 감속한다(쫀득한 정착감). */
+  --easing-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-route: 0.42s;
+  --duration-sheet: 0.46s;
   --press-scale: 0.96;
 
   /* ── Accent (아이가 고른 테마색 · 기본 rose) ── */

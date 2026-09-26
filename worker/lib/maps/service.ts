@@ -40,8 +40,10 @@ function validPoint(point: unknown): point is LatLngPoint {
     && typeof value.lng === "number" && Number.isFinite(value.lng) && value.lng >= -180 && value.lng <= 180;
 }
 
+// 7자리 십진 표현과 같은 double 인지로 판정한다. `value*1e7` 과 정수의 차이로 재면 경도 127 부근에서
+// 곱셈 오차(≈2.4e-7)가 허용치를 넘어 올바른 7자리 좌표도 약 8% 거부했다(2026-09-26).
 function maxSevenDecimals(value: number): boolean {
-  return Math.abs(value * 10_000_000 - Math.round(value * 10_000_000)) < 1e-7;
+  return Number.isFinite(value) && Number(value.toFixed(7)) === value;
 }
 
 function isRawReverseSource(

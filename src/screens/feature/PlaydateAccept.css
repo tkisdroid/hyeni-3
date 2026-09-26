@@ -4,7 +4,7 @@
   min-height: 100%;
   background: radial-gradient(120% 44% at 50% 0%, #fff0d6 0%, rgba(255, 240, 214, 0) 55%),
     linear-gradient(180deg, #fdf4f1, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 헤더 (sticky · 뒤로가기) ───────────────────────────────────────────── */
@@ -66,7 +66,7 @@
 
 /* ── 요청 카드 ──────────────────────────────────────────────────────────── */
 .pa-screen .pa-card {
-  animation: hy-fadein 0.3s ease both;
+  animation: hy-fadein 0.3s ease backwards;
   padding: 16px;
 }
 .pa-card__head {

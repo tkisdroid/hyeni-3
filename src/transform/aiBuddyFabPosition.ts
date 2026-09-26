@@ -8,8 +8,8 @@
 
 export type AiBuddyFabMode = "home" | "compact";
 
-/** 홈은 411px 실기기 화면의 약 1/3, 다른 화면은 콘텐츠를 덜 가리는 크기다. */
-export const AI_BUDDY_FAB_HOME_SIZE = 136;
+/** 홈은 존재감을 주되 버튼·색상 칩을 덜 가리는 크기(411px 화면의 약 27%, 2026-09-26 136→112), 다른 화면은 더 작다. */
+export const AI_BUDDY_FAB_HOME_SIZE = 112;
 export const AI_BUDDY_FAB_COMPACT_SIZE = 68;
 
 /** 기존 위치 계산의 기본값은 홈 크기다. */

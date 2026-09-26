@@ -45,6 +45,8 @@ import {
   type SeriesEditScope,
 } from "@/transform/eventSeries";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import { formatTimeLabel } from "@/transform/scheduleView";
+import { useLocale } from "@/i18n/useLocale";
 import "./EventForm.css";
 
 type Mode = "create" | "edit";
@@ -176,6 +178,7 @@ function avatarSrc(path: string): string {
 export function EventForm() {
   const familyTimeZone = useFamilyTimeZone();
   const intl = useIntl();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId } = useAuth();
@@ -676,13 +679,16 @@ export function EventForm() {
               })}
             </div>
           )}
-          <div className="ef-note hy-explain">
-            {editingNeedsAssignment
-              ? intl.formatMessage({ id: "parent.eventForm.copy027" })
-              : selectedChildIds.size === 0
-              ? intl.formatMessage({ id: "parent.eventForm.copy028" })
-              : intl.formatMessage({ id: "parent.eventForm.copy029" })}
-          </div>
+          {/* 아이가 한 명이면 "여러 아이를 함께 배정" 안내는 할 수 없는 일을 말하므로 숨긴다. */}
+          {(editingNeedsAssignment || selectedChildIds.size === 0 || children.length > 1) && (
+            <div className="ef-note hy-explain">
+              {editingNeedsAssignment
+                ? intl.formatMessage({ id: "parent.eventForm.copy027" })
+                : selectedChildIds.size === 0
+                ? intl.formatMessage({ id: "parent.eventForm.copy028" })
+                : intl.formatMessage({ id: "parent.eventForm.copy029" })}
+            </div>
+          )}
         </div>
 
         {/* 날짜 · 시간 */}
@@ -705,14 +711,28 @@ export function EventForm() {
               className="ef-input ef-input--date"
               aria-label={intl.formatMessage({ id: "parent.eventForm.copy032" })}
               value={dateValue}
-              onChange={(e) => { dateTouched.current = true; setDateValue(e.target.value); }}
+              onChange={(e) => {
+                // Android 선택기의 '삭제'는 날짜를 비운다 — 일정에는 날짜가 꼭 필요하므로 기존 값을 유지한다.
+                if (!e.target.value) return;
+                dateTouched.current = true;
+                setDateValue(e.target.value);
+              }}
             />
             <input
               type="time"
               className="ef-input ef-input--time"
               aria-label={intl.formatMessage({ id: "parent.eventForm.copy033" })}
               value={timeValue}
-              onChange={(e) => { timeTouched.current = true; setTimeValue(e.target.value); }}
+              onChange={(e) => {
+                timeTouched.current = true;
+                // 선택기의 '삭제'로 시간을 비우면 '하루 종일'로 전환한다(빈 칸 + 지속시간이 남는 모호한 상태 방지).
+                // 이전 시간은 남겨 두어 '하루 종일'을 다시 끄면 그대로 돌아온다.
+                if (!e.target.value) {
+                  setAllDay(true);
+                  return;
+                }
+                setTimeValue(e.target.value);
+              }}
               disabled={allDay}
             />
           </div>
@@ -739,7 +759,8 @@ export function EventForm() {
           </div>
           {timeValue && (
             <div className="ef-note hy-explain">
-              {intl.formatMessage({ id: "parent.eventForm.copy035" })} {minutesToTimeValue((timeToMinutes(timeValue) ?? 0) + durationMin)}
+              {/* 시간 입력은 "오후 3:30" 으로 보이므로 종료도 같은 12/24시간 표기로 맞춘다. */}
+              {intl.formatMessage({ id: "parent.eventForm.copy035" })} {formatTimeLabel(minutesToTimeValue((timeToMinutes(timeValue) ?? 0) + durationMin), locale, intl)}
             </div>
           )}
         </div>}
@@ -813,7 +834,7 @@ export function EventForm() {
                 onFocus={() => setPlaceSuggestionsOpen(true)}
                 onBlur={() => window.setTimeout(() => setPlaceSuggestionsOpen(false), 120)}
                 onChange={(e) => handlePlaceChange(e.target.value)}
-                placeholder={intl.formatMessage({ id: "parent.eventForm.copy023" })}
+                placeholder={intl.formatMessage({ id: "parent.eventForm.placePlaceholder" })}
                 aria-autocomplete="list"
                 aria-expanded={showPlaceSuggestions}
               />

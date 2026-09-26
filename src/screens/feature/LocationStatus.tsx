@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useLocation as useRouterLocation, useNavigate, useSearchParams } from "react-router";
 import { ChevronLeft, RefreshCw, Check, AlertTriangle, MapPin, Lock } from "lucide-react";
 import { useIntl } from "react-intl";
+import { ChildSwitcher } from "@/components/ChildSwitcher";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
@@ -250,6 +251,7 @@ export function LocationStatus() {
       </header>
 
       <div className="ls-body">
+        <ChildSwitcher className="hy-kidswitch--screen" />
         {/* 현재 상태 카드 */}
         <div
           className={`ls-card ls-card--${view.tone}`}
@@ -306,7 +308,9 @@ export function LocationStatus() {
 
         {canShowLocation && (
           <>
-            {/* 권한 안내 */}
+            {/* 권한 안내 — 갱신이 성공한 상태에서는 "권한·GPS가 꺼져 있으면" 경고가 사실과 맞지 않는 잔소리라 숨긴다
+                (2026-09-26 문구 밀도 정리). 실패·권한 문제·확인 중일 때만 보인다. */}
+            {kind !== "success" && (
             <div className="ls-permit hy-explain">
               <span className="hy-explain__lines">
                 {/* i18n 회귀 불변식: className="hy-explain__line">아이 기기의 위치 권한이 꺼져 있거나 GPS가 잡히지 않으면 갱신이 지연될 수 있어요.</span> className="hy-explain__line">아이 기기에서 위치 권한과 GPS를 확인해 주세요.</span> */}
@@ -316,6 +320,7 @@ export function LocationStatus() {
                 <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.locationStatus.permissionNote.check" })}</span>
               </span>
             </div>
+            )}
 
             {/* 다시 시도 */}
             <button type="button" className="ls-retry hy-press hy-busy-quiet" onClick={retry} disabled={refreshing || isFetching} aria-busy={isFetching}>

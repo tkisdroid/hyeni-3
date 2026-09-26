@@ -205,6 +205,35 @@ async function readWebPermissionState(kind: PermissionKind): Promise<PermissionS
   return { supported: false, granted: false };
 }
 
+/**
+ * OS 위치(GPS) 스위치. 권한과 별개로 꺼져 있으면 좌표를 얻지 못한다.
+ * 네이티브가 아니거나 조회할 수 없으면 null(꺼졌다고 단정하지 않는다).
+ */
+export async function readSystemLocationEnabled(): Promise<boolean | null> {
+  if (!usesAndroidNativePermissions()) return null;
+  const plugin = getNativePlugin<NativeLocationPermissionPlugin>(LOCATION_PLUGIN);
+  if (!plugin?.checkBackgroundLocationPermission) return null;
+  try {
+    const state = await plugin.checkBackgroundLocationPermission();
+    return typeof state.locationServicesEnabled === "boolean" ? state.locationServicesEnabled : null;
+  } catch {
+    return null;
+  }
+}
+
+/** OS 위치 설정 화면을 연다(아이가 직접 위치 스위치를 켤 수 있는 곳). */
+export async function openSystemLocationSettings(): Promise<boolean> {
+  const plugin = getNativePlugin<NativeLocationPermissionPlugin>(LOCATION_PLUGIN);
+  if (!plugin?.openLocationSettings) return false;
+  try {
+    await plugin.openLocationSettings();
+    return true;
+  } catch (error) {
+    console.error("[permission] 위치 설정 열기 실패:", error);
+    return false;
+  }
+}
+
 /** OS·브라우저가 현재 보고하는 실제 권한 상태를 읽는다. 조회 실패는 granted로 추정하지 않는다. */
 export async function readPermissionState(kind: PermissionKind): Promise<PermissionState> {
   try {

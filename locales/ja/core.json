@@ -149,5 +149,6 @@
   "core.aiBuddy.nudge.time.minute": "{hour}時{minute}分",
   "core.aiBuddy.nudge.nextEvent.line": "{when}に{title}!",
   "core.aiBuddy.nudge.nextEvent.lineSoon": "あとで{title}があるよ!",
-  "core.error.api.primaryParentRequired.formal": "この操作は主保護者だけが行えます。主保護者の端末からリクエストしてください。"
+  "core.error.api.primaryParentRequired.formal": "この操作は主保護者だけが行えます。主保護者の端末からリクエストしてください。",
+  "core.error.api.phoneNotRegistered.formal": "登録されていない電話番号です。番号を確認するか新規登録してください。"
 }

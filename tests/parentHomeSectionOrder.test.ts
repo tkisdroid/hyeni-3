@@ -112,8 +112,9 @@ test("부모 홈 주요 기능은 유리 섹션으로 묶고 조작·문구 계�
   assert.doesNotMatch(redesignCss, /--liquid-glass-|--neu-control-/);
   assert.match(redesignCss, /\.ph-page \.ph-section-shell,[\s\S]*?backdrop-filter: var\(--ph-glass-blur\)/);
 
-  // 부모 탭은 라벨 없는 아이콘 전용이고 이름은 aria-label 로만 남는다.
-  assert.match(appShell, /<TabBar tabs=\{tabs\} iconOnly \/>/);
+  // 부모 탭은 아이콘과 짧은 라벨을 함께 보인다(2026-09-26 — 아이콘만으로는 뜻이 바로 읽히지 않았다).
+  assert.match(appShell, /<TabBar tabs=\{tabs\} \/>/);
+  assert.doesNotMatch(appShell, /iconOnly/);
   assert.match(tabBar, /aria-label=\{t\.label\}/);
   assert.match(tabBar, /\{!iconOnly && <span className="hy-tab__label">\{t\.label\}<\/span>\}/);
 

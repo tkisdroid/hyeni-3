@@ -26,6 +26,14 @@ html {
   text-size-adjust: 100%;
 }
 
+/* 한국어는 어절 단위로 줄을 바꾼다 — "알려 드려\n요."처럼 글자 하나가 다음 줄로 떨어지지 않게.
+   중국어·일본어는 띄어쓰기가 없어 keep-all 이면 줄을 못 바꾸므로 한국어에만 건다.
+   break-word 는 넘칠 때만 긴 낱말을 끊고 min-content 폭은 바꾸지 않는다(anywhere 는 알약·칩을 글자 단위로 접는다). */
+html:lang(ko) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 body {
   font-family: var(--font-sans);
   font-size: var(--type-body);
@@ -64,9 +72,11 @@ select {
   font-family: inherit;
 }
 
+/* 안내 문구는 값과 굵기로 구분한다(대비는 유지) — 굵은 안내가 입력된 값처럼 보였다(2026-09-26 실기기). */
 input::placeholder,
 textarea::placeholder {
   color: var(--fg-placeholder);
+  font-weight: 400;
   opacity: 1;
 }
 
@@ -94,6 +104,13 @@ a {
 body :where(a, button, input, textarea, select, [tabindex]):focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 3px;
+}
+
+/* 입력창은 터치로 눌러도 :focus-visible 이 켜진다 — 파란 3px 링 대신 강조색의 얇은 둥근 링.
+   (0,1,1)로 전역 규칙만 이기고, 화면별 `.cls:focus-visible`(0,2,0) 조정은 그대로 둔다. */
+:where(.hy-app) :is(input, textarea, select):focus-visible {
+  outline: 2px solid var(--hy-accent-cta);
+  outline-offset: 1px;
 }
 
 /* 스크롤바 숨김 (앱 느낌) */
@@ -170,7 +187,7 @@ html[data-hy-native] :is(.mps-sheet, .ofb-root, .ks-layer, .ks-celebrate, .pc-sh
 @keyframes hy-rise { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes hy-fadein { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes hy-pop { 0% { transform: scale(0.92); opacity: 0; } 60% { transform: scale(1.03); } 100% { transform: scale(1); opacity: 1; } }
-@keyframes hy-sheetup { from { transform: translateY(26px); } to { transform: translateY(0); } }
+@keyframes hy-sheetup { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes hy-toast { from { transform: translate(-50%, 16px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 @keyframes hy-drop { from { transform: translateY(-14px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes hy-ring { 0% { transform: scale(0.6); opacity: 0.55; } 100% { transform: scale(2.4); opacity: 0; } }

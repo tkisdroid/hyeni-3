@@ -13,6 +13,9 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- <input type="date|time"> 가 여는 시스템 선택기 머리·선택 원 색 -->
+        <item name="colorAccent">@color/picker_accent</item>
+        <item name="android:colorAccent">@color/picker_accent</item>
     </style>
 
 

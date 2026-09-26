@@ -37,15 +37,19 @@ export function advanceLocationPermissionStage(
   return stage;
 }
 
-export type ChildLocationStatusKind = "sending" | "off" | "permission";
+export type ChildLocationStatusKind = "sending" | "off" | "permission" | "systemOff";
 
 export function resolveChildLocationStatusKind({
   freshEnough,
   permission,
+  systemLocationOff = false,
 }: {
   freshEnough: boolean;
   permission: "granted" | "denied" | "unknown";
+  /** 폰의 OS 위치 스위치가 꺼져 있다(권한 문제로 안내하면 아이가 고칠 수 없다). */
+  systemLocationOff?: boolean;
 }): ChildLocationStatusKind {
+  if (systemLocationOff) return "systemOff";
   if (permission === "denied") return "permission";
   if (permission !== "granted") return "off";
   return freshEnough ? "sending" : "off";

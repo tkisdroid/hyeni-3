@@ -438,6 +438,7 @@
   "shared.qrScanner.retryPermission": "重新確認權限",
   "shared.qrScanner.scannerUnavailable": "此裝置無法掃描QR碼，請手動輸入代碼。",
   "shared.qrScanner.title": "掃描QR碼",
+  "shared.routeView.addScheduleButton": "新增日程",
   "shared.routeView.childFallback": "孩子",
   "shared.routeView.currentLocationFallback": "目前位置",
   "shared.routeView.destinationFallback": "目的地",
@@ -937,5 +938,8 @@
   "shared.schedule.tag.ongoing": "進行中",
   "shared.schedule.tag.upcoming": "預期的",
   "shared.schedule.tag.verify": "需要確認",
-  "shared.schedule.tag.visited": "我去了"
+  "shared.schedule.tag.visited": "我去了",
+  "shared.childSwitcher.fallbackName": "孩子",
+  "shared.childSwitcher.unread": "新訊息",
+  "shared.childSwitcher.label": "選擇要查看的孩子"
 }

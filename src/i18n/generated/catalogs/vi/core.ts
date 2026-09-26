@@ -101,6 +101,7 @@ const messages = {
   "core.error.api.passwordAccountRequired.formal": "Thay đổi chỉ có thể được thực hiện đối với các tài khoản có mật khẩu.",
   "core.error.api.phoneExists.child": "Số điện thoại này đã có tài khoản. Đăng nhập nhé.",
   "core.error.api.phoneExists.formal": "Số điện thoại này đã được đăng ký. Vui lòng đăng nhập.",
+  "core.error.api.phoneNotRegistered.formal": "Số điện thoại này chưa được đăng ký. Hãy kiểm tra lại hoặc đăng ký mới.",
   "core.error.api.primaryParentRequired.formal": "Chỉ người giám hộ chính mới có thể thực hiện việc này. Hãy gửi yêu cầu từ thiết bị của người giám hộ chính.",
   "core.error.api.rateLimited.child": "Quá nhiều lần thử. Đợi một chút rồi thử lại.",
   "core.error.api.rateLimited.formal": "Quá nhiều yêu cầu. Vui lòng đợi một lát và thử lại.",

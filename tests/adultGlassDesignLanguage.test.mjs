@@ -128,7 +128,8 @@ test("알림 화면은 상단 유형 필터 섹션을 표시하지 않는다", (
 test("하단 메뉴는 바로가기로 들어간 화면에서도 보인다", () => {
   // 바로가기 목적지는 전부 PushShell 아래인데 여기에만 탭바가 없었다(2026-08-21 TK 제보).
   const pushBody = shell.slice(shell.indexOf("export function PushShell()"));
-  assert.match(pushBody, /showNav && role === "parent" && <TabBar tabs=\{parentTabs\} iconOnly \/>/);
+  // 2026-09-26: 아이콘만으로는 뜻이 바로 읽히지 않아 부모 탭도 라벨을 함께 보인다.
+  assert.match(pushBody, /showNav && role === "parent" && <TabBar tabs=\{parentTabs\} \/>/);
   assert.match(pushBody, /showNav && role === "teacher" && <TabBar tabs=\{teacherTabs\} \/>/);
 
   // 갈 곳이 없거나 일부러 가둬 둔 화면에서는 숨긴다.

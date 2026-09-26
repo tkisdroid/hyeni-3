@@ -1,0 +1,30 @@
+/* 시간대 선택: 다른 폼과 같은 필드 라벨(13px)·둥근 입력칸을 쓴다.
+   어른 화면의 채움·테두리는 glass.css 의 공용 입력 규칙이 맡고, 여기서는 모양과 리듬만 정한다. */
+.hy-tz {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin-block: 12px;
+}
+
+.hy-tz__label {
+  color: var(--fg-secondary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
+.hy-tz__select {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-min-size);
+  padding: 0 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-12);
+  background: var(--bg-card);
+  color: var(--fg-primary);
+  font: inherit;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+}

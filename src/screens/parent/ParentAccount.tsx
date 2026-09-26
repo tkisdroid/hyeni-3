@@ -398,9 +398,6 @@ export function ParentAccount() {
               <span className="pa-row__hint">{intl.formatMessage({ id: "parent.parentAccount.copy021" })}</span>
             </button>
           </div>
-          <div className="pa-note hy-explain">
-            {intl.formatMessage({ id: "parent.parentAccount.copy022" })}
-          </div>
         </div>
 
         <SocialLinks />

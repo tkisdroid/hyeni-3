@@ -6,7 +6,7 @@
   isolation: isolate;
   min-height: 100%;
   background: var(--bg-page);
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 .ais-wrap::before {
   content: "";

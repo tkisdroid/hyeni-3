@@ -2,7 +2,7 @@ import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useIntl, type IntlShape } from "react-intl";
-import { AlertTriangle, ChevronLeft, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChevronLeft, Lock, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { Loading } from "@/components/ui/Loading";
 import { PremiumUpsell } from "@/components/PremiumUpsell";
@@ -171,13 +171,8 @@ export function WeeklyFamilyReport() {
                     id: allowed ? "reports.weekly.heroAllowed" : "reports.weekly.heroLocked",
                   })}
                 </h1>
-                <p>
-                  {intl.formatMessage({
-                    id: allowed
-                      ? "reports.weekly.heroAllowedDescription"
-                      : "reports.weekly.heroLockedDescription",
-                  })}
-                </p>
+                {/* 잠긴 가족은 바로 아래 잠금 카드가 "프리미엄"을 말하므로 머리에서 같은 문장을 반복하지 않는다. */}
+                {allowed && <p>{intl.formatMessage({ id: "reports.weekly.heroAllowedDescription" })}</p>}
               </div>
             </section>
 
@@ -223,12 +218,13 @@ export function WeeklyFamilyReport() {
                     { id: "memos", labelId: "reports.weekly.memos", icon: "ui/chat-heart.webp" },
                     { id: "alerts", labelId: "reports.weekly.alerts", icon: "ui/bell.webp" },
                   ].map(({ id, labelId, icon }) => (
+                    // 네 칸마다 같은 설명 문장을 반복하던 자리 — 잠금 표시 하나로 충분하다(2026-09-26 문구 밀도 정리).
                     <div key={id} className="hy-card wr-preview__item">
                       <span>
                         <img src={asset(icon)} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
                       </span>
                       <b>{intl.formatMessage({ id: labelId })}</b>
-                      <small>{intl.formatMessage({ id: "reports.weekly.previewDescription" })}</small>
+                      <Lock className="wr-preview__lock" size={15} strokeWidth={2.4} aria-hidden="true" />
                     </div>
                   ))}
                 </section>

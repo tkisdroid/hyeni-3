@@ -4,7 +4,7 @@
 .pl-root {
   position: absolute;
   inset: 0;
-  animation: hy-fadein 0.4s ease forwards;
+  animation: hy-fadein 0.4s ease backwards;
 }
 .pl-map {
   position: absolute;
@@ -208,6 +208,22 @@
 }
 
 /* ── 상단 오버레이 ──────────────────────────────────────────────────────── */
+/* 지도가 상태바 밑까지 깔려 시계·배터리가 지도 글자와 겹쳤다(2026-09-26 S25) — 상태바 몫만 흐린 유리로 덮는다. */
+.pl-root::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 19;
+  height: calc(env(safe-area-inset-top, 0px) + 8px);
+  background: color-mix(in srgb, var(--bg-app) 86%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent);
+  mask-image: linear-gradient(180deg, #000 70%, transparent);
+  pointer-events: none;
+}
 .pl-top {
   position: absolute;
   top: calc(env(safe-area-inset-top, 0px) + 12px);
@@ -348,7 +364,7 @@
   border-radius: var(--radius-24);
   padding: 16px 16px 12px;
   box-shadow: var(--shadow-modal);
-  animation: hy-sheetup 0.4s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  animation: hy-sheetup var(--duration-sheet) var(--easing-emphasized) backwards;
 }
 .pl-sheet__handle {
   width: 38px;
@@ -1381,6 +1397,8 @@
 .pl-chip__avatar[data-photo="true"] img,
 .pl-sheet__avatar[data-photo="true"] img {
   object-fit: cover;
+  /* 프레임이 둥글면 사진도 같은 모서리로 잘린다(형제 배지를 자르지 않도록 overflow 대신 상속). */
+  border-radius: inherit;
 }
 
 .pl-sheet__avatar {
@@ -1442,4 +1460,15 @@
   .pl-visited__skeleton span {
     animation: none;
   }
+}
+
+/* 지도 위 다자녀 전환 알약: 지도 타일 위에서도 이름이 읽히도록 조작 면을 충분히 채운다. */
+.pl-chips:has(.pl-kidswitch) {
+  flex-wrap: nowrap;
+}
+.pl-kidswitch {
+  margin: -4px;
+}
+.pl-kidswitch .hy-kidswitch__item {
+  background: var(--ph-chrome-fill, var(--bg-card));
 }

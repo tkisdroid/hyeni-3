@@ -231,6 +231,42 @@ export async function verifyPhoneSignupCode(input: {
 }
 
 /** 로그아웃 — 서버 활성 설치 잠금 해제 성공 뒤 메모리 세션을 제거한다. */
+/** 아이디 확인·비밀번호 재설정 1단계 — 등록된 번호로 인증번호를 보낸다. */
+function phoneForPasswordReset(phone: string): string {
+  try {
+    return normalizePhoneForAuth(phone);
+  } catch {
+    throw new ApiError("invalid_phone", 400);
+  }
+}
+
+export async function requestPasswordResetCode(phone: string): Promise<void> {
+  const phoneAuth = phoneForPasswordReset(phone);
+  const sent = await apiPost<{ ok?: boolean }>("/auth/password-reset/request-otp", { phone: phoneAuth });
+  if (sent?.ok !== true) throw new ApiError("password_reset_response_invalid", 502);
+}
+
+/** 2단계 — 인증번호가 맞으면 비밀번호를 바꾸고, 그 번호의 아이디를 돌려준다(로그인은 호출한 화면이 이어서 한다). */
+export async function confirmPasswordReset(input: {
+  phone: string;
+  token: string;
+  password: string;
+}): Promise<{ loginId: string }> {
+  const phoneAuth = phoneForPasswordReset(input.phone);
+  const token = String(input.token || "").replace(/\D/g, "");
+  if (!/^\d{6}$/.test(token)) throw new ApiError("invalid_token_format", 400);
+  if (String(input.password ?? "").length < 6) throw new ApiError("weak_password", 400);
+  const data = await apiPost<{ ok?: boolean; loginId?: string }>("/auth/password-reset/verify", {
+    phone: phoneAuth,
+    token,
+    password: input.password,
+  });
+  if (data?.ok !== true || typeof data.loginId !== "string" || !data.loginId) {
+    throw new ApiError("password_reset_response_invalid", 502);
+  }
+  return { loginId: data.loginId };
+}
+
 export async function logout(): Promise<void> {
   const device = await getAuthDeviceDescriptor().catch(() => null);
   await apiPost("/auth/logout", device ?? {});

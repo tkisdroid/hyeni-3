@@ -141,8 +141,14 @@ test("Study 완료와 오류 상태는 스크린리더가 상태 변화를 알 �
   assert.match(player, /role="alert"/);
 });
 
-test("부모 Study 뒤로 버튼은 긴 제목 옆에서도 48px 터치 폭을 유지한다", async () => {
-  const css = await readFile(new URL("src/features/study/parent-study.css", ROOT), "utf8");
-  assert.match(css, /\.study-back-button\s*\{[^}]*flex:\s*0\s+0\s+48px/s);
-  assert.match(css, /\.study-back-button\s*\{[^}]*width:\s*48px[^}]*height:\s*48px/s);
+// 2026-09-26: 학습 화면도 앱 공용 원형 뒤로가기(hy-press + `-back`)를 쓴다. 공용 규칙이 44px 고정 폭과
+// flex: none 을 주므로 긴 제목 옆에서도 줄어들지 않는다(화면별 48px 네모 버튼은 다른 화면과 달랐다).
+test("부모 Study 뒤로 버튼은 공용 원형 뒤로가기로 긴 제목 옆에서도 줄지 않는다", async () => {
+  const page = await readFile(new URL("src/screens/study/ParentStudy.tsx", ROOT), "utf8");
+  const shared = await readFile(new URL("src/styles/components.css", ROOT), "utf8");
+  assert.match(page, /className="study-back-button hy-press"/);
+  const backRule = shared.match(/\.hy-app button\.hy-press\[class\*="-back"\],\s*\.hy-app button\.hy-backbtn \{([\s\S]*?)\n\}/)?.[1] ?? "";
+  assert.match(backRule, /width: var\(--control-min-size\) !important/);
+  assert.match(backRule, /min-width: var\(--control-min-size\) !important/);
+  assert.match(backRule, /flex: none/);
 });

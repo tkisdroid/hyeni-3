@@ -282,3 +282,28 @@ test("부모 홈 안전 지표는 정상/확인 중을 컴팩트 칩으로, 상�
   const unconditionalDetailBox = /<div\s+className="ph-safety__notification"\s+data-state=\{deviceStatus/.test(home);
   assert.equal(unconditionalDetailBox, false, "detail 박스가 상태 무관하게 항상 렌더되면 안 됨");
 });
+
+// 2026-09-26 실기기: 권한·서비스는 정상인데 아이 폰의 OS 위치(GPS) 스위치가 꺼져 좌표가 오지 않았다.
+// 이 상태를 "위치 정상"으로 보이지 않고, 가장 바로 고칠 수 있는 원인으로 먼저 알린다.
+test("아이 폰의 OS 위치가 꺼져 있으면 권한이 있어도 위치 주의로 표시한다", () => {
+  const view = deviceLocationHealthView({
+    updatedAt: RECENT_REPORT,
+    backgroundLocationGranted: true,
+    locationServiceRunning: true,
+    backgroundRestricted: false,
+    networkConnected: true,
+    systemLocationEnabled: false,
+  }, NOW);
+  assert.equal(view.state, "attention");
+  assert.match(view.label, /위치가 꺼져 있어요/);
+  assert.match(view.detail, /설정에서 위치를 켜야/);
+
+  // 옛 버전 기기처럼 값이 없으면 기존 판정을 유지한다(꺼졌다고 단정하지 않는다).
+  assert.equal(deviceLocationHealthView({
+    updatedAt: RECENT_REPORT,
+    backgroundLocationGranted: true,
+    locationServiceRunning: true,
+    backgroundRestricted: false,
+    networkConnected: true,
+  }, NOW).state, "ready");
+});

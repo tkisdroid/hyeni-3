@@ -7,7 +7,7 @@ import { resolveParentHomeDeviceFinder } from "../src/transform/parentHomeShortc
 test("부모 홈 바로가기는 구독 대신 아이 기기 찾기를 4×2 그리드에 둔다", () => {
   assert.deepEqual(shortcuts.map((shortcut) => shortcut.label), [
     "AI 일정",
-    "위치추적",
+    "이동 기록",
     "친구놀이",
     "장소관리",
     "주변 소리 듣기",

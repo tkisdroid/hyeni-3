@@ -10,7 +10,7 @@
     color-mix(in srgb, var(--hy-accent-soft) 46%, var(--bg-app)) 58%,
     var(--bg-app) 100%
   );
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 헤더(sticky) ─────────────────────────────────────────────────────────── */
@@ -157,7 +157,6 @@
 }
 .afs-name-field::placeholder {
   color: var(--fg-placeholder);
-  font-weight: 700;
 }
 
 /* ── 성격 칩 ───────────────────────────────────────────────────────────────── */

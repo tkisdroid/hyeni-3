@@ -76,6 +76,9 @@
 
 .pl-root .pl-sheet__zone {
   margin-top: 4px;
+  /* 좁은 폭에서는 "방금 업데이트 · 오차" 다음 줄로 무료 안내가 통째로 내려간다(단어 중간 줄바꿈 금지 — 2026-09-26 S25). */
+  flex-wrap: wrap;
+  row-gap: 4px;
   gap: 8px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -409,6 +412,7 @@
 .pl-root .pl-delay-badge {
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
   gap: 8px;
   padding: 0;
   border-radius: 0;

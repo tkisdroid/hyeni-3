@@ -470,7 +470,9 @@ export function NotificationSettings() {
 
   const updateQuietTime = (key: "startMinute" | "endMinute", value: string) => {
     const minute = timeInputToMinuteOfDay(value);
-    setQuietDraft((current) => ({ ...current, [key]: minute ?? -1 }));
+    // 시스템 선택기의 '삭제'로 비운 값은 무시한다 — 빈 칸이 되면 저장 버튼만 말없이 꺼졌다.
+    if (minute == null) return;
+    setQuietDraft((current) => ({ ...current, [key]: minute }));
     setQuietSaveMessage("");
   };
 
@@ -775,10 +777,8 @@ export function NotificationSettings() {
 
             {/* 위치·안전 — 위치 소식 토글은 부모 알림에만 적용된다.
                 아이에게는 도착·출발을 보내지 않으므로(2026-08-03) 토글을 숨기고 사실만 알린다. */}
-            {/* i18n 안전 문구·문장별 조판 정본:
-                className="hy-explain__lines"
-                className="hy-explain__line">위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요.</span>
-                className="hy-explain__line">위 토글은 부모가 받는 일반 위치 소식에만 적용돼요.</span> */}
+            {/* i18n 안전 문구 정본: 위험·SOS·미도착 알림은 토글과 관계없이 항상 전달돼요(한 줄 — 2026-09-26 문구 밀도 정리).
+                className="hy-explain__lines" className="hy-explain__line" */}
             <div className="nst-group">
               <div className="nst-group__label">
                 {intl.formatMessage({ id: "notifications.settings.group.locationSafety" })}
@@ -807,9 +807,6 @@ export function NotificationSettings() {
                     <span className="hy-explain__lines">
                       <span className="hy-explain__line">
                         {intl.formatMessage({ id: "notifications.settings.parentSafety.always" })}
-                      </span>
-                      <span className="hy-explain__line">
-                        {intl.formatMessage({ id: "notifications.settings.parentSafety.toggleScope" })}
                       </span>
                     </span>
                   </div>
@@ -856,7 +853,7 @@ export function NotificationSettings() {
                     <div className="nst-quiet__copy hy-explain">
                       <p>{intl.formatMessage({ id: "notifications.settings.quiet.suppressed" })}</p>
                       <p>{intl.formatMessage({ id: "notifications.settings.quiet.safetyExceptions" })}</p>
-                      <p>{intl.formatMessage({ id: "notifications.settings.deviceSoundNote" })}</p>
+                      {/* 소리·진동이 기기 설정이라는 안내(deviceSoundNote)는 화면 맨 아래 "기기 알림" 줄이 말한다 — 두 번 쓰지 않는다. */}
                     </div>
 
                     <div
@@ -922,7 +919,6 @@ export function NotificationSettings() {
                       >
                         <span>
                           <b>{intl.formatMessage({ id: "notifications.settings.quiet.daily" })}</b>
-                          <small>{intl.formatMessage({ id: "notifications.settings.quiet.halfOpenRange" })}</small>
                         </span>
                         <span className="nst-switch" data-on={quietDraft.enabled} aria-hidden="true">
                           <span className="nst-switch__knob" />

@@ -2,7 +2,7 @@
   min-height: 100%;
   background: radial-gradient(120% 42% at 50% 0%, var(--mint-soft) 0%, transparent 55%),
     linear-gradient(180deg, var(--bg-app), var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 .dr-header {

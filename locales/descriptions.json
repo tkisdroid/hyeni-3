@@ -3703,7 +3703,7 @@
     "audience": "child",
     "qualityTier": "B",
     "variables": {},
-    "description": "아이 위치 즉시 새로고침 버튼"
+    "description": "아이가 지금 위치를 보호자에게 바로 보내는 버튼(실제로는 새 위치를 잡아 전송)"
   },
   "child.location.sending.description": {
     "namespace": "child",
@@ -4448,6 +4448,20 @@
     "qualityTier": "A",
     "variables": {},
     "description": "SOS 접수 뒤 아이 홈으로 돌아가기 버튼"
+  },
+  "child.sos.guardianAcked": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "아이 SOS 전송 뒤 보호자가 안전 확인을 누른 것을 알려 주는 줄"
+  },
+  "child.sos.guardianPending": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "아이 SOS 전송 뒤 보호자 확인을 기다리는 동안 보여 주는 줄"
   },
   "child.sos.hintHold": {
     "namespace": "child",
@@ -5542,7 +5556,7 @@
       "arrivedCount": "number",
       "leftCount": "number"
     },
-    "description": "오늘까지 도착과 출발 알림 수"
+    "description": "최근 도착과 출발 알림 수"
   },
   "notifications.arrival.summary.pending": {
     "namespace": "notifications",
@@ -6817,6 +6831,13 @@
     "variables": {},
     "description": "위험구역 없음"
   },
+  "notifications.placeManager.dangerZonesEmptyHint": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "위험구역이 없을 때 조심할 곳을 등록하면 접근 알림을 받는다는 안내"
+  },
   "notifications.placeManager.dangerZonesError": {
     "namespace": "notifications",
     "audience": "parent",
@@ -6839,6 +6860,21 @@
       "name": "string"
     },
     "description": "번역하지 않는 장소 또는 위험구역 이름을 넣은 삭제 라벨"
+  },
+  "notifications.placeManager.deleteConfirm": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "장소·위험구역 삭제 버튼을 한 번 누른 뒤 보이는 짧은 확인 문구(두 번째 탭에서 삭제)"
+  },
+  "notifications.placeManager.deleteConfirmAria": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {
+      "name": "string"
+    },
+    "description": "삭제 확인 대기 상태의 접근성 라벨. 번역하지 않는 장소 또는 위험구역 이름을 넣는다"
   },
   "notifications.placeManager.deleteFailed": {
     "namespace": "notifications",
@@ -6876,6 +6912,13 @@
     "qualityTier": "B",
     "variables": {},
     "description": "저장 장소 없음"
+  },
+  "notifications.placeManager.savedPlacesEmptyHint": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "저장한 장소가 없을 때 등록하면 도착·출발 알림을 받는다는 안내"
   },
   "notifications.placeManager.savedPlacesError": {
     "namespace": "notifications",
@@ -8121,8 +8164,10 @@
     "namespace": "notifications",
     "audience": "parent",
     "qualityTier": "A",
-    "variables": {},
-    "description": "SOS 수신 화면 문구: callOrRing"
+    "variables": {
+      "mode": "string"
+    },
+    "description": "SOS 수신 화면의 연락 버튼 — 아이 전화번호가 있으면 전화(call), 없으면 아이 폰 벨 울리기(ring)"
   },
   "notifications.sosReceive.calling": {
     "namespace": "notifications",
@@ -8389,6 +8434,13 @@
     "qualityTier": "B",
     "variables": {},
     "description": "onboarding.field.birthdate에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.birthdatePlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "가입 폼 생년월일 칸이 비어 있을 때 보이는 안내"
   },
   "onboarding.field.guardianType": {
     "namespace": "onboarding",
@@ -8752,7 +8804,7 @@
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "onboarding.permissions.planned에 표시하는 사용자 안내 문구"
+    "description": "권한 안내 행의 상태 칩 — 이 다음에 허용을 요청하는 권한(\"예정\"은 무엇이 예정인지 알 수 없었다)"
   },
   "onboarding.permissions.startChild": {
     "namespace": "onboarding",
@@ -12880,6 +12932,13 @@
     "variables": {},
     "description": "아이 생년월일 필드 라벨"
   },
+  "parent.pairingWizard.birthdatePlaceholder": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 추가 마법사 생년월일 칸이 비어 있을 때 보이는 안내"
+  },
   "parent.pairingWizard.birthdateNote": {
     "namespace": "parent",
     "audience": "parent",
@@ -14437,7 +14496,7 @@
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "parent.parentLocation.copy048에 표시하는 사용자 안내 문구"
+    "description": "부모 위치 시트 상태 칩 — 아직 서버에 받은 아이 위치가 없을 때(기기가 오프라인이라고 단정하지 않는다)"
   },
   "parent.parentLocation.copy049": {
     "namespace": "parent",
@@ -14472,14 +14531,14 @@
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "parent.parentLocation.copy053에 표시하는 사용자 안내 문구"
+    "description": "부모 위치 화면에서 아이의 다음 일정까지 도보 경로 화면을 여는 버튼의 접근성 이름"
   },
   "parent.parentLocation.copy054": {
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "parent.parentLocation.copy054에 표시하는 사용자 안내 문구"
+    "description": "부모 위치 화면 동작 줄의 짧은 버튼 이름 — 아이가 다음 일정 장소까지 가는 길(부모 길안내가 아님)"
   },
   "parent.parentLocation.copy055": {
     "namespace": "parent",
@@ -15083,6 +15142,13 @@
     "qualityTier": "B",
     "variables": {},
     "description": "아이 프로필 편집 다국어 문구: birthdate.aria"
+  },
+  "parent.profileEdit.birthdate.placeholder": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 프로필 편집 생년월일 칸이 비어 있을 때 보이는 안내"
   },
   "parent.profileEdit.birthdate.hint": {
     "namespace": "parent",
@@ -21218,6 +21284,13 @@
     "variables": {},
     "description": "역할별 홈으로 돌아가는 버튼"
   },
+  "shared.routeView.addScheduleButton": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모가 길 안내 화면에서 남은 일정이 없을 때 새 일정을 추가하러 가는 버튼"
+  },
   "shared.routeView.kakaoDirections": {
     "namespace": "shared",
     "audience": "parent-child",
@@ -26994,5 +27067,200 @@
     "qualityTier": "B",
     "variables": {},
     "description": "공동 보호자 초대 화면 본문 제목(상단 화면 제목과 다른 안내)"
+  },
+  "shared.childSwitcher.fallbackName": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "다자녀 전환 알약에서 이름이 비어 있는 아이의 대체 이름"
+  },
+  "shared.childSwitcher.unread": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 전환 알약의 안 읽은 메시지 점을 화면 낭독기에 알리는 말"
+  },
+  "shared.childSwitcher.label": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "부모 홈·위치·대화 상단의 다자녀 전환 알약 묶음 접근성 이름"
+  },
+  "parent.device.location.systemOffLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "아이 기기의 OS 위치(GPS) 스위치가 꺼져 있다는 부모 화면 상태 제목"
+  },
+  "parent.device.location.systemOffDetail": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "아이 기기의 OS 위치(GPS)가 꺼져 위치가 오지 않는 이유와 해결 방법(아이 폰 설정에서 켜기) 안내"
+  },
+  "child.location.systemOff.title": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "description": "아이 폰의 OS 위치(GPS) 스위치가 꺼져 있다는 아이 모드 제목(반말)"
+  },
+  "child.location.systemOff.description": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "description": "폰 설정에서 위치를 켜야 부모가 위치를 볼 수 있다는 아이 모드 설명(반말)"
+  },
+  "child.location.systemOff.cta": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "description": "OS 위치 설정 화면을 여는 아이 모드 버튼"
+  },
+  "onboarding.passwordReset.entry": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "로그인 버튼 아래 아이디·비밀번호 찾기 링크"
+  },
+  "onboarding.passwordReset.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "휴대폰 인증 비밀번호 재설정 시트 제목"
+  },
+  "onboarding.passwordReset.close": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "재설정 시트 닫기 버튼 접근성 이름"
+  },
+  "onboarding.passwordReset.phoneLead": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "1단계 설명(가입 휴대폰으로 인증번호 발송)"
+  },
+  "onboarding.passwordReset.codeLead": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {"phone": "string"},
+    "description": "2단계 설명. phone 은 형식화된 휴대폰 번호"
+  },
+  "onboarding.passwordReset.phoneLabel": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "휴대폰 번호 입력 라벨"
+  },
+  "onboarding.passwordReset.codeLabel": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "인증번호 입력 라벨"
+  },
+  "onboarding.passwordReset.newPasswordLabel": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "새 비밀번호 입력 라벨"
+  },
+  "onboarding.passwordReset.newPasswordPlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "새 비밀번호 입력 안내(최소 길이)"
+  },
+  "onboarding.passwordReset.confirmLabel": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "새 비밀번호 확인 입력 라벨"
+  },
+  "onboarding.passwordReset.confirmPlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "새 비밀번호 확인 입력 안내"
+  },
+  "onboarding.passwordReset.tooShort": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "새 비밀번호 길이 부족 오류"
+  },
+  "onboarding.passwordReset.mismatch": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "새 비밀번호 두 입력 불일치 오류"
+  },
+  "onboarding.passwordReset.sendCode": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "인증번호 발송 버튼"
+  },
+  "onboarding.passwordReset.submit": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "비밀번호 재설정 후 로그인 버튼"
+  },
+  "onboarding.passwordReset.pending": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "재설정 요청 진행 중 버튼 문구"
+  },
+  "onboarding.passwordReset.resend": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "인증번호 재발송 링크"
+  },
+  "onboarding.passwordReset.socialOnly": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "소셜 전용 계정이라 비밀번호 재설정 불가 안내"
+  },
+  "onboarding.passwordReset.done": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {"loginId": "string"},
+    "description": "재설정 성공 토스트. loginId 는 번역하지 않는 사용자 아이디"
+  },
+  "core.error.api.phoneNotRegistered.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "비밀번호 재설정에서 가입되지 않은 휴대폰 번호 오류"
+  },
+  "child.location.toast.notFound": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "description": "아이가 위치 보내기를 눌렀지만 측위·업로드가 확인되지 않았을 때(실내 등) 다시 시도 안내(반말)"
+  },
+  "parent.eventForm.placePlaceholder": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "일정 폼 장소 입력칸 안내(장소 이름·주소 검색). 제목 안내와 다르게 둔다"
+  },
+  "notifications.sosReceive.childAck": {
+    "namespace": "notifications",
+    "audience": "child",
+    "qualityTier": "A",
+    "description": "부모가 SOS 안전 확인을 누르면 아이 대화방에 자동으로 남기는 확인 메시지(부모가 아이에게 말하는 반말)"
+  },
+  "notifications.sosReceive.childAckFailed": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "A",
+    "description": "SOS 확인 메시지를 아이에게 보내지 못했을 때 부모 안내"
   }
 }

@@ -101,6 +101,7 @@ const messages = {
   "core.error.api.passwordAccountRequired.formal": "只有设置了密码的账号才能更改。",
   "core.error.api.phoneExists.child": "这个手机号已经注册过了，直接登录吧。",
   "core.error.api.phoneExists.formal": "这个手机号码已经注册，请直接登录。",
+  "core.error.api.phoneNotRegistered.formal": "该手机号未注册。请检查号码或注册新账号。",
   "core.error.api.primaryParentRequired.formal": "只有主要监护人可以执行此操作。请在主要监护人的设备上发起请求。",
   "core.error.api.rateLimited.child": "尝试次数太多了，等一下再试。",
   "core.error.api.rateLimited.formal": "请求太多。请稍等片刻，然后重试。",

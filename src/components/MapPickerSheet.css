@@ -26,11 +26,7 @@
   flex-direction: column;
   gap: 12px;
   box-shadow: var(--shadow-modal);
-  animation: mps-up 0.24s ease;
-}
-@keyframes mps-up {
-  from { transform: translateY(28px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  animation: hy-sheetup var(--duration-sheet) var(--easing-emphasized) backwards;
 }
 .mps-head {
   display: flex;

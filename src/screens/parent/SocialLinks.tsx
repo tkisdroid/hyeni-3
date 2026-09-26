@@ -271,6 +271,9 @@ export function SocialLinks() {
         })}
       </div>
 
+      {/* 해제 안내는 연결된 소셜 계정이 있을 때만 — 하나도 없는데 "이 소셜 계정이 유일한 로그인 수단"이라고
+          말하던 모순을 없앤다(2026-09-26). 웹은 앱에서 연결하라는 안내를 그대로 둔다. */}
+      {(!native || links.length > 0) && (
       <div className="pa-note hy-explain">
         {native
           ? canUnlink
@@ -292,6 +295,7 @@ export function SocialLinks() {
             </span>
           )}
       </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useIntl } from "react-intl";
 import { ChevronLeft, Phone, Volume2, MapPin, Check, ShieldCheck, Siren, LifeBuoy } from "lucide-react";
@@ -9,6 +9,9 @@ import { FamilyMap } from "@/maps/FamilyMap";
 import { useMyFamily } from "@/queries/useFamily";
 import { useReceivedSos } from "@/queries/useSos";
 import { useMarkAlertRead } from "@/queries/useNotifications";
+import { useSendMemo } from "@/queries/useMemo";
+import { useRecentDateKeys } from "@/app/useRecentDateKeys";
+import { latestDateKeyOrNull } from "@/transform/dateKey";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { parseServerTimestamp } from "@/transform/locationView";
@@ -48,6 +51,8 @@ function formatClock(d: Date | null, locale: SupportedLocale, familyTimeZone: st
  */
 export function SosReceive() {
   const familyTimeZone = useFamilyTimeZone();
+  const sosMemoDateKey = latestDateKeyOrNull(useRecentDateKeys(1, familyTimeZone));
+  const sendSosAck = useSendMemo();
   const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
@@ -65,6 +70,7 @@ export function SosReceive() {
     data: locations,
     isLoading: locationsLoading,
     isError: locationsLoadError,
+    refetch: refetchLocations,
   } = useChildLocations();
   const { data: places } = useSavedPlaces();
   const { tier } = useEntitlement();
@@ -81,6 +87,17 @@ export function SosReceive() {
   // 서버 pg 타임스탬프(공백구분 + bare +00)는 iOS Safari 에서 raw new Date 시 Invalid Date →
   // parseServerTimestamp 로 정규화한 Date 를 시각 표시에 넘긴다.
   const latestAt = parseServerTimestamp(latest?.created_at);
+
+  // 긴급 알림이 오면 위치를 바로 다시 받는다 — 30초 폴링을 기다리면 첫 화면이 몇 분 전 위치였다
+  // (2026-09-26 실기기: 서버는 SOS 중 실시간 위치를 주는데 앱 캐시가 "8분 전"을 보였다).
+  // 아이의 위치 업로드가 알림과 거의 동시에 도착하므로 4초 뒤 한 번 더 받는다.
+  const latestAlertId = latest?.id ?? null;
+  useEffect(() => {
+    if (!latestAlertId) return;
+    void refetchLocations();
+    const timer = window.setTimeout(() => void refetchLocations(), 4_000);
+    return () => window.clearTimeout(timer);
+  }, [latestAlertId, refetchLocations]);
 
   const isMissedArrival = latest?.alert_type === "not_arrived" || latest?.alert_type === "missed_arrival";
 
@@ -131,7 +148,17 @@ export function SosReceive() {
       return;
     }
     markRead.mutate(latest.id, {
-      onSuccess: () => show(intl.formatMessage({ id: "notifications.sosReceive.toast" }, { state: "confirmed" }), "🛡️"),
+      onSuccess: () => {
+        show(intl.formatMessage({ id: "notifications.sosReceive.toast" }, { state: "confirmed" }), "🛡️");
+        // 아이도 "보호자가 봤다"를 알아야 한다(2026-09-26 실기기: 부모가 안전 확인해도 아이 화면은
+        // "보호자에게 전송 중"에 머물렀다). 그 아이의 대화방에 확인 메시지를 남기면 아이 폰에 알림이 간다.
+        if (child?.id && sosMemoDateKey) {
+          sendSosAck.mutate(
+            { content: intl.formatMessage({ id: "notifications.sosReceive.childAck" }), dateKey: sosMemoDateKey, childId: child.id, origin: "sos_ack" },
+            { onError: () => show(intl.formatMessage({ id: "notifications.sosReceive.childAckFailed" }), "⚠️") },
+          );
+        }
+      },
       // 안전 화면 — 실패를 조용히 넘기면 "기록됐다"고 오인한다.
       onError: () => show(intl.formatMessage({ id: "notifications.sosReceive.toast" }, { state: "confirmFailed" }), "⚠️"),
     });
@@ -292,7 +319,8 @@ export function SosReceive() {
                 <span className="sr-act-badge">
                   <Phone size={17} strokeWidth={2.4} color="var(--danger-500)" />
                 </span>
-                {intl.formatMessage({ id: "notifications.sosReceive.callOrRing" })}
+                {/* 누르면 실제로 하는 일을 말한다 — 번호가 있으면 전화, 없으면 벨 울리기 화면. */}
+                {intl.formatMessage({ id: "notifications.sosReceive.callOrRing" }, { mode: child?.phone ? "call" : "ring" })}
               </button>
             </div>
 

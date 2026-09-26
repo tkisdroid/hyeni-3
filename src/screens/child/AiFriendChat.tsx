@@ -812,7 +812,8 @@ export function AiFriendChat() {
           </div>
         ) : (
           <>
-            {messagesData.length === 0 && (
+            {/* 서버 기록이 비어도 방금 보낸 말이 있으면 '아직 나눈 이야기가 없어'는 틀린 말이다(2026-09-26 S20). */}
+            {messagesData.length === 0 && !shown.some((m) => m.role === "me") && (
               <div className="afc-query-state">{intl.formatMessage({ id: "child.aiChat.empty" })}</div>
             )}
             <p className="afc-safety-hint">

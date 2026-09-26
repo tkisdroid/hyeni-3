@@ -149,5 +149,6 @@
   "core.aiBuddy.nudge.time.minute": "{hour}:{minute}",
   "core.aiBuddy.nudge.nextEvent.line": "{title} at {when}!",
   "core.aiBuddy.nudge.nextEvent.lineSoon": "You’ve got {title} later!",
-  "core.error.api.primaryParentRequired.formal": "Only the primary guardian can do this. Please make the request from the primary guardian's device."
+  "core.error.api.primaryParentRequired.formal": "Only the primary guardian can do this. Please make the request from the primary guardian's device.",
+  "core.error.api.phoneNotRegistered.formal": "This phone number isn't registered. Check the number or sign up."
 }

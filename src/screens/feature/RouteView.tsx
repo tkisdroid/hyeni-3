@@ -2,7 +2,7 @@ import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useIntl, type IntlShape } from "react-intl";
-import { ChevronLeft, Home, Map, MapPin, Navigation, RotateCw } from "lucide-react";
+import { ChevronLeft, Home, Map, MapPin, Navigation, Plus, RotateCw } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { childAvatarPath } from "@/lib/avatar";
 import { FamilyMap, type MapPlace } from "@/maps/FamilyMap";
@@ -74,6 +74,8 @@ function durationLabel(
     { duration: formatDurationUnit(min, "minute", locale) },
   );
 }
+
+const EVENT_FORM_PATH = "/event-form";
 
 export function RouteView() {
   const familyTimeZone = useFamilyTimeZone();
@@ -330,6 +332,9 @@ export function RouteView() {
     routeState === "no-child"
       ? intl.formatMessage({ id: "shared.routeView.emptyNoChildTitle" }, { audience })
       : intl.formatMessage({ id: "shared.routeView.emptyNoDestinationTitle" }, { audience });
+  // 부모에게 "일정을 추가하면 길을 안내해 드려요"라고 말했으면 그 일을 바로 할 수 있게 한다.
+  const parentCanAddSchedule = !isChild && routeState === "no-dest" && !nextEvent && Boolean(childMember);
+  const openScheduleForm = () => navigate(EVENT_FORM_PATH, { state: { childId: childMember?.id } });
   const emptyDescription =
     routeState === "no-child"
       ? intl.formatMessage({ id: "shared.routeView.emptyNoChildDescription" }, { audience })
@@ -487,13 +492,25 @@ export function RouteView() {
                   setDeviceOriginRetryNonce((value) => value + 1);
                   return;
                 }
+                if (parentCanAddSchedule) {
+                  openScheduleForm();
+                  return;
+                }
                 navigate(homePath);
               }}
             >
               {originUnavailable
                 ? <RotateCw size={17} strokeWidth={2.4} color="#fff" />
-                : <Home size={17} strokeWidth={2.4} color="#fff" />}
-              {intl.formatMessage({ id: originUnavailable ? "core.action.retry" : "shared.routeView.homeButton" })}
+                : parentCanAddSchedule
+                  ? <Plus size={17} strokeWidth={2.4} color="#fff" />
+                  : <Home size={17} strokeWidth={2.4} color="#fff" />}
+              {intl.formatMessage({
+                id: originUnavailable
+                  ? "core.action.retry"
+                  : parentCanAddSchedule
+                    ? "shared.routeView.addScheduleButton"
+                    : "shared.routeView.homeButton",
+              })}
             </button>
           </div>
         ) : (

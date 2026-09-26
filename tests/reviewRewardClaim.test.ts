@@ -34,8 +34,10 @@ test("부모 설정은 신규 지급 CTA를 제거하고 종료·기존 혜택 �
     koParent["parent.parentSettings.copy001"],
     "기존에 받은 스토어 방문 혜택은 그대로 유지돼요",
   );
-  assert.match(settings, /parent\.parentSettings\.copy002/);
+  // 2026-09-26: 받은 적 없는 무료 가족에게는 "신규 지급 종료" 행을 보이지 않는다(누를 것 없는 안내 제거).
+  assert.doesNotMatch(settings, /parent\.parentSettings\.copy002/);
   assert.match(settings, /parent\.parentSettings\.copy001/);
+  assert.match(settings, /ready && tier === TIERS\.REVIEWED/);
   assert.doesNotMatch(settings, /스토어 방문 혜택 받기/);
   assert.doesNotMatch(settings, /useClaimReviewReward|runReviewRewardClaimFlow|openGooglePlayReviewListing/);
 });

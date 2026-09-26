@@ -77,3 +77,38 @@ test("SOS 부모 알림은 같은 멱등키로 일시 실패를 한 번 재시�
   assert.match(endpoint, /SOS_ALERT_ATTEMPT_TIMEOUT_MS = 8_000/);
   assert.match(endpoint, /apiPost\("\/api\/parent-alerts", body, \{ signal: controller\.signal \}\)/);
 });
+
+test("부모 알림함에 남는 SOS 원문은 누가 무엇을 요청했는지 존댓말로 말한다", () => {
+  // 2026-09-26 실기기: 한국어 알림함은 서버 번역(notificationCopy) 대신 원문을 보여 준다.
+  // "도와줘요!"·"아이야님이 SOS를 보냈어요" 는 부모용 존댓말·번역 카탈로그와 어긋났다.
+  const sos = readSource("src/lib/api/endpoints/sos.ts");
+  const catalog = readSource("shared/generated/notificationCatalog.ts");
+  assert.doesNotMatch(sos, /도와줘요|님이 SOS/);
+  assert.match(sos, /title: `🆘 \$\{name\} 긴급 도움 요청`/);
+  assert.match(sos, /message: `\$\{subject\} 긴급 도움을 요청했어요\. 위치를 확인하고 연락해 주세요\.`/);
+  assert.match(catalog, /"sos": "\{child\}가 긴급 도움을 요청했어요\. 위치를 확인하고 연락해 주세요\."/);
+  // 받침 있는 이름은 "민준이가" — 도착 알림(worker/lib/arrivalDetect.ts)과 같은 조사 규칙.
+  assert.match(sos, /\(last - 0xac00\) % 28 !== 0 \? `\$\{name\}이가` : `\$\{name\}가`/);
+});
+
+test("SOS 뒤 아이 화면은 보호자 확인을 보여 주고 성별 미지정 보호자에게도 전화할 수 있다", () => {
+  // 2026-09-26 S20: 부모가 안전 확인을 눌러도 아이 화면은 "전송을 시작했어"에 머물렀고,
+  // 성별을 정하지 않은 보호자뿐인 가족은 전화 버튼이 하나도 없었다.
+  const childSos = readSource("src/screens/child/ChildSos.tsx");
+  const sosReceive = readSource("src/screens/feature/SosReceive.tsx");
+  assert.match(sosReceive, /origin: "sos_ack"/);
+  assert.match(childSos, /reply\.origin !== "sos_ack" \|\| reply\.user_role !== "parent"/);
+  assert.match(childSos, /useMemoThread\(phase === "sent" && todayKey \? \[todayKey\] : \[\], ownMemberId\)/);
+  assert.match(childSos, /id: guardianAcked \? "child\.sos\.guardianAcked" : "child\.sos\.guardianPending"/);
+  assert.match(childSos, /const callTargets = parents\.map\(/);
+  assert.doesNotMatch(childSos, /callParent\("mom"|callParent\("dad"/);
+  assert.equal(koChild["child.sos.guardianAcked"], "보호자가 확인했어. 곧 연락이 올 거야");
+  assert.doesNotMatch(koChild["child.sos.goHome"], /집으로/);
+});
+
+test("부모 긴급 수신 화면은 SOS가 오면 위치를 바로 다시 받는다", () => {
+  // 2026-09-26 실기기(무료): 서버는 SOS 중 child_locations 최신값을 주지만, 앱이 30초 폴링을 기다려 첫 화면이 "8분 전"이었다.
+  const sosReceive = readSource("src/screens/feature/SosReceive.tsx");
+  assert.match(sosReceive, /refetch: refetchLocations/);
+  assert.match(sosReceive, /if \(!latestAlertId\) return;\s*void refetchLocations\(\);[\s\S]{0,80}setTimeout\(\(\) => void refetchLocations\(\), 4_000\)/);
+});

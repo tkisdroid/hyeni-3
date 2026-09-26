@@ -1,3 +1,4 @@
+import { ChildSwitcher } from "@/components/ChildSwitcher";
 import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
 import { useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router";
@@ -83,6 +84,7 @@ export function ChildDailyDigest() {
       </header>
 
       <div className="cdd-content">
+        <ChildSwitcher className="hy-kidswitch--screen" />
         {!childUserId && familyLoading ? (
           <section className="hy-card cdd-state">
             <Loading label={intl.formatMessage({ id: "reports.digest.loading" })} />

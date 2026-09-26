@@ -3,7 +3,7 @@
 .da-screen {
   min-height: 100%;
   background: linear-gradient(180deg, #fdf1f2, var(--bg-page));
-  animation: hy-fadein 0.35s ease forwards;
+  animation: hy-fadein 0.35s ease backwards;
 }
 
 /* ── 헤더(sticky · 뒤로가기) ─────────────────────────────────────────────── */
