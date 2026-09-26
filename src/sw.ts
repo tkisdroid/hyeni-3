@@ -1,12 +1,14 @@
 /// <reference lib="webworker" />
 import { formatNotificationCopy } from "../shared/notificationCopy.ts";
 
-import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from "workbox-precaching";
+import { addPlugins, cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
 import { CacheFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
+import type { WorkboxPlugin } from "workbox-core/types";
 import { API_BASE } from "./config/env";
 import { resolvePwaNavigationResponse } from "./transform/pwaNavigationFreshness";
+import { isUsableAssetResponse } from "./transform/pwaAssetResponse";
 import {
   authorizeMemoDisplay,
   isNewMemoPush,
@@ -76,6 +78,18 @@ registerRoute(
   }),
 );
 
+// JS·CSS 이름으로 HTML(Pages SPA 폴백)이 저장·응답되지 않게 한다. 이미 잘못 저장된 항목은
+// 없는 것으로 보고 다시 받는다 — precache는 같은 이름을 재설치 때 다시 받지 않기 때문이다.
+function usableAsset(request: Request, response: Response): boolean {
+  return isUsableAssetResponse(new URL(request.url).pathname, response.status, response.headers.get("content-type"));
+}
+const assetResponseGuard: WorkboxPlugin = {
+  cacheWillUpdate: async ({ request, response }) => (usableAsset(request, response) ? response : null),
+  cachedResponseWillBeUsed: async ({ request, cachedResponse }) => (
+    cachedResponse && usableAsset(request, cachedResponse) ? cachedResponse : null
+  ),
+};
+addPlugins([assetResponseGuard]);
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
@@ -83,7 +97,7 @@ cleanupOutdatedCaches();
 // 오프라인 재진입할 수 있고, API 응답·계정 데이터는 이 캐시에 들어가지 않는다.
 const localeChunkCache = new CacheFirst({
     cacheName: "hyeni-locale-chunks-v1",
-    plugins: [new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60, purgeOnQuotaError: true })],
+    plugins: [assetResponseGuard, new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60, purgeOnQuotaError: true })],
 });
 registerRoute(
   ({ url, request }) => url.origin === self.location.origin

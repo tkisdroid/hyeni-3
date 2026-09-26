@@ -50,6 +50,12 @@
   (sessionStorage) 조건에서 한 번 새로고침한다. 호출 지점은 `lazyScreen` 실제 진입과 `RouteErrorScreen`(문구 청크)뿐이고
   `preload()`는 새로고침하지 않는다. 재현은 `curl` 로 없는 `/assets/*.js` 가 200 text/html인지 확인하고, 빌드 두 개를
   번갈아 서빙해 옛 문서에서 화면을 여는 방식으로 한다(같은 URL 차단 재현은 WebKit이 실패 모듈을 재사용해 부정확).
+  ⚠️ iPhone 홈 화면 앱은 새로고침해도 계속 크래시했다(iOS 27 Safari). Service Worker 캐시에 그 HTML이 JS 이름으로
+  저장돼 있었고, Workbox precache는 같은 이름을 재설치 때 다시 받지 않으며 스크립트 런타임 캐시(CacheFirst)도 HTML을
+  200으로 저장했다. 이제 `src/transform/pwaAssetResponse.ts` 검사를 precache(`addPlugins`)와 런타임 캐시가 함께 써
+  JS·CSS 이름에는 해당 MIME만 저장·사용하고, 잘못 저장된 항목은 없는 것으로 보고 다시 받는다. 옛 SW가 남은
+  기기를 위해 새로고침 전 페이지가 Cache Storage의 형식 불일치 JS·CSS 항목만 지운다(오프라인 셸 유지).
+  재현은 실제 SW를 켠 브라우저에서 precache에 HTML을 JS 이름으로 넣고 화면을 여는 방식이다.
   회귀=`tests/staleChunkRecovery.test.mjs`.
 - ★**`adb install --user 0 -r` 직후 번들 신선도(2026-08-20 정본)**: 구버전에서 이 수정 버전으로 처음 올라오는 경우만
   옛 Service Worker가 1회 응답할 수 있다. ①APK 진입 asset 확인 ②앱 1회 재시작 ③CDP에서 활성 진입 asset과

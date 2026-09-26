@@ -5,10 +5,15 @@
  * 옛 이름으로 요청하고, Pages는 없는 경로에 index.html(200, text/html)을 돌려주므로
  * 동적 import가 MIME 오류로 실패한다. 이 경우는 새 index.html을 받도록 한 번만 새로고침한다.
  * 짧은 시간 안에 다시 실패하면(오프라인·실제 결함) 반복하지 않고 기존 오류 화면에 맡긴다.
+ *
+ * 홈 화면 앱은 Service Worker 캐시에 그 HTML이 JS 이름으로 남아 새로고침해도 같은 응답을 받을 수 있다.
+ * 새로고침 전에 JS·CSS 이름의 잘못된 캐시 항목만 지워 네트워크에서 다시 받게 한다(오프라인 셸은 유지).
  */
+import { isUsableAssetResponse } from "@/transform/pwaAssetResponse";
 
 const RELOAD_AT_KEY = "hy-stale-chunk-reload-at";
 export const STALE_CHUNK_RELOAD_COOLDOWN_MS = 60_000;
+const CACHE_PURGE_TIMEOUT_MS = 3_000;
 
 const STALE_CHUNK_PATTERNS: readonly RegExp[] = [
   /Failed to fetch dynamically imported module/iu, // Chromium
@@ -52,6 +57,23 @@ function readLastReloadAt(): number | null | undefined {
   }
 }
 
+/** Cache Storage에서 JS·CSS 이름으로 저장된 HTML 등 형식이 맞지 않는 응답만 지운다. */
+export async function purgeMismatchedAssetCacheEntries(storage: CacheStorage): Promise<number> {
+  let purged = 0;
+  for (const name of await storage.keys()) {
+    const cache = await storage.open(name);
+    for (const request of await cache.keys()) {
+      const pathname = new URL(request.url).pathname;
+      if (!/\.(?:m?js|css)$/u.test(pathname)) continue;
+      const response = await cache.match(request);
+      if (response && !isUsableAssetResponse(pathname, response.status, response.headers.get("content-type"))) {
+        if (await cache.delete(request)) purged += 1;
+      }
+    }
+  }
+  return purged;
+}
+
 /** 옛 청크 실패면 새로고침을 시작하고 true. 그 밖에는 아무것도 하지 않고 false. */
 export function reloadForStaleChunk(error: unknown): boolean {
   if (typeof window === "undefined") return false;
@@ -64,6 +86,17 @@ export function reloadForStaleChunk(error: unknown): boolean {
   } catch {
     return false;
   }
-  window.location.reload();
+  let reloaded = false;
+  const reload = () => {
+    if (reloaded) return;
+    reloaded = true;
+    window.location.reload();
+  };
+  // 캐시 정리가 멈춰도 새로고침은 반드시 한다.
+  window.setTimeout(reload, CACHE_PURGE_TIMEOUT_MS);
+  const storage = "caches" in window ? window.caches : null;
+  void (storage ? purgeMismatchedAssetCacheEntries(storage) : Promise.resolve(0))
+    .catch(() => 0)
+    .finally(reload);
   return true;
 }
