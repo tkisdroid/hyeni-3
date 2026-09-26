@@ -137,7 +137,6 @@ const messages = {
   "notifications.locationStatus.success.lowAccuracyTitle": "已收到最近位置，但精度较低",
   "notifications.locationStatus.success.title": "已更新到最新位置",
   "notifications.locationStatus.toast.deviceMissing": "缺少孩子的设备信息，无法发送位置请求",
-  "notifications.locationStatus.toast.deviceSilent": "{childName}的手机没有响应，请检查电源、数据网络和飞行模式",
   "notifications.locationStatus.toast.locked": "当前方案无法查看位置",
   "notifications.locationStatus.toast.noUpdate": "已发送请求，但还没有收到新位置",
   "notifications.locationStatus.toast.refreshFailed": "位置更新失败",

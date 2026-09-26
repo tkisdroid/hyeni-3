@@ -82,7 +82,7 @@ function createDb() {
     CREATE TABLE families(id TEXT PRIMARY KEY,parent_id TEXT NOT NULL);
     CREATE TABLE family_members(
       id TEXT PRIMARY KEY,family_id TEXT NOT NULL,user_id TEXT,
-      role TEXT NOT NULL,is_active INTEGER NOT NULL DEFAULT 1
+      role TEXT NOT NULL,is_active INTEGER NOT NULL DEFAULT 1,device_health TEXT
     );
     CREATE TABLE child_location_link_state(
       family_id TEXT NOT NULL,child_user_id TEXT NOT NULL,
@@ -180,5 +180,24 @@ test("target이 없는 legacy force ring은 같은 가족의 활성 child가 ACK
   assert.notEqual(sqlite.prepare(
     "SELECT acknowledged_at FROM force_ring_events WHERE id='ring-legacy'",
   ).get().acknowledged_at, null);
+  sqlite.close();
+});
+
+test("record_child_shutdown은 부모가 읽는 device_health 에 꺼진 시각과 배터리를 남긴다", async () => {
+  // 2026-09-26: 아이 폰이 방전으로 꺼져도 부모 화면에서 알 수 없었다.
+  const { sqlite, db } = createDb();
+  sqlite.prepare("UPDATE family_members SET device_health=? WHERE user_id='child-1'").run(JSON.stringify({ batteryLevel: 3, updatedAt: "2026-09-26T09:00:00Z" }));
+  const response = await dispatchRpc(
+    context(db, { p_family_id: "family-1", p_child_user_id: "child-1", p_battery_level: 1 }),
+    "record_child_shutdown",
+    { serviceRole: false, sub: "child-1", familyIds: ["family-1"] },
+  );
+  assert.ok(response.status < 300);
+  const health = JSON.parse(sqlite.prepare("SELECT device_health FROM family_members WHERE user_id='child-1'").get().device_health);
+  assert.equal(health.batteryLevel, 3, "기존 보고는 유지한다");
+  assert.equal(health.shutdownBatteryLevel, 1);
+  assert.ok(Number.isFinite(Date.parse(health.shutdownAt)));
+  const sibling = sqlite.prepare("SELECT device_health FROM family_members WHERE user_id='child-2'").get().device_health;
+  assert.equal(sibling, null, "형제 아이의 상태는 건드리지 않는다");
   sqlite.close();
 });

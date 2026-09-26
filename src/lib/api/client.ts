@@ -30,6 +30,7 @@ import {
 } from "./session";
 import {
   acquirePrivateObjectUrl,
+  peekPrivateObjectUrl,
   type PrivateObjectUrlLease,
 } from "./privateObjectUrlCache";
 import { validatePrivateObjectPath } from "@/transform/childPhotoPath";
@@ -353,6 +354,7 @@ async function fetchPrivateObjectUrl(
 /** 자녀 사진은 Authorization fetch로 받은 뒤 수명 제한 lease의 로컬 blob URL로만 표시한다. */
 export function acquireChildPhotoObjectUrl(
   path: string | null | undefined,
+  options: { retainMs?: number } = {},
 ): PrivateObjectUrlLease | null {
   const normalized = validatePrivateObjectPath(path);
   if (!normalized) return null;
@@ -360,7 +362,14 @@ export function acquireChildPhotoObjectUrl(
   return acquirePrivateObjectUrl(
     `child:${normalized}`,
     (signal) => fetchPrivateObjectUrl(apiPath, signal),
+    options,
   );
+}
+
+/** 가족 사진을 이미 받아 두었으면 그 URL(없으면 null). */
+export function peekChildPhotoObjectUrl(path: string | null | undefined): string | null {
+  const normalized = validatePrivateObjectPath(path);
+  return normalized ? peekPrivateObjectUrl(`child:${normalized}`) : null;
 }
 
 function teacherNoticeRelativeKey(path: string): string {

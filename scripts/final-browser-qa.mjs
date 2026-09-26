@@ -187,6 +187,10 @@ function familyResponse(role, options = {}) {
           backgroundRestricted: false,
           // silentDevice: 아이 폰이 2시간 넘게 연락 없는 상태(2026-09-26 razr 실사례) 재현.
           updatedAt: new Date(Date.now() - (options.silentDevice ? 130 * 60_000 : 0)).toISOString(),
+          // silentCause="batteryDead": 배터리 방전으로 꺼지며 남긴 종료 신호까지 재현.
+          ...(options.silentCause === "batteryDead"
+            ? { batteryLevel: 3, shutdownAt: new Date(Date.now() - 123 * 60_000).toISOString(), shutdownBatteryLevel: 1 }
+            : {}),
         },
       },
       ...(options.daySummaryAudit ? [{ id: "qa-child-member-2", user_id: "qa-child-2", role: "child", name: "둘째 데모", child_order: 2, birthdate: "2018-03-02" }] : []),

@@ -3,6 +3,7 @@ package com.hyeni.calendar;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.BatteryManager;
 import android.content.SharedPreferences;
 import android.util.Log;
 
@@ -76,6 +77,18 @@ public class ShutdownReceiver extends BroadcastReceiver {
         }
     }
 
+    /** 종료 직전 짧은 창에서도 즉시 읽히는 배터리 잔량(0~100). 읽지 못하면 -1. */
+    static int readBatteryPercent(Context context) {
+        try {
+            BatteryManager manager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
+            if (manager == null) return -1;
+            int capacity = manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+            return capacity >= 0 && capacity <= 100 ? capacity : -1;
+        } catch (RuntimeException error) {
+            return -1;
+        }
+    }
+
     private static void deliverShutdownBestEffort(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("serviceEnabled", false);
@@ -109,6 +122,9 @@ public class ShutdownReceiver extends BroadcastReceiver {
             JSONObject marker = new JSONObject();
             marker.put("p_family_id", familyId);
             marker.put("p_child_user_id", userId);
+            // 꺼질 때 배터리 — 부모가 "배터리가 다 돼서 꺼졌어요 / 전원을 껐어요"를 구분한다(2026-09-26).
+            int batteryPercent = readBatteryPercent(context);
+            if (batteryPercent >= 0) marker.put("p_battery_level", batteryPercent);
             Request markerReq = new Request.Builder()
                     .url(supabaseUrl + "/rest/v1/rpc/record_child_shutdown")
                     .header("apikey", supabaseKey)

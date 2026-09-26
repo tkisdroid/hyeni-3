@@ -268,6 +268,16 @@
   `push_idempotency`(요청 발송 여부) → `location_preferences.interval_mode`. 부모 위치 화면은 위치와 기기 보고가 모두 20분 넘게
   멈추면(`transform/childDeviceSilence`, 서버 location_stale 과 같은 기준) "{시각} 이후 폰 연결 없음"과 주의색 점을 보이고, 새로고침이
   시간 안에 끝나지 않으면 "폰이 응답하지 않아요. 전원·데이터·비행기 모드를 확인해 주세요"로 안내한다. 회귀=`tests/childDeviceSilence.test.mjs`.
+- **아이 폰 꺼짐·방전 표시(2026-09-26 TK 제보 "배터리가 닳아서 꺼지면 알 수 없다")**: Android `ShutdownReceiver` 가 종료 직전
+  `record_child_shutdown` 에 `p_battery_level`(BatteryManager 즉시값)을 싣고, 서버는 `child_location_link_state.last_shutdown_at` 과 함께
+  부모가 읽는 `family_members.device_health` 에 `shutdownAt`·`shutdownBatteryLevel` 을 `json_set` 으로 남긴다(폰이 다시 켜져 보고하면
+  device_health 가 통째로 바뀌어 사라진다). 앱 `childDeviceSilence` 는 20분 무응답일 때 원인을 batteryDead(꺼질 때 ≤3%, 또는 이전 앱이라
+  값이 없으면 마지막 보고 ≤15%) · poweredOff · lowBattery(종료 신호 없이 마지막 보고 ≤15%) · unknown 으로 나눠, 부모 위치 시트·홈 "아이 기기
+  찾기" 카드·기기 찾기 화면(`rr-offline`: 벨이 울리지 않을 수 있음 + 마지막 위치 보기)에 같은 `parent.deviceSilence.*` 문구로 보인다.
+  회귀=`tests/childDeviceSilence.test.mjs`·`worker/tests/restShimRpcTargetAuthorization.test.mjs`.
+- **가족 사진 blob 유지(2026-09-26 Safari)**: 비공개 객체 URL 은 마지막 소비자가 떠나면 즉시 회수하지만, 가족 멤버 사진(`memberPhotos`)만
+  `retainMs` 5분 동안 받아 둔 URL 을 유지하고 첫 렌더에 `peekChildPhotoObjectUrl` 로 바로 쓴다(설정 진입마다 보호자 사진이 기본 캐릭터로
+  깜빡였다). 받는 중인 요청과 세션 교체(`clearPrivateObjectUrlCache`)는 즉시 회수 그대로다. 회귀=`tests/privateObjectUrlCache.test.ts`.
 - **긴급 수신 위치 새로고침(2026-09-26)**: 부모 `SosReceive` 는 새 SOS 가 보이면 위치를 즉시 + 4초 뒤 한 번 더 다시 받는다.
   30초 폴링만 기다리면 서버가 SOS 중 실시간 위치를 줘도 첫 화면이 스냅샷("8분 전")이었다. 회귀=`tests/childSosCopy.test.mjs`.
 - **현재 Play 출시 후보(2026-08-15)**: 실제 제출 후보는 v1.3.0/**versionCode 6**이다. 위치 권한 안내가 인증 전환에

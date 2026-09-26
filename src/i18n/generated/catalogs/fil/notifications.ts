@@ -137,7 +137,6 @@ const messages = {
   "notifications.locationStatus.success.lowAccuracyTitle": "Dumating ang kamakailang lokasyon, pero mababa ang accuracy",
   "notifications.locationStatus.success.title": "Na-update sa pinakabagong lokasyon",
   "notifications.locationStatus.toast.deviceMissing": "Hindi maipadala ang location request dahil wala ang impormasyon ng device ng anak",
-  "notifications.locationStatus.toast.deviceSilent": "Hindi sumasagot ang phone ni {childName}. Tingnan ang power, data, at airplane mode.",
   "notifications.locationStatus.toast.locked": "Hindi kasama sa kasalukuyang plan ang pagtingin sa lokasyon",
   "notifications.locationStatus.toast.noUpdate": "Naipadala ang request pero wala pang bagong lokasyon",
   "notifications.locationStatus.toast.refreshFailed": "Hindi na-update ang lokasyon",

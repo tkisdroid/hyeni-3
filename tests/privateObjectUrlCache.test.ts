@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   acquirePrivateObjectUrl,
   clearPrivateObjectUrlCache,
+  peekPrivateObjectUrl,
 } from "../src/lib/api/privateObjectUrlCache.ts";
 
 const originalRevokeObjectUrl = URL.revokeObjectURL;
@@ -137,4 +138,44 @@ test("순차 소비한 객체는 cache에 무상한 축적되지 않는다", asy
   }
 
   assert.equal(revoked.length, 40);
+});
+
+test("가족 사진처럼 retainMs 를 준 키는 받아 둔 URL 을 잠시 더 두고 다시 오면 그대로 쓴다", async () => {
+  // 2026-09-26 Safari: 설정에 들어올 때마다 보호자 사진을 다시 받아 기본 캐릭터가 보였다 바뀌었다.
+  const revoked: string[] = [];
+  URL.revokeObjectURL = (url) => revoked.push(url);
+  let loadCount = 0;
+  const loader = async () => { loadCount += 1; return "blob:family-avatar"; };
+  const first = acquirePrivateObjectUrl("child:avatar", loader, { retainMs: 60 });
+  assert.equal(await first.url, "blob:family-avatar");
+  first.release();
+  assert.deepEqual(revoked, [], "retain 동안은 회수하지 않는다");
+  assert.equal(peekPrivateObjectUrl("child:avatar"), "blob:family-avatar");
+
+  const again = acquirePrivateObjectUrl("child:avatar", loader, { retainMs: 60 });
+  assert.equal(await again.url, "blob:family-avatar");
+  assert.equal(loadCount, 1, "다시 들어와도 새로 받지 않는다");
+  again.release();
+  await new Promise((resolve) => setTimeout(resolve, 90));
+  assert.deepEqual(revoked, ["blob:family-avatar"], "retain 이 지나면 회수한다");
+  assert.equal(peekPrivateObjectUrl("child:avatar"), null);
+});
+
+test("retainMs 를 줘도 아직 받는 중인 요청과 세션 교체는 즉시 회수한다", async () => {
+  const revoked: string[] = [];
+  URL.revokeObjectURL = (url) => revoked.push(url);
+  let loaderSignal: AbortSignal | null = null;
+  const pending = acquirePrivateObjectUrl("child:pending", (signal) => {
+    loaderSignal = signal;
+    return new Promise<string>(() => {});
+  }, { retainMs: 60_000 });
+  await Promise.resolve();
+  pending.release();
+  assert.equal(loaderSignal?.aborted, true);
+
+  const kept = acquirePrivateObjectUrl("child:kept", async () => "blob:kept", { retainMs: 60_000 });
+  await kept.url;
+  kept.release();
+  clearPrivateObjectUrlCache();
+  assert.deepEqual(revoked, ["blob:kept"], "로그아웃·세션 교체는 retain 을 기다리지 않는다");
 });

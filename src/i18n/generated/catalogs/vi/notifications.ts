@@ -137,7 +137,6 @@ const messages = {
   "notifications.locationStatus.success.lowAccuracyTitle": "Đã nhận vị trí gần đây nhưng độ chính xác thấp",
   "notifications.locationStatus.success.title": "Đã cập nhật vị trí mới nhất",
   "notifications.locationStatus.toast.deviceMissing": "Không thể gửi yêu cầu vì thiếu thông tin thiết bị của con",
-  "notifications.locationStatus.toast.deviceSilent": "Điện thoại của {childName} không phản hồi. Hãy kiểm tra nguồn, dữ liệu và chế độ máy bay.",
   "notifications.locationStatus.toast.locked": "Gói hiện tại không cho phép xem vị trí",
   "notifications.locationStatus.toast.noUpdate": "Đã gửi yêu cầu nhưng chưa nhận được vị trí mới",
   "notifications.locationStatus.toast.refreshFailed": "Không thể cập nhật vị trí",

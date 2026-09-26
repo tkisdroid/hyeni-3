@@ -40,6 +40,7 @@ import { nearestPlace, EXACT_SAVED_PLACE_LABEL_RADIUS_M } from "@/transform/loca
 import { useEntitlement } from "@/queries/useEntitlement";
 import { TIERS, locationModeFor } from "@/transform/tierPolicy";
 import { resolveLocationTrustCopy } from "@/transform/locationTrustCopy";
+import { childDeviceSilence, childDeviceSilenceTimeLabel } from "@/transform/childDeviceSilence";
 import { PremiumUpsell } from "@/components/PremiumUpsell";
 import {
   browserPremiumValueMomentStorage,
@@ -600,6 +601,25 @@ export function ParentHome() {
 
   // 활성 아이(전역 스위치) — 홈 카드 탭으로만 전환. 안전지표·오늘일정·준비물이 이 아이 기준.
   const { activeChild, setActiveChildId } = useActiveChild();
+  // "아이 기기 찾기" 카드 부제 — 폰이 꺼졌거나 연결이 끊겼으면 이름 대신 그 상태를 먼저 보인다.
+  const deviceFinderNow = new Date();
+  const deviceFinderSilence = activeChild?.user_id
+    ? childDeviceSilence({
+      locationUpdatedAt: locations?.find((l) => l.user_id === activeChild.user_id)?.updated_at ?? null,
+      health: activeChild.device_health ?? null,
+      now: deviceFinderNow,
+    })
+    : null;
+  const deviceFinderStatus = deviceFinderSilence
+    ? intl.formatMessage(
+      { id: "parent.deviceSilence.status" },
+      {
+        cause: deviceFinderSilence.cause,
+        time: childDeviceSilenceTimeLabel(deviceFinderSilence.since, deviceFinderNow, locale, familyTimeZone),
+        battery: deviceFinderSilence.batteryLevel ?? 0,
+      },
+    )
+    : null;
   const statusRequestedKeyRef = useRef("");
   // 기기 상태 요청은 주 보호자만 보낼 수 있다(서버 정책). 공동 보호자는 저장된 상태만 다시 읽는다.
   const canRequestDeviceStatus = familyQuery.data?.isPrimaryParent === true;
@@ -1590,7 +1610,9 @@ export function ParentHome() {
           </span>
           <span className="ph-memo__main">
             <span className="ph-memo__from">{intl.formatMessage({ id: "parent.home.shortcut.deviceFinder" })}</span>
-            {activeChild?.name && <span className="ph-memo__text">{activeChild.name}</span>}
+            {deviceFinderStatus
+              ? <span className="ph-memo__text ph-device-finder__warn">{deviceFinderStatus}</span>
+              : activeChild?.name && <span className="ph-memo__text">{activeChild.name}</span>}
           </span>
         </button>
 

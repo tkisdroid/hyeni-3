@@ -803,6 +803,11 @@
   height: 28px;
 }
 
+/* 아이 폰이 꺼졌거나 연결이 끊겼을 때의 부제 — 링크색 대신 주의색. */
+.ph-page .ph-memo__text.ph-device-finder__warn {
+  color: var(--gold-text);
+}
+
 .ph-page .ph-memo__text {
   margin-top: 4px;
   font-size: var(--type-caption);
@@ -1098,15 +1103,18 @@
   animation: none;
 }
 
+/* 히어로 아래 조작은 한 줄의 가벼운 표시다 — 흰 원형 버튼 두 개가 히어로보다 무거워 보였다(2026-09-26 TK 제보).
+   화살표는 배경 없는 가는 선, 점은 가까이 모아 하나의 페이지 표시로 읽힌다. 터치 영역은 44px 그대로다. */
 .ph-hero-carousel__controls {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  margin-top: 8px;
+  gap: 0;
+  margin-top: 4px;
 }
 
 .ph-hero-carousel__arrow {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1114,9 +1122,36 @@
   height: 44px;
   border: 0;
   border-radius: 999px;
-  background: var(--control-fill);
+  background: transparent;
   color: var(--ph-ink-3);
-  box-shadow: var(--control-shadow);
+  box-shadow: none;
+  opacity: 0.62;
+  transition: opacity var(--duration-fast) var(--easing-standard);
+}
+
+/* 누르는 순간에만 옅은 원이 번진다(눌림 피드백). */
+.ph-hero-carousel__arrow::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 999px;
+  background: var(--control-fill);
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity var(--duration-fast) var(--easing-standard), transform 0.36s var(--easing-cheer);
+}
+
+.ph-hero-carousel__arrow:active {
+  opacity: 1;
+}
+
+.ph-hero-carousel__arrow:active::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ph-hero-carousel__arrow > svg {
+  position: relative;
 }
 
 /* 슬라이드 상한(6장)에서도 44px 점이 잘리지 않게 줄바꿈한다 — 캐러셀은 overflow:hidden 이라 넘치면 사라진다. */
@@ -1127,6 +1162,12 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  /* 44px 점 사이를 좁혀 표시끼리 16px 간격으로 모은다(터치 영역은 겹쳐도 각 점의 가운데가 우선). */
+  column-gap: 0;
+}
+
+.ph-hero-carousel__dots .ph-hero-carousel__dot {
+  margin-inline: -12px;
 }
 
 /* 점은 눌러서 이동하는 실제 버튼이라 44px 터치 영역을 유지하고 표시만 작게 그린다. */
@@ -1144,16 +1185,16 @@
   position: absolute;
   inset: 50% auto auto 50%;
   transform: translate(-50%, -50%);
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   background: var(--ph-ink-3);
-  opacity: 0.32;
+  opacity: 0.28;
   transition: opacity 0.16s ease, width 0.16s ease;
 }
 
 .ph-hero-carousel__dot[data-active="true"]::after {
-  width: 18px;
+  width: 16px;
   opacity: 1;
   background: var(--ph-link);
 }

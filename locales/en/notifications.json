@@ -139,7 +139,6 @@
   "notifications.locationStatus.toast.deviceMissing": "We couldn't send a location request because the child's device information is missing",
   "notifications.locationStatus.toast.locked": "Your current plan doesn't include location viewing",
   "notifications.locationStatus.toast.noUpdate": "The request was sent, but no new location has arrived yet",
-  "notifications.locationStatus.toast.deviceSilent": "{childName}'s phone isn't responding. Check power, data, and airplane mode.",
   "notifications.locationStatus.toast.refreshFailed": "Location refresh failed",
   "notifications.locationStatus.toast.requestFailed": "We couldn't send a location request to the child's device",
   "notifications.locationStatus.toast.retryFailed": "The retry failed",

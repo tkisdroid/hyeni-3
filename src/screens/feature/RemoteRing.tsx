@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useIntl, type IntlShape } from "react-intl";
-import { AlertTriangle, Bell, Check, ChevronLeft, RefreshCw } from "lucide-react";
+import { AlertTriangle, BatteryWarning, Bell, Check, ChevronLeft, MapPin, PowerOff, RefreshCw, WifiOff } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -10,6 +10,9 @@ import { Loading } from "@/components/ui/Loading";
 import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useMyFamily } from "@/queries/useFamily";
+import { useChildLocations } from "@/queries/useLocation";
+import { useFamilyTimeZone } from "@/region/FamilyTimeZone";
+import { childDeviceSilence, childDeviceSilenceTimeLabel } from "@/transform/childDeviceSilence";
 import {
   useForceRingActive,
   useForceRingHistory,
@@ -200,6 +203,21 @@ export function RemoteRing() {
   const childName = targetChild?.name || intl.formatMessage({ id: "notifications.remoteRing.childFallback" });
   const childAvatar = avatarSrc(childAvatarPath(targetChild?.photo_url));
 
+  // 아이 폰이 꺼졌거나(배터리 방전 포함) 연결이 끊긴 상태면 벨이 울리지 않는다 — 누르기 전에 알려 준다
+  // (2026-09-26 TK 제보: 배터리가 닳아서 꺼진 경우 기기 찾기에서 알 수 없었다).
+  const familyTimeZone = useFamilyTimeZone();
+  const locationsQuery = useChildLocations();
+  const targetLocation = targetChild?.user_id
+    ? locationsQuery.data?.find((l) => l.user_id === targetChild.user_id) ?? null
+    : null;
+  const silenceNow = new Date();
+  const silence = targetChild
+    ? childDeviceSilence({ locationUpdatedAt: targetLocation?.updated_at ?? null, health: targetChild.device_health ?? null, now: silenceNow })
+    : null;
+  const SilenceIcon = silence?.cause === "batteryDead" || silence?.cause === "lowBattery"
+    ? BatteryWarning
+    : silence?.cause === "poweredOff" ? PowerOff : WifiOff;
+
   // 울리는 대상 이름(외부 발사 대비 active.target_user_id 우선).
   const activeTarget = active?.target_user_id ?? null;
   const ringingChild = activeTarget
@@ -358,11 +376,38 @@ export function RemoteRing() {
           </div>
 
           <div className="rr-title">{intl.formatMessage({ id: "notifications.remoteRing.title" }, { child: childName })}</div>
-          <div className="rr-sub">
-            {intl.formatMessage({ id: "notifications.remoteRing.maxVolume" })}
-            <br />
-            {intl.formatMessage({ id: "notifications.remoteRing.useToFind" })}
-          </div>
+          {silence && !ringing ? (
+            <div className="rr-offline" role="status">
+              <span className="rr-offline__icon" aria-hidden="true"><SilenceIcon size={20} strokeWidth={2.2} /></span>
+              <span className="rr-offline__main">
+                <b>
+                  {intl.formatMessage(
+                    { id: "parent.deviceSilence.status" },
+                    {
+                      cause: silence.cause,
+                      time: childDeviceSilenceTimeLabel(silence.since, silenceNow, locale, familyTimeZone),
+                      battery: silence.batteryLevel ?? 0,
+                    },
+                  )}
+                </b>
+                <small>{intl.formatMessage({ id: "parent.deviceSilence.ringNotice" })}</small>
+              </span>
+              <button
+                type="button"
+                className="rr-offline__cta hy-press"
+                onClick={() => navigate(targetChild?.user_id ? `/parent/location?child=${encodeURIComponent(targetChild.user_id)}` : "/parent/location")}
+              >
+                <MapPin size={16} strokeWidth={2.4} aria-hidden="true" />
+                {intl.formatMessage({ id: "parent.deviceSilence.lastLocation" })}
+              </button>
+            </div>
+          ) : (
+            <div className="rr-sub">
+              {intl.formatMessage({ id: "notifications.remoteRing.maxVolume" })}
+              <br />
+              {intl.formatMessage({ id: "notifications.remoteRing.useToFind" })}
+            </div>
+          )}
 
           {/* 울릴 아이는 이 화면에서 명시적으로 고른다(형제 오발사 방지). 모양은 앱 공용 다자녀 전환 알약과 같다. */}
           {children.length > 1 && (

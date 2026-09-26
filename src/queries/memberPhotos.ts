@@ -9,7 +9,7 @@
  * 아이·부모를 구분하지 않으므로 부모 본인 프로필 사진도 같은 경로로 표시된다.
  */
 import { useEffect, useMemo, useState } from "react";
-import { acquireChildPhotoObjectUrl } from "@/lib/api/client";
+import { acquireChildPhotoObjectUrl, peekChildPhotoObjectUrl } from "@/lib/api/client";
 import { extractPrivateChildPhotoPath } from "@/transform/childPhotoPath";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
 
@@ -24,6 +24,17 @@ interface MemberPhotoState {
 }
 
 const MEMBER_PHOTO_RETRY_DELAYS_MS = [750, 2_000, 5_000] as const;
+/** 화면을 떠난 뒤에도 가족 사진을 잠시 더 둔다 — 설정·홈을 오갈 때 기본 캐릭터로 깜빡이지 않게. */
+export const MEMBER_PHOTO_RETAIN_MS = 5 * 60 * 1000;
+
+function peekedUrls(requests: readonly MemberPhotoRequest[]): Map<string, string> {
+  const urls = new Map<string, string>();
+  for (const { memberId, path } of requests) {
+    const url = peekChildPhotoObjectUrl(path);
+    if (url) urls.set(memberId, url);
+  }
+  return urls;
+}
 
 /** memberId → 표시용 blob URL. 아직 못 받았거나 실패한 멤버는 값이 없다. */
 export function useResolvedMemberPhotoUrls(
@@ -37,16 +48,17 @@ export function useResolvedMemberPhotoUrls(
     () => JSON.stringify(requests.map(({ memberId, path }) => [memberId, path])),
     [requests],
   );
-  const [photoState, setPhotoState] = useState<MemberPhotoState>({
-    signature: "",
-    urls: new Map(),
-  });
+  // 이미 받아 둔 사진은 첫 렌더부터 쓴다(받는 동안 기본 캐릭터가 보였다 사라지는 깜빡임 방지).
+  const [photoState, setPhotoState] = useState<MemberPhotoState>(() => ({
+    signature,
+    urls: peekedUrls(requests),
+  }));
 
   useEffect(() => {
     let active = true;
     const leases = new Set<NonNullable<ReturnType<typeof acquireChildPhotoObjectUrl>>>();
     const retryTimers = new Set<ReturnType<typeof setTimeout>>();
-    setPhotoState({ signature, urls: new Map() });
+    setPhotoState({ signature, urls: peekedUrls(requests) });
 
     function scheduleRetry(request: MemberPhotoRequest, retryIndex: number): void {
       if (!active || retryIndex >= MEMBER_PHOTO_RETRY_DELAYS_MS.length) return;
@@ -59,7 +71,7 @@ export function useResolvedMemberPhotoUrls(
 
     function runAttempt(request: MemberPhotoRequest, retryIndex: number): void {
       if (!active) return;
-      const lease = acquireChildPhotoObjectUrl(request.path);
+      const lease = acquireChildPhotoObjectUrl(request.path, { retainMs: MEMBER_PHOTO_RETAIN_MS });
       if (!lease) return;
       leases.add(lease);
       void lease.url
@@ -97,7 +109,7 @@ export function useResolvedMemberPhotoUrls(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature]);
 
-  return photoState.signature === signature ? photoState.urls : new Map<string, string>();
+  return photoState.signature === signature ? photoState.urls : peekedUrls(requests);
 }
 
 /** members 의 private photo_url 을 표시용 blob URL로 바꾼 새 배열(미해석은 null). */

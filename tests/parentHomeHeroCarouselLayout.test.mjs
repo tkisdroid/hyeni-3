@@ -79,16 +79,18 @@ test("좌우 화살표와 점은 44px 터치 영역과 눌림 피드백을 갖�
   assert.equal(pressed.length, 3, "화살표 2개와 점 버튼 1개 모두 hy-press 를 써야 합니다");
 });
 
-test("좌우 화살표는 공통 유리 조작 면에 작은 아이콘을 표시한다", () => {
+test("좌우 화살표는 배경 없는 가는 아이콘이고 누를 때만 옅은 원을 보인다", () => {
+  // 2026-09-26 TK 제보: 흰 원형 버튼 두 개가 히어로보다 무거워 보였다 — 심플한 선 화살표로 바꿨다.
   const controls = block(".ph-hero-carousel__controls");
   const arrow = block(".ph-hero-carousel__arrow");
-  assert.match(controls, /gap:\s*4px/);
-  assert.match(arrow, /background:\s*var\(--control-fill\)/);
-  assert.match(arrow, /box-shadow:\s*var\(--control-shadow\)/);
+  assert.match(controls, /gap:\s*0/);
+  assert.match(arrow, /background:\s*transparent/);
+  assert.match(arrow, /box-shadow:\s*none/);
   assert.doesNotMatch(arrow, /backdrop-filter/);
+  assert.match(css, /\.ph-hero-carousel__arrow:active::before\s*\{[^}]*opacity:\s*1/s);
 
-  const icons = component.match(/<Chevron(?:Left|Right) size=\{16\} strokeWidth=\{2\.2\}/g) ?? [];
-  assert.equal(icons.length, 2, "좌우 화살표가 모두 16px 저대비 아이콘이어야 합니다");
+  const icons = component.match(/<Chevron(?:Left|Right) size=\{18\} strokeWidth=\{1\.8\}/g) ?? [];
+  assert.equal(icons.length, 2, "좌우 화살표가 모두 가는 18px 아이콘이어야 합니다");
 });
 
 test("슬라이드가 한 장이면 캐러셀 껍데기와 컨트롤을 렌더하지 않는다", () => {

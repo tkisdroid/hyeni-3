@@ -137,7 +137,6 @@ const messages = {
   "notifications.locationStatus.success.lowAccuracyTitle": "최근 위치가 왔지만 정확도가 낮아요",
   "notifications.locationStatus.success.title": "최신 위치로 갱신됐어요",
   "notifications.locationStatus.toast.deviceMissing": "아이 기기 정보가 없어 위치 요청을 보내지 못했어요",
-  "notifications.locationStatus.toast.deviceSilent": "{childName} 폰이 응답하지 않아요. 전원·데이터·비행기 모드를 확인해 주세요",
   "notifications.locationStatus.toast.locked": "현재 플랜에서는 위치를 조회할 수 없어요",
   "notifications.locationStatus.toast.noUpdate": "아이 기기에 요청은 보냈지만 아직 새 위치가 도착하지 않았어요",
   "notifications.locationStatus.toast.refreshFailed": "위치 갱신에 실패했어요",

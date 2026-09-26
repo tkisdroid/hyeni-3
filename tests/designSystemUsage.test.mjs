@@ -2832,6 +2832,11 @@ const nonSurfacePaintManifest = new Set([
   ["src/components/LanguageSelector.css", ".hy-language--collapse-others"],
   // 아이 전환 알약의 안 읽은 메시지 점(표면이 아니라 상태 표시).
   ["src/components/ChildSwitcher.css", ".hy-kidswitch__dot"],
+  // 2026-09-26: 기기 찾기의 "폰이 꺼졌어요" 안내 띠·아이콘 받침·마지막 위치 버튼, 히어로 화살표의 눌림 원.
+  ["src/screens/feature/RemoteRing.css", ".rr-offline"],
+  ["src/screens/feature/RemoteRing.css", ".rr-offline__icon"],
+  ["src/screens/feature/RemoteRing.css", ".rr-offline__cta"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-hero-carousel__arrow::before"],
   ["src/screens/feature/FriendPlay.css", ".fp-parent-rule span"],
   ["src/screens/feature/PlaydateAccept.css", ".pa-screen .pa-note"],
   ["src/screens/feature/RouteView.css", ".rv-map__label"],

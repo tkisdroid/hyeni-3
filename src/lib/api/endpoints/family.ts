@@ -46,6 +46,9 @@ export interface DeviceHealth {
   lastReportedAt?: string;
   /** 네이티브 DeviceStatusReporter가 기록한 마지막 리포트 시각(ISO). */
   updatedAt?: string;
+  /** 아이 폰이 꺼지기 직전 서버가 남긴 시각(ISO)·배터리 — 다시 켜져 보고하면 사라진다. */
+  shutdownAt?: string | null;
+  shutdownBatteryLevel?: number | null;
   /** 네이티브(LocationService) 리치 리포트에만: 연결타입·오늘 화면사용(ms)·최근 사용앱. */
   connectionType?: string | null;
   deviceScreenOnMs?: number | null;

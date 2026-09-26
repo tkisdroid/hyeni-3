@@ -10,6 +10,8 @@ interface PrivateObjectUrlEntry {
   resolvedUrl: string | null;
   controller: AbortController;
   promise: Promise<string | null>;
+  /** 마지막 소비자가 떠난 뒤 회수를 미루는 타이머(retainMs 를 준 키만). */
+  retainTimer: ReturnType<typeof setTimeout> | null;
 }
 
 let generation = 0;
@@ -22,6 +24,10 @@ function revoke(url: string | null): void {
 function retireEntry(key: string, entry: PrivateObjectUrlEntry): void {
   if (entry.retired) return;
   entry.retired = true;
+  if (entry.retainTimer) {
+    clearTimeout(entry.retainTimer);
+    entry.retainTimer = null;
+  }
   if (entries.get(key) === entry) entries.delete(key);
   entry.controller.abort();
   if (entry.resolvedUrl) {
@@ -43,6 +49,7 @@ function createEntry(
     resolvedUrl: null,
     controller,
     promise: Promise.resolve(null),
+    retainTimer: null,
   };
   entry.promise = Promise.resolve()
     .then(() => loader(controller.signal))
@@ -70,12 +77,18 @@ function createEntry(
 export function acquirePrivateObjectUrl(
   key: string,
   loader: (signal: AbortSignal) => Promise<string>,
+  options: { retainMs?: number } = {},
 ): PrivateObjectUrlLease {
   const cached = entries.get(key);
   const entry = cached && cached.generation === generation && !cached.retired
     ? cached
     : createEntry(key, loader);
+  if (entry.retainTimer) {
+    clearTimeout(entry.retainTimer);
+    entry.retainTimer = null;
+  }
   entry.refs += 1;
+  const retainMs = Math.max(0, options.retainMs ?? 0);
 
   let released = false;
   return {
@@ -84,9 +97,27 @@ export function acquirePrivateObjectUrl(
       if (released) return;
       released = true;
       entry.refs = Math.max(0, entry.refs - 1);
-      if (entry.refs === 0) retireEntry(key, entry);
+      if (entry.refs !== 0) return;
+      // 가족 프로필 사진처럼 화면을 오갈 때마다 다시 받으면 기본 캐릭터가 잠깐 보였다가 바뀌는 키는
+      // 받아 둔 URL 만 잠시 더 둔다(2026-09-26 Safari: 설정 진입마다 보호자 사진이 사라졌다 나타남).
+      // 아직 받는 중인 요청과 세션 교체(clearPrivateObjectUrlCache)는 지금처럼 즉시 회수한다.
+      if (retainMs > 0 && entry.resolvedUrl) {
+        entry.retainTimer = setTimeout(() => {
+          entry.retainTimer = null;
+          if (entry.refs === 0) retireEntry(key, entry);
+        }, retainMs);
+        return;
+      }
+      retireEntry(key, entry);
     },
   };
+}
+
+/** 이미 받아 둔 URL 이 있으면 바로 돌려준다(첫 렌더에서 기본 이미지를 거치지 않게). */
+export function peekPrivateObjectUrl(key: string): string | null {
+  const entry = entries.get(key);
+  if (!entry || entry.retired || entry.generation !== generation) return null;
+  return entry.resolvedUrl;
 }
 
 export function clearPrivateObjectUrlCache(): void {

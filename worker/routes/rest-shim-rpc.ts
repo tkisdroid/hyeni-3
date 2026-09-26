@@ -736,6 +736,26 @@ export async function dispatchRpc(c: Ctx, fn: string, caller: ShimCaller): Promi
             .bind(familyId, childUserId, now, now)
             .run();
         }
+        // 부모 앱은 가족 조회의 device_health 만 읽는다 — 꺼진 시각과 그때 배터리를 함께 남겨
+        // "배터리가 다 돼서 꺼졌어요 / 전원이 꺼졌어요"를 보여 준다(2026-09-26: 방전으로 꺼져도 알 수 없었다).
+        // 폰이 다시 켜져 기기 상태를 보고하면 device_health 가 통째로 바뀌어 자연히 지워진다. 실패해도 마커는 유지한다.
+        const rawBattery = Number(body.p_battery_level);
+        const shutdownBattery = Number.isFinite(rawBattery) && rawBattery >= 0 && rawBattery <= 100 ? Math.round(rawBattery) : null;
+        try {
+          await db
+            .prepare(
+              `UPDATE family_members
+                  SET device_health = json_set(
+                    CASE WHEN json_valid(device_health) THEN device_health ELSE '{}' END,
+                    '$.shutdownAt', ?, '$.shutdownBatteryLevel', ?
+                  )
+                WHERE family_id = ? AND user_id = ? AND role = 'child' AND is_active = 1`,
+            )
+            .bind(new Date().toISOString(), shutdownBattery, familyId, childUserId)
+            .run();
+        } catch {
+          console.warn("record_child_shutdown device_health stamp failed");
+        }
         return voidOk(c);
       }
 

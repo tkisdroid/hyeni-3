@@ -107,7 +107,8 @@ test("가족 정본 조회는 사진 blob 완료와 분리하고 UI 수명 lease
     assert.match(source, /useResolvedMemberPhotoUrls/);
     assert.match(source, /withResolvedMemberPhotos/);
   }
-  assert.match(memberPhotosSource, /acquireChildPhotoObjectUrl\(request\.path\)/);
+  // 2026-09-26: 가족 사진은 화면을 오가도 깜빡이지 않게 받아 둔 URL 만 잠시 더 둔다(retainMs).
+  assert.match(memberPhotosSource, /acquireChildPhotoObjectUrl\(request\.path, \{ retainMs: MEMBER_PHOTO_RETAIN_MS \}\)/);
   assert.match(memberPhotosSource, /MEMBER_PHOTO_RETRY_DELAYS_MS = \[750, 2_000, 5_000\]/);
   assert.match(memberPhotosSource, /scheduleRetry\(request, retryIndex\)/);
   assert.match(memberPhotosSource, /clearTimeout\(timer\)/);
