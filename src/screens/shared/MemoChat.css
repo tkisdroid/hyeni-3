@@ -459,12 +459,17 @@
 .hy-app[data-chat="true"] .mc-root {
   --mc-tabbar-clearance: calc(84px + env(safe-area-inset-bottom, 0px));
 }
+/* 띠는 윗여백(16px) 안에서만 흐려진다 — 그 아래 '자주 쓰는 문구'·칩 뒤는 충분히 불투명해야 키보드로
+   대화창이 좁아져 메시지가 뒤로 지나갈 때 글자가 겹쳐 읽히지 않는다(2026-09-27 S25 실측). */
+.hy-app[data-chat="true"] .mc-composer {
+  padding-top: 16px;
+}
 .hy-adult[data-chat="true"] .mc-composer {
   background: linear-gradient(
     180deg,
-    rgba(243, 241, 246, 0) 0%,
-    rgba(243, 241, 246, 0.62) 34%,
-    rgba(243, 241, 246, 0.86) 100%
+    rgba(243, 241, 246, 0) 0,
+    rgba(243, 241, 246, 0.88) 16px,
+    rgba(243, 241, 246, 0.92) 100%
   );
 }
 .hy-adult[data-chat="true"] .hy-tabbar {
@@ -488,8 +493,8 @@
 .hy-app[data-role="child"][data-chat="true"] .mc-composer {
   background: linear-gradient(
     180deg,
-    transparent 0%,
-    color-mix(in srgb, color-mix(in srgb, var(--hy-accent-soft) 38%, var(--bg-app)) 72%, transparent) 34%,
+    transparent 0,
+    color-mix(in srgb, color-mix(in srgb, var(--hy-accent-soft) 38%, var(--bg-app)) 90%, transparent) 16px,
     color-mix(in srgb, var(--hy-accent-soft) 38%, var(--bg-app)) 100%
   );
 }
