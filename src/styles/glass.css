@@ -320,15 +320,19 @@
 .hy-adult .hy-tabbar__inner[data-active-index="3"] { --tab-index: 3; }
 .hy-adult .hy-tabbar__inner[data-active-index="4"] { --tab-index: 4; }
 
-/* 탭은 렌즈 위에 그려진다(둘 다 positioned 라 문서 순서를 따른다). */
+/* 탭은 렌즈 위에 그려진다(둘 다 positioned 라 문서 순서를 따른다).
+   아이콘+이름 묶음은 위아래 여백이 같아야 렌즈 한가운데 앉는다 — 위 8·아래 4 였을 때 렌즈가 묶음보다
+   위로 떠 '활성 메뉴가 위로 쏠려' 보였다(2026-09-27 TK 제보). 렌즈는 가로로 긴 알약(≈1.3:1)이다. */
 .hy-adult .hy-tab {
   position: relative;
-  padding-block: 8px 4px;
+  justify-content: center;
+  gap: 4px;
+  padding-block: 4px;
 }
 
 .hy-adult .hy-tab__icon {
-  height: 26px;
-  color: var(--ph-ink-2);
+  height: 24px;
+  color: var(--ph-ink-3);
   transition: color 0.24s var(--easing-standard);
 }
 

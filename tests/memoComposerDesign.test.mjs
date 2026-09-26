@@ -23,7 +23,10 @@ test("대화 입력란의 사진·위치 도구는 투명한 아이콘만 표시
   );
 
   assert.equal((composer.match(/className="mc-attach hy-press"/g) ?? []).length, 2);
-  assert.equal((composer.match(/aria-label=/g) ?? []).length, 4, "사진·위치·입력·전송에 이름이 있어야 한다");
+  // 자주 쓰는 문구 칩 묶음은 보이는 제목 대신 묶음 이름으로 읽힌다(2026-09-27 문구 줄이기).
+  assert.equal((composer.match(/aria-label=/g) ?? []).length, 5, "칩 묶음·사진·위치·입력·전송에 이름이 있어야 한다");
+  assert.match(composer, /className="mc-quick" role="group" aria-label=\{intl\.formatMessage\(\{ id: "shared\.memo\.quick\.title" \}\)\}/);
+  assert.doesNotMatch(composer, /mc-quick-title/);
   assert.match(composer, /<ImageIcon size=\{20\} strokeWidth=\{2\} aria-hidden="true" \/>/);
   assert.match(composer, /<MapPin size=\{20\} strokeWidth=\{2\} aria-hidden="true" \/>/);
 

@@ -820,8 +820,8 @@ export function MemoChat() {
       {/* 하단 입력 (composer) */}
       <div className="mc-composer">
         <div className="mc-quick-group">
-          <div className="mc-quick-title">{intl.formatMessage({ id: "shared.memo.quick.title" })}</div>
-          <div className="mc-quick">
+          {/* 칩이 스스로 말하므로 제목 줄은 두지 않고, 묶음 이름으로만 읽힌다(2026-09-27 문구 줄이기). */}
+          <div className="mc-quick" role="group" aria-label={intl.formatMessage({ id: "shared.memo.quick.title" })}>
             {quickReplies.map((q) => (
               <button
                 key={q}

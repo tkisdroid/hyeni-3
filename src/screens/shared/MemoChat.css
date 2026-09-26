@@ -316,14 +316,6 @@
 .mc-quick-group {
   margin-bottom: 12px;
 }
-.mc-quick-title {
-  margin: 0 4px 8px;
-  color: var(--fg-secondary);
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
-  letter-spacing: -0.01em;
-}
 .mc-quick {
   display: flex;
   gap: 8px;

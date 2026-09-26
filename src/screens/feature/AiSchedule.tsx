@@ -541,10 +541,6 @@ export function AiSchedule() {
                 {intl.formatMessage({ id: "parent.aiSchedule.voiceExample" })}
               </div>
             )}
-            <div className="ais-hint hy-explain">
-              <span className="ais-hint__ico"><Mic size={15} strokeWidth={2.2} /></span>
-              {intl.formatMessage({ id: "parent.aiSchedule.voiceHint" })}
-            </div>
           </div>
         )}
 
@@ -559,10 +555,6 @@ export function AiSchedule() {
                 value={text}
                 onChange={(e) => onTextChange(e.target.value)}
               />
-            </div>
-            <div className="ais-hint hy-explain">
-              <span className="ais-hint__ico"><Sparkles size={15} strokeWidth={2.2} /></span>
-              {intl.formatMessage({ id: "parent.aiSchedule.textHint" })}
             </div>
           </div>
         )}

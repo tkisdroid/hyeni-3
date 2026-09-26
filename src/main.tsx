@@ -114,3 +114,7 @@ createRoot(root).render(
     </LocaleProvider>
   </StrictMode>,
 );
+
+// 앱 글꼴(Hyeni Sans = Pretendard 조각)은 선언만 47KB 라 진입 CSS 예산에 넣지 않는다.
+// 첫 화면을 그린 뒤 따로 받아 오고(font-display: swap), 글자 조각은 화면에 쓰인 구간만 내려받는다.
+void import("./styles/pretendard.css");

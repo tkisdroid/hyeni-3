@@ -100,6 +100,8 @@ export default defineConfig({
         // 브라우저가 실제로 쓰는 구간만 내려받게 두고, 네이티브는 어차피 로컬 파일이라 영향이 없다.
         globIgnores: [
           "**/fonts/jua/**",
+          // 앱 글꼴 조각(99개·2.2MB)도 같은 이유로 프리캐시하지 않는다 — 화면에 쓰인 구간만 받는다.
+          "**/fonts/pretendard/**",
           // 아이 AI 감정 표정은 대화 중에만 쓰고, 10장이 700KB 라 설치 precache 에서 뺀다.
           "**/assets/mascot-status/**",
           // 아래 파일은 includeAssets/manifest 아이콘 경로가 revision 포함 항목으로 따로 주입한다.

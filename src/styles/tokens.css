@@ -106,7 +106,8 @@
   --bg-chip-idle: #F3EEF1;
 
   /* ── Typography ── */
-  --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
+  /* Hyeni Sans = Pretendard 조각(src/styles/pretendard.css). 받기 전·못 받은 글자는 시스템 한글 글꼴이 맡는다. */
+  --font-sans: "Hyeni Sans", "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
     "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --weight-bold: 700;
 
