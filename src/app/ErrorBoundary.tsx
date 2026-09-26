@@ -6,10 +6,12 @@
  * - RootErrorBoundary: 라우터 밖(프로바이더 등)에서 터진 에러의 최후 방어.
  * 둘 다 같은 ErrorFallback UI 를 쓴다. 복구는 상태를 확실히 비우는 새로고침 기반.
  */
-import { Component, useEffect, type ReactNode } from "react";
+import { Component, useEffect, useState, type ReactNode } from "react";
 import { useRouteError } from "react-router";
+import { RouteLoading } from "@/components/ui/RouteLoading";
 import { asset } from "@/lib/assets";
 import { recordFeedbackDiagnostic } from "@/lib/feedbackDiagnostics";
+import { isStaleChunkError, reloadForStaleChunk } from "@/lib/staleChunkRecovery";
 import { useIntl } from "react-intl";
 
 function homeHashForSession(): string {
@@ -70,12 +72,16 @@ function ErrorFallback() {
 /** react-router errorElement 용 — 라우트 렌더 에러를 받아 복구 화면을 그린다. */
 export function RouteErrorScreen() {
   const error = useRouteError();
+  // 배포 뒤 옛 청크(화면 문구 청크 포함)는 크래시가 아니다 — 한 번 새로고침해 새 번들로 연다.
+  const [reloading, setReloading] = useState(() => isStaleChunkError(error));
   useEffect(() => {
+    if (reloadForStaleChunk(error)) return;
+    setReloading(false);
     // 화면에는 부드럽게, 로그(logcat/CDP)에는 원인 그대로 — 진단 가능성 유지.
     recordFeedbackDiagnostic({ kind: "render", error });
     console.error("[route-error]", error);
   }, [error]);
-  return <ErrorFallback />;
+  return reloading ? <RouteLoading /> : <ErrorFallback />;
 }
 
 type BoundaryState = { error: unknown | null };

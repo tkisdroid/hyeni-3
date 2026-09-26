@@ -44,6 +44,13 @@
   ②화면은 route 단위 lazy 청크라 첫 진입에 `RouteLoading` 이 지나간다 — `src/app/routePreload.ts` 등록소 +
   탭바·아이 독의 idle/pointerdown 프리로드로 없앴다. `lazyScreen.preload()` 는 실패한 promise 를 캐시하지 않는다.
   `LocaleBoundary` 는 문구 로딩 중 빈 화면 대신 `RouteLoading` 을 렌더한다. 회귀=`tests/routePreload.test.ts`.
+- ★**배포 직후 옛 청크 크래시(2026-09-26 Safari 제보: 수학·영단어가 "앗, 화면이 잠깐 멈췄어요")**: 배포 전에 연
+  문서는 아직 받지 않은 화면을 옛 해시 이름으로 요청하고, Pages는 없는 경로에도 `index.html`(200 text/html)을 줘
+  동적 import가 MIME 오류로 실패한다. `src/lib/staleChunkRecovery.ts`가 이 오류만 골라 온라인·60초 쿨다운
+  (sessionStorage) 조건에서 한 번 새로고침한다. 호출 지점은 `lazyScreen` 실제 진입과 `RouteErrorScreen`(문구 청크)뿐이고
+  `preload()`는 새로고침하지 않는다. 재현은 `curl` 로 없는 `/assets/*.js` 가 200 text/html인지 확인하고, 빌드 두 개를
+  번갈아 서빙해 옛 문서에서 화면을 여는 방식으로 한다(같은 URL 차단 재현은 WebKit이 실패 모듈을 재사용해 부정확).
+  회귀=`tests/staleChunkRecovery.test.mjs`.
 - ★**`adb install --user 0 -r` 직후 번들 신선도(2026-08-20 정본)**: 구버전에서 이 수정 버전으로 처음 올라오는 경우만
   옛 Service Worker가 1회 응답할 수 있다. ①APK 진입 asset 확인 ②앱 1회 재시작 ③CDP에서 활성 진입 asset과
   `navigator.serviceWorker.getRegistrations()` 길이 0을 확인한다. 이후 네이티브는 APK 자산을 바로 읽으며 SW를

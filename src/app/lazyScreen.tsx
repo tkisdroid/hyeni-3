@@ -1,4 +1,5 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
+import { reloadForStaleChunk } from "@/lib/staleChunkRecovery";
 
 type RouteScreen = ComponentType;
 
@@ -25,7 +26,14 @@ export function lazyScreen<TModule extends object, TKey extends keyof TModule>(
   };
 
   const screen = lazy(async () => {
-    const loaded = await load();
+    let loaded: TModule;
+    try {
+      loaded = await load();
+    } catch (error) {
+      // 배포 뒤 옛 청크면 새 번들을 받는 동안 로딩 표시를 유지한다. 미리 받기에서는 하지 않는다.
+      if (reloadForStaleChunk(error)) return new Promise<never>(() => undefined);
+      throw error;
+    }
     return { default: loaded[exportName] as RouteScreen };
   }) as PreloadableScreen;
 
