@@ -53,12 +53,19 @@ test("대화 컴포저는 하단 메뉴 위 전체 폭 레이아웃을 유지한
   assert.match(end, /height:\s*var\(--mc-bottom-clearance\)/);
 });
 
-test("대화 화면은 하단 메뉴·아이 독 없이 입력줄을 화면 바닥에 붙인다", () => {
-  // 2026-09-26 TK 제보: 입력창 아래에 앱 하단 메뉴와 휴대폰 내비게이션이 겹겹이 쌓여 이상해 보였다.
+test("대화 화면도 하단 메뉴를 남기고, 부모 탭바만 입력하는 동안 내려간다", () => {
+  // 2026-09-26 에는 입력줄 아래 메뉴가 겹겹이 쌓여 보여 메뉴를 숨겼지만,
+  // 2026-09-27 TK 제보: 대화 탭을 누르자마자 메뉴가 사라져 불편했다. 메뉴는 남기고 한 하단 영역으로 잇는다.
   const shell = readFileSync(new URL("../src/app/AppShell.tsx", import.meta.url), "utf8");
   const css = readFileSync(new URL("../src/screens/shared/MemoChat.css", import.meta.url), "utf8");
   assert.match(shell, /const CHAT_PATHS = new Set\(\["\/parent\/memo", "\/child\/memo"\]\)/);
-  assert.match(shell, /\{!chat && <TabBar tabs=\{tabs\} \/>\}/);
-  assert.match(shell, /\{chat \? \(\s*<AiBuddyFabSlot bottomInset=\{20\} \/>\s*\) : \(\s*<>\s*<ChildDock \/>/);
-  assert.match(css, /\.hy-app\[data-chat="true"\] \.mc-root\s*\{[^}]*--mc-tabbar-clearance:\s*env\(safe-area-inset-bottom, 0px\)/s);
+  assert.doesNotMatch(shell, /!chat && <TabBar/);
+  assert.match(shell, /<TabBar tabs=\{tabs\} \/>/);
+  // 아이 독은 SOS 가 있어 대화에서도 항상 그린다. AI 친구 버튼은 입력줄까지 피한다.
+  assert.match(shell, /<ChildDock \/>\s*\{[^}]*\}\s*<AiBuddyFabSlot bottomInset=\{chat \? 232 : 112\} \/>/);
+  assert.match(css, /\.hy-app\[data-chat="true"\] \.mc-root\s*\{[^}]*--mc-tabbar-clearance:\s*calc\(84px \+ env\(safe-area-inset-bottom, 0px\)\)/s);
+  // 입력 중에는 부모 탭바만 내려가고 입력줄이 바닥에 붙는다. 아이 독(.kdock)은 숨기지 않는다.
+  assert.match(css, /\.hy-adult\[data-chat="true"\]:has\(\.mc-input:focus\) \.hy-tabbar\s*\{[^}]*visibility:\s*hidden/s);
+  assert.match(css, /\.hy-adult\[data-chat="true"\]:has\(\.mc-input:focus\) \.mc-root\s*\{[^}]*--mc-tabbar-clearance:\s*env\(safe-area-inset-bottom, 0px\)/s);
+  assert.doesNotMatch(css, /:has\(\.mc-input:focus\)[^{]*\.kdock/);
 });

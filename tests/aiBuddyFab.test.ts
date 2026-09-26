@@ -384,7 +384,8 @@ test("플로팅 버튼은 아이 셸과 상세 셸 양쪽에서 상시 대기한
   assert.match(shell, /lazy\(async \(\) => \(\{ default: \(await import\("\.\/AiBuddyFab"\)\)\.AiBuddyFab \}\)\)/);
   assert.match(shell, /<Suspense fallback=\{null\}>[\s\S]{0,120}<AiBuddyFab bottomInset=\{bottomInset\} \/>/);
   // 아이 탭 화면(독 있음)과 상세 화면(독 없음)에서 각각 다른 하단 여유를 준다.
-  assert.match(shell, /<ChildDock \/>[\s\S]{0,220}<AiBuddyFabSlot bottomInset=\{112\} \/>/);
+  // 대화 탭은 독 위 입력줄(≈120)까지 피한다(2026-09-27 — 대화에서도 독이 남는다).
+  assert.match(shell, /<ChildDock \/>[\s\S]{0,260}<AiBuddyFabSlot bottomInset=\{chat \? 232 : 112\} \/>/);
   // PushShell 본문 안에 있는지를 함수 범위로 정확히 본다.
   // (예전 400자 창은 본문이 길어지면 깨지는 대략적인 장치였다 — 하단 메뉴가 들어오며 넘쳤다.)
   const pushBody = shell.slice(shell.indexOf("export function PushShell()"));

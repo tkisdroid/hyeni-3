@@ -77,18 +77,20 @@
   --line-hair: var(--ph-hairline);
   --shadow-soft: var(--ph-glass-lift);
   --shadow-floating: var(--ph-glass-lift);
-  /* 크기는 유지하고 굵기 차이로 읽는 순서를 정리한다. */
-  --type-title-xl-weight: 600;
-  --type-title-lg-weight: 600;
-  --type-title-weight: 600;
-  --type-section-weight: 600;
-  --type-row-weight: 500;
-  --type-body-weight: 400;
-  --type-body-sm-weight: 400;
-  --type-label-weight: 400;
-  --type-caption-weight: 400;
+  /* 크기는 유지하고 굵기 차이로 읽는 순서를 정리한다: 제목 700 > 행 600 > 본문·보조 500.
+     2026-09-27 TK 제보("글씨가 전체적으로 얇다"): 400 은 Android 기본 한글 글꼴에서 반투명 유리 위에
+     가늘게 번져 보였다. 웹 글꼴을 싣지 않으므로(global.css) 굵기 한 단계가 곧 가독성이다. */
+  --type-title-xl-weight: 700;
+  --type-title-lg-weight: 700;
+  --type-title-weight: 700;
+  --type-section-weight: 700;
+  --type-row-weight: 600;
+  --type-body-weight: 500;
+  --type-body-sm-weight: 500;
+  --type-label-weight: 600;
+  --type-caption-weight: 500;
   --type-metric-weight: 700;
-  --type-meta-weight: 400;
+  --type-meta-weight: 500;
 }
 
 /* ① 살아 있는 바닥 — 스크롤 영역 자체의 배경으로 그린다. 스크롤 컨테이너의 배경은 기본값(scroll)에서
@@ -350,7 +352,7 @@
 
 .hy-adult .hy-tab[data-active="true"] .hy-tab__label {
   color: var(--ph-link);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* 접근성·미지원 강등은 파일 끝의 변수 강등 한 곳이 맡는다(카드·탭바가 모두 같은 변수를 읽는다). */
@@ -528,7 +530,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 1),
     inset 0 0 0 1.5px color-mix(in srgb, currentColor 50%, transparent),
     0 6px 14px -8px color-mix(in srgb, currentColor 45%, transparent);
-  font-weight: 600;
+  font-weight: 700;
 }
 .hy-adult .ais-tab[data-active="true"] {
   color: var(--ph-link);

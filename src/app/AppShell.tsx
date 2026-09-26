@@ -77,8 +77,9 @@ function useTeacherTabs(): TabItem[] {
 }
 
 /**
- * 대화 화면은 메신저처럼 화면 전체를 쓴다 — 입력줄 아래에 하단 메뉴와 휴대폰 내비게이션이 겹겹이 쌓여
- * 이상해 보였다(2026-09-26 TK 제보). 대화 헤더의 뒤로가기가 이동 수단이다.
+ * 대화 화면 표식(data-chat). 대화도 하단 탭 목적지라 메뉴를 숨기지 않는다 — 탭을 누르자마자 메뉴가 사라지면
+ * 길을 잃는다(2026-09-27 TK 제보). 대신 입력줄과 메뉴를 한 하단 영역으로 잇고, 부모 탭바는 입력하는 동안에만
+ * 내려간다(MemoChat.css). 아이 독은 SOS 가 있어 입력 중에도 남는다.
  */
 const CHAT_PATHS = new Set(["/parent/memo", "/child/memo"]);
 
@@ -95,7 +96,7 @@ export function ParentShell() {
       <main className="hy-screen" ref={scrolledRef}>
         <Outlet />
       </main>
-      {!chat && <TabBar tabs={tabs} />}
+      <TabBar tabs={tabs} />
       <ToastHost />
     </div>
   );
@@ -111,16 +112,10 @@ export function ChildShell() {
       <main className="hy-screen hy-screen--dock">
         <Outlet />
       </main>
-      {/* 대화 화면은 AI 친구 대화처럼 자기 입력줄이 바닥을 쓴다 — 독(SOS 포함)은 홈·스티커에서 쓴다. */}
-      {chat ? (
-        <AiBuddyFabSlot bottomInset={20} />
-      ) : (
-        <>
-          <ChildDock />
-          {/* 하단 독(패딩 24 + 바 66 + 12)을 피해서만 놓이도록 여유를 알려 준다. */}
-          <AiBuddyFabSlot bottomInset={112} />
-        </>
-      )}
+      {/* 독(SOS 포함)은 대화에서도 남는다 — 안전 동선은 어떤 화면 연출보다 우선이다. */}
+      <ChildDock />
+      {/* 하단 독(패딩 24 + 바 66 + 12)을, 대화에서는 그 위 입력줄(≈120)까지 피해서만 놓이도록 여유를 알려 준다. */}
+      <AiBuddyFabSlot bottomInset={chat ? 232 : 112} />
       <ToastHost />
     </div>
   );

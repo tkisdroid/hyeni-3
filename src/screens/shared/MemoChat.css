@@ -8,12 +8,6 @@
   --mc-bottom-clearance: calc(220px + env(safe-area-inset-bottom, 0px));
 }
 
-/* 대화 화면은 셸이 하단 메뉴·아이 독을 그리지 않는다(AppShell CHAT_PATHS) — 입력줄을 화면 바닥에 붙인다. */
-.hy-app[data-chat="true"] .mc-root {
-  --mc-tabbar-clearance: env(safe-area-inset-bottom, 0px);
-  --mc-bottom-clearance: calc(124px + env(safe-area-inset-bottom, 0px));
-}
-
 /* ── 헤더 (sticky) ──────────────────────────────────────────────────────── */
 .mc-header {
   position: sticky;
@@ -457,6 +451,55 @@
 .mc-end {
   flex: none;
   height: var(--mc-bottom-clearance);
+}
+
+/* ── 대화도 하단 탭 목적지라 메뉴가 남는다(2026-09-27 TK 제보: 메뉴가 갑자기 없어져 불편) ──
+   입력줄과 메뉴를 '겹겹이 쌓인 띠'가 아니라 한 하단 영역으로 잇는다: 입력줄 위에서 옅게 시작한 바닥색이
+   메뉴 끝까지 끊김 없이 이어지고, 두 유리 알약은 같은 좌우 선에 놓인다. */
+.hy-app[data-chat="true"] .mc-root {
+  --mc-tabbar-clearance: calc(84px + env(safe-area-inset-bottom, 0px));
+}
+.hy-adult[data-chat="true"] .mc-composer {
+  background: linear-gradient(
+    180deg,
+    rgba(243, 241, 246, 0) 0%,
+    rgba(243, 241, 246, 0.62) 34%,
+    rgba(243, 241, 246, 0.86) 100%
+  );
+}
+.hy-adult[data-chat="true"] .hy-tabbar {
+  background: rgba(243, 241, 246, 0.86);
+  transition:
+    transform 0.32s var(--easing-emphasized),
+    opacity 0.2s var(--easing-standard),
+    visibility 0s linear 0s;
+}
+/* 입력하는 동안(키보드가 올라온 동안)만 부모 탭바가 내려가고 입력줄이 바닥(키보드 위)에 붙는다. */
+.hy-adult[data-chat="true"]:has(.mc-input:focus) .hy-tabbar {
+  transform: translateY(100%);
+  opacity: 0;
+  visibility: hidden;
+  transition-delay: 0s, 0s, 0.32s;
+}
+.hy-adult[data-chat="true"]:has(.mc-input:focus) .mc-root {
+  --mc-tabbar-clearance: env(safe-area-inset-bottom, 0px);
+}
+/* 아이 독은 SOS 가 있어 입력 중에도 남는다. 입력줄 띠와 독 바닥을 같은 색으로 잇는다. */
+.hy-app[data-role="child"][data-chat="true"] .mc-composer {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, color-mix(in srgb, var(--hy-accent-soft) 38%, var(--bg-app)) 72%, transparent) 34%,
+    color-mix(in srgb, var(--hy-accent-soft) 38%, var(--bg-app)) 100%
+  );
+}
+.hy-app[data-role="child"][data-chat="true"] .kdock {
+  background: color-mix(in srgb, var(--hy-accent-soft) 38%, var(--bg-app));
+}
+@media (prefers-reduced-motion: reduce) {
+  .hy-adult[data-chat="true"] .hy-tabbar {
+    transition: none;
+  }
 }
 
 /* ── 리치 메시지: 사진 버블 ── */

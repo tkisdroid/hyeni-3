@@ -964,6 +964,20 @@
   --fg-primary: var(--ph-ink);
 }
 
+/* 아주 좁은 폰(≤340px)은 굵은 제목 옆에 알약 셋이 다 들어가지 않아 설정 버튼이 잘렸다 —
+   칭찬하기는 그림만 남긴다(이름은 aria-label 이 그대로 말한다). */
+@media (max-width: 340px) {
+  .ph-page .ph-stickerbtn {
+    min-width: var(--control-min-size);
+    padding: 0;
+    justify-content: center;
+  }
+
+  .ph-page .ph-stickerbtn span {
+    display: none;
+  }
+}
+
 @media (max-width: 370px) {
   .ph-page .ph-hero {
     padding-right: 104px;
